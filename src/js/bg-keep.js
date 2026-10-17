@@ -1731,6 +1731,10 @@
   // 恢复：重新云打包并勾选「Push(消息推送)」，再把下面这行改回 true 即可。
   window.__mochiShellPush = false;
   function nativePushAvailable() {
+    // 总开关关闭时直接返回 false，连 plus.push 属性都不碰——
+    // 个别 DCloud 运行时在「访问 plus.push 属性」时就会弹「打包时未添加push模块」错误框，
+    // 而非等到调用 createMessage。彻底短路避免误触。
+    if (!window.__mochiShellPush) return false;
     try { return !!(window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function'); } catch (e) { return false; }
   }
   function showSysNotification(title, opts, chanOut) {
@@ -2949,7 +2953,8 @@
     // 套壳 App（plus 在场）＝原生通道可用，跳过 Web Notification 权限判据；浏览器/PWA 无 plus ⇒ 与改动前一字不差。
     // 判据在这里内联而非调 nativePushAvailable()：本函数会被回归脚本按函数体单独抽出来求值
     //（verify-notify-dup-gate.mjs 的 new Function(...参数注入...)），引用同 IIFE 的兄弟函数会 ReferenceError。
-    if (!(window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function') &&
+    // 总开关关闭（window.__mochiShellPush=false）时跳过 plus.push 属性访问，避免触发「打包时未添加push模块」错误框。
+    if (!(window.__mochiShellPush && window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function') &&
         (!('Notification' in window) || Notification.permission !== 'granted')) return;
     // FIX 2026-09-18 #780：消息身份闸门（治「切后台突然弹前几分钟看过的消息」）——
     // 整页冻结解冻时积压的回复链一口气重投，下面三道内容去重窗口起点全是 Date.now()

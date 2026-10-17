@@ -1162,6 +1162,7 @@ setTimeout(tryShowNotifyHealBar, 800); // 回前台补出条（隐藏期间发�
 });
 window.__mochiShellPush = false;
 function nativePushAvailable() {
+if (!window.__mochiShellPush) return false;
 try { return !!(window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function'); } catch (e) { return false; }
 }
 function showSysNotification(title, opts, chanOut) {
@@ -2043,7 +2044,7 @@ if (!notifyEnabled) return;
 extra = extra || {};
 const nkey = msgFingerprint(text, extra.img);
 if (document.visibilityState === 'visible') { if (!extra.late) { markSeen(nkey); return; } }
-if (!(window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function') &&
+if (!(window.__mochiShellPush && window.plus && window.plus.push && typeof window.plus.push.createMessage === 'function') &&
 (!('Notification' in window) || Notification.permission !== 'granted')) return;
 if (!extra.force && extra.msgTs) {
 try {
