@@ -2569,9 +2569,12 @@ const FIX_SENTINELS = [
   //   一加 .hide 本规则当帧失效、桌面立即恢复可见（淡出过程正常露出桌面）；开屏 400ms 后整体移除，
   //   不存在残留隐藏态。visibility 不参与布局，启动期对 .phone 的尺寸测量照常；全站无
   //   visibility:visible 覆写。零机型分支：任何内核都只是少画一层被完全盖住的内容。
+  // 2026-10-19：追加 opacity:0 + .phone transition:opacity .35s——开屏隐形加载后桌面
+  //   从透明淡入，取代原 visibility 瞬间切回造成的「闪一下」。visibility:hidden 保留，
+  //   开屏期仍不合成 .phone（性能不受影响），仅在 hide() 后淡入。
   // 锚点＝这条选择器本身（删掉或改成无条件隐藏即失配）。needle 须与 minifyCss 产物逐字一致
   //   （build.mjs 的 minifyCss 只去注释/空行、不压空白，故保留原空格与分号）。
-  { name: '#541 开屏期遮挡被盖住的桌面（删/改＝WebKit 又逐帧合成被不透明开屏完全盖住的 .phone＝开屏滑动卡顿复发）', file: 'css/base.css', needle: '.splash:not(.hide) ~ .phone { visibility:hidden; }' },
+  { name: '#541 开屏期遮挡被盖住的桌面（删/改＝WebKit 又逐帧合成被不透明开屏完全盖住的 .phone＝开屏滑动卡顿复发）', file: 'css/base.css', needle: '.splash:not(.hide) ~ .phone { visibility:hidden; opacity:0; }' },
   // #546 房间夜间黑屏（vivo X200S+Edge 报障，用户明说其他机型也有；时段相关非机型相关）：
   // lum() 夜间基础亮度曾被写成 0，新档无点灯时 --room-bright=0 → .r-scene brightness(0) 纯黑。
   // 锚点＝基础亮度表达式本体（改回带 isNight 的 0 基或改小数即失配）

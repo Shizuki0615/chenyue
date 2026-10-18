@@ -105,7 +105,7 @@ html { margin:0; padding:0; }
    对 .phone 的尺寸测量（getBoundingClientRect/offsetHeight）全部照常；全站无
    visibility:visible 显式覆写，子元素不会把继承的 hidden 顶掉。零机型分支：任何内核都只是
    少画一层被完全盖住的内容，安卓/桌面浏览器行为一致，不认这条选择器的老内核退回现状。 */
-.splash:not(.hide) ~ .phone { visibility:hidden; }
+.splash:not(.hide) ~ .phone { visibility:hidden; opacity:0; }
 /* v3.x「隐形加载」批（用户 2026-10-18「干脆把开屏删掉」）：开屏整屏不再显示——
    #splash 视觉隐藏但保留在 DOM 中，继续充当「数据闸」：上面 #541 的
    .splash:not(.hide) ~ .phone 依然命中，桌面在数据回填完成（clock.js 自动进入 →
@@ -250,7 +250,7 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
    一起藏了＝弹层开了但不可见。本规则与 .under-modal 同开同关（clock.js 打开时挂、关窗时
    MutationObserver 摘），只在弹窗在场时把 .phone 的可见性还回来，弹窗一关回到隐藏省电态；
    与第 108 行规则同特异性、靠书写顺序在后取胜。z 90 > 80 的层级交给 #319 那条。 */
-.splash.under-modal ~ .phone { visibility:visible; }
+.splash.under-modal ~ .phone { visibility:visible; opacity:1; }
 /* 章节容器：编号在章节内重新从 1 开始；章节间拉开间距；折叠章节样式 */
 .splash-sec-wrap { counter-reset: notice; }
 .splash-sec-wrap + .splash-sec-wrap { margin-top:16px; }
@@ -530,6 +530,9 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
      box-sizing 支持异常时，缺声明会退回 content-box，padding 外扩把 .phone
      撑得比设定高度高，底部导航栏又被推出屏幕/页面出现灰色滚动条） */
   box-sizing:border-box;
+  /* 开屏隐形加载期：.phone 用 opacity:0 隐藏，数据就绪后 .splash 加 .hide
+     → 本过渡让桌面从透明淡入，取代原 visibility 瞬间切回造成的「闪一下」 */
+  transition:opacity .35s ease;
   width:390px; max-width:100vw; flex-shrink:0; position:relative;
   /* v3.5.139：桌面矮视口（浏览器全屏 / 小窗口）时高度自适应收缩——
      原来固定 844px，视口不足时底部导航栏被 overflow:hidden 推出屏幕截断。
