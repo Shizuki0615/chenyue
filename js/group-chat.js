@@ -3523,12 +3523,13 @@ if (_gj >= 0) _gr = msgs[_gj]; else _gj = _gi;
 }
 gcActiveMsgSnap = { idx: _gj, rec: _gr, mk: _gmk, ts: _gr ? (_gr.ts || 0) : 0, side: _gr ? (_gr.side || '') : '', text: _gr ? String(_gr.text || '').slice(0, 80) : '' };
 const delBtn = gcMsgActions.querySelector('.ma-del-gc');
+const side = item.classList.contains('msg-out') ? 'out' : 'in';
 if (delBtn) {
 let delEn = false;
 try { delEn = window.activeStore().get('cs-del-ta-msg') === '1'; } catch (e) {}
-const side = item.classList.contains('msg-out') ? 'out' : 'in';
 delBtn.hidden = !(delEn && side === 'in');
 }
+gcMsgActions.querySelectorAll('.ma-mine').forEach(b2 => b2.hidden = side !== 'out');
 gcMsgActions.hidden = false;
 try {
 const _gPlace = window.mochiFollowActionBar && window.mochiFollowActionBar(gcMsgActions, bk, closeGcMsgActions);
@@ -3645,6 +3646,15 @@ try { if (input) input.focus(); } catch (err) {}
 const _rd = gcResolveActiveMsg(); // FIX 2026-09-13 #407：按身份快照重定位
 const idx = _rd.idx;
 if (idx >= 0 && msgs[idx] && msgs[idx].side === 'in') {
+msgs.splice(idx, 1);
+saveMsgs();
+renderAll();
+toast('已删除该消息');
+}
+} else if (btn.dataset.act === 'del-mine' && gcActiveMsgEl) {
+const _rdm = gcResolveActiveMsg();
+const idx = _rdm.idx;
+if (idx >= 0 && msgs[idx] && msgs[idx].side === 'out') {
 msgs.splice(idx, 1);
 saveMsgs();
 renderAll();

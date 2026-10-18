@@ -4191,12 +4191,14 @@ if (defs && defs.type === 'text' && defs.text) t = defs.text;
       // 对齐聊天页：删除按钮按「允许删除联系人消息」开关（cs-del-ta-msg）显隐，
       // 仅成员消息可删；开关默认关，在群聊设置→输入与消息 里开启
       const delBtn = gcMsgActions.querySelector('.ma-del-gc');
+      const side = item.classList.contains('msg-out') ? 'out' : 'in';
       if (delBtn) {
         let delEn = false;
         try { delEn = window.activeStore().get('cs-del-ta-msg') === '1'; } catch (e) {}
-        const side = item.classList.contains('msg-out') ? 'out' : 'in';
         delBtn.hidden = !(delEn && side === 'in');
       }
+      // 自己发的消息显示「删除」（不留撤回墓碑，直接从我的视图移除）
+      gcMsgActions.querySelectorAll('.ma-mine').forEach(b2 => b2.hidden = side !== 'out');
       gcMsgActions.hidden = false;
       // FIX 2026-09-16 #642 定位与跟随都交给共享助手 window.mochiFollowActionBar（chat.js 定义，
       // 单聊群聊一份实现）：定位算法与旧块一致（上方居中、放不下换下方、clamp 视口内），打开后
@@ -4335,6 +4337,16 @@ if (defs && defs.type === 'text' && defs.text) t = defs.text;
         const _rd = gcResolveActiveMsg(); // FIX 2026-09-13 #407：按身份快照重定位
         const idx = _rd.idx;
         if (idx >= 0 && msgs[idx] && msgs[idx].side === 'in') {
+          msgs.splice(idx, 1);
+          saveMsgs();
+          renderAll();
+          toast('已删除该消息');
+        }
+      } else if (btn.dataset.act === 'del-mine' && gcActiveMsgEl) {
+        // 删除我发出去的消息：直接从我的视图移除，不留撤回墓碑
+        const _rdm = gcResolveActiveMsg();
+        const idx = _rdm.idx;
+        if (idx >= 0 && msgs[idx] && msgs[idx].side === 'out') {
           msgs.splice(idx, 1);
           saveMsgs();
           renderAll();

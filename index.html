@@ -10287,7 +10287,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792366214743" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792367063860" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -15968,6 +15968,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
           <span>编辑</span>
         </button>
+        <button class="ma-btn ma-mine" data-act="del-mine" title="删除" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>
+          <span>删除</span>
+        </button>
         <button class="ma-btn ma-del-ta" data-act="del" title="删除" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>
           <span>删除</span>
@@ -16390,6 +16394,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <button class="ma-btn" data-act="quote" title="引用">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11H6a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v7a4 4 0 01-4 4"/><path d="M20 11h-4a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v7a4 4 0 01-4 4"/></svg>
           <span>引用</span>
+        </button>
+        <button class="ma-btn ma-mine" data-act="del-mine" title="删除" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>
+          <span>删除</span>
         </button>
         <!-- 对齐聊天设置「允许删除联系人消息」：开启后成员消息可从菜单真删除（默认隐藏，group-chat.js 按 gc-del-msg 开关显隐） -->
         <button class="ma-btn ma-del-gc" data-act="del" title="删除" hidden>
@@ -21990,4 +21998,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvegkehj -->
+<!-- __MOCHI_EOF__ mveh2lo4 -->

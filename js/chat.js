@@ -10796,6 +10796,16 @@ renderWindow(true);
 toast('已删除该消息');
 }
 closeMsgActions();
+} else if (act === 'del-mine') {
+if (activeMsgEl && idx >= 0 && msgs[idx] && msgs[idx].side === 'out') {
+chatTailDrop(msgs[idx]);
+msgs.splice(idx, 1);
+sessionChangedIdx.clear();
+saveMsgs();
+renderWindow(true);
+toast('已删除该消息');
+}
+closeMsgActions();
 }
 }
 msgActions.addEventListener('click', (e) => {

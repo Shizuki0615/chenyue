@@ -13762,6 +13762,17 @@ renderWindow(true);
 toast('已删除该消息');
 }
 closeMsgActions();
+} else if (act === 'del-mine') {
+// 删除我发出去的消息：直接从我的视图移除，不留撤回墓碑（与撤回的区别：撤回双方可见墓碑，删除仅我这边消失）
+if (activeMsgEl && idx >= 0 && msgs[idx] && msgs[idx].side === 'out') {
+chatTailDrop(msgs[idx]);
+msgs.splice(idx, 1);
+sessionChangedIdx.clear();
+saveMsgs();
+renderWindow(true);
+toast('已删除该消息');
+}
+closeMsgActions();
 }
 }
 msgActions.addEventListener('click', (e) => {
