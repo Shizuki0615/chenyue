@@ -6322,10 +6322,10 @@ try {
   const pagesVal = document.getElementById('desk-pages-val');
   const delPageRow = document.getElementById('row-desk-del-page');
   const pageBgsBox = document.getElementById('desk-page-bgs');
-  // v3.2x：桌面固定两页（核心页 = 情侣空间 + 音乐播放器）。原先可增删的第 3 页及以后
-  // 全部取消——第三页不再自动补位，其组件（经期卡 / 备忘心情行 / p3apps 图标组）常驻
-  // 隐藏池，可从装修模式组件库随时整组找回。MAX=MIN=2 ⇒ 增/删页入口自然失效。
-  const DESK_PAGE_MAX = 2;
+  // 桌面页数：核心页固定 2 页（MIN），用户可手动添加到 MAX 页。
+  // 防「第三页莫名其妙冒出来」不靠锁死上限，而靠 ensureP3 空函数（不自动建页）＋
+  // ensureDeskPeriod 的守卫（desk-period 在池里/用户显式移除过就不补建）。
+  const DESK_PAGE_MAX = 5;
   const DESK_PAGE_MIN = 2;
   const deskPageCount = () => {
     const v = parseInt(store.get('desk-page-count'), 10);
@@ -6590,8 +6590,9 @@ try {
   const syncPagesUI = () => {
     const n = deskPageCount();
     if (pagesVal) pagesVal.textContent = '共 ' + n + ' 页';
-    // v3.2x：桌面固定两页，删除最后一页入口恒定隐藏（MIN=MAX=2，无从删起）
-    if (delPageRow) delPageRow.hidden = true;
+    // 加页/删页入口：达上限隐藏加页、到下限隐藏删页；中间区间都显示，用户自主控制
+    if (addPageRow) addPageRow.hidden = (n >= DESK_PAGE_MAX);
+    if (delPageRow) delPageRow.hidden = (n <= DESK_PAGE_MIN);
     if (!pageBgsBox) return;
     pageBgsBox.innerHTML = '';
     for (let i = 0; i < n; i++) {

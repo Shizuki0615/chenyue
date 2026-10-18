@@ -5104,7 +5104,7 @@ if (node && node.parentNode !== pool) pool.appendChild(node);
 const pagesVal = document.getElementById('desk-pages-val');
 const delPageRow = document.getElementById('row-desk-del-page');
 const pageBgsBox = document.getElementById('desk-page-bgs');
-const DESK_PAGE_MAX = 2;
+const DESK_PAGE_MAX = 5;
 const DESK_PAGE_MIN = 2;
 const deskPageCount = () => {
 const v = parseInt(store.get('desk-page-count'), 10);
@@ -5289,7 +5289,8 @@ setTimeout(function () { if (window.ensureP3) window.ensureP3(); }, 50);
 const syncPagesUI = () => {
 const n = deskPageCount();
 if (pagesVal) pagesVal.textContent = '共 ' + n + ' 页';
-if (delPageRow) delPageRow.hidden = true;
+if (addPageRow) addPageRow.hidden = (n >= DESK_PAGE_MAX);
+if (delPageRow) delPageRow.hidden = (n <= DESK_PAGE_MIN);
 if (!pageBgsBox) return;
 pageBgsBox.innerHTML = '';
 for (let i = 0; i < n; i++) {
