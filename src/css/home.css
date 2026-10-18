@@ -396,6 +396,10 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
 .page-slide {
   width:100%; flex-shrink:0; height:100%;
   scroll-snap-align:start;
+  /* 翻页滞涩感：scroll-snap-stop:always 让动量滚动在每个吸附点必须停住，
+     单次手势最多只翻一页，不会从第一页直接划到第三页（真手机桌面手感）。
+     默认 normal 会允许惯性滑过多个吸附点＝一划到底。 */
+  scroll-snap-stop:always;
   overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;
   touch-action:pan-x pan-y;
 }
