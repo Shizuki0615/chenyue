@@ -75,6 +75,23 @@
     }
     return _shellFsOnFlag;
   }
+  // 套壳原生标题栏(titleNView)的原始样式——全屏时隐藏它（显示页面 <title>「辰光玥影」），
+  // 退出全屏时还原。只在首次进入全屏时取一次，之后不再覆盖（避免把已改成 false 的值
+  // 又当「原始」存下来导致退出时还原不回去）。
+  let _shellOrigTitleNView = null;
+  function shellSaveOrigTitleNView() {
+    if (_shellOrigTitleNView !== null) return;
+    try {
+      if (window.plus && plus.webview) {
+        const wv = plus.webview.currentWebview();
+        if (wv && typeof wv.getStyle === 'function') {
+          const s = wv.getStyle();
+          _shellOrigTitleNView = (s && s.titleNView !== undefined) ? s.titleNView : false;
+        }
+      }
+    } catch (e) { _shellOrigTitleNView = false; }
+    if (_shellOrigTitleNView === null) _shellOrigTitleNView = false;
+  }
   function shellMarkFs(on) {
     _shellFsOnFlag = !!on;
     // v3.33.x FIX：套壳原生全屏不挂 .fs-active——该类是给浏览器 Fullscreen API 用的，
@@ -83,6 +100,24 @@
     // 反而把状态行顶到屏幕最顶端、把页面标题挤没（用户实报：状态栏覆盖手机顶格、
     // 标题栏消失）。移动端 .phone 默认已是 100dvh + padding:0，无需 .fs-active 帮忙。
     // fsVisualActive()/fsAnyActive() 仍读 shellFsOn()，开关显示不受影响。
+
+    // v3.33.x：套壳全屏态 CSS 钩子——只用于隐藏页面标题，不改顶部 padding（否则又回到
+    // 状态栏顶格重叠的老问题）。
+    try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
+
+    // v3.33.x：隐藏套壳原生标题栏(titleNView)——它显示页面 <title>「辰光玥影」。
+    // 原 .fs-active 把状态行顶到 y=0 时恰好盖住了透明标题栏的文字，标题「消失」；
+    // 用户明确这是全屏下应保留的正常行为、不要让它再显示。撤掉 .fs-active 后标题栏
+    // 重新露出，这里主动隐藏原生标题栏来保持「全屏不显示页面标题」的视觉；退出全屏还原。
+    try {
+      if (window.plus && plus.webview) {
+        const wv = plus.webview.currentWebview();
+        if (wv && typeof wv.setStyle === 'function') {
+          if (on) { shellSaveOrigTitleNView(); wv.setStyle({ titleNView: false }); }
+          else if (_shellOrigTitleNView !== null) { wv.setStyle({ titleNView: _shellOrigTitleNView }); }
+        }
+      }
+    } catch (e) {}
   }
   // 幂等恢复原生全屏：已在全屏不动；仍非全屏按 DCloud 已知坑先 false 再 true 重设一次
   //（系统原生交互/软键盘弹出后会切回非全屏，此时单次 setFullscreen(true) 无效）
@@ -629,6 +664,9 @@
     // safe-area padding），不再被 .fs-active 改写顶部间距。
     const _fs = isFullscreen();
     d.classList.toggle('fs-active', _fs);
+    // v3.33.x：套壳原生全屏态 CSS 钩子——shellMarkFs 已在切换时 toggle，这里再按
+    // shellFsOn() 实态兜底同步一次（原生 isFullscreen 可能在 shellMarkFs 之外变化）。
+    d.classList.toggle('shell-fs-active', shellFsOn());
     // v3.26.x：iOS 浏览器原生全屏标记——iOS 系统状态栏（含灵动岛）永远由系统占据在
     // 内容上方、网页内容不会钻进状态栏区，CSS 无需再给顶部栏加安全区上边距。
     // 叠加 .fs-active 之上把 chat-head 等收紧贴顶（.fs-active 的

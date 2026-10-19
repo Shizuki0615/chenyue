@@ -39,8 +39,32 @@ try { if (n.isFullscreen()) return true; } catch (e) {}
 }
 return _shellFsOnFlag;
 }
+let _shellOrigTitleNView = null;
+function shellSaveOrigTitleNView() {
+if (_shellOrigTitleNView !== null) return;
+try {
+if (window.plus && plus.webview) {
+const wv = plus.webview.currentWebview();
+if (wv && typeof wv.getStyle === 'function') {
+const s = wv.getStyle();
+_shellOrigTitleNView = (s && s.titleNView !== undefined) ? s.titleNView : false;
+}
+}
+} catch (e) { _shellOrigTitleNView = false; }
+if (_shellOrigTitleNView === null) _shellOrigTitleNView = false;
+}
 function shellMarkFs(on) {
 _shellFsOnFlag = !!on;
+try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
+try {
+if (window.plus && plus.webview) {
+const wv = plus.webview.currentWebview();
+if (wv && typeof wv.setStyle === 'function') {
+if (on) { shellSaveOrigTitleNView(); wv.setStyle({ titleNView: false }); }
+else if (_shellOrigTitleNView !== null) { wv.setStyle({ titleNView: _shellOrigTitleNView }); }
+}
+}
+} catch (e) {}
 }
 function shellEnsureFs() {
 const n = shellNav();
@@ -439,6 +463,7 @@ function syncFsClass() {
 const d = document.documentElement;
 const _fs = isFullscreen();
 d.classList.toggle('fs-active', _fs);
+d.classList.toggle('shell-fs-active', shellFsOn());
 if (isIOS) d.classList.toggle('ios-native-fs', _fs);
 }
 function fsInPwa() {
