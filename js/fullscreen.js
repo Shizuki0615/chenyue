@@ -41,7 +41,6 @@ return _shellFsOnFlag;
 }
 function shellMarkFs(on) {
 _shellFsOnFlag = !!on;
-try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
 }
 function shellEnsureFs() {
 const n = shellNav();
@@ -438,7 +437,7 @@ if (e.key === 'Enter' || e.key === ' ') openFsHelp(e);
 }
 function syncFsClass() {
 const d = document.documentElement;
-const _fs = isFullscreen() || shellFsOn();
+const _fs = isFullscreen();
 d.classList.toggle('fs-active', _fs);
 if (isIOS) d.classList.toggle('ios-native-fs', _fs);
 }

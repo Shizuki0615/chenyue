@@ -77,7 +77,12 @@
   }
   function shellMarkFs(on) {
     _shellFsOnFlag = !!on;
-    try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
+    // v3.33.x FIX：套壳原生全屏不挂 .fs-active——该类是给浏览器 Fullscreen API 用的，
+    // 会改 chat-head/.gs-title 等的 padding-top（假设浏览器全屏语义）。套壳里
+    // setFullscreen(true) 只隐藏系统状态栏、WebView 安全区语义不变，挂 .fs-active
+    // 反而把状态行顶到屏幕最顶端、把页面标题挤没（用户实报：状态栏覆盖手机顶格、
+    // 标题栏消失）。移动端 .phone 默认已是 100dvh + padding:0，无需 .fs-active 帮忙。
+    // fsVisualActive()/fsAnyActive() 仍读 shellFsOn()，开关显示不受影响。
   }
   // 幂等恢复原生全屏：已在全屏不动；仍非全屏按 DCloud 已知坑先 false 再 true 重设一次
   //（系统原生交互/软键盘弹出后会切回非全屏，此时单次 setFullscreen(true) 无效）
@@ -618,9 +623,11 @@
   // v3.5.11x：Fullscreen API 激活时给根元素加 fs-active 类（挖孔屏顶部安全区适配）
   function syncFsClass() {
     const d = document.documentElement;
-    // v3.33.x：套壳原生全屏也算「原生全屏态」——不并进来时回前台被重放的重放调用会把
-    // 刚挂上的 .fs-active 又撤掉（.phone 高度/顶部安全区随之回退），全屏形同没开
-    const _fs = isFullscreen() || shellFsOn();
+    // v3.33.x FIX：套壳原生全屏不参与 .fs-active 判定（见 shellMarkFs 注释）——
+    // .fs-active 只给浏览器 Fullscreen API 用（isFullscreen()）。套壳全屏由
+    // setFullscreen 原生处理，CSS 走默认移动端形态（.phone 100dvh + .statusbar
+    // safe-area padding），不再被 .fs-active 改写顶部间距。
+    const _fs = isFullscreen();
     d.classList.toggle('fs-active', _fs);
     // v3.26.x：iOS 浏览器原生全屏标记——iOS 系统状态栏（含灵动岛）永远由系统占据在
     // 内容上方、网页内容不会钻进状态栏区，CSS 无需再给顶部栏加安全区上边距。
