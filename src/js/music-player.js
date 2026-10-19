@@ -754,7 +754,9 @@
       const plId = targetPl || 'default';
       tracks.forEach((t, i) => {
         if (t.neteaseId && library.some(m => m.neteaseId === t.neteaseId)) { skipped++; return; }
-        if (t.fee === 1 || t.fee === 4) { vip++; return; } // VIP 专属/需购买专辑：网页外链播不了
+        // v3.33.x：开了「保留会员歌曲」开关就不剔除（播放改由用户自己后端取直链）；
+        // 关着＝旧行为（VIP 专属/需购买专辑，网页外链播不了，直接不入库）
+        if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) { vip++; return; }
         const nid = 'sm_pl_' + now + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
         library.push({ id: nid, neteaseId: t.neteaseId, name: t.name || '网易云音乐-' + (t.neteaseId || i), artist: t.artist || '', cover: t.cover || '', url: t.url, source: 'url', duration: t.duration || 0, playlistId: plId, addedAt: now });
         addedIds.push(nid);
@@ -781,6 +783,8 @@
     keyBase: 'netease-api-base',
     keyCookie: 'netease-cookie',
     keyUser: 'netease-user',
+    // v3.33.x：保留会员/付费歌曲开关（见 neaKeepVip 注释）
+    keyKeepVip: 'netease-keep-vip',
   };
   function neaBase() { return (NEA.gStore ? NEA.gStore.get(NEA.keyBase) : '') || ''; }
   function neaSetBase(v) { if (NEA.gStore) NEA.gStore.set(NEA.keyBase, v); }
@@ -791,6 +795,29 @@
     try { const v = JSON.parse(NEA.gStore.get(NEA.keyUser) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; }
   }
   function neaSetUser(v) { if (NEA.gStore) { if (v) NEA.gStore.set(NEA.keyUser, JSON.stringify(v)); else NEA.gStore.remove(NEA.keyUser); } }
+  // v3.33.x「保留会员/付费歌曲」开关（全局根键，已进 contacts.js EXCLUDE）。语义：
+  //   '1'＝保留——导入歌单/漫游不再自动剔除会员歌，且播放改走用户自己部署的 NeteaseCloudMusicApi
+  //        后端 /song/url 取直链（带他的 cookie，他自己的 VIP 才生效）；
+  //   其它（'0'/未设）＝旧行为：会员歌一律自动移除（公开 meting 用不到用户 cookie，VIP 必播不了）。
+  //   默认关＝老用户与本仓库既有回归脚本行为逐字节不变。
+  function neaKeepVip() { return !!(NEA.gStore && NEA.gStore.get(NEA.keyKeepVip) === '1'); }
+  function neaSetKeepVip(on) { if (NEA.gStore) NEA.gStore.set(NEA.keyKeepVip, on ? '1' : '0'); }
+  // 是否已配置后端且已登录（后端取直链、后端探测都得同时满足）
+  function neaReady() { return !!(neaBase() && neaCookie()); }
+  // 经用户自己的后端取播放直链：NeteaseCloudMusicApi 的 /song/url/v1 带 cookie，
+  // 会员歌返回可播 url；取不到（未登录/该曲真失效/后端不通）一律回调 null，由调用方回落旧链路
+  function neaFetchSongUrl(id, cb) {
+    if (!neaReady()) { cb(null); return; }
+    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j) {
+      let url = '';
+      try {
+        const d = j && j.data && j.data[0];
+        if (d && typeof d.url === 'string') url = d.url;
+      } catch (e) {}
+      // 与 resolveNeteaseDirectUrl 同口径：http 直链在 https 页面会被混合内容拦截，统一修成 https
+      cb(url ? String(url).replace(/^http:/i, 'https:') : null);
+    });
+  }
   // 归一化后端地址：去尾斜杠。显式写了协议就按用户写的走（自建后端常只有 http://IP:端口，
   // 强改成 https 会打到不存在的端口），没写协议才默认补 https://。
   function neaNormBase(s) {
@@ -868,7 +895,7 @@
     const addedIds = [];
     tracks.forEach((t, i) => {
       if (t.neteaseId && library.some(m => m.neteaseId === t.neteaseId)) { skipped++; return; }
-      if (t.fee === 1 || t.fee === 4) { vip++; return; }
+      if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) { vip++; return; }
       const nid = 'sm_nea_' + now + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
       library.push({ id: nid, neteaseId: t.neteaseId, name: t.name || '网易云音乐-' + (t.neteaseId || i), artist: t.artist || '', cover: t.cover || '', url: t.url, source: 'url', duration: t.duration || 0, playlistId: plId, addedAt: now });
       addedIds.push(nid);
@@ -930,7 +957,15 @@
   const FM_REFILL_AT = 5;
   const FM_MAX_ROUNDS = 6;
   function neaLoadFmTracks(cb) {
-    neaFetch('/personal_fm', (j, err) => {
+    // v3.33.x 漫游「待播永远只有两三首 → 被迫单曲循环」根治：NeteaseCloudMusicApi 对所有
+    // 接口套了 2 分钟响应缓存（server.js 里 apicache，缓存键含完整 URL）。漫游要在几秒内
+    // 连拉多轮 /personal_fm，URL 完全相同 → 后几轮全命中同一份缓存、返回同一批歌，按
+    // neteaseId 去重后一无所获，队列永远攒不满；等队列耗尽、库里的 FM 曲目又被 prune
+    // 到只剩当前曲，就只能在同一首里循环。官方文档也明确：不需要缓存的接口可在 URL 上
+    // 加一个时间戳参数让 URL 不同（相同 URL 两分钟内只向网易发一次请求）。每轮拼一个
+    // 唯一 timestamp → 缓存键不同 → 逐轮拿到新的 3 首。
+    const bust = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    neaFetch('/personal_fm?timestamp=' + bust, (j, err) => {
       if (err || !j || !Array.isArray(j.data)) { cb && cb(null, err || '接口未返回推荐歌曲'); return; }
       cb && cb(neaTracksFromSongs(j.data), null);
     });
@@ -951,7 +986,7 @@
     const now = Date.now();
     const ids = [];
     (tracks || []).forEach((t, i) => {
-      if (t.fee === 1 || t.fee === 4) return; // VIP/付费歌网页外链播不了，跳过
+      if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) return; // 见 neaKeepVip：关着才跳过
       if (t.neteaseId) {
         const exist = library.find(m => m.neteaseId === t.neteaseId);
         if (exist) { if (exist.playlistId === 'fm') ids.push(exist.id); return; }
@@ -1145,6 +1180,11 @@
         body += '<div id="nea-liked-row" class="sm-fld" style="border-top:1px solid var(--line);padding-top:10px">' +
           '<button class="cc-tool" id="nea-import-liked">导入「我喜欢的音乐」</button> ' +
           '<span id="nea-liked-status" style="font-size:12px;opacity:.7"></span></div>';
+        // v3.33.x：「保留会员歌曲」开关——开启后导入歌单/漫游不再自动剔除会员/付费歌，
+        // 且它们的播放改走你自己部署的后端 /song/url/v1（带你的登录 cookie），会员歌才播得出。
+        body += '<div class="sm-set-row" style="border-top:1px solid var(--line);padding-top:10px">' +
+          '<span>保留会员歌曲<div style="font-size:12px;opacity:.7;font-weight:400;margin-top:2px">开启后不再自动移除会员/付费歌，播放改走你的后端直链</div></span>' +
+          '<label class="toggle"><input type="checkbox" id="nea-keep-vip"' + (neaKeepVip() ? ' checked' : '') + '><span class="tk"></span></label></div>';
         // 歌单列表
         body += '<div class="sm-fld"><label>我的歌单</label><div id="nea-pls" style="max-height:260px;overflow:auto">' + (neaLoadedPls ? '' : '<div style="opacity:.6">加载中…</div>') + '</div></div>';
       }
@@ -1164,6 +1204,9 @@
         toast('后端地址已保存');
         // 地址变了，清掉旧登录态（不同后端 cookie 不通用）
         neaSetCookie(''); neaSetUser(null);
+        // v3.33.x：换后端＝旧 cookie 失效＝「保留会员歌曲」失去播放后端，一并复位，
+        // 否则会留下「会员歌保留着但播不出、清理按钮还被隐藏」的死角
+        neaSetKeepVip(false); syncKeepVipTools();
         if (neaPanelApi) { neaPanelApi.stop(); neaPanelApi = null; }
         render({ phase: 'init' });
       };
@@ -1175,11 +1218,20 @@
       bind('nea-retry', () => { startQr(); });
       bind('nea-logout', () => {
         neaSetCookie(''); neaSetUser(null); neaLoadedPls = null;
+        // v3.33.x：退出登录＝后端不再可用，「保留会员歌曲」一并复位（否则会员歌留着却播不出）
+        neaSetKeepVip(false); syncKeepVipTools();
         if (neaPanelApi) { neaPanelApi.stop(); neaPanelApi = null; }
         render({ phase: 'init' });
         toast('已退出登录');
       });
       bind('nea-import-liked', () => { importLiked(); });
+      // v3.33.x：保留会员歌曲开关——切换即写全局根键并联动隐藏/恢复「清理会员歌曲」按钮
+      const kvEl = document.getElementById('nea-keep-vip');
+      if (kvEl) kvEl.addEventListener('change', () => {
+        neaSetKeepVip(kvEl.checked);
+        syncKeepVipTools();
+        toast(kvEl.checked ? '已保留会员歌曲：播放将走你的后端直链' : '已关闭保留：会员歌曲会被自动清理');
+      });
       // 已登录时加载歌单
       if (user && neaLoadedPls === null) loadPlaylistsInto();
     };
@@ -1271,6 +1323,9 @@
   // 先停、同一句提示。零机型分支。
   function removeBatchVipSongs(tracks) {
     if (!tracks || !tracks.length) return;
+    // v3.33.x：开了「保留会员歌曲」就不再自动移除（导入后 v6 fee 路径 / meting 探测
+    // 兜底路径都收敛到这里）——会员歌的播放已改走用户自己后端，不能反过来把它们删掉。
+    if (neaKeepVip()) return;
     const vipIds = tracks.map(m => m.id);
     library = library.filter(x => vipIds.indexOf(x.id) < 0);
     if (currentId && vipIds.indexOf(currentId) >= 0) { teardownAudio(); currentId = null; updatePlayerBar(); renderLibrary(); }
@@ -1422,8 +1477,17 @@
     setTimeout(function () { finish(probed > 0); }, 30000);
   }
   let vipCleanBusy = false; // #254 逐首探测在大库上可持续数十秒，防连点叠加多轮请求
+  // v3.33.x：「保留会员歌曲」开关联动——开着时隐藏「清理会员歌曲」按钮（否则一键把你
+  // 特意保留的会员歌全删了）。关闭开关后按钮恢复。renderPage 与开关切换时各调一次。
+  function syncKeepVipTools() {
+    const btn = document.getElementById('music-vip-clean');
+    // .sm-tool 自带 display:flex，[hidden] 被作者样式盖过，只能用内联 display 控制显隐
+    if (btn) btn.style.display = neaKeepVip() ? 'none' : '';
+  }
   function openVipClean() {
     if (vipCleanBusy) { toast('正在探测中，请稍候…'); return; }
+    // v3.33.x：开着「保留会员歌曲」＝你要留着会员歌走自己的后端播，清理入口直接作废
+    if (neaKeepVip()) { toast('已开启「保留会员歌曲」，不再清理会员歌曲'); return; }
     const candidates = library.filter(m => m && m.neteaseId && m.source === 'url');
     if (!candidates.length) { toast('音乐库里没有网易云链接歌曲'); return; }
     const uniqueIds = [];
@@ -2652,6 +2716,7 @@
     renderHistory();
     updatePlayerBar();
     syncFloatToggle();
+    syncKeepVipTools(); // v3.33.x：跟随「保留会员歌曲」开关显示/隐藏清理按钮
   }
 
   // ================= 播放器 =================
@@ -3310,7 +3375,10 @@
     // 再用直链播放（而非直接用 meting URL——和 m.url 相同的重试无意义）
     // v3.9.x：meting API 不可达（直链为空）时，用网易云官方外链作为备用
     // 播放源（<audio> 不走 CORS，能请求官方外链；302 到 CDN mp3 直接播放）
-    resolveNeteaseDirectUrl(m, function (directUrl) {
+    // v3.33.x：开了「保留会员歌曲」且后端已登录 → 先用用户自己部署的后端 /song/url/v1
+    // 取直链（带他的 cookie，会员歌只有这条链拿得到）；取到即用，取不到再回落上面的
+    // meting/官方外链。这样正常免费歌仍走原快速链路，只有放不出的（会员/坏链）才走后端。
+    const playResolved = function (directUrl) {
       // v3.10.x：换源窗口到此结束
       httpsRetrying = false;
       // v3.10.x：拉直链的空窗期（最长 8s）里可能已切歌/按暂停/来电 hold——原实现
@@ -3328,7 +3396,16 @@
         audio.src = neteaseOuterUrl(m.neteaseId);
       }
       startPlayback(m);
-    });
+    };
+    // v3.33.x：开关开着且已登录 → 先经用户自己的后端取直链；取到即用，取不到回落公开链路
+    if (neaKeepVip() && neaReady()) {
+      neaFetchSongUrl(m.neteaseId, function (url) {
+        if (url) playResolved(url);
+        else resolveNeteaseDirectUrl(m, playResolved);
+      });
+    } else {
+      resolveNeteaseDirectUrl(m, playResolved);
+    }
     return true;
   }
 
@@ -5216,6 +5293,9 @@
     ].map(o => '<option value="' + o.v + '"' + (String(settings.cooldownMs) === o.v ? ' selected' : '') + '>' + o.label + '</option>').join('');
     window.openTCPanel('音乐设置', '' +
       '<div class="sm-set-row"><span>悬浮播放小框</span><label class="toggle"><input type="checkbox" id="sm-set-float"' + (settings.floatEn ? ' checked' : '') + '><span class="tk"></span></label></div>' +
+      // v3.33.x：保留会员/付费歌曲开关（与「网易云账号」面板同一个全局根键，两处同步）
+      '<div class="sm-set-row"><span>保留会员歌曲</span><label class="toggle"><input type="checkbox" id="sm-set-keepvip"' + (neaKeepVip() ? ' checked' : '') + '><span class="tk"></span></label></div>' +
+      '<div class="sm-set-hint">开启后导入歌单、漫游推荐不再自动移除会员/付费歌，且它们的播放改走你自己部署的网易云后端（需先在「网易云账号」里填后端地址并扫码登录，否则会员歌仍播不出）。关闭＝会员歌一律自动清理，和以前一样。</div>' +
       '<div class="gs-row"><span>音乐请求触发概率</span><div class="stepper" id="sm-set-prob" data-min="0" data-max="30" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-prob-val" readonly><button class="stp-max">+</button></div></div>' +
       '<div class="gs-row"><span>请求冷却时间</span><select class="tc-input" id="sm-set-cool" style="width:110px">' + cooldownOpts + '</select></div>' +
       '<div class="gs-row"><span>桌面小组件封面</span><select class="tc-input" id="sm-set-wcov" style="width:120px"><option value="song"' + (settings.widgetCoverMode !== 'playlist' ? ' selected' : '') + '>歌曲封面</option><option value="playlist"' + (settings.widgetCoverMode === 'playlist' ? ' selected' : '') + '>歌单封面</option></select></div>' +
@@ -5305,6 +5385,13 @@
     if (cool) cool.addEventListener('change', () => { settings.cooldownMs = Number(cool.value); saveSettings(); });
     const floatCb = document.getElementById('sm-set-float');
     if (floatCb) floatCb.addEventListener('change', () => { settings.floatEn = floatCb.checked; floatHideByWidget = false; saveSettings(); syncFloatToggle(); renderFloat(); });
+    // v3.33.x：保留会员歌曲开关（与「网易云账号」面板同键）——切换即写全局根键并联动清理按钮
+    const keepVipCb = document.getElementById('sm-set-keepvip');
+    if (keepVipCb) keepVipCb.addEventListener('change', () => {
+      neaSetKeepVip(keepVipCb.checked);
+      syncKeepVipTools();
+      toast(keepVipCb.checked ? '已保留会员歌曲：播放将走你的后端直链' : '已关闭保留：会员歌曲会被自动清理');
+    });
     const wcov = document.getElementById('sm-set-wcov');
     if (wcov) wcov.addEventListener('change', () => {
       settings.widgetCoverMode = wcov.value;

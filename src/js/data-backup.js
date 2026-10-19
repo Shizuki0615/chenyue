@@ -960,48 +960,54 @@
   // 这样卸载 App 不会连带删掉备份（应用私有目录 _doc/ 卸载即清空）。
   // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS。
   // Android 10+ 公共目录走 MediaStore，无需存储权限；旧版本若缺权限会失败 → 交给外层网页下载兜底。
-  function saveViaPlusPublicDir(blob, fname) {
-    return new Promise((resolve) => {
+  // FIX 2026-10-19：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——FileWriter 期望
+  //   字符串/ArrayBufferView，隐式调用 String(blob) 得到字面量 "[object Blob]"（14 字符垃圾），
+  //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件内容是垃圾
+  //   → 用户点"打开/导入"全挂 = 表面"下载不了"。修法：先 Blob→Uint8Array（plus.io 支持二进制），
+  //   再逐序 truncate→write，每步都用独立 Promise 串起来（不用同一个 onwriteend 事件接力——
+  //   某些 plus.io 版本 truncate 触发的 writeend 不冒泡给后续 write，导致 Promise 永久挂起）。
+  async function saveViaPlusPublicDir(blob, fname) {
+    const plus = window.plus;
+    if (!plus || !plus.io) return 'skip';
+    const io = plus.io;
+    // Blob → Uint8Array（二进制安全，JSON text/docx binary 都能写成原样字节）
+    let bytes;
+    try { bytes = new Uint8Array(await blob.arrayBuffer()); }
+    catch (e) { return { ok: false }; }
+    // 单目录尝试：requestFileSystem → getFile(create) → createWriter → truncate → write（每步独立 Promise）
+    const tryDir = (which) => new Promise((innerResolve) => {
       try {
-        const plus = window.plus;
-        if (!plus || !plus.io) { resolve('skip'); return; }
-        const io = plus.io;
-        // 单目录尝试：requestFileSystem(公共目录) → getFile(create) → createWriter → truncate → write
-        const tryDir = (which) => new Promise((innerResolve) => {
-          try {
-            io.requestFileSystem(which, (fs) => {
-              fs.root.getFile(fname, { create: true, exclusive: false }, (fe) => {
-                fe.createWriter((writer) => {
-                  let done = false;
-                  const finish = (ok, path) => { if (done) return; done = true; innerResolve({ ok: ok, path: path || '' }); };
-                  let op = 'truncate';
-                  writer.onwriteend = () => {
-                    if (op === 'truncate') {
-                      op = 'write';
-                      try { writer.write(blob); } catch (e) { finish(false); }
-                    } else {
-                      let p = '';
-                      try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
-                      finish(true, p);
-                    }
-                  };
-                  writer.onerror = () => finish(false);
-                  try { writer.truncate(0); } catch (e) { finish(false); }
-                }, () => innerResolve({ ok: false }));
-              }, () => innerResolve({ ok: false }));
-            }, () => innerResolve({ ok: false }));
-          } catch (e) { innerResolve({ ok: false }); }
-        });
-        const a = io.PUBLIC_DOWNLOADS;
-        const b = io.PUBLIC_DOCUMENTS;
-        tryDir(a).then((r) => {
-          if (r.ok) { resolve(r); return; }
-          if (b !== undefined && b !== a) {
-            tryDir(b).then((r2) => resolve(r2.ok ? r2 : { ok: false }));
-          } else resolve({ ok: false });
-        });
-      } catch (e) { resolve({ ok: false }); }
+        io.requestFileSystem(which, (fs) => {
+          fs.root.getFile(fname, { create: true, exclusive: false }, (fe) => {
+            fe.createWriter(async (writer) => {
+              try {
+                // 1. truncate 清掉同名旧文件残留
+                await new Promise((r, j) => {
+                  writer.onwriteend = r; // 截断完成
+                  writer.onerror = j;
+                  writer.truncate(0);
+                });
+                // 2. write（binary-safe）
+                await new Promise((r, j) => {
+                  writer.onwriteend = r;
+                  writer.onerror = j;
+                  writer.write(bytes); // ArrayBufferView — 原样写
+                });
+                let p = '';
+                try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
+                innerResolve({ ok: true, path: p });
+              } catch (e) { innerResolve({ ok: false }); }
+            }, () => innerResolve({ ok: false })); // createWriter 失败
+          }, () => innerResolve({ ok: false })); // getFile 失败
+        }, () => innerResolve({ ok: false })); // requestFileSystem 失败
+      } catch (e) { innerResolve({ ok: false }); }
     });
+    const a = io.PUBLIC_DOWNLOADS;
+    const b = io.PUBLIC_DOCUMENTS;
+    const r = await tryDir(a);
+    if (r.ok) return r;
+    if (b !== undefined && b !== a) return await tryDir(b);
+    return { ok: false };
   }
 
   // v3.9.x：保存备份文件——返回 'ok'（已分享/已保存）/ 'cancel'（用户取消）/ 其他（被拦截或无法确认）。
