@@ -703,18 +703,17 @@ function fireLock() { try { evalLock(); } catch (e) {} }
 function init() {
 bindSettings();
 bindQaSettings();
-if (IS_AUTOMATION) { fireLock(); return; }
+let fired = false;
+const once = function () { if (fired) return; fired = true; fireLock(); };
+if (IS_AUTOMATION || window.__mochiDataReady) { once(); return; }
+document.addEventListener('mochi-restore-done', once);
 let tries = 0;
-const waitSplash = function () {
-if (!document.getElementById('splash')) { fireLock(); return; }
-if (++tries > 60) { fireLock(); return; }   // 最多等 ~30s，开屏异常不隐藏时兜底
-setTimeout(waitSplash, 500);
+const waitData = function () {
+if (window.__mochiDataReady || !document.getElementById('splash')) { once(); return; }
+if (++tries > 60) { once(); return; }   // 最多等 ~30s，防开屏异常时永不评估
+setTimeout(waitData, 500);
 };
-setTimeout(waitSplash, 400);   // 让开屏先完成首帧
-document.addEventListener('mochi-restore-done', function () {
-if (IS_AUTOMATION) { fireLock(); return; }
-if (!document.getElementById('splash')) { fireLock(); }
-});
+setTimeout(waitData, 400);
 }
 if (document.body) init();
 else document.addEventListener('DOMContentLoaded', init);
