@@ -679,47 +679,44 @@ doneText, '仍未触发下载。请重新点击「导出数据」并确认保存
 toast('备份已打包（' + sizeStr + '），请重新点击「导出数据」触发下载并保存文件（唯一备份）');
 }
 }
-function saveViaPlusPublicDir(blob, fname) {
-return new Promise((resolve) => {
-try {
+async function saveViaPlusPublicDir(blob, fname) {
 const plus = window.plus;
-if (!plus || !plus.io) { resolve('skip'); return; }
+if (!plus || !plus.io) return 'skip';
 const io = plus.io;
+let bytes;
+try { bytes = new Uint8Array(await blob.arrayBuffer()); }
+catch (e) { return { ok: false }; }
 const tryDir = (which) => new Promise((innerResolve) => {
 try {
 io.requestFileSystem(which, (fs) => {
 fs.root.getFile(fname, { create: true, exclusive: false }, (fe) => {
-fe.createWriter((writer) => {
-let done = false;
-const finish = (ok, path) => { if (done) return; done = true; innerResolve({ ok: ok, path: path || '' }); };
-let op = 'truncate';
-writer.onwriteend = () => {
-if (op === 'truncate') {
-op = 'write';
-try { writer.write(blob); } catch (e) { finish(false); }
-} else {
+fe.createWriter(async (writer) => {
+try {
+await new Promise((r, j) => {
+writer.onwriteend = r; // 截断完成
+writer.onerror = j;
+writer.truncate(0);
+});
+await new Promise((r, j) => {
+writer.onwriteend = r;
+writer.onerror = j;
+writer.write(bytes); // ArrayBufferView — 原样写
+});
 let p = '';
 try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
-finish(true, p);
-}
-};
-writer.onerror = () => finish(false);
-try { writer.truncate(0); } catch (e) { finish(false); }
-}, () => innerResolve({ ok: false }));
-}, () => innerResolve({ ok: false }));
-}, () => innerResolve({ ok: false }));
+innerResolve({ ok: true, path: p });
+} catch (e) { innerResolve({ ok: false }); }
+}, () => innerResolve({ ok: false })); // createWriter 失败
+}, () => innerResolve({ ok: false })); // getFile 失败
+}, () => innerResolve({ ok: false })); // requestFileSystem 失败
 } catch (e) { innerResolve({ ok: false }); }
 });
 const a = io.PUBLIC_DOWNLOADS;
 const b = io.PUBLIC_DOCUMENTS;
-tryDir(a).then((r) => {
-if (r.ok) { resolve(r); return; }
-if (b !== undefined && b !== a) {
-tryDir(b).then((r2) => resolve(r2.ok ? r2 : { ok: false }));
-} else resolve({ ok: false });
-});
-} catch (e) { resolve({ ok: false }); }
-});
+const r = await tryDir(a);
+if (r.ok) return r;
+if (b !== undefined && b !== a) return await tryDir(b);
+return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
 if (window.plus && window.plus.io) {
