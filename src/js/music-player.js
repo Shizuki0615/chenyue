@@ -3385,8 +3385,13 @@
     if (endedHandled) return;
     endedHandled = true;
     revokeObjectUrl();
-    // v3.x：播放队列优先——用户排好「下一首」时直接按序切，TA 不抢播
-    if (playQueue.length) { next(); return; }
+    // v3.x：播放队列优先——用户排好「下一首」时直接按序切，TA 不抢播。
+    // 但漫游模式下 playQueue 是 FM 自动填充的（队首是 FM 曲），不是用户手动排队，
+    // 仍给梦角一次主动切歌的机会；用户手动排到队首的非 FM 歌照常优先播。
+    if (playQueue.length) {
+      const firstQ = findTrack(playQueue[0]);
+      if (!roamActive || (firstQ && firstQ.playlistId !== 'fm')) { next(); return; }
+    }
     let handled = false;
     try { handled = maybeTAAutoAction(); } catch(e) {}
     if (!handled) next();

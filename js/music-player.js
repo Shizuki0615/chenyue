@@ -2710,7 +2710,10 @@ function handleEnded() {
 if (endedHandled) return;
 endedHandled = true;
 revokeObjectUrl();
-if (playQueue.length) { next(); return; }
+if (playQueue.length) {
+const firstQ = findTrack(playQueue[0]);
+if (!roamActive || (firstQ && firstQ.playlistId !== 'fm')) { next(); return; }
+}
 let handled = false;
 try { handled = maybeTAAutoAction(); } catch(e) {}
 if (!handled) next();
