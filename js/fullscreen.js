@@ -20,6 +20,62 @@ window.navigator.standalone === true ||
 (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
 );
 if (inIosStandalone) document.documentElement.classList.add('ios-pwa-standalone');
+let _shellNav = null;
+function shellNav() {
+if (_shellNav) return _shellNav;
+try {
+if (window.plus && window.plus.navigator && typeof window.plus.navigator.setFullscreen === 'function') {
+_shellNav = window.plus.navigator;
+}
+} catch (e) {}
+return _shellNav;
+}
+let _shellFsOnFlag = false;
+function shellFsOn() {
+const n = shellNav();
+if (!n) return false;
+if (typeof n.isFullscreen === 'function') {
+try { if (n.isFullscreen()) return true; } catch (e) {}
+}
+return _shellFsOnFlag;
+}
+function shellMarkFs(on) {
+_shellFsOnFlag = !!on;
+try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
+}
+function shellEnsureFs() {
+const n = shellNav();
+if (!n) return false;
+if (shellFsOn()) { shellMarkFs(true); return true; }
+try { n.setFullscreen(true); } catch (e) { return false; }
+shellMarkFs(true);
+setTimeout(() => {
+if (store.get(FS_KEY) !== '1' || shellFsOn()) return;
+try { n.setFullscreen(false); n.setFullscreen(true); } catch (e) {}
+}, 300);
+return true;
+}
+function shellSetFs(on) {
+const n = shellNav();
+if (!n) return false;
+try { n.setFullscreen(!!on); } catch (e) { return false; }
+shellMarkFs(on);
+store.set(FS_KEY, on ? '1' : '0');
+const el = document.getElementById('sf-fullscreen');
+if (el) el.checked = !!on;
+return true;
+}
+function shellRelabelSub() {
+if (!shellNav()) return;
+const el = document.getElementById('sf-fullscreen-sub');
+if (!el) return;
+el.innerHTML = '<b>套壳应用：全屏由系统原生控制，切到后台 / 锁屏再回来会自动保持全屏，无需手动再开。</b><br>开启后隐藏手机顶部系统状态栏，让内容占满全屏。';
+}
+function onShellReady() {
+if (store.get(FS_KEY) === '1') shellEnsureFs();
+try { syncToggle(false); } catch (e) {}
+try { shellRelabelSub(); } catch (e) {}
+}
 function fsSupported() {
 return typeof document.documentElement.requestFullscreen === 'function'
 || typeof document.documentElement.webkitRequestFullscreen === 'function';
@@ -45,6 +101,7 @@ return true;
 function fsVisualActive() {
 const d = document.documentElement;
 return isFullscreen()
+|| shellFsOn()
 || d.classList.contains('fs-css-active')
 || d.classList.contains('ios-fs-active')
 || !!(window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
@@ -303,6 +360,12 @@ span.textContent = inIosStandalone
 const fsToggle = document.getElementById('sf-fullscreen');
 if (fsToggle) {
 fsToggle.addEventListener('change', () => {
+if (shellNav()) {
+if (fsToggle.checked) { _userFsOff = false; shellSetFs(true); }
+else { _userFsOff = true; shellSetFs(false); }
+syncFsClass();
+return;
+}
 if (fsToggle.checked) {
 _userFsOff = false;
 if (isIOS) {
@@ -375,7 +438,7 @@ if (e.key === 'Enter' || e.key === ' ') openFsHelp(e);
 }
 function syncFsClass() {
 const d = document.documentElement;
-const _fs = isFullscreen();
+const _fs = isFullscreen() || shellFsOn();
 d.classList.toggle('fs-active', _fs);
 if (isIOS) d.classList.toggle('ios-native-fs', _fs);
 }
@@ -438,6 +501,7 @@ function retryClick(e) { if (!e.isTrusted || onFsSwitch(e.target)) return; doRet
 function retryTouch(e) { if (!e.isTrusted || onFsSwitch(e.target)) return; doRetry(); }
 function doRetry() {
 disarmRetry();
+if (shellNav()) { if (store.get(FS_KEY) === '1') shellEnsureFs(); return; }
 if (store.get(FS_KEY) !== '1' || isFullscreen()) return; // 用户已关闭/已全屏 → 放弃
 if (store.get(FB_KEY) === '1' && !isVia && orientLockable() && fsSupported()) {
 enterFs();
@@ -457,6 +521,7 @@ document.addEventListener('click', retryClick, true);
 document.addEventListener('touchstart', retryTouch, true);
 }
 function reenterFs() {
+if (shellNav()) { if (store.get(FS_KEY) === '1') shellEnsureFs(); return; }
 if (isIOS) return;
 if (store.get(FS_KEY) !== '1') return;
 if (isFullscreen()) return;
@@ -471,6 +536,10 @@ if (store.get(FS_KEY) === '1') {
 if (isIOS && inIosStandalone) applyIosFs(true);
 else reenterFs();
 }
+} catch (e) {}
+try {
+if (window.plus) onShellReady();
+else document.addEventListener('plusready', onShellReady, false);
 } catch (e) {}
 document.addEventListener('visibilitychange', () => {
 if (document.visibilityState !== 'visible') { _wentBg = true; return; }
@@ -492,7 +561,7 @@ let _egTouchHandler = null;
 function edgeGuardEnabled() { return store.get(EG_KEY) === '1'; }
 function fsAnyActive() {
 const d = document.documentElement;
-return isFullscreen() || d.classList.contains('fs-active')
+return isFullscreen() || shellFsOn() || d.classList.contains('fs-active')
 || d.classList.contains('fs-css-active') || d.classList.contains('ios-fs-active');
 }
 function enableEdgeGuard() {

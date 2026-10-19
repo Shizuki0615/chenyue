@@ -48,6 +48,76 @@
   // 退出后也不自动回竖屏），原生全屏正是横屏源头，直接走 CSS 兜底；真全屏引导
   // 用 Via 自带全屏模式（竖屏沉浸）。判定已收口 device.js（mochiDevice.isVia）
 
+  // v3.33.x：HBuilderX 云打包套壳（HTML5+ 运行时）原生全屏——
+  //   套壳内顶部是「应用级」系统状态栏，网页 Fullscreen API 管不了它；而网页 API 在安卓/iOS
+  //   切后台必被系统强制退出、回前台又要求用户手势才能再进（浏览器安全策略），
+  //   所以「切回来自动恢复」在纯网页里做不到。套壳内改用 5+ 原生 plus.navigator.setFullscreen：
+  //   应用级设置、隐藏系统状态栏，切后台不自动退出、恢复也无需手势，启动/回前台重放即可常驻。
+  //   判据只认「plus.navigator.setFullscreen 是不是函数」这一个运行时事实，零机型分支。
+  let _shellNav = null;
+  function shellNav() {
+    if (_shellNav) return _shellNav;
+    try {
+      if (window.plus && window.plus.navigator && typeof window.plus.navigator.setFullscreen === 'function') {
+        _shellNav = window.plus.navigator;
+      }
+    } catch (e) {}
+    return _shellNav;
+  }
+  // 本端「已应用原生全屏」的意图位——plus.navigator.isFullscreen 个别版本可能缺失，
+  // 缺失时以本端记录兜底（原生报 true 一定算开；报 false 但本端正开启时仍按开，等重放纠正）
+  let _shellFsOnFlag = false;
+  function shellFsOn() {
+    const n = shellNav();
+    if (!n) return false;
+    if (typeof n.isFullscreen === 'function') {
+      try { if (n.isFullscreen()) return true; } catch (e) {}
+    }
+    return _shellFsOnFlag;
+  }
+  function shellMarkFs(on) {
+    _shellFsOnFlag = !!on;
+    try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
+  }
+  // 幂等恢复原生全屏：已在全屏不动；仍非全屏按 DCloud 已知坑先 false 再 true 重设一次
+  //（系统原生交互/软键盘弹出后会切回非全屏，此时单次 setFullscreen(true) 无效）
+  function shellEnsureFs() {
+    const n = shellNav();
+    if (!n) return false;
+    if (shellFsOn()) { shellMarkFs(true); return true; }
+    try { n.setFullscreen(true); } catch (e) { return false; }
+    shellMarkFs(true);
+    setTimeout(() => {
+      if (store.get(FS_KEY) !== '1' || shellFsOn()) return;
+      try { n.setFullscreen(false); n.setFullscreen(true); } catch (e) {}
+    }, 300);
+    return true;
+  }
+  function shellSetFs(on) {
+    const n = shellNav();
+    if (!n) return false;
+    try { n.setFullscreen(!!on); } catch (e) { return false; }
+    shellMarkFs(on);
+    store.set(FS_KEY, on ? '1' : '0');
+    const el = document.getElementById('sf-fullscreen');
+    if (el) el.checked = !!on;
+    return true;
+  }
+  // 套壳内改写说明文案——原生全屏切后台不会退出，说明按实际能力如实描述
+  function shellRelabelSub() {
+    if (!shellNav()) return;
+    const el = document.getElementById('sf-fullscreen-sub');
+    if (!el) return;
+    el.innerHTML = '<b>套壳应用：全屏由系统原生控制，切到后台 / 锁屏再回来会自动保持全屏，无需手动再开。</b><br>开启后隐藏手机顶部系统状态栏，让内容占满全屏。';
+  }
+  function onShellReady() {
+    if (store.get(FS_KEY) === '1') shellEnsureFs();
+    // plus 就绪前 syncToggle 读不到原生态、开关会先显示「关」——这里补一次显示同步
+    //（syncToggle 内部带 _sysToggle 闸，不会经 MutationObserver 覆盖用户的持久化意图）
+    try { syncToggle(false); } catch (e) {}
+    try { shellRelabelSub(); } catch (e) {}
+  }
+
   function fsSupported() {
     // v3.6.x：webkit 前缀也判为支持（老版安卓 WebView/Chromium 只有 webkitRequestFullscreen）
     return typeof document.documentElement.requestFullscreen === 'function'
@@ -83,6 +153,7 @@
   function fsVisualActive() {
     const d = document.documentElement;
     return isFullscreen()
+      || shellFsOn()
       || d.classList.contains('fs-css-active')
       || d.classList.contains('ios-fs-active')
       || !!(window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
@@ -422,6 +493,14 @@
   const fsToggle = document.getElementById('sf-fullscreen');
   if (fsToggle) {
     fsToggle.addEventListener('change', () => {
+      // v3.33.x：套壳内优先用原生全屏（见 shellNav 注释）——一次开关只动原生，不碰网页 API，
+      // 避免两套全屏并存（网页全屏在套壳里切后台照样被系统清掉）
+      if (shellNav()) {
+        if (fsToggle.checked) { _userFsOff = false; shellSetFs(true); }
+        else { _userFsOff = true; shellSetFs(false); }
+        syncFsClass();
+        return;
+      }
       if (fsToggle.checked) {
         _userFsOff = false;
         // v3.6.x：iOS 分支优先——standalone 走隐藏模拟状态栏，浏览器内引导安装
@@ -539,7 +618,9 @@
   // v3.5.11x：Fullscreen API 激活时给根元素加 fs-active 类（挖孔屏顶部安全区适配）
   function syncFsClass() {
     const d = document.documentElement;
-    const _fs = isFullscreen();
+    // v3.33.x：套壳原生全屏也算「原生全屏态」——不并进来时回前台被重放的重放调用会把
+    // 刚挂上的 .fs-active 又撤掉（.phone 高度/顶部安全区随之回退），全屏形同没开
+    const _fs = isFullscreen() || shellFsOn();
     d.classList.toggle('fs-active', _fs);
     // v3.26.x：iOS 浏览器原生全屏标记——iOS 系统状态栏（含灵动岛）永远由系统占据在
     // 内容上方、网页内容不会钻进状态栏区，CSS 无需再给顶部栏加安全区上边距。
@@ -655,6 +736,9 @@
   function retryTouch(e) { if (!e.isTrusted || onFsSwitch(e.target)) return; doRetry(); }
   function doRetry() {
     disarmRetry();
+    // v3.33.x：套壳内首次触摸的重试也走原生全屏，不再申请网页全屏（网页全屏在套壳里
+    // 同样会被系统在切后台时清掉，等于把「常驻」又退回旧行为）
+    if (shellNav()) { if (store.get(FS_KEY) === '1') shellEnsureFs(); return; }
     if (store.get(FS_KEY) !== '1' || isFullscreen()) return; // 用户已关闭/已全屏 → 放弃
     // v3.8.x：非 PWA（浏览器标签）也允许恢复——FS_KEY=1 即用户明确开启过全屏
     // 且未主动关闭（主动退出会在 handleFsExit 清掉标记），切后台系统退出后
@@ -688,6 +772,9 @@
     document.addEventListener('touchstart', retryTouch, true);
   }
   function reenterFs() {
+    // v3.33.x：套壳原生全屏——应用级设置，切后台不退出；回前台无条件重放一次（幂等，
+    // 已全屏则不动）。此分支必须在 isIOS 早退之前：套壳内 iOS 也能走原生全屏，且无需手势。
+    if (shellNav()) { if (store.get(FS_KEY) === '1') shellEnsureFs(); return; }
     // v3.26.x：iOS 一律不自动重入全屏（含手势重试路径）——见 armRetry 同名注释。
     // iOS 的全屏只能由用户亲手点开关那一下申请（fullscreen.js 的 change 分支）。
     if (isIOS) return;
@@ -720,6 +807,13 @@
       else reenterFs();
     }
   } catch (e) {}
+  // v3.33.x：套壳 plus 就绪后补上原生全屏——本脚本执行时 plus 往往还没注入完（reenterFs
+  // 那一刻 shellNav() 还是 null，会落到网页全屏分支），启动恢复必须在 plusready 里再补一次。
+  // 已在 plus 里的环境直接调（plusready 可能早于本监听注册，两种都兜住）。
+  try {
+    if (window.plus) onShellReady();
+    else document.addEventListener('plusready', onShellReady, false);
+  } catch (e) {}
   // 切后台回来（Android/iOS 切走再切回会退出全屏）→ 自动恢复
   // v3.8.x：hidden 时置 _wentBg（区分「切后台系统退出」与「前台主动退出」，
   // 供 handleFsExit 判断是否保留全屏意图）
@@ -750,7 +844,7 @@
   function edgeGuardEnabled() { return store.get(EG_KEY) === '1'; }
   function fsAnyActive() {
     const d = document.documentElement;
-    return isFullscreen() || d.classList.contains('fs-active')
+    return isFullscreen() || shellFsOn() || d.classList.contains('fs-active')
       || d.classList.contains('fs-css-active') || d.classList.contains('ios-fs-active');
   }
   function enableEdgeGuard() {
