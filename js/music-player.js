@@ -734,7 +734,8 @@ const FM_TARGET = 10;
 const FM_REFILL_AT = 5;
 const FM_MAX_ROUNDS = 6;
 function neaLoadFmTracks(cb) {
-neaFetch('/personal_fm', (j, err) => {
+const bust = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+neaFetch('/personal_fm?timestamp=' + bust, (j, err) => {
 if (err || !j || !Array.isArray(j.data)) { cb && cb(null, err || '接口未返回推荐歌曲'); return; }
 cb && cb(neaTracksFromSongs(j.data), null);
 });

@@ -957,7 +957,15 @@
   const FM_REFILL_AT = 5;
   const FM_MAX_ROUNDS = 6;
   function neaLoadFmTracks(cb) {
-    neaFetch('/personal_fm', (j, err) => {
+    // v3.33.x 漫游「待播永远只有两三首 → 被迫单曲循环」根治：NeteaseCloudMusicApi 对所有
+    // 接口套了 2 分钟响应缓存（server.js 里 apicache，缓存键含完整 URL）。漫游要在几秒内
+    // 连拉多轮 /personal_fm，URL 完全相同 → 后几轮全命中同一份缓存、返回同一批歌，按
+    // neteaseId 去重后一无所获，队列永远攒不满；等队列耗尽、库里的 FM 曲目又被 prune
+    // 到只剩当前曲，就只能在同一首里循环。官方文档也明确：不需要缓存的接口可在 URL 上
+    // 加一个时间戳参数让 URL 不同（相同 URL 两分钟内只向网易发一次请求）。每轮拼一个
+    // 唯一 timestamp → 缓存键不同 → 逐轮拿到新的 3 首。
+    const bust = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    neaFetch('/personal_fm?timestamp=' + bust, (j, err) => {
       if (err || !j || !Array.isArray(j.data)) { cb && cb(null, err || '接口未返回推荐歌曲'); return; }
       cb && cb(neaTracksFromSongs(j.data), null);
     });
