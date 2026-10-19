@@ -4262,6 +4262,8 @@ const cooldownOpts = [
 ].map(o => '<option value="' + o.v + '"' + (String(settings.cooldownMs) === o.v ? ' selected' : '') + '>' + o.label + '</option>').join('');
 window.openTCPanel('音乐设置', '' +
 '<div class="sm-set-row"><span>悬浮播放小框</span><label class="toggle"><input type="checkbox" id="sm-set-float"' + (settings.floatEn ? ' checked' : '') + '><span class="tk"></span></label></div>' +
+'<div class="sm-set-row"><span>保留会员歌曲</span><label class="toggle"><input type="checkbox" id="sm-set-keepvip"' + (neaKeepVip() ? ' checked' : '') + '><span class="tk"></span></label></div>' +
+'<div class="sm-set-hint">开启后导入歌单、漫游推荐不再自动移除会员/付费歌，且它们的播放改走你自己部署的网易云后端（需先在「网易云账号」里填后端地址并扫码登录，否则会员歌仍播不出）。关闭＝会员歌一律自动清理，和以前一样。</div>' +
 '<div class="gs-row"><span>音乐请求触发概率</span><div class="stepper" id="sm-set-prob" data-min="0" data-max="30" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-prob-val" readonly><button class="stp-max">+</button></div></div>' +
 '<div class="gs-row"><span>请求冷却时间</span><select class="tc-input" id="sm-set-cool" style="width:110px">' + cooldownOpts + '</select></div>' +
 '<div class="gs-row"><span>桌面小组件封面</span><select class="tc-input" id="sm-set-wcov" style="width:120px"><option value="song"' + (settings.widgetCoverMode !== 'playlist' ? ' selected' : '') + '>歌曲封面</option><option value="playlist"' + (settings.widgetCoverMode === 'playlist' ? ' selected' : '') + '>歌单封面</option></select></div>' +
@@ -4345,6 +4347,12 @@ const cool = document.getElementById('sm-set-cool');
 if (cool) cool.addEventListener('change', () => { settings.cooldownMs = Number(cool.value); saveSettings(); });
 const floatCb = document.getElementById('sm-set-float');
 if (floatCb) floatCb.addEventListener('change', () => { settings.floatEn = floatCb.checked; floatHideByWidget = false; saveSettings(); syncFloatToggle(); renderFloat(); });
+const keepVipCb = document.getElementById('sm-set-keepvip');
+if (keepVipCb) keepVipCb.addEventListener('change', () => {
+neaSetKeepVip(keepVipCb.checked);
+syncKeepVipTools();
+toast(keepVipCb.checked ? '已保留会员歌曲：播放将走你的后端直链' : '已关闭保留：会员歌曲会被自动清理');
+});
 const wcov = document.getElementById('sm-set-wcov');
 if (wcov) wcov.addEventListener('change', () => {
 settings.widgetCoverMode = wcov.value;
