@@ -43,6 +43,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'full-beauty-schemes', 'beauty-undo-stack', 'ver-update-ack-ts', 'ver-update-notify',
 'call-active',
 'applock-en', 'applock-pin', 'applock-qa',
+'netease-api-base', 'netease-cookie', 'netease-user', 'netease-keep-vip',
 'applock-qa-en', 'applock-qalist', 'applock-qaskip',
 'cardlock-state',
 'cs-font',

@@ -574,7 +574,7 @@ const addedIds = [];
 const plId = targetPl || 'default';
 tracks.forEach((t, i) => {
 if (t.neteaseId && library.some(m => m.neteaseId === t.neteaseId)) { skipped++; return; }
-if (t.fee === 1 || t.fee === 4) { vip++; return; } // VIP 专属/需购买专辑：网页外链播不了
+if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) { vip++; return; }
 const nid = 'sm_pl_' + now + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
 library.push({ id: nid, neteaseId: t.neteaseId, name: t.name || '网易云音乐-' + (t.neteaseId || i), artist: t.artist || '', cover: t.cover || '', url: t.url, source: 'url', duration: t.duration || 0, playlistId: plId, addedAt: now });
 addedIds.push(nid);
@@ -590,6 +590,7 @@ gStore: window.xyStore ? window.xyStore('xy-home-v2') : null,
 keyBase: 'netease-api-base',
 keyCookie: 'netease-cookie',
 keyUser: 'netease-user',
+keyKeepVip: 'netease-keep-vip',
 };
 function neaBase() { return (NEA.gStore ? NEA.gStore.get(NEA.keyBase) : '') || ''; }
 function neaSetBase(v) { if (NEA.gStore) NEA.gStore.set(NEA.keyBase, v); }
@@ -600,6 +601,20 @@ if (!NEA.gStore) return null;
 try { const v = JSON.parse(NEA.gStore.get(NEA.keyUser) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; }
 }
 function neaSetUser(v) { if (NEA.gStore) { if (v) NEA.gStore.set(NEA.keyUser, JSON.stringify(v)); else NEA.gStore.remove(NEA.keyUser); } }
+function neaKeepVip() { return !!(NEA.gStore && NEA.gStore.get(NEA.keyKeepVip) === '1'); }
+function neaSetKeepVip(on) { if (NEA.gStore) NEA.gStore.set(NEA.keyKeepVip, on ? '1' : '0'); }
+function neaReady() { return !!(neaBase() && neaCookie()); }
+function neaFetchSongUrl(id, cb) {
+if (!neaReady()) { cb(null); return; }
+neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j) {
+let url = '';
+try {
+const d = j && j.data && j.data[0];
+if (d && typeof d.url === 'string') url = d.url;
+} catch (e) {}
+cb(url ? String(url).replace(/^http:/i, 'https:') : null);
+});
+}
 function neaNormBase(s) {
 let b = String(s || '').trim();
 if (!b) return '';
@@ -667,7 +682,7 @@ let added = 0, skipped = 0, vip = 0;
 const addedIds = [];
 tracks.forEach((t, i) => {
 if (t.neteaseId && library.some(m => m.neteaseId === t.neteaseId)) { skipped++; return; }
-if (t.fee === 1 || t.fee === 4) { vip++; return; }
+if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) { vip++; return; }
 const nid = 'sm_nea_' + now + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
 library.push({ id: nid, neteaseId: t.neteaseId, name: t.name || '网易云音乐-' + (t.neteaseId || i), artist: t.artist || '', cover: t.cover || '', url: t.url, source: 'url', duration: t.duration || 0, playlistId: plId, addedAt: now });
 addedIds.push(nid);
@@ -735,7 +750,7 @@ function addFmTracksToLibrary(tracks) {
 const now = Date.now();
 const ids = [];
 (tracks || []).forEach((t, i) => {
-if (t.fee === 1 || t.fee === 4) return; // VIP/付费歌网页外链播不了，跳过
+if (!neaKeepVip() && (t.fee === 1 || t.fee === 4)) return; // 见 neaKeepVip：关着才跳过
 if (t.neteaseId) {
 const exist = library.find(m => m.neteaseId === t.neteaseId);
 if (exist) { if (exist.playlistId === 'fm') ids.push(exist.id); return; }
@@ -906,6 +921,9 @@ body += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">' +
 body += '<div id="nea-liked-row" class="sm-fld" style="border-top:1px solid var(--line);padding-top:10px">' +
 '<button class="cc-tool" id="nea-import-liked">导入「我喜欢的音乐」</button> ' +
 '<span id="nea-liked-status" style="font-size:12px;opacity:.7"></span></div>';
+body += '<div class="sm-set-row" style="border-top:1px solid var(--line);padding-top:10px">' +
+'<span>保留会员歌曲<div style="font-size:12px;opacity:.7;font-weight:400;margin-top:2px">开启后不再自动移除会员/付费歌，播放改走你的后端直链</div></span>' +
+'<label class="toggle"><input type="checkbox" id="nea-keep-vip"' + (neaKeepVip() ? ' checked' : '') + '><span class="tk"></span></label></div>';
 body += '<div class="sm-fld"><label>我的歌单</label><div id="nea-pls" style="max-height:260px;overflow:auto">' + (neaLoadedPls ? '' : '<div style="opacity:.6">加载中…</div>') + '</div></div>';
 }
 body += '</div>';
@@ -922,6 +940,7 @@ if (!v) { toast('请输入后端地址'); return; }
 neaSetBase(v);
 toast('后端地址已保存');
 neaSetCookie(''); neaSetUser(null);
+neaSetKeepVip(false); syncKeepVipTools();
 if (neaPanelApi) { neaPanelApi.stop(); neaPanelApi = null; }
 render({ phase: 'init' });
 };
@@ -932,11 +951,18 @@ bind('nea-refresh-qr', () => { startQr(); });
 bind('nea-retry', () => { startQr(); });
 bind('nea-logout', () => {
 neaSetCookie(''); neaSetUser(null); neaLoadedPls = null;
+neaSetKeepVip(false); syncKeepVipTools();
 if (neaPanelApi) { neaPanelApi.stop(); neaPanelApi = null; }
 render({ phase: 'init' });
 toast('已退出登录');
 });
 bind('nea-import-liked', () => { importLiked(); });
+const kvEl = document.getElementById('nea-keep-vip');
+if (kvEl) kvEl.addEventListener('change', () => {
+neaSetKeepVip(kvEl.checked);
+syncKeepVipTools();
+toast(kvEl.checked ? '已保留会员歌曲：播放将走你的后端直链' : '已关闭保留：会员歌曲会被自动清理');
+});
 if (user && neaLoadedPls === null) loadPlaylistsInto();
 };
 let _curQr = '';
@@ -1012,6 +1038,7 @@ render({ phase: 'init' });
 }
 function removeBatchVipSongs(tracks) {
 if (!tracks || !tracks.length) return;
+if (neaKeepVip()) return;
 const vipIds = tracks.map(m => m.id);
 library = library.filter(x => vipIds.indexOf(x.id) < 0);
 if (currentId && vipIds.indexOf(currentId) >= 0) { teardownAudio(); currentId = null; updatePlayerBar(); renderLibrary(); }
@@ -1131,8 +1158,13 @@ probeNext();
 setTimeout(function () { finish(probed > 0); }, 30000);
 }
 let vipCleanBusy = false; // #254 逐首探测在大库上可持续数十秒，防连点叠加多轮请求
+function syncKeepVipTools() {
+const btn = document.getElementById('music-vip-clean');
+if (btn) btn.style.display = neaKeepVip() ? 'none' : '';
+}
 function openVipClean() {
 if (vipCleanBusy) { toast('正在探测中，请稍候…'); return; }
+if (neaKeepVip()) { toast('已开启「保留会员歌曲」，不再清理会员歌曲'); return; }
 const candidates = library.filter(m => m && m.neteaseId && m.source === 'url');
 if (!candidates.length) { toast('音乐库里没有网易云链接歌曲'); return; }
 const uniqueIds = [];
@@ -2203,6 +2235,7 @@ syncTaFavTab();
 renderHistory();
 updatePlayerBar();
 syncFloatToggle();
+syncKeepVipTools(); // v3.33.x：跟随「保留会员歌曲」开关显示/隐藏清理按钮
 }
 let curObjectUrl = null;
 function revokeObjectUrl() {
@@ -2656,7 +2689,7 @@ try {
 if (audio) { audio.onerror = null; audio.onended = null; audio.onloadedmetadata = null; }
 } catch (e) {}
 teardownAudio();
-resolveNeteaseDirectUrl(m, function (directUrl) {
+const playResolved = function (directUrl) {
 httpsRetrying = false;
 if (currentId !== m.id) { demoFallbackOrError(m); return; }
 if (!wantPlay || callHoldPending) { teardownAudio(); try { syncPlayIcons(false); } catch (e) {} return; }
@@ -2668,7 +2701,15 @@ audio.src = directUrl;
 audio.src = neteaseOuterUrl(m.neteaseId);
 }
 startPlayback(m);
+};
+if (neaKeepVip() && neaReady()) {
+neaFetchSongUrl(m.neteaseId, function (url) {
+if (url) playResolved(url);
+else resolveNeteaseDirectUrl(m, playResolved);
 });
+} else {
+resolveNeteaseDirectUrl(m, playResolved);
+}
 return true;
 }
 function offerRemoveDamagedSong(m) {

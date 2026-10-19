@@ -180,6 +180,11 @@
     // 应用锁（applock.js 隐私防护）：开关/密码摘要/安全问题问答均为全局根键。
     // 绝不随联系人隔离，防 migrateLegacy 当旧顶层业务键迁进 default 并删根键（锁失效=门户大开）
     'applock-en', 'applock-pin', 'applock-qa',
+    // v3.33.x 网易云账号（music-player.js NEA）与「保留会员歌曲」开关：后端地址/cookie/
+    // 用户信息/保留开关都是全局根键（换桌面共用同一账号，不该随联系人隔离）。此前漏排除，
+    // 每刷新被 migrateLegacy 当旧顶层业务键迁进 default 并删根键——本地兜底副本靠 IDB 回填
+    // 才勉强可读，LS 兜底/IDB 不可用的设备就是「登录一次、刷新掉线」，保留开关同样被打回默认。
+    'netease-api-base', 'netease-cookie', 'netease-user', 'netease-keep-vip',
     // v3.31.x 开屏问答门：开关/题目列表/本机跳过标记（暗号本机永久跳过问答层）——
     // 与应用锁同属入口验证，必须全局根键防 migrateLegacy 迁移删键
     'applock-qa-en', 'applock-qalist', 'applock-qaskip',
