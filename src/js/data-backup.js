@@ -958,55 +958,102 @@
 
   // 套壳 App（HBuilderX 5+）：把文件直接写到系统公共「下载」目录——
   // 这样卸载 App 不会连带删掉备份（应用私有目录 _doc/ 卸载即清空）。
-  // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS。
+  // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS，
+  // 再不行退回应用私有 _doc/（PRIVATE_DOCUMENTS，总能写，但卸载会丢）。
   // Android 10+ 公共目录走 MediaStore，无需存储权限；旧版本若缺权限会失败 → 交给外层网页下载兜底。
-  // FIX 2026-10-19：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——FileWriter 期望
-  //   字符串/ArrayBufferView，隐式调用 String(blob) 得到字面量 "[object Blob]"（14 字符垃圾），
-  //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件内容是垃圾
-  //   → 用户点"打开/导入"全挂 = 表面"下载不了"。修法：先 Blob→Uint8Array（plus.io 支持二进制），
-  //   再逐序 truncate→write，每步都用独立 Promise 串起来（不用同一个 onwriteend 事件接力——
-  //   某些 plus.io 版本 truncate 触发的 writeend 不冒泡给后续 write，导致 Promise 永久挂起）。
+  // FIX 2026-10-19（d2d9bb8）：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——
+  //   该版本 FileWriter 对非 String 入参隐式 String(data)，Blob → "[object Blob]"（14 字符垃圾），
+  //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件是垃圾
+  //   → 用户点"打开/导入"全挂 = 表面"下载不了"。
+  //   当次修法：Blob→Uint8Array 再 write。但实报仍失败——同一套 String(data) 隐式转换会把
+  //   Uint8Array 序列化成 "123,34,104,..."（逗号分隔字节），照样是垃圾。
+  // FIX 2026-10-20：统一走 String 写入——FileWriter.write(String) 是 plus.io 全版本最稳的入参：
+  //   ① 文本类 blob（JSON/text/xml，备份主路径）→ blob.text() 拿原始字符串直接 write；
+  //   ② 二进制 blob（docx 等）→ ArrayBuffer→Uint8Array→逐字节 String.fromCharCode 拼成 binary string，
+  //      write 时原样落盘（FileWriter 对 String 写入不做编码转换，每个 char code 当一个字节）。
+  //   另加：每步独立 Promise + 超时防挂起；逐目录三级回退；console.error 定位失败点。
   async function saveViaPlusPublicDir(blob, fname) {
     const plus = window.plus;
     if (!plus || !plus.io) return 'skip';
     const io = plus.io;
-    // Blob → Uint8Array（二进制安全，JSON text/docx binary 都能写成原样字节）
-    let bytes;
-    try { bytes = new Uint8Array(await blob.arrayBuffer()); }
-    catch (e) { return { ok: false }; }
-    // 单目录尝试：requestFileSystem → getFile(create) → createWriter → truncate → write（每步独立 Promise）
-    const tryDir = (which) => new Promise((innerResolve) => {
+    const log = function () { try { console.error.apply(console, ['[backup:plus]'].concat([].slice.call(arguments))); } catch (e) {} };
+
+    // ---- 把 blob 转成 FileWriter.write(String) 能原样落盘的字符串 ----
+    let writeStr = '';
+    try {
+      const t = (blob.type || '').toLowerCase();
+      const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+      if (isText) {
+        // 文本：直接取原始字符串（JSON 备份主路径，零编码损耗）
+        writeStr = await blob.text();
+      } else {
+        // 二进制：逐字节拼成 binary string（char code = 字节值，write 时原样落盘）
+        const buf = await blob.arrayBuffer();
+        const u8 = new Uint8Array(buf);
+        // 分批 String.fromCharCode 避免大数组 apply 栈溢出
+        const CHUNK = 0x8000;
+        let out = '';
+        for (let i = 0; i < u8.length; i += CHUNK) {
+          out += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+        }
+        writeStr = out;
+      }
+    } catch (e) {
+      log('blob→string 失败', e && e.message);
+      return { ok: false };
+    }
+
+    // 单步带超时的 Promise：plus.io 回调永不触发时 10s 兜底 reject，避免整链挂死
+    const step = (fn, label) => new Promise((resolve, reject) => {
+      let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; reject(new Error(label + ' 超时')); } }, 10000);
       try {
-        io.requestFileSystem(which, (fs) => {
-          fs.root.getFile(fname, { create: true, exclusive: false }, (fe) => {
-            fe.createWriter(async (writer) => {
-              try {
-                // 1. truncate 清掉同名旧文件残留
-                await new Promise((r, j) => {
-                  writer.onwriteend = r; // 截断完成
-                  writer.onerror = j;
-                  writer.truncate(0);
-                });
-                // 2. write（binary-safe）
-                await new Promise((r, j) => {
-                  writer.onwriteend = r;
-                  writer.onerror = j;
-                  writer.write(bytes); // ArrayBufferView — 原样写
-                });
-                let p = '';
-                try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
-                innerResolve({ ok: true, path: p });
-              } catch (e) { innerResolve({ ok: false }); }
-            }, () => innerResolve({ ok: false })); // createWriter 失败
-          }, () => innerResolve({ ok: false })); // getFile 失败
-        }, () => innerResolve({ ok: false })); // requestFileSystem 失败
-      } catch (e) { innerResolve({ ok: false }); }
+        fn(function () { if (!done) { done = true; clearTimeout(t); resolve.apply(null, arguments); } },
+           function (e) { if (!done) { done = true; clearTimeout(t); reject(e || new Error(label)); } });
+      } catch (e) { if (!done) { done = true; clearTimeout(t); reject(e); } }
     });
-    const a = io.PUBLIC_DOWNLOADS;
-    const b = io.PUBLIC_DOCUMENTS;
-    const r = await tryDir(a);
-    if (r.ok) return r;
-    if (b !== undefined && b !== a) return await tryDir(b);
+
+    // 单目录尝试：requestFileSystem → getFile(create) → createWriter → truncate → write（每步独立 Promise）
+    const tryDir = (which, label) => new Promise((innerResolve) => {
+      (async function () {
+        try {
+          const fs = await step((ok, fail) => io.requestFileSystem(which, ok, fail), label + ':requestFileSystem');
+          const fe = await step((ok, fail) => fs.root.getFile(fname, { create: true, exclusive: false }, ok, fail), label + ':getFile');
+          const writer = await step((ok, fail) => fe.createWriter(ok, fail), label + ':createWriter');
+          // 事件型步骤（truncate/write 走 onwriteend/onerror）也带超时，防 onwriteend 永不触发
+          const evt = (act, label2) => new Promise((r, j) => {
+            let done = false;
+            const t = setTimeout(() => { if (!done) { done = true; j(new Error(label2 + ' 超时')); } }, 15000);
+            writer.onwriteend = function () { if (!done) { done = true; clearTimeout(t); r(); } };
+            writer.onerror = function (e) { if (!done) { done = true; clearTimeout(t); j(e || new Error(label2)); } };
+            try { act(); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
+          });
+          // 1. truncate 清掉同名旧文件残留
+          await evt(() => writer.truncate(0), label + ':truncate');
+          // 2. write（String 入参——plus.io 全版本最稳，原样落盘）
+          await evt(() => writer.write(writeStr), label + ':write');
+          let p = '';
+          try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
+          innerResolve({ ok: true, path: p, dir: label });
+        } catch (e) {
+          log(label + ' 失败', e && e.message);
+          innerResolve({ ok: false });
+        }
+      })();
+    });
+
+    // 三级目录回退：公共下载 → 公共文档 → 应用私有文档（总能写，但卸载会丢）
+    const dirs = [];
+    if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+    if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+    // PRIVATE_DOCUMENTS = 应用私有 _doc/，HBuilderX 全版本可用
+    try {
+      if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' });
+    } catch (e) {}
+    for (const d of dirs) {
+      const r = await tryDir(d.v, d.label);
+      if (r.ok) return r;
+    }
     return { ok: false };
   }
 
@@ -1021,8 +1068,17 @@
       impShow('正在导出…', '正在保存到下载目录…', 95);
       const r = await saveViaPlusPublicDir(blob, fname);
       if (r.ok) {
-        const where = r.path ? ('（' + r.path + '）') : '（系统下载目录）';
-        toast('已保存到下载' + where + '：' + fname);
+        // 按实际落盘目录给清晰提示：公共下载/公共文档可直接在系统文件管理器找到；
+        // 应用私有目录卸载会丢，需提醒用户尽快转存到公共目录。
+        let where;
+        if (r.dir === 'PRIVATE_DOCUMENTS') {
+          where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
+        } else if (r.path) {
+          where = '（' + r.path + '）';
+        } else {
+          where = '（系统下载目录）';
+        }
+        toast('已保存' + where + '：' + fname);
         return 'ok';
       }
       // 公共目录不可用（权限/版本）→ 走下面的网页下载兜底，行为与旧版一致

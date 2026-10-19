@@ -683,39 +683,69 @@ async function saveViaPlusPublicDir(blob, fname) {
 const plus = window.plus;
 if (!plus || !plus.io) return 'skip';
 const io = plus.io;
-let bytes;
-try { bytes = new Uint8Array(await blob.arrayBuffer()); }
-catch (e) { return { ok: false }; }
-const tryDir = (which) => new Promise((innerResolve) => {
+const log = function () { try { console.error.apply(console, ['[backup:plus]'].concat([].slice.call(arguments))); } catch (e) {} };
+let writeStr = '';
 try {
-io.requestFileSystem(which, (fs) => {
-fs.root.getFile(fname, { create: true, exclusive: false }, (fe) => {
-fe.createWriter(async (writer) => {
+const t = (blob.type || '').toLowerCase();
+const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+if (isText) {
+writeStr = await blob.text();
+} else {
+const buf = await blob.arrayBuffer();
+const u8 = new Uint8Array(buf);
+const CHUNK = 0x8000;
+let out = '';
+for (let i = 0; i < u8.length; i += CHUNK) {
+out += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+}
+writeStr = out;
+}
+} catch (e) {
+log('blob→string 失败', e && e.message);
+return { ok: false };
+}
+const step = (fn, label) => new Promise((resolve, reject) => {
+let done = false;
+const t = setTimeout(() => { if (!done) { done = true; reject(new Error(label + ' 超时')); } }, 10000);
 try {
-await new Promise((r, j) => {
-writer.onwriteend = r; // 截断完成
-writer.onerror = j;
-writer.truncate(0);
+fn(function () { if (!done) { done = true; clearTimeout(t); resolve.apply(null, arguments); } },
+function (e) { if (!done) { done = true; clearTimeout(t); reject(e || new Error(label)); } });
+} catch (e) { if (!done) { done = true; clearTimeout(t); reject(e); } }
 });
-await new Promise((r, j) => {
-writer.onwriteend = r;
-writer.onerror = j;
-writer.write(bytes); // ArrayBufferView — 原样写
+const tryDir = (which, label) => new Promise((innerResolve) => {
+(async function () {
+try {
+const fs = await step((ok, fail) => io.requestFileSystem(which, ok, fail), label + ':requestFileSystem');
+const fe = await step((ok, fail) => fs.root.getFile(fname, { create: true, exclusive: false }, ok, fail), label + ':getFile');
+const writer = await step((ok, fail) => fe.createWriter(ok, fail), label + ':createWriter');
+const evt = (act, label2) => new Promise((r, j) => {
+let done = false;
+const t = setTimeout(() => { if (!done) { done = true; j(new Error(label2 + ' 超时')); } }, 15000);
+writer.onwriteend = function () { if (!done) { done = true; clearTimeout(t); r(); } };
+writer.onerror = function (e) { if (!done) { done = true; clearTimeout(t); j(e || new Error(label2)); } };
+try { act(); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
 });
+await evt(() => writer.truncate(0), label + ':truncate');
+await evt(() => writer.write(writeStr), label + ':write');
 let p = '';
 try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
-innerResolve({ ok: true, path: p });
-} catch (e) { innerResolve({ ok: false }); }
-}, () => innerResolve({ ok: false })); // createWriter 失败
-}, () => innerResolve({ ok: false })); // getFile 失败
-}, () => innerResolve({ ok: false })); // requestFileSystem 失败
-} catch (e) { innerResolve({ ok: false }); }
+innerResolve({ ok: true, path: p, dir: label });
+} catch (e) {
+log(label + ' 失败', e && e.message);
+innerResolve({ ok: false });
+}
+})();
 });
-const a = io.PUBLIC_DOWNLOADS;
-const b = io.PUBLIC_DOCUMENTS;
-const r = await tryDir(a);
+const dirs = [];
+if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+try {
+if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' });
+} catch (e) {}
+for (const d of dirs) {
+const r = await tryDir(d.v, d.label);
 if (r.ok) return r;
-if (b !== undefined && b !== a) return await tryDir(b);
+}
 return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
@@ -723,8 +753,15 @@ if (window.plus && window.plus.io) {
 impShow('正在导出…', '正在保存到下载目录…', 95);
 const r = await saveViaPlusPublicDir(blob, fname);
 if (r.ok) {
-const where = r.path ? ('（' + r.path + '）') : '（系统下载目录）';
-toast('已保存到下载' + where + '：' + fname);
+let where;
+if (r.dir === 'PRIVATE_DOCUMENTS') {
+where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
+} else if (r.path) {
+where = '（' + r.path + '）';
+} else {
+where = '（系统下载目录）';
+}
+toast('已保存' + where + '：' + fname);
 return 'ok';
 }
 }
