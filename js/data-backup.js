@@ -684,15 +684,32 @@ const plus = window.plus;
 if (!plus || !plus.io) return 'skip';
 const io = plus.io;
 const log = function () { try { console.error.apply(console, ['[backup:plus]'].concat([].slice.call(arguments))); } catch (e) {} };
+const blobText = async (b) => {
+if (typeof b.text === 'function') { try { return await b.text(); } catch (e) {} }
+return await new Promise((res, rej) => {
+const fr = new FileReader();
+fr.onload = () => res(String(fr.result));
+fr.onerror = () => rej(fr.error || new Error('readAsText'));
+fr.readAsText(b);
+});
+};
+const blobU8 = async (b) => {
+if (typeof b.arrayBuffer === 'function') { try { return new Uint8Array(await b.arrayBuffer()); } catch (e) {} }
+return await new Promise((res, rej) => {
+const fr = new FileReader();
+fr.onload = () => res(new Uint8Array(fr.result));
+fr.onerror = () => rej(fr.error || new Error('readAsArrayBuffer'));
+fr.readAsArrayBuffer(b);
+});
+};
 let writeStr = '';
 try {
 const t = (blob.type || '').toLowerCase();
 const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
 if (isText) {
-writeStr = await blob.text();
+writeStr = await blobText(blob);
 } else {
-const buf = await blob.arrayBuffer();
-const u8 = new Uint8Array(buf);
+const u8 = await blobU8(blob);
 const CHUNK = 0x8000;
 let out = '';
 for (let i = 0; i < u8.length; i += CHUNK) {

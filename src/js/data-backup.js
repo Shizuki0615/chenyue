@@ -979,17 +979,36 @@
     const log = function () { try { console.error.apply(console, ['[backup:plus]'].concat([].slice.call(arguments))); } catch (e) {} };
 
     // ---- 把 blob 转成 FileWriter.write(String) 能原样落盘的字符串 ----
+    // 读字节：优先用现代 Promise API；若内核缺失 blob.text()/arrayBuffer() 则回退 FileReader
+    //（老 WebView 都支持 FileReader），避免个别 HBuilderX 运行时的内核直接抛错＝又失败。
+    const blobText = async (b) => {
+      if (typeof b.text === 'function') { try { return await b.text(); } catch (e) {} }
+      return await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result));
+        fr.onerror = () => rej(fr.error || new Error('readAsText'));
+        fr.readAsText(b);
+      });
+    };
+    const blobU8 = async (b) => {
+      if (typeof b.arrayBuffer === 'function') { try { return new Uint8Array(await b.arrayBuffer()); } catch (e) {} }
+      return await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(new Uint8Array(fr.result));
+        fr.onerror = () => rej(fr.error || new Error('readAsArrayBuffer'));
+        fr.readAsArrayBuffer(b);
+      });
+    };
     let writeStr = '';
     try {
       const t = (blob.type || '').toLowerCase();
       const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
       if (isText) {
         // 文本：直接取原始字符串（JSON 备份主路径，零编码损耗）
-        writeStr = await blob.text();
+        writeStr = await blobText(blob);
       } else {
         // 二进制：逐字节拼成 binary string（char code = 字节值，write 时原样落盘）
-        const buf = await blob.arrayBuffer();
-        const u8 = new Uint8Array(buf);
+        const u8 = await blobU8(blob);
         // 分批 String.fromCharCode 避免大数组 apply 栈溢出
         const CHUNK = 0x8000;
         let out = '';
