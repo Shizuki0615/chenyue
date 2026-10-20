@@ -679,6 +679,69 @@ doneText, '仍未触发下载。请重新点击「导出数据」并确认保存
 toast('备份已打包（' + sizeStr + '），请重新点击「导出数据」触发下载并保存文件（唯一备份）');
 }
 }
+async function saveViaMediaStoreDownload(blob, fname, mime) {
+const plus = window.plus;
+if (!plus || !plus.android || typeof plus.android.importClass !== 'function') return false;
+const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
+try {
+const A = plus.android;
+const cls = function (n) { const c = A.importClass(n); if (!c) throw new Error('importClass 失败：' + n); return c; };
+const get = function (o, n) { let v; try { v = o[n]; } catch (e) {} if (v === undefined || v === null) { try { v = A.getAttribute(o, n); } catch (e) {} } return v; };
+const call = function (o, n) {
+const a = [].slice.call(arguments, 2);
+if (o && typeof o[n] === 'function') { try { return o[n].apply(o, a); } catch (e) {} }
+return A.invoke.apply(A, [o, n].concat(a));
+};
+const Build = cls('android.os.Build');
+const sdk = get(get(Build, 'VERSION'), 'SDK_INT');
+if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，MediaStore.Downloads 不可用'); return false; }
+const Environment = cls('android.os.Environment');
+const MediaStore = cls('android.provider.MediaStore');
+const Downloads = get(MediaStore, 'Downloads');
+const Columns = get(MediaStore, 'MediaColumns');
+const dirDown = get(Environment, 'DIRECTORY_DOWNLOADS');
+const volExt = get(MediaStore, 'VOLUME_EXTERNAL');
+if (!Downloads || !Columns || !dirDown) { log('MediaStore / Environment 常量取不到'); return false; }
+const values = new (cls('android.content.ContentValues'))();
+call(values, 'put', get(Columns, 'DISPLAY_NAME'), fname);
+call(values, 'put', get(Columns, 'MIME_TYPE'), mime || 'application/octet-stream');
+call(values, 'put', get(Columns, 'RELATIVE_PATH'), dirDown);
+const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
+const itemUri = call(resolver, 'insert', call(Downloads, 'getContentUri', volExt), values);
+if (!itemUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
+const out = call(resolver, 'openOutputStream', itemUri);
+if (!out) { log('openOutputStream 返回 null'); return false; }
+const t = (blob.type || '').toLowerCase();
+const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+if (isText) {
+const str = await rawBlobText(blob);
+const w = new (cls('java.io.OutputStreamWriter'))(out, 'UTF-8');
+call(w, 'write', str);
+call(w, 'flush');
+call(w, 'close');
+} else {
+const b64 = await blobToBase64(blob);
+const B64 = cls('android.util.Base64');
+call(out, 'write', call(B64, 'decode', b64, get(B64, 'DEFAULT')));
+call(out, 'flush');
+call(out, 'close');
+}
+log('已写入 MediaStore 下载目录：' + dirDown + '/' + fname);
+return true;
+} catch (e) {
+log('失败：' + (e && e.message));
+return false;
+}
+}
+async function rawBlobText(blob) {
+if (typeof blob.text === 'function') { try { const s = await blob.text(); if (s !== '' || !blob.size) return s; } catch (e) {} }
+return await new Promise((res, rej) => {
+const fr = new FileReader();
+fr.onload = () => res(String(fr.result));
+fr.onerror = () => rej(fr.error || new Error('readAsText'));
+fr.readAsText(blob);
+});
+}
 async function saveViaPlusPublicDir(blob, fname) {
 const plus = window.plus;
 if (!plus || !plus.io) return 'skip';
@@ -767,16 +830,23 @@ return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
 if (window.plus && window.plus.io) {
-impShow('正在导出…', '正在保存到下载目录…', 95);
+impShow('正在导出…', '正在保存到手机下载目录…', 95);
+try {
+const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
+if (await saveViaMediaStoreDownload(blob, fname, mime)) {
+toast('已保存到手机「下载」目录：' + fname + '（在「文件管理 → 下载」里可找到，卸载 App 不会丢）');
+return 'ok';
+}
+} catch (e) {}
 const r = await saveViaPlusPublicDir(blob, fname);
 if (r.ok) {
 let where;
 if (r.dir === 'PRIVATE_DOCUMENTS') {
-where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
+where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
 } else if (r.path) {
-where = '（' + r.path + '）';
+where = '（应用专属目录，卸载 App 会删除：' + r.path + '）';
 } else {
-where = '（系统下载目录）';
+where = '（应用专属目录，卸载 App 会删除）';
 }
 toast('已保存' + where + '：' + fname);
 return 'ok';

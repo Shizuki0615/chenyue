@@ -956,11 +956,94 @@
     }
   }
 
-  // 套壳 App（HBuilderX 5+）：把文件直接写到系统公共「下载」目录——
-  // 这样卸载 App 不会连带删掉备份（应用私有目录 _doc/ 卸载即清空）。
-  // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS，
-  // 再不行退回应用私有 _doc/（PRIVATE_DOCUMENTS，总能写，但卸载会丢）。
-  // Android 10+ 公共目录走 MediaStore，无需存储权限；旧版本若缺权限会失败 → 交给外层网页下载兜底。
+  // 套壳 App（HBuilderX 5+）：真正把备份写进手机「系统下载」公共目录——**这是唯一能在卸载 App 后
+  // 仍然保留备份的位置**。
+  // 2026-10-20 纠错：plus.io 的 PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS 绝对路径其实是
+  //   /storage/emulated/0/Android/data/<包名>/.<AppID>/downloads|documents —— 都落在「应用专属目录」下，
+  //   卸载 App 会被一起删除。所以「写这两个目录」≠「存到手机下载」；要卸载不丢，只能走原生 API：
+  //   · Android 10+（API 29+）：MediaStore.Downloads 插入一条下载记录 + 按流写入，系统「文件管理 → 下载」
+  //     立即可见、免存储权限、卸载不删（本函数走这条）。
+  //   · API 29 以下：MediaStore.Downloads 不存在 → 返回 false，退回下面的 plus.io 应用目录（旧行为）。
+  // 仅用 Native.js（plus.android）调公开 Java 类，不需要额外模块权限。
+  async function saveViaMediaStoreDownload(blob, fname, mime) {
+    const plus = window.plus;
+    if (!plus || !plus.android || typeof plus.android.importClass !== 'function') return false;
+    const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
+    try {
+      const A = plus.android;
+      const cls = function (n) { const c = A.importClass(n); if (!c) throw new Error('importClass 失败：' + n); return c; };
+      // 取属性：先直接 . 访问，取不到再用 getAttribute 兜底（不同运行时暴露方式略有差异）
+      const get = function (o, n) { let v; try { v = o[n]; } catch (e) {} if (v === undefined || v === null) { try { v = A.getAttribute(o, n); } catch (e) {} } return v; };
+      // 调方法：先直接调用，不是函数再走 invoke 兜底
+      const call = function (o, n) {
+        const a = [].slice.call(arguments, 2);
+        if (o && typeof o[n] === 'function') { try { return o[n].apply(o, a); } catch (e) {} }
+        return A.invoke.apply(A, [o, n].concat(a));
+      };
+
+      // MediaStore.Downloads 自 API 29 起才有
+      const Build = cls('android.os.Build');
+      const sdk = get(get(Build, 'VERSION'), 'SDK_INT');
+      if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，MediaStore.Downloads 不可用'); return false; }
+
+      const Environment = cls('android.os.Environment');
+      const MediaStore = cls('android.provider.MediaStore');
+      const Downloads = get(MediaStore, 'Downloads');
+      const Columns = get(MediaStore, 'MediaColumns');
+      const dirDown = get(Environment, 'DIRECTORY_DOWNLOADS');
+      const volExt = get(MediaStore, 'VOLUME_EXTERNAL');
+      if (!Downloads || !Columns || !dirDown) { log('MediaStore / Environment 常量取不到'); return false; }
+
+      const values = new (cls('android.content.ContentValues'))();
+      call(values, 'put', get(Columns, 'DISPLAY_NAME'), fname);
+      call(values, 'put', get(Columns, 'MIME_TYPE'), mime || 'application/octet-stream');
+      call(values, 'put', get(Columns, 'RELATIVE_PATH'), dirDown);
+
+      const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
+      const itemUri = call(resolver, 'insert', call(Downloads, 'getContentUri', volExt), values);
+      if (!itemUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
+      const out = call(resolver, 'openOutputStream', itemUri);
+      if (!out) { log('openOutputStream 返回 null'); return false; }
+
+      const t = (blob.type || '').toLowerCase();
+      const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+      if (isText) {
+        // 文本（JSON 备份主路径）：OutputStreamWriter 按 UTF-8 写入，原样落盘
+        const str = await rawBlobText(blob);
+        const w = new (cls('java.io.OutputStreamWriter'))(out, 'UTF-8');
+        call(w, 'write', str);
+        call(w, 'flush');
+        call(w, 'close');
+      } else {
+        // 二进制（docx 等）：base64 → Java 侧 Base64.decode 得 byte[] → write(byte[])
+        const b64 = await blobToBase64(blob);
+        const B64 = cls('android.util.Base64');
+        call(out, 'write', call(B64, 'decode', b64, get(B64, 'DEFAULT')));
+        call(out, 'flush');
+        call(out, 'close');
+      }
+      log('已写入 MediaStore 下载目录：' + dirDown + '/' + fname);
+      return true;
+    } catch (e) {
+      log('失败：' + (e && e.message));
+      return false;
+    }
+  }
+
+  // Blob → 原始文本；个别老内核没有 blob.text()，或对大文件静默返回空串 → FileReader 兜底
+  async function rawBlobText(blob) {
+    if (typeof blob.text === 'function') { try { const s = await blob.text(); if (s !== '' || !blob.size) return s; } catch (e) {} }
+    return await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result));
+      fr.onerror = () => rej(fr.error || new Error('readAsText'));
+      fr.readAsText(blob);
+    });
+  }
+
+  // 套壳 App（HBuilderX 5+）退路：写 plus.io 的应用专属目录（PUBLIC_DOWNLOADS → PUBLIC_DOCUMENTS
+  // → PRIVATE_DOCUMENTS）。注意三者都在 Android/data/<包名>/ 下，**卸载 App 都会删**——只作兜底，
+  // 提示里会对用户明说「卸载会丢」。saveViaMediaStoreDownload 成功时不会走到这里。
   // FIX 2026-10-19（d2d9bb8）：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——
   //   该版本 FileWriter 对非 String 入参隐式 String(data)，Blob → "[object Blob]"（14 字符垃圾），
   //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件是垃圾
@@ -1082,25 +1165,33 @@
   // FIX 2026-09-11 #333：参数化分享标题/文件 MIME/保存框类型——诊断 docx 导出复用本链路
   // （设备.js buildDocxBlob 产物），不再只能分享「JSON 备份」。默认值保持原行为零变化。
   async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-    // 套壳 App（HBuilderX 5+）：优先写到系统公共「下载」目录——卸载 App 不会连带删备份。
+    // 套壳 App（HBuilderX 5+）：先尝试写进手机「系统下载」公共目录——**只有这里卸载 App 不会丢**。
     if (window.plus && window.plus.io) {
-      impShow('正在导出…', '正在保存到下载目录…', 95);
+      impShow('正在导出…', '正在保存到手机下载目录…', 95);
+      // ① 首选：MediaStore 写系统下载目录（Android 10+ 免存储权限，卸载不丢）
+      try {
+        const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
+        if (await saveViaMediaStoreDownload(blob, fname, mime)) {
+          toast('已保存到手机「下载」目录：' + fname + '（在「文件管理 → 下载」里可找到，卸载 App 不会丢）');
+          return 'ok';
+        }
+      } catch (e) {}
+      // ② 兜底：plus.io 应用专属目录（PUBLIC_*/PRIVATE_* 都在 Android/data/<包名>/ 下，卸载即丢；
+      //    提示里明说"卸载会删除"，让用户自己决定要不要转存）
       const r = await saveViaPlusPublicDir(blob, fname);
       if (r.ok) {
-        // 按实际落盘目录给清晰提示：公共下载/公共文档可直接在系统文件管理器找到；
-        // 应用私有目录卸载会丢，需提醒用户尽快转存到公共目录。
         let where;
         if (r.dir === 'PRIVATE_DOCUMENTS') {
-          where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
+          where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
         } else if (r.path) {
-          where = '（' + r.path + '）';
+          where = '（应用专属目录，卸载 App 会删除：' + r.path + '）';
         } else {
-          where = '（系统下载目录）';
+          where = '（应用专属目录，卸载 App 会删除）';
         }
         toast('已保存' + where + '：' + fname);
         return 'ok';
       }
-      // 公共目录不可用（权限/版本）→ 走下面的网页下载兜底，行为与旧版一致
+      // 两条原生路都不可用 → 走下面的网页下载兜底，行为与旧版一致
     }
     const file = new File([blob], fname, { type: blob.type || 'application/json;charset=utf-8' });
     // ① 系统分享面板
