@@ -990,23 +990,39 @@
       const sdk = get(get(Build, 'VERSION'), 'SDK_INT');
       if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，MediaStore.Downloads 不可用'); return false; }
 
-      const Environment = cls('android.os.Environment');
-      const MediaStore = cls('android.provider.MediaStore');
-      const Downloads = get(MediaStore, 'Downloads');
-      const Columns = get(MediaStore, 'MediaColumns');
-      const dirDown = get(Environment, 'DIRECTORY_DOWNLOADS');
-      const volExt = get(MediaStore, 'VOLUME_EXTERNAL');
-      if (!Downloads || !Columns || !dirDown) { log('MediaStore / Environment 常量取不到'); return false; }
+      // [关键修复 2026-10-20] Native.js 取不到 MediaStore 的静态嵌套类/常量——
+      //   实测 importClass('android.provider.MediaStore') 后 get('Downloads')/get('MediaColumns')
+      //   与 Environment.DIRECTORY_DOWNLOADS 全返回 undefined（用户诊断实报
+      //   「[backup:media] MediaStore / Environment 常量取不到」）。
+      //   所以这里**完全不碰静态常量**，全部改用字符串字面量——它们就是那些常量在
+      //   Android SDK 源码里的真实值，insert/put 完全等价：
+      //     MediaStore.Downloads.EXTERNAL_CONTENT_URI = "content://media/external/downloads"
+      //     MediaColumns.DISPLAY_NAME  = "_display_name"
+      //     MediaColumns.MIME_TYPE     = "mime_type"
+      //     MediaColumns.RELATIVE_PATH = "relative_path"（API 29+，值 "Download" = Environment.DIRECTORY_DOWNLOADS）
+      const DL_URI = 'content://media/external/downloads';
+      const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
+
+      // Uri 是抽象类不能 new，只能走静态方法 Uri.parse(String)（直接调 / invokeStaticMethod 双保险）
+      let itemUri = null;
+      try {
+        const Uri = cls('android.net.Uri');
+        if (typeof Uri.parse === 'function') itemUri = Uri.parse(DL_URI);
+      } catch (e) {}
+      if (!itemUri && typeof A.invokeStaticMethod === 'function') {
+        try { itemUri = A.invokeStaticMethod('android.net.Uri', 'parse', DL_URI); } catch (e) {}
+      }
+      if (!itemUri) { log('Uri.parse 失败（拿不到 content://media/external/downloads）'); return false; }
 
       const values = new (cls('android.content.ContentValues'))();
-      call(values, 'put', get(Columns, 'DISPLAY_NAME'), fname);
-      call(values, 'put', get(Columns, 'MIME_TYPE'), mime || 'application/octet-stream');
-      call(values, 'put', get(Columns, 'RELATIVE_PATH'), dirDown);
+      call(values, 'put', COL_NAME, fname);
+      call(values, 'put', COL_MIME, mime || 'application/octet-stream');
+      call(values, 'put', COL_REL, 'Download');
 
       const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
-      const itemUri = call(resolver, 'insert', call(Downloads, 'getContentUri', volExt), values);
-      if (!itemUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
-      const out = call(resolver, 'openOutputStream', itemUri);
+      const recordUri = call(resolver, 'insert', itemUri, values);
+      if (!recordUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
+      const out = call(resolver, 'openOutputStream', recordUri);
       if (!out) { log('openOutputStream 返回 null'); return false; }
 
       const t = (blob.type || '').toLowerCase();
@@ -1020,13 +1036,14 @@
         call(w, 'close');
       } else {
         // 二进制（docx 等）：base64 → Java 侧 Base64.decode 得 byte[] → write(byte[])
+        // Base64.DEFAULT 也是静态常量（同样取不到），直接用其真实值 0
         const b64 = await blobToBase64(blob);
         const B64 = cls('android.util.Base64');
-        call(out, 'write', call(B64, 'decode', b64, get(B64, 'DEFAULT')));
+        call(out, 'write', call(B64, 'decode', b64, 0));
         call(out, 'flush');
         call(out, 'close');
       }
-      log('已写入 MediaStore 下载目录：' + dirDown + '/' + fname);
+      log('已写入 MediaStore 下载目录：Download/' + fname);
       return true;
     } catch (e) {
       log('失败：' + (e && e.message));

@@ -696,21 +696,25 @@ return A.invoke.apply(A, [o, n].concat(a));
 const Build = cls('android.os.Build');
 const sdk = get(get(Build, 'VERSION'), 'SDK_INT');
 if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，MediaStore.Downloads 不可用'); return false; }
-const Environment = cls('android.os.Environment');
-const MediaStore = cls('android.provider.MediaStore');
-const Downloads = get(MediaStore, 'Downloads');
-const Columns = get(MediaStore, 'MediaColumns');
-const dirDown = get(Environment, 'DIRECTORY_DOWNLOADS');
-const volExt = get(MediaStore, 'VOLUME_EXTERNAL');
-if (!Downloads || !Columns || !dirDown) { log('MediaStore / Environment 常量取不到'); return false; }
+const DL_URI = 'content://media/external/downloads';
+const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
+let itemUri = null;
+try {
+const Uri = cls('android.net.Uri');
+if (typeof Uri.parse === 'function') itemUri = Uri.parse(DL_URI);
+} catch (e) {}
+if (!itemUri && typeof A.invokeStaticMethod === 'function') {
+try { itemUri = A.invokeStaticMethod('android.net.Uri', 'parse', DL_URI); } catch (e) {}
+}
+if (!itemUri) { log('Uri.parse 失败（拿不到 content://media/external/downloads）'); return false; }
 const values = new (cls('android.content.ContentValues'))();
-call(values, 'put', get(Columns, 'DISPLAY_NAME'), fname);
-call(values, 'put', get(Columns, 'MIME_TYPE'), mime || 'application/octet-stream');
-call(values, 'put', get(Columns, 'RELATIVE_PATH'), dirDown);
+call(values, 'put', COL_NAME, fname);
+call(values, 'put', COL_MIME, mime || 'application/octet-stream');
+call(values, 'put', COL_REL, 'Download');
 const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
-const itemUri = call(resolver, 'insert', call(Downloads, 'getContentUri', volExt), values);
-if (!itemUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
-const out = call(resolver, 'openOutputStream', itemUri);
+const recordUri = call(resolver, 'insert', itemUri, values);
+if (!recordUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
+const out = call(resolver, 'openOutputStream', recordUri);
 if (!out) { log('openOutputStream 返回 null'); return false; }
 const t = (blob.type || '').toLowerCase();
 const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
@@ -723,11 +727,11 @@ call(w, 'close');
 } else {
 const b64 = await blobToBase64(blob);
 const B64 = cls('android.util.Base64');
-call(out, 'write', call(B64, 'decode', b64, get(B64, 'DEFAULT')));
+call(out, 'write', call(B64, 'decode', b64, 0));
 call(out, 'flush');
 call(out, 'close');
 }
-log('已写入 MediaStore 下载目录：' + dirDown + '/' + fname);
+log('已写入 MediaStore 下载目录：Download/' + fname);
 return true;
 } catch (e) {
 log('失败：' + (e && e.message));
