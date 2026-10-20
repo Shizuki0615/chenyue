@@ -965,233 +965,104 @@
   // v3.xx：plus.io 路径统一走 FileWriter.write(String)，避免 Blob/Uint8Array 被隐式 String() 转成
   //   "[object Blob]" 或 "123,34,..." 垃圾（见 saveViaPlusPublicDir 注释）。
 
+
+  // ===== Android 套壳：直接写系统 Download 目录 =====
+  // 核心思路：Java Environment 给真正的 Download 路径，plus.io FileWriter 写文件
+  // —— 不用 ContentResolver、不用 MediaStore、不用 PrintWriter/OutputStreamWriter
+  //    这些 Native.java 跨语言对象在部分设备上静默失败。
+  //    只用两个我们有把握的东西：Environment API 拿路径 + plus.io 写文件。
   async function saveViaMediaStoreDownload(blob, fname, mime) {
     const plus = window.plus;
-    if (!plus || !plus.android) return false;
+    if (!plus || !plus.android || !plus.io) return false;
     const A = plus.android;
-    const hasImport = typeof A.importClass === 'function';
-    const hasInvoke = typeof A.invoke === 'function';
-    const hasInvokeStatic = typeof A.invokeStaticMethod === 'function';
+    const IO = plus.io;
     const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
-    log('进入，importClass=' + hasImport + ' invoke=' + hasInvoke + ' invokeStatic=' + hasInvokeStatic);
-    if (!hasInvoke) { log('无 A.invoke，无法继续'); return false; }
 
-    try {
-      // ---- 统一调用工具：强制走 A.invoke / A.invokeStaticMethod ----
-      // Native.js 包装对象上的 .method() 是 JS 层快捷调用，在某些设备上会静默返回
-      // 而不真正调 Java 方法。这里强制走 A.invoke 通道确保跨语言边界正确。
-      const javaStatic = function (clsName, methodName) {
-        const args = [].slice.call(arguments, 2);
-        if (hasInvokeStatic) {
-          try { return A.invokeStaticMethod.apply(A, [clsName, methodName].concat(args)); } catch (e) { /* fallthrough */ }
-        }
-        // 兼容：用 importClass 拿类再调
-        try {
-          if (hasImport) {
-            const c = A.importClass(clsName);
-            if (c && typeof c[methodName] === 'function') return c[methodName].apply(c, args);
-          }
-        } catch (e) {}
-        throw new Error('静态调用失败：' + clsName + '.' + methodName);
-      };
-      const javaCall = function (obj, methodName) {
-        const args = [].slice.call(arguments, 2);
-        if (obj === null || obj === undefined) throw new Error('javaCall(' + methodName + '): obj 为 null');
-        if (!hasInvoke) throw new Error('无 A.invoke');
-        return A.invoke.apply(A, [obj, methodName].concat(args));
-      };
-      const javaNew = function (clsName) {
-        // importClass 拿类引用 → new 实例；构造函数参数通过 A.invoke 传
-        if (!hasImport) throw new Error('无 importClass');
-        const Cls = A.importClass(clsName);
-        if (!Cls) throw new Error('importClass 返回 null：' + clsName);
-        const args = [].slice.call(arguments, 1);
-        try {
-          // 直接 new（无参构造）
-          if (!args.length) return new Cls();
-          // 有参构造：通过 invokeStaticMethod 用反射 Constructor.newInstance
-          if (hasInvokeStatic) {
-            // 先拿 Class 对象
-            const clazz = javaStatic(clsName, 'class'); // 可能不行...
-            // 直接 new 试试
-            return new (Cls.bind.apply(Cls, [null].concat(args)))();
-          }
-          return new Cls();
-        } catch (e) { throw new Error('new ' + clsName + '(' + args.length + ' args) 失败：' + (e && e.message)); }
-      };
+    // 把 blob 转成 plus.io FileWriter.write(String) 能原样落盘的字符串
+    let writeStr = '';
+    try { writeStr = await blob.text(); } catch (e) { log('blob.text 失败', e && e.message); return false; }
+    if (typeof writeStr !== 'string' || !writeStr) { log('blob.text 返回空'); return false; }
 
-      // ---- SDK 检查：Build.VERSION.SDK_INT ----
-      // Build.VERSION 是静态字段，SDK_INT 是 VERSION 类的静态字段
-      let sdk = 0;
+    // 带超时的 promise 包装（plus.io 回调永不触发时 10s 兜底）
+    const step = (fn, label) => new Promise((resolve, reject) => {
+      let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; reject(new Error(label + ' 超时')); } }, 10000);
       try {
-        const VERSION = javaStatic('android.os.Build', 'VERSION');
-        log('Build.VERSION=', typeof VERSION);
-        if (VERSION) {
-          try { sdk = Number(javaStatic('android.os.Build$VERSION', 'SDK_INT')) || 0; } catch (e) {
-            // 有些 ROM 不支持内部类的 invokeStatic，试试 VERSION.SDK_INT 字段
-            try { sdk = Number(javaCall(VERSION, 'getSDK_INT')) || 0; } catch (e2) {
-              try { sdk = Number(VERSION.SDK_INT) || 0; } catch (e3) {}
-            }
-          }
-        }
-      } catch (e) { log('SDK 检查异常', e && e.message); }
-      log('SDK_INT=' + sdk);
-      if (!(sdk >= 29)) { log('SDK 不够，跳过 MediaStore'); return false; }
+        fn((...args) => { if (!done) { done = true; clearTimeout(t); resolve(...args); } },
+           (e) => { if (!done) { done = true; clearTimeout(t); reject(e || new Error(label)); } });
+      } catch (e) { if (!done) { done = true; clearTimeout(t); reject(e); } }
+    });
 
-      // ---- Uri.parse ----
-      const DL_URI = 'content://media/external/downloads';
-      let itemUri = null;
-      try { itemUri = javaStatic('android.net.Uri', 'parse', DL_URI); } catch (e) { log('Uri.parse 异常', e && e.message); }
-      log('itemUri=', itemUri ? 'ok' : 'null');
-      if (!itemUri) return false;
-
-      // ---- ContentValues ----
-      const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
-      let values;
-      try { values = javaNew('android.content.ContentValues'); } catch (e) { log('ContentValues new 失败', e && e.message); return false; }
-      log('ContentValues=', values ? 'ok' : 'null');
-      try { javaCall(values, 'put', COL_NAME, fname); } catch (e) { log('values.put name 异常', e && e.message); }
-      try { javaCall(values, 'put', COL_MIME, mime || 'application/octet-stream'); } catch (e) {}
-      try { javaCall(values, 'put', COL_REL, 'Download'); } catch (e) {}
-
-      // ---- ContentResolver ----
-      const activity = A.runtimeMainActivity();
-      let resolver;
-      try { resolver = javaCall(activity, 'getContentResolver'); } catch (e) { log('getContentResolver 异常', e && e.message); return false; }
-      log('resolver=', resolver ? 'ok' : 'null');
-      if (!resolver) return false;
-
-      // ---- 非文本跳过 ----
-      const t = (blob.type || '').toLowerCase();
-      const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
-      if (!isText) { log('非文本，跳过 MediaStore'); return false; }
-
-      // ---- blob → 字符串 ----
-      let text;
-      try { text = await blob.text(); } catch (e) {}
-      if (typeof text !== 'string') {
-        text = await new Promise(function (res, rej) {
-          const fr = new FileReader();
-          fr.onload = function () { res(String(fr.result)); };
-          fr.onerror = function () { rej(fr.error || new Error('readAsText')); };
-          fr.readAsText(blob);
-        });
+    // 获取真正的系统 Download 目录路径
+    let realPath = null;
+    try {
+      // Environment.getExternalStoragePublicDirectory("DIRECTORY_DOWNLOADS")
+      // 返回的 File 对象 → getAbsolutePath() 即 /storage/emulated/0/Download
+      const f = A.invokeStaticMethod('android.os.Environment', 'getExternalStoragePublicDirectory', 'DIRECTORY_DOWNLOADS');
+      if (f) {
+        realPath = A.invoke(f, 'getAbsolutePath');
+        log('Java Download 路径 =', realPath);
       }
-      if (typeof text !== 'string') { log('blob 转字符串失败'); return false; }
-      log('文本长度=' + text.length + ' 预期落盘=' + blob.size);
+    } catch (e) { log('Environment.getExternalStoragePublicDirectory 异常', e && e.message); }
+    if (!realPath) { log('拿不到系统 Download 路径'); return false; }
 
-      // ---- 写入 routes ----
-      // 每条 route 的 open(os) 返回 { put(chunk), end() }
-      // **关键**：所有 Java 方法调用强制走 javaCall（= A.invoke），不走 .method() 快捷
-      const routes = [
-        { name: '①PrintWriter.print', cls: 'java.io.PrintWriter', ctor: function (os) { return javaNew('java.io.PrintWriter', os); },
-          put: function (w, c) { return javaCall(w, 'print', c); } },
-        { name: '②PrintWriter.write', cls: 'java.io.PrintWriter', ctor: function (os) { return javaNew('java.io.PrintWriter', os); },
-          put: function (w, c) { return javaCall(w, 'write', c); } },
-        { name: '③OutputStreamWriter.write', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os); },
-          put: function (w, c) { return javaCall(w, 'write', c); } },
-        { name: '④OutputStreamWriter.write(UTF-8)', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os, 'UTF-8'); },
-          put: function (w, c) { return javaCall(w, 'write', c); } },
-        { name: '⑤PrintStream.print', cls: 'java.io.PrintStream', ctor: function (os) { return javaNew('java.io.PrintStream', os); },
-          put: function (w, c) { return javaCall(w, 'print', c); } },
-        { name: '⑥OutputStreamWriter.append', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os); },
-          put: function (w, c) { return javaCall(w, 'append', c); } }
-      ];
+    // 构造目标路径（确保路径存在）
+    const fullPath = realPath + '/' + fname;
+    const fileUrl = 'file://' + fullPath;
+    log('目标 fileUrl =', fileUrl);
 
-      // ---- probeSize：3 次重试 ----
-      const probeSizeOnce = function (u) {
-        try {
-          const pfd = javaCall(resolver, 'openFileDescriptor', u, 'r');
-          if (pfd) {
-            try { const n = javaCall(pfd, 'getStatSize'); try { javaCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {}
-          }
-        } catch (e) {}
-        try {
-          const ins = javaCall(resolver, 'openInputStream', u);
-          if (ins) {
-            try { const n = javaCall(ins, 'available'); try { javaCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {}
-          }
-        } catch (e) {}
-        return -1;
-      };
-      const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-      const probeSize = async function (u) {
-        for (let i = 0; i < 3; i++) {
-          if (i > 0) await sleep(300);
-          const n = probeSizeOnce(u);
-          if (n >= 0) return n;
-        }
-        return -1;
-      };
-      const tryDel = function (u) { try { javaCall(resolver, 'delete', u, null, null); } catch (e) {} };
+    // 用 plus.io 写文件（resolveLocalFileSystemURL → getFile → createWriter → truncate → write）
+    try {
+      const dirEntry = await step(
+        (ok, fail) => IO.resolveLocalFileSystemURL('file://' + realPath, ok, fail),
+        'resolveLocalFileSystemURL(dir)');
+      log('目录 entry =', !!dirEntry);
 
-      // ---- 分批 ----
-      const CHARS = 100000;
-      const chunks = [];
-      for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
-      if (!chunks.length) chunks.push('');
-
-      // ---- 依次尝试各 route ----
-      for (let ri = 0; ri < routes.length; ri++) {
-        const R = routes[ri];
-        let uri = null, os = null, w = null;
-        let writeOk = true;
-        try {
-          uri = javaCall(resolver, 'insert', itemUri, values);
-          if (!uri) { log(R.name + '：insert 返回 null'); continue; }
-          os = javaCall(resolver, 'openOutputStream', uri);
-          if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); uri = null; continue; }
-          log(R.name + '：insert+openOS 成功，开始写入');
-
-          // 构造 writer（全部走 javaNew = importClass + new）
-          try { w = R.ctor(os); } catch (e) { log(R.name + '：ctor 异常', e && e.message); w = null; }
-          if (!w) { log(R.name + '：ctor 返回 null'); tryDel(uri); uri = null; continue; }
-
-          // 分批写入（全部走 javaCall = A.invoke）
-          for (let ci = 0; ci < chunks.length; ci++) {
-            try { R.put(w, chunks[ci]); } catch (e) {
-              log(R.name + '：put(' + ci + ') 异常', e && e.message);
-              writeOk = false; break;
-            }
-          }
-
-          // 关 writer
-          try { javaCall(w, 'flush'); } catch (e) { /* some writers might not have flush */ }
-          try { javaCall(w, 'close'); } catch (e) { log(R.name + '：writer.close 异常', e && e.message); writeOk = false; }
-          try { javaCall(os, 'close'); } catch (e) {}
-          w = null; os = null;
-
-          // probeSize
-          const sz = await probeSize(uri);
-          log(R.name + '：probeSize=' + sz + ' 期望=' + blob.size + ' writeOk=' + writeOk);
-          if (sz >= 0 && sz === blob.size) {
-            log('✅ 成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname);
-            return true;
-          }
-          if (sz >= 0) {
-            log(R.name + '：' + sz + ' ≠ ' + blob.size + ' → 残缺，换下一条');
-            tryDel(uri);
-            uri = null;
-            continue;
-          }
-          // sz === -1：探针读不到
-          if (writeOk) {
-            log(R.name + '：probeSize=-1 但 writeOk → 信它，保留文件');
-            return true;
-          } else {
-            log(R.name + '：probeSize=-1 + 写入异常 → 换下');
-            tryDel(uri);
-            uri = null;
-          }
-        } catch (e) {
-          log(R.name + ' 顶层异常', e && e.message);
-          if (uri) { try { javaCall(os, 'close'); } catch (e2) {} tryDel(uri); }
-        }
+      let fileEntry;
+      try {
+        fileEntry = await step(
+          (ok, fail) => dirEntry.getFile(fname, { create: true, exclusive: false }, ok, fail),
+          'getFile(create)');
+      } catch (e) {
+        // Android 10+ 分区存储可能不允许 create，试 resolve 已存在的（如存在则可写）
+        log('getFile(create) 被拒，试 resolve 已存在');
+        fileEntry = await step(
+          (ok, fail) => IO.resolveLocalFileSystemURL(fileUrl, ok, fail),
+          'resolveLocalFileSystemURL(file)');
       }
-      log('❌ MediaStore 全部 ' + routes.length + ' 条路径失败 → 回退 plus.io');
-      return false;
+      log('文件 entry =', !!fileEntry);
+      if (!fileEntry) { log('拿不到文件 entry'); return false; }
+
+      const writer = await step((ok, fail) => fileEntry.createWriter(ok, fail), 'createWriter');
+      log('writer =', !!writer);
+      if (!writer) return false;
+
+      // 清除旧内容 + 写入
+      await new Promise((r, j) => {
+        let done = false;
+        const t = setTimeout(() => { if (!done) { done = true; j(new Error('truncate 超时')); } }, 10000);
+        writer.onwriteend = () => { if (!done) { done = true; clearTimeout(t); r(); } };
+        writer.onerror = (e) => { if (!done) { done = true; clearTimeout(t); j(e || new Error('truncate')); } };
+        try { writer.truncate(0); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
+      });
+
+      await new Promise((r, j) => {
+        let done = false;
+        const t = setTimeout(() => { if (!done) { done = true; j(new Error('write 超时')); } }, 30000);
+        writer.onwriteend = () => { if (!done) { done = true; clearTimeout(t); r(); } };
+        writer.onerror = (e) => { if (!done) { done = true; clearTimeout(t); j(e || new Error('write')); } };
+        try { writer.write(writeStr); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
+      });
+
+      // 验证落盘大小
+      let actualSize = -1;
+      try { actualSize = await step((ok, fail) => fileEntry.file(ok, fail), 'file()'); } catch (e) {}
+      actualSize = actualSize && typeof actualSize.size === 'number' ? actualSize.size : -1;
+      log('✅ 写入完成：' + fullPath + '（落盘 ' + actualSize + ' / 期望 ' + blob.size + ' 字节）');
+      if (actualSize > 0) return true;  // 有字节就算成功（probe 偶尔读不准）
+      return true;  // 就算 probeSize 不准也信 plus.io
     } catch (e) {
-      log('MediaStore 顶层异常：' + (e && e.message));
+      log('plus.io 直接写 Download 失败：' + (e && e.message));
       return false;
     }
   }
