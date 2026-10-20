@@ -746,15 +746,22 @@ return -1;
 };
 const delUri = function (u) { try { call(resolver, 'delete', u, null, null); } catch (e) {} };
 const TMP = '__mochi_backup_tmp.json';
-const writePrivateTemp = function (str, name) {
-return new Promise(function (resolve, reject) {
+const writeTempFile = function (str, name) {
 const io = plus.io;
-if (!io) { reject(new Error('无 plus.io')); return; }
+if (!io) return Promise.reject(new Error('无 plus.io'));
+const dirs = [];
+if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+const tryOne = function (idx) {
+if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+const d = dirs[idx];
+return new Promise(function (resolve, reject) {
 let done = false;
-const timer = setTimeout(function () { if (!done) { done = true; reject(new Error('私有文件写入超时')); } }, 20000);
-const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error('私有文件写入失败')); } };
+const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
 try {
-io.requestFileSystem(io.PRIVATE_DOCUMENTS, function (fs) {
+io.requestFileSystem(d.v, function (fs) {
 fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
 fe.createWriter(function (w) {
 w.onwriteend = function () {
@@ -762,7 +769,7 @@ if (done) return;
 done = true; clearTimeout(timer);
 let p = '';
 try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
-resolve(p.replace(/^file:\/\//, ''));
+resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
 };
 w.onerror = fail;
 try { w.write(str); } catch (e) { fail(e); }
@@ -770,23 +777,25 @@ try { w.write(str); } catch (e) { fail(e); }
 }, fail);
 }, fail);
 } catch (e) { fail(e); }
-});
+}).catch(function () { return tryOne(idx + 1); });
 };
-let privPath = '';
+return tryOne(0);
+};
+let tmp;
 try {
-privPath = await writePrivateTemp(text, TMP);
-log('私有临时文件 = ' + privPath + '（' + text.length + ' 字符）');
-} catch (e) { log('私有临时文件失败：' + (e && e.message)); }
-if (privPath) {
+tmp = await writeTempFile(text, TMP);
+log('临时文件 = ' + tmp.path + '（' + tmp.dir + '，' + text.length + ' 字符）');
+} catch (e) { log('临时文件失败：' + (e && e.message)); return false; }
+if (tmp && tmp.path) {
 let uri = null, os = null, fis = null;
 try {
 uri = call(resolver, 'insert', itemUri, values);
-if (!uri) { log('⓪insert 为 null'); }
+if (!uri) { log('insert 为 null'); }
 else {
 os = call(resolver, 'openOutputStream', uri);
-if (!os) { log('⓪openOutputStream 为 null'); delUri(uri); uri = null; }
+if (!os) { log('openOutputStream 为 null'); delUri(uri); uri = null; }
 else {
-const fileObj = ctor('java.io.File', privPath);
+const fileObj = ctor('java.io.File', tmp.path);
 fis = ctor('java.io.FileInputStream', fileObj);
 const moved = call(fis, 'transferTo', os);
 try { call(fis, 'close'); } catch (e) {}
@@ -794,9 +803,9 @@ try { call(os, 'flush'); } catch (e) {}
 try { call(os, 'close'); } catch (e) {}
 fis = null; os = null;
 const sz = await sizeOf(uri);
-log('⓪transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
+log('transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
 if (sz === blob.size || sz > 0) {
-log('✅ 成功 ⓪transferTo → Download/' + fname);
+log('✅ 成功 transferTo → Download/' + fname);
 return true;
 }
 delUri(uri);
@@ -804,55 +813,13 @@ uri = null;
 }
 }
 } catch (e) {
-log('⓪transferTo 异常：' + (e && e.message));
+log('transferTo 异常：' + (e && e.message));
 try { if (fis) call(fis, 'close'); } catch (e2) {}
 try { if (os) call(os, 'close'); } catch (e2) {}
 if (uri) delUri(uri);
 }
 }
-const routes = [
-{ name: '①OutputStreamWriter.write',        C: 'java.io.OutputStreamWriter', a: [],        m: 'write'  },
-{ name: '②OutputStreamWriter.write(UTF-8)', C: 'java.io.OutputStreamWriter', a: ['UTF-8'], m: 'write'  },
-{ name: '③OutputStreamWriter.append',       C: 'java.io.OutputStreamWriter', a: [],        m: 'append' },
-{ name: '④PrintWriter.write',               C: 'java.io.PrintWriter',        a: [],        m: 'write'  },
-{ name: '⑤PrintWriter.print',               C: 'java.io.PrintWriter',        a: [],        m: 'print'  }
-];
-const CHARS = 65536;
-const chunks = [];
-for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
-if (!chunks.length) chunks.push('');
-for (let i = 0; i < routes.length; i++) {
-const R = routes[i];
-let uri = null, os = null, w = null, wrote = true;
-try {
-uri = call(resolver, 'insert', itemUri, values);
-if (!uri) { log(R.name + '：insert 为 null'); continue; }
-os = call(resolver, 'openOutputStream', uri);
-if (!os) { log(R.name + '：openOutputStream 为 null'); delUri(uri); uri = null; continue; }
-try { w = ctor.apply(null, [R.C].concat(R.a).concat([os])); }
-catch (e) { log(R.name + '：构造 Writer 失败 ' + (e && e.message)); delUri(uri); uri = null; continue; }
-if (!w) { log(R.name + '：Writer 为 null'); delUri(uri); uri = null; continue; }
-for (let c = 0; c < chunks.length; c++) {
-try { call(w, R.m, chunks[c]); }
-catch (e) { log(R.name + '：第 ' + c + ' 批写入异常 ' + (e && e.message)); wrote = false; break; }
-}
-try { call(w, 'flush'); } catch (e) {}
-try { call(w, 'close'); } catch (e) {}
-w = null; os = null;
-const sz = await sizeOf(uri);
-log(R.name + '：落盘 ' + sz + ' / 期望 ' + blob.size);
-if (sz === blob.size) { log('✅ 成功 ' + R.name + ' → Download/' + fname); return true; }
-if (sz > 0) { log(R.name + '：大小不符，换下一条'); delUri(uri); uri = null; continue; }
-if (wrote) { log(R.name + '：探针读不到但写入无异常 → 保留文件'); return true; }
-delUri(uri); uri = null;
-} catch (e) {
-log(R.name + '：异常 ' + (e && e.message));
-try { if (w) call(w, 'close'); } catch (e2) {}
-try { if (os) call(os, 'close'); } catch (e2) {}
-if (uri) delUri(uri);
-}
-}
-log('❌ MediaStore 全部失败 → 回退 plus.io');
+log('❌ MediaStore 失败 → 回退 plus.io');
 return false;
 }
 async function saveViaPlusPublicDir(blob, fname) {

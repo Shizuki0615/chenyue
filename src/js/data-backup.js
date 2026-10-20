@@ -963,8 +963,18 @@
   //   → 因此只允许两种调用方式：
   //     ① importClass 拿类对象后，静态方法直接「类.方法()」（如 Uri.parse）
   //     ② 实例方法走 plus.android.invoke(obj, '方法', ...参数)；构造用 new 类(参数)
-  //   严禁触碰 invokeStaticMethod / 静态字段 / byte[]（三者在目标机均不可用，
-  //   历史三轮 0 字节 / NPE / invokeStaticMethod is not a function 全部源于此）。
+  //   严禁触碰 invokeStaticMethod / 静态字段 / byte[]（三者在目标机均不可用）。
+  // 写入策略（v8.x 最终版，三轮踩坑后收敛）：
+  //   唯一写入路径 = 私有/公共临时文件 → FileInputStream.transferTo(MediaStore OutputStream)。
+  //   原因：
+  //     · transferTo 在 Java 侧**没有重载**（只有一个 (OutputStream) 版本），不存在
+  //       Native.js 重载解析选错（write(char[]) 拿到 null）→ 静默 0 字节 的隐患；
+  //     · OutputStreamWriter / PrintWriter 经 A.invoke 传大字符串时，Native.js 桥会把
+  //       字符串截断到 ~2214 字节（本机实测 15MB 备份只落盘 2214B），故全部 Writer 兜底
+  //       路线已删除——大文件只能靠 transferTo（整条链路只在最后一步跨 Java，字符串不跨桥）。
+  //   临时文件目录三级回退：PUBLIC_DOWNLOADS → PUBLIC_DOCUMENTS → PRIVATE_DOCUMENTS。
+  //     （本机 PRIVATE_DOCUMENTS 报「执行出错」，必须先试公共目录；公共目录写成功后
+  //      FileInputStream 也能打开其 toLocalURL 路径，transferTo 即可完成。）
   // 为什么必须走 MediaStore（Android 10+ 分区存储）：
   //   直接写 /storage/emulated/0/Download 需 MANAGE_EXTERNAL_STORAGE 权限；
   //   MediaStore.insert 免权限、落在真·Download，且卸载 App 文件保留。
@@ -1048,53 +1058,63 @@
     };
     const delUri = function (u) { try { call(resolver, 'delete', u, null, null); } catch (e) {} };
 
-    // ===== ⓪ 首选：私有临时文件 + InputStream.transferTo(OutputStream) =====
-    // 为什么首选这条：transferTo 在 Java 侧**没有重载**（只有一个 (OutputStream) 版本），
-    // 不存在 Native.js 重载解析选错（write(char[]) 拿到 null）→ 静默 0 字节 的隐患；
-    // 而 plus.io 写应用私有目录在本机已被实测证明可用。整条链路只在最后一步跨 Java。
+    // ---- 临时文件写入：三级目录回退（公共下载 → 公共文档 → 应用私有）----
+    // 本机 PRIVATE_DOCUMENTS 报「执行出错」，故先试公共目录；公共目录 toLocalURL 路径
+    // FileInputStream 可打开，transferTo 即可完成。
     const TMP = '__mochi_backup_tmp.json';
-    const writePrivateTemp = function (str, name) {
-      return new Promise(function (resolve, reject) {
-        const io = plus.io;
-        if (!io) { reject(new Error('无 plus.io')); return; }
-        let done = false;
-        const timer = setTimeout(function () { if (!done) { done = true; reject(new Error('私有文件写入超时')); } }, 20000);
-        const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error('私有文件写入失败')); } };
-        try {
-          io.requestFileSystem(io.PRIVATE_DOCUMENTS, function (fs) {
-            fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
-              fe.createWriter(function (w) {
-                w.onwriteend = function () {
-                  if (done) return;
-                  done = true; clearTimeout(timer);
-                  let p = '';
-                  try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
-                  resolve(p.replace(/^file:\/\//, ''));
-                };
-                w.onerror = fail;
-                try { w.write(str); } catch (e) { fail(e); }
+    const writeTempFile = function (str, name) {
+      const io = plus.io;
+      if (!io) return Promise.reject(new Error('无 plus.io'));
+      const dirs = [];
+      if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+      if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+      try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+      const tryOne = function (idx) {
+        if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+        const d = dirs[idx];
+        return new Promise(function (resolve, reject) {
+          let done = false;
+          const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+          const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
+          try {
+            io.requestFileSystem(d.v, function (fs) {
+              fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
+                fe.createWriter(function (w) {
+                  w.onwriteend = function () {
+                    if (done) return;
+                    done = true; clearTimeout(timer);
+                    let p = '';
+                    try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
+                    resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
+                  };
+                  w.onerror = fail;
+                  try { w.write(str); } catch (e) { fail(e); }
+                }, fail);
               }, fail);
             }, fail);
-          }, fail);
-        } catch (e) { fail(e); }
-      });
+          } catch (e) { fail(e); }
+        }).catch(function () { return tryOne(idx + 1); });
+      };
+      return tryOne(0);
     };
-    let privPath = '';
-    try {
-      privPath = await writePrivateTemp(text, TMP);
-      log('私有临时文件 = ' + privPath + '（' + text.length + ' 字符）');
-    } catch (e) { log('私有临时文件失败：' + (e && e.message)); }
 
-    if (privPath) {
+    // ===== 唯一写入路径：临时文件 + FileInputStream.transferTo(MediaStore OutputStream) =====
+    let tmp;
+    try {
+      tmp = await writeTempFile(text, TMP);
+      log('临时文件 = ' + tmp.path + '（' + tmp.dir + '，' + text.length + ' 字符）');
+    } catch (e) { log('临时文件失败：' + (e && e.message)); return false; }
+
+    if (tmp && tmp.path) {
       let uri = null, os = null, fis = null;
       try {
         uri = call(resolver, 'insert', itemUri, values);
-        if (!uri) { log('⓪insert 为 null'); }
+        if (!uri) { log('insert 为 null'); }
         else {
           os = call(resolver, 'openOutputStream', uri);
-          if (!os) { log('⓪openOutputStream 为 null'); delUri(uri); uri = null; }
+          if (!os) { log('openOutputStream 为 null'); delUri(uri); uri = null; }
           else {
-            const fileObj = ctor('java.io.File', privPath);
+            const fileObj = ctor('java.io.File', tmp.path);
             fis = ctor('java.io.FileInputStream', fileObj);
             const moved = call(fis, 'transferTo', os);
             try { call(fis, 'close'); } catch (e) {}
@@ -1102,9 +1122,9 @@
             try { call(os, 'close'); } catch (e) {}
             fis = null; os = null;
             const sz = await sizeOf(uri);
-            log('⓪transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
+            log('transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
             if (sz === blob.size || sz > 0) {
-              log('✅ 成功 ⓪transferTo → Download/' + fname);
+              log('✅ 成功 transferTo → Download/' + fname);
               return true;
             }
             delUri(uri);
@@ -1112,62 +1132,36 @@
           }
         }
       } catch (e) {
-        log('⓪transferTo 异常：' + (e && e.message));
+        log('transferTo 异常：' + (e && e.message));
         try { if (fis) call(fis, 'close'); } catch (e2) {}
         try { if (os) call(os, 'close'); } catch (e2) {}
         if (uri) delUri(uri);
       }
     }
 
-    // ---- 备用写入路径：new Writer(os) + A.invoke(w, '方法', 分片) ----
-    const routes = [
-      { name: '①OutputStreamWriter.write',        C: 'java.io.OutputStreamWriter', a: [],        m: 'write'  },
-      { name: '②OutputStreamWriter.write(UTF-8)', C: 'java.io.OutputStreamWriter', a: ['UTF-8'], m: 'write'  },
-      { name: '③OutputStreamWriter.append',       C: 'java.io.OutputStreamWriter', a: [],        m: 'append' },
-      { name: '④PrintWriter.write',               C: 'java.io.PrintWriter',        a: [],        m: 'write'  },
-      { name: '⑤PrintWriter.print',               C: 'java.io.PrintWriter',        a: [],        m: 'print'  }
-    ];
-    const CHARS = 65536;
-    const chunks = [];
-    for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
-    if (!chunks.length) chunks.push('');
-
-    for (let i = 0; i < routes.length; i++) {
-      const R = routes[i];
-      let uri = null, os = null, w = null, wrote = true;
-      try {
-        uri = call(resolver, 'insert', itemUri, values);
-        if (!uri) { log(R.name + '：insert 为 null'); continue; }
-        os = call(resolver, 'openOutputStream', uri);
-        if (!os) { log(R.name + '：openOutputStream 为 null'); delUri(uri); uri = null; continue; }
-        try { w = ctor.apply(null, [R.C].concat(R.a).concat([os])); }
-        catch (e) { log(R.name + '：构造 Writer 失败 ' + (e && e.message)); delUri(uri); uri = null; continue; }
-        if (!w) { log(R.name + '：Writer 为 null'); delUri(uri); uri = null; continue; }
-
-        for (let c = 0; c < chunks.length; c++) {
-          try { call(w, R.m, chunks[c]); }
-          catch (e) { log(R.name + '：第 ' + c + ' 批写入异常 ' + (e && e.message)); wrote = false; break; }
-        }
-        try { call(w, 'flush'); } catch (e) {}
-        try { call(w, 'close'); } catch (e) {}
-        w = null; os = null;
-
-        const sz = await sizeOf(uri);
-        log(R.name + '：落盘 ' + sz + ' / 期望 ' + blob.size);
-        if (sz === blob.size) { log('✅ 成功 ' + R.name + ' → Download/' + fname); return true; }
-        if (sz > 0) { log(R.name + '：大小不符，换下一条'); delUri(uri); uri = null; continue; }
-        if (wrote) { log(R.name + '：探针读不到但写入无异常 → 保留文件'); return true; }
-        delUri(uri); uri = null;
-      } catch (e) {
-        log(R.name + '：异常 ' + (e && e.message));
-        try { if (w) call(w, 'close'); } catch (e2) {}
-        try { if (os) call(os, 'close'); } catch (e2) {}
-        if (uri) delUri(uri);
-      }
-    }
-    log('❌ MediaStore 全部失败 → 回退 plus.io');
+    // Writer 路线（OutputStreamWriter/PrintWriter）已删除：
+    // 本机实测 A.invoke 传大字符串会被 Native.js 桥截断到 ~2214 字节，
+    // 15MB 备份只落盘 2214B，无法修复 → 唯一可靠路径是 transferTo。
+    log('❌ MediaStore 失败 → 回退 plus.io');
     return false;
   }
+
+  // 套壳 App（HBuilderX 5+）：把文件直接写到系统公共「下载」目录——
+  // 这样卸载 App 不会连带删掉备份（应用私有目录 _doc/ 卸载即清空）。
+  // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS，
+  // 再不行退回应用私有 _doc/（PRIVATE_DOCUMENTS，总能写，但卸载会丢）。
+  // Android 10+ 公共目录走 MediaStore，无需存储权限；旧版本若缺权限会失败 → 交给外层网页下载兜底。
+  // FIX 2026-10-19（d2d9bb8）：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——
+  //   该版本 FileWriter 对非 String 入参隐式 String(data)，Blob → "[object Blob]"（14 字符垃圾），
+  //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件是垃圾
+  //   → 用户点"打开/导入"全挂 = 表面"下载不了"。
+  //   当次修法：Blob→Uint8Array 再 write。但实报仍失败——同一套 String(data) 隐式转换会把
+  //   Uint8Array 序列化成 "123,34,104,..."（逗号分隔字节），照样是垃圾。
+  // FIX 2026-10-20：统一走 String 写入——FileWriter.write(String) 是 plus.io 全版本最稳的入参：
+  //   ① 文本类 blob（JSON/text/xml，备份主路径）→ blob.text() 拿原始字符串直接 write；
+  //   ② 二进制 blob（docx 等）→ ArrayBuffer→Uint8Array→逐字节 String.fromCharCode 拼成 binary string，
+  //      write 时原样落盘（FileWriter 对 String 写入不做编码转换，每个 char code 当一个字节）。
+  //   另加：每步独立 Promise + 超时防挂起；逐目录三级回退；console.error 定位失败点。
   async function saveViaPlusPublicDir(blob, fname) {
     const plus = window.plus;
     if (!plus || !plus.io) return 'skip';
