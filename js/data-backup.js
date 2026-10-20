@@ -956,115 +956,217 @@
     }
   }
 
-  // ===== 套壳 App（HBuilderX 5+）公共目录写入 =====
-  // 目标：写到系统真正的 Download 目录，卸载 App 不丢（与应用专属目录 /Android/data/<pkg>/... 不同）。
-  // 两条路径，优先级：MediaStore（Android 10+） > plus.io PUBLIC_DOWNLOADS（旧安卓）。
-  // v3.xx：MediaStore 通过 Native.js 调用 ContentResolver.insert + OutputStreamWriter/PrintWriter
-  //   等纯 String writer 写入——全部路径**不依赖 byte[]**（byte[] 跨 Native.js 往返在部分机型上
-  //   返回 null 导致 NPE）。probeSize 在 insert 后有延迟，带 3 次重试。
-  // v3.xx：plus.io 路径统一走 FileWriter.write(String)，避免 Blob/Uint8Array 被隐式 String() 转成
-  //   "[object Blob]" 或 "123,34,..." 垃圾（见 saveViaPlusPublicDir 注释）。
-
-
-  // ===== Android 套壳：直接写系统 Download 目录 =====
-  // 核心思路：Java Environment 给真正的 Download 路径，plus.io FileWriter 写文件
-  // —— 不用 ContentResolver、不用 MediaStore、不用 PrintWriter/OutputStreamWriter
-  //    这些 Native.java 跨语言对象在部分设备上静默失败。
-  //    只用两个我们有把握的东西：Environment API 拿路径 + plus.io 写文件。
+  // ===== 套壳 App（HBuilderX 5+）：把备份写进系统真正的「下载」目录（卸载 App 不丢）=====
+  // 本机运行时取证（来自用户诊断日志，已确认）：
+  //   plus.android.importClass ✅ / plus.android.invoke ✅ /
+  //   plus.android.invokeStaticMethod ❌（本机不存在）/ 静态字段读取返回 undefined / A.newArray ❌。
+  //   → 因此只允许两种调用方式：
+  //     ① importClass 拿类对象后，静态方法直接「类.方法()」（如 Uri.parse）
+  //     ② 实例方法走 plus.android.invoke(obj, '方法', ...参数)；构造用 new 类(参数)
+  //   严禁触碰 invokeStaticMethod / 静态字段 / byte[]（三者在目标机均不可用，
+  //   历史三轮 0 字节 / NPE / invokeStaticMethod is not a function 全部源于此）。
+  // 为什么必须走 MediaStore（Android 10+ 分区存储）：
+  //   直接写 /storage/emulated/0/Download 需 MANAGE_EXTERNAL_STORAGE 权限；
+  //   MediaStore.insert 免权限、落在真·Download，且卸载 App 文件保留。
   async function saveViaMediaStoreDownload(blob, fname, mime) {
     const plus = window.plus;
-    if (!plus || !plus.android || !plus.io) return false;
+    if (!plus || !plus.android) return false;
     const A = plus.android;
-    const IO = plus.io;
     const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
 
-    // 把 blob 转成 plus.io FileWriter.write(String) 能原样落盘的字符串
-    let writeStr = '';
-    try { writeStr = await blob.text(); } catch (e) { log('blob.text 失败', e && e.message); return false; }
-    if (typeof writeStr !== 'string' || !writeStr) { log('blob.text 返回空'); return false; }
+    // ---- 仅文本备份走 MediaStore（JSON 主路径；二进制交 plus.io 兜底）----
+    const t = (blob.type || '').toLowerCase();
+    const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+    if (!isText) { log('非文本，跳过 MediaStore'); return false; }
 
-    // 带超时的 promise 包装（plus.io 回调永不触发时 10s 兜底）
-    const step = (fn, label) => new Promise((resolve, reject) => {
-      let done = false;
-      const t = setTimeout(() => { if (!done) { done = true; reject(new Error(label + ' 超时')); } }, 10000);
-      try {
-        fn((...args) => { if (!done) { done = true; clearTimeout(t); resolve(...args); } },
-           (e) => { if (!done) { done = true; clearTimeout(t); reject(e || new Error(label)); } });
-      } catch (e) { if (!done) { done = true; clearTimeout(t); reject(e); } }
-    });
+    let text;
+    try { text = await blob.text(); } catch (e) { log('blob.text 失败 ' + (e && e.message)); return false; }
+    if (typeof text !== 'string' || !text) { log('blob.text 为空'); return false; }
 
-    // 获取真正的系统 Download 目录路径
-    let realPath = null;
+    // ---- 三个工具：只用本机可用的 API ----
+    const classOf = function (n) {
+      if (typeof A.importClass !== 'function') throw new Error('无 importClass');
+      const c = A.importClass(n);
+      if (!c) throw new Error('importClass 返回 null: ' + n);
+      return c;
+    };
+    const call = function (obj, method) {          // 实例方法 → 强制 A.invoke
+      const args = [].slice.call(arguments, 2);
+      if (typeof A.invoke !== 'function') throw new Error('无 A.invoke');
+      return A.invoke.apply(A, [obj, method].concat(args));
+    };
+    const ctor = function (n) {                     // 构造 → importClass + new
+      const C = classOf(n);
+      const args = [].slice.call(arguments, 1);
+      return Reflect.construct(C, args);
+    };
+
+    // ---- Uri.parse('content://media/external/downloads')：类对象直调静态方法 ----
+    let itemUri;
+    try { itemUri = classOf('android.net.Uri').parse('content://media/external/downloads'); }
+    catch (e) { log('Uri.parse 异常 ' + (e && e.message)); return false; }
+    if (!itemUri) { log('Uri.parse 返回 null'); return false; }
+
+    // ---- ContentValues：new + put（全走 A.invoke）----
+    let values;
     try {
-      // Environment.getExternalStoragePublicDirectory("DIRECTORY_DOWNLOADS")
-      // 返回的 File 对象 → getAbsolutePath() 即 /storage/emulated/0/Download
-      const f = A.invokeStaticMethod('android.os.Environment', 'getExternalStoragePublicDirectory', 'DIRECTORY_DOWNLOADS');
-      if (f) {
-        realPath = A.invoke(f, 'getAbsolutePath');
-        log('Java Download 路径 =', realPath);
+      values = ctor('android.content.ContentValues');
+      call(values, 'put', '_display_name', fname);
+      call(values, 'put', 'mime_type', mime || 'application/json');
+      call(values, 'put', 'relative_path', 'Download');   // 真·Download 子目录
+    } catch (e) { log('ContentValues 异常 ' + (e && e.message)); return false; }
+
+    // ---- ContentResolver ----
+    let resolver;
+    try { resolver = call(A.runtimeMainActivity(), 'getContentResolver'); }
+    catch (e) { log('getContentResolver 异常 ' + (e && e.message)); return false; }
+    if (!resolver) { log('resolver 为 null'); return false; }
+
+    // ---- probeSize：openFileDescriptor(uri,'r').getStatSize()，3 次重试（insert 后有延迟）----
+    const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    const sizeOf = async function (u) {
+      for (let i = 0; i < 3; i++) {
+        if (i) await sleep(300);
+        try {
+          const pfd = call(resolver, 'openFileDescriptor', u, 'r');
+          if (pfd) {
+            const n = call(pfd, 'getStatSize');
+            try { call(pfd, 'close'); } catch (e) {}
+            if (typeof n === 'number' && n > 0) return n;
+          }
+        } catch (e) {}
+        try {
+          const ins = call(resolver, 'openInputStream', u);
+          if (ins) {
+            const n = call(ins, 'available');
+            try { call(ins, 'close'); } catch (e) {}
+            if (typeof n === 'number' && n > 0) return n;
+          }
+        } catch (e) {}
       }
-    } catch (e) { log('Environment.getExternalStoragePublicDirectory 异常', e && e.message); }
-    if (!realPath) { log('拿不到系统 Download 路径'); return false; }
+      return -1;
+    };
+    const delUri = function (u) { try { call(resolver, 'delete', u, null, null); } catch (e) {} };
 
-    // 构造目标路径（确保路径存在）
-    const fullPath = realPath + '/' + fname;
-    const fileUrl = 'file://' + fullPath;
-    log('目标 fileUrl =', fileUrl);
-
-    // 用 plus.io 写文件（resolveLocalFileSystemURL → getFile → createWriter → truncate → write）
+    // ===== ⓪ 首选：私有临时文件 + InputStream.transferTo(OutputStream) =====
+    // 为什么首选这条：transferTo 在 Java 侧**没有重载**（只有一个 (OutputStream) 版本），
+    // 不存在 Native.js 重载解析选错（write(char[]) 拿到 null）→ 静默 0 字节 的隐患；
+    // 而 plus.io 写应用私有目录在本机已被实测证明可用。整条链路只在最后一步跨 Java。
+    const TMP = '__mochi_backup_tmp.json';
+    const writePrivateTemp = function (str, name) {
+      return new Promise(function (resolve, reject) {
+        const io = plus.io;
+        if (!io) { reject(new Error('无 plus.io')); return; }
+        let done = false;
+        const timer = setTimeout(function () { if (!done) { done = true; reject(new Error('私有文件写入超时')); } }, 20000);
+        const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error('私有文件写入失败')); } };
+        try {
+          io.requestFileSystem(io.PRIVATE_DOCUMENTS, function (fs) {
+            fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
+              fe.createWriter(function (w) {
+                w.onwriteend = function () {
+                  if (done) return;
+                  done = true; clearTimeout(timer);
+                  let p = '';
+                  try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
+                  resolve(p.replace(/^file:\/\//, ''));
+                };
+                w.onerror = fail;
+                try { w.write(str); } catch (e) { fail(e); }
+              }, fail);
+            }, fail);
+          }, fail);
+        } catch (e) { fail(e); }
+      });
+    };
+    let privPath = '';
     try {
-      const dirEntry = await step(
-        (ok, fail) => IO.resolveLocalFileSystemURL('file://' + realPath, ok, fail),
-        'resolveLocalFileSystemURL(dir)');
-      log('目录 entry =', !!dirEntry);
+      privPath = await writePrivateTemp(text, TMP);
+      log('私有临时文件 = ' + privPath + '（' + text.length + ' 字符）');
+    } catch (e) { log('私有临时文件失败：' + (e && e.message)); }
 
-      let fileEntry;
+    if (privPath) {
+      let uri = null, os = null, fis = null;
       try {
-        fileEntry = await step(
-          (ok, fail) => dirEntry.getFile(fname, { create: true, exclusive: false }, ok, fail),
-          'getFile(create)');
+        uri = call(resolver, 'insert', itemUri, values);
+        if (!uri) { log('⓪insert 为 null'); }
+        else {
+          os = call(resolver, 'openOutputStream', uri);
+          if (!os) { log('⓪openOutputStream 为 null'); delUri(uri); uri = null; }
+          else {
+            const fileObj = ctor('java.io.File', privPath);
+            fis = ctor('java.io.FileInputStream', fileObj);
+            const moved = call(fis, 'transferTo', os);
+            try { call(fis, 'close'); } catch (e) {}
+            try { call(os, 'flush'); } catch (e) {}
+            try { call(os, 'close'); } catch (e) {}
+            fis = null; os = null;
+            const sz = await sizeOf(uri);
+            log('⓪transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
+            if (sz === blob.size || sz > 0) {
+              log('✅ 成功 ⓪transferTo → Download/' + fname);
+              return true;
+            }
+            delUri(uri);
+            uri = null;
+          }
+        }
       } catch (e) {
-        // Android 10+ 分区存储可能不允许 create，试 resolve 已存在的（如存在则可写）
-        log('getFile(create) 被拒，试 resolve 已存在');
-        fileEntry = await step(
-          (ok, fail) => IO.resolveLocalFileSystemURL(fileUrl, ok, fail),
-          'resolveLocalFileSystemURL(file)');
+        log('⓪transferTo 异常：' + (e && e.message));
+        try { if (fis) call(fis, 'close'); } catch (e2) {}
+        try { if (os) call(os, 'close'); } catch (e2) {}
+        if (uri) delUri(uri);
       }
-      log('文件 entry =', !!fileEntry);
-      if (!fileEntry) { log('拿不到文件 entry'); return false; }
-
-      const writer = await step((ok, fail) => fileEntry.createWriter(ok, fail), 'createWriter');
-      log('writer =', !!writer);
-      if (!writer) return false;
-
-      // 清除旧内容 + 写入
-      await new Promise((r, j) => {
-        let done = false;
-        const t = setTimeout(() => { if (!done) { done = true; j(new Error('truncate 超时')); } }, 10000);
-        writer.onwriteend = () => { if (!done) { done = true; clearTimeout(t); r(); } };
-        writer.onerror = (e) => { if (!done) { done = true; clearTimeout(t); j(e || new Error('truncate')); } };
-        try { writer.truncate(0); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
-      });
-
-      await new Promise((r, j) => {
-        let done = false;
-        const t = setTimeout(() => { if (!done) { done = true; j(new Error('write 超时')); } }, 30000);
-        writer.onwriteend = () => { if (!done) { done = true; clearTimeout(t); r(); } };
-        writer.onerror = (e) => { if (!done) { done = true; clearTimeout(t); j(e || new Error('write')); } };
-        try { writer.write(writeStr); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
-      });
-
-      // 验证落盘大小
-      let actualSize = -1;
-      try { actualSize = await step((ok, fail) => fileEntry.file(ok, fail), 'file()'); } catch (e) {}
-      actualSize = actualSize && typeof actualSize.size === 'number' ? actualSize.size : -1;
-      log('✅ 写入完成：' + fullPath + '（落盘 ' + actualSize + ' / 期望 ' + blob.size + ' 字节）');
-      if (actualSize > 0) return true;  // 有字节就算成功（probe 偶尔读不准）
-      return true;  // 就算 probeSize 不准也信 plus.io
-    } catch (e) {
-      log('plus.io 直接写 Download 失败：' + (e && e.message));
-      return false;
     }
+
+    // ---- 备用写入路径：new Writer(os) + A.invoke(w, '方法', 分片) ----
+    const routes = [
+      { name: '①OutputStreamWriter.write',        C: 'java.io.OutputStreamWriter', a: [],        m: 'write'  },
+      { name: '②OutputStreamWriter.write(UTF-8)', C: 'java.io.OutputStreamWriter', a: ['UTF-8'], m: 'write'  },
+      { name: '③OutputStreamWriter.append',       C: 'java.io.OutputStreamWriter', a: [],        m: 'append' },
+      { name: '④PrintWriter.write',               C: 'java.io.PrintWriter',        a: [],        m: 'write'  },
+      { name: '⑤PrintWriter.print',               C: 'java.io.PrintWriter',        a: [],        m: 'print'  }
+    ];
+    const CHARS = 65536;
+    const chunks = [];
+    for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
+    if (!chunks.length) chunks.push('');
+
+    for (let i = 0; i < routes.length; i++) {
+      const R = routes[i];
+      let uri = null, os = null, w = null, wrote = true;
+      try {
+        uri = call(resolver, 'insert', itemUri, values);
+        if (!uri) { log(R.name + '：insert 为 null'); continue; }
+        os = call(resolver, 'openOutputStream', uri);
+        if (!os) { log(R.name + '：openOutputStream 为 null'); delUri(uri); uri = null; continue; }
+        try { w = ctor.apply(null, [R.C].concat(R.a).concat([os])); }
+        catch (e) { log(R.name + '：构造 Writer 失败 ' + (e && e.message)); delUri(uri); uri = null; continue; }
+        if (!w) { log(R.name + '：Writer 为 null'); delUri(uri); uri = null; continue; }
+
+        for (let c = 0; c < chunks.length; c++) {
+          try { call(w, R.m, chunks[c]); }
+          catch (e) { log(R.name + '：第 ' + c + ' 批写入异常 ' + (e && e.message)); wrote = false; break; }
+        }
+        try { call(w, 'flush'); } catch (e) {}
+        try { call(w, 'close'); } catch (e) {}
+        w = null; os = null;
+
+        const sz = await sizeOf(uri);
+        log(R.name + '：落盘 ' + sz + ' / 期望 ' + blob.size);
+        if (sz === blob.size) { log('✅ 成功 ' + R.name + ' → Download/' + fname); return true; }
+        if (sz > 0) { log(R.name + '：大小不符，换下一条'); delUri(uri); uri = null; continue; }
+        if (wrote) { log(R.name + '：探针读不到但写入无异常 → 保留文件'); return true; }
+        delUri(uri); uri = null;
+      } catch (e) {
+        log(R.name + '：异常 ' + (e && e.message));
+        try { if (w) call(w, 'close'); } catch (e2) {}
+        try { if (os) call(os, 'close'); } catch (e2) {}
+        if (uri) delUri(uri);
+      }
+    }
+    log('❌ MediaStore 全部失败 → 回退 plus.io');
+    return false;
   }
   async function saveViaPlusPublicDir(blob, fname) {
     const plus = window.plus;
