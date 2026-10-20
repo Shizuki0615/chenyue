@@ -1047,39 +1047,57 @@
         throw new Error('该运行时没有 plus.android.invoke');
       };
 
-      // [FIX 2026-10-20 v3] 五条写入路径逐条试：HBuilderX 的 Native.js 对「同名重载 / 静态方法 /
-      //   带参构造」支持很不一致——实测 android.util.Base64.decode(String,int)（与 (byte[],int) 重载
-      //   撞车）直接失败、new OutputStreamWriter(out,'UTF-8') 静默失效。所以不再赌单一路径，
-      //   每条都跑一轮「insert → 写全部块 → close → query _size 校验真实落盘大小」：
-      //   对上就成；对不上（含 0 字节）就删掉这条空记录，换下一条。全失败再回退 plus.io。
-      //   ① String.getBytes('UTF-8') → OutputStream.write(byte[])（ContentValues.put(String,String) 实测可用，
-      //      证明「String 入参 + 实例方法」在这套桥上是通的）
-      //   ② Charset.forName('UTF-8').encode(块) → ByteBuffer.array() → write(byte[])
-      //   ③ java.io.PrintWriter(out).print(块)（内部 OutputStreamWriter 由 Java 侧自己 new，不经过桥）
-      //   ④ java.io.OutputStreamWriter(out) 单参构造 → write(块)
-      //   ⑤ java.io.OutputStreamWriter(out,'UTF-8') → write(块)（旧写法，留作对照）
+      // [FIX 2026-10-20 v4] 真机日志定位到两个硬事实，这版据此重写：
+      //   1) Java 数组（byte[]）在 HBuilderX Native.js 下**往返不可用**——实报
+      //      「①String.getBytes+write 异常：java.lang.NullPointerException: Attempt to get length of
+      //        null array; at android.os.ParcelFileDescriptor$AutoCloseOutputStream」：
+      //      String.getBytes() / ByteBuffer.array() 返回的 byte[] 到 JS 侧就是 null，再喂回 write(byte[])
+      //      必炸。→ 彻底删掉所有「先拿 byte[] 再写」的路径，只留「把 String 交给 Java 侧自己编码落盘」。
+      //   2) 校验用的 plus.android.newArray **不存在**（实报「A.newArray is not a function」）。
+      //      → 探针换成不需要数组参数、也不需要数组返回的两个标准调用：
+      //        resolver.openFileDescriptor(u,'r').getStatSize()（long）/ resolver.openInputStream(u).available()（int）
+      //   每条路径跑一轮「insert → 写全部块 → 关流 → 探针量真实落盘大小」：
+      //   对得上才成；已知不符（含 0 字节）就删掉这条记录换下一条；探针读不到就留作候选。
       const routes = [
-        { name: '①String.getBytes+write', open: function (os) {
-            const S = cls('java.lang.String');
-            return function (chunk) { tryCall(os, 'write', tryCall(new S(chunk), 'getBytes', 'UTF-8')); };
-          } },
-        { name: '②Charset.encode+write', open: function (os) {
-            const cs = tryCall(cls('java.nio.charset.Charset'), 'forName', 'UTF-8');
-            return function (chunk) { tryCall(os, 'write', tryCall(tryCall(cs, 'encode', chunk), 'array')); };
-          } },
-        { name: '③PrintWriter.print', open: function (os) {
+        { name: '①PrintWriter.print', open: function (os) {
             const w = new (cls('java.io.PrintWriter'))(os);
-            return function (chunk) { tryCall(w, 'print', chunk); };
+            return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
           } },
-        { name: '④OutputStreamWriter(out)', open: function (os) {
+        { name: '②PrintWriter.write', open: function (os) {
+            const w = new (cls('java.io.PrintWriter'))(os);
+            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
+          } },
+        { name: '③Writer.write(out)', open: function (os) {
             const w = new (cls('java.io.OutputStreamWriter'))(os);
-            return function (chunk) { tryCall(w, 'write', chunk); };
+            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
           } },
-        { name: '⑤OutputStreamWriter(out,UTF-8)', open: function (os) {
+        { name: '④Writer.write(out,UTF-8)', open: function (os) {
             const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
-            return function (chunk) { tryCall(w, 'write', chunk); };
+            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
+          } },
+        { name: '⑤PrintStream.print', open: function (os) {
+            const w = new (cls('java.io.PrintStream'))(os);
+            return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
+          } },
+        { name: '⑥Writer.append(out)', open: function (os) {
+            const w = new (cls('java.io.OutputStreamWriter'))(os);
+            return { put: function (c) { tryCall(w, 'append', c); }, end: function () { tryCall(w, 'flush'); tryCall(w, 'close'); } };
           } }
       ];
+
+      // 探针：量真实落盘大小。**不用数组参数、也不用数组返回**（plus.android 没有 newArray）
+      const probeSize = function (u) {
+        try {
+          const pfd = tryCall(resolver, 'openFileDescriptor', u, 'r');
+          if (pfd) { const n = tryCall(pfd, 'getStatSize'); try { tryCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+        } catch (e) {}
+        try {
+          const ins = tryCall(resolver, 'openInputStream', u);
+          if (ins) { const n = tryCall(ins, 'available'); try { tryCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+        } catch (e) {}
+        return -1;
+      };
+      const tryDel = function (u) { try { tryCall(resolver, 'delete', u, null, null); } catch (e) {} };
 
       // 整串分块过桥（每块 ≤10 万字符 ≈ ≤30 万 UTF-8 字节），避免整份备份一次推过 JSBridge
       const CHARS = 100000;
@@ -1087,6 +1105,7 @@
       for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
       if (!chunks.length) chunks.push('');
 
+      let pending = null;   // 探针读不到大小时留下的候选 uri（先不删，只留一条）
       for (let ri = 0; ri < routes.length; ri++) {
         const R = routes[ri];
         let uri = null;
@@ -1094,31 +1113,32 @@
           uri = tryCall(resolver, 'insert', itemUri, values);
           if (!uri) { log(R.name + '：insert 返回 null'); continue; }
           const os = tryCall(resolver, 'openOutputStream', uri);
-          if (!os) { log(R.name + '：openOutputStream 返回 null'); try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {} continue; }
-          const put = R.open(os);
-          for (let ci = 0; ci < chunks.length; ci++) put(chunks[ci]);
-          try { tryCall(os, 'flush'); } catch (e) {}
+          if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); continue; }
+          const sink = R.open(os);
+          for (let ci = 0; ci < chunks.length; ci++) sink.put(chunks[ci]);
+          try { sink.end(); } catch (e) { log(R.name + '：关 writer 异常 ' + (e && e.message || e)); }
           try { tryCall(os, 'close'); } catch (e) {}
 
-          // 校验真实落盘大小（MediaStore 的 _size 列）
-          let sz = -1;
-          try {
-            const proj = A.newArray('java.lang.String', 1);
-            A.arraySet(proj, 0, '_size');
-            const cur = tryCall(resolver, 'query', uri, proj, null, null, null);
-            if (cur && tryCall(cur, 'moveToFirst')) { sz = tryCall(cur, 'getLong', 0); try { tryCall(cur, 'close'); } catch (e) {} }
-          } catch (e) { log(R.name + '：_size 校验异常 ' + (e && e.message || e)); }
-
-          if (sz === blob.size) { log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname); return true; }
-          if (sz < 0) { log('写入完成但无法校验落盘大小（_size 读不到），按成功处理：' + R.name); return true; }
-          log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判失败换下一条');
-          try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {}   // 删掉这条空/残缺记录，别在下载里留垃圾
+          const sz = probeSize(uri);
+          if (sz >= 0 && sz === blob.size) {
+            log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname);
+            if (pending) tryDel(pending);
+            return true;
+          }
+          if (sz >= 0) {
+            log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判失败换下一条');
+            tryDel(uri);   // 删掉这条空/残缺记录，别在「下载」里留垃圾
+            continue;
+          }
+          log(R.name + '：写调用无异常，但探针读不到落盘大小（无法判定）');
+          if (pending) tryDel(uri); else pending = uri;
         } catch (e) {
           log(R.name + ' 异常：' + (e && e.message || e));
-          if (uri) { try { tryCall(resolver, 'delete', uri, null, null); } catch (e2) {} }
+          if (uri) tryDel(uri);
         }
       }
-      log('五条写入路径全部失败 → 回退 plus.io（内容保留，位置在应用专属）');
+      if (pending) { log('探针不可用：保留第一条无异常路径产出的文件（未能验证大小）'); return true; }
+      log('全部写入路径失败 → 回退 plus.io（内容保留，位置在应用专属）');
       return false;
     } catch (e) {
       log('失败：' + (e && e.message));

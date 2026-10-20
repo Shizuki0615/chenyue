@@ -732,31 +732,48 @@ if (typeof A.invoke === 'function') return A.invoke.apply(A, [o, n].concat(a));
 throw new Error('该运行时没有 plus.android.invoke');
 };
 const routes = [
-{ name: '①String.getBytes+write', open: function (os) {
-const S = cls('java.lang.String');
-return function (chunk) { tryCall(os, 'write', tryCall(new S(chunk), 'getBytes', 'UTF-8')); };
-} },
-{ name: '②Charset.encode+write', open: function (os) {
-const cs = tryCall(cls('java.nio.charset.Charset'), 'forName', 'UTF-8');
-return function (chunk) { tryCall(os, 'write', tryCall(tryCall(cs, 'encode', chunk), 'array')); };
-} },
-{ name: '③PrintWriter.print', open: function (os) {
+{ name: '①PrintWriter.print', open: function (os) {
 const w = new (cls('java.io.PrintWriter'))(os);
-return function (chunk) { tryCall(w, 'print', chunk); };
+return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
 } },
-{ name: '④OutputStreamWriter(out)', open: function (os) {
+{ name: '②PrintWriter.write', open: function (os) {
+const w = new (cls('java.io.PrintWriter'))(os);
+return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
+} },
+{ name: '③Writer.write(out)', open: function (os) {
 const w = new (cls('java.io.OutputStreamWriter'))(os);
-return function (chunk) { tryCall(w, 'write', chunk); };
+return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
 } },
-{ name: '⑤OutputStreamWriter(out,UTF-8)', open: function (os) {
+{ name: '④Writer.write(out,UTF-8)', open: function (os) {
 const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
-return function (chunk) { tryCall(w, 'write', chunk); };
+return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
+} },
+{ name: '⑤PrintStream.print', open: function (os) {
+const w = new (cls('java.io.PrintStream'))(os);
+return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
+} },
+{ name: '⑥Writer.append(out)', open: function (os) {
+const w = new (cls('java.io.OutputStreamWriter'))(os);
+return { put: function (c) { tryCall(w, 'append', c); }, end: function () { tryCall(w, 'flush'); tryCall(w, 'close'); } };
 } }
 ];
+const probeSize = function (u) {
+try {
+const pfd = tryCall(resolver, 'openFileDescriptor', u, 'r');
+if (pfd) { const n = tryCall(pfd, 'getStatSize'); try { tryCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+} catch (e) {}
+try {
+const ins = tryCall(resolver, 'openInputStream', u);
+if (ins) { const n = tryCall(ins, 'available'); try { tryCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+} catch (e) {}
+return -1;
+};
+const tryDel = function (u) { try { tryCall(resolver, 'delete', u, null, null); } catch (e) {} };
 const CHARS = 100000;
 const chunks = [];
 for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
 if (!chunks.length) chunks.push('');
+let pending = null;   // 探针读不到大小时留下的候选 uri（先不删，只留一条）
 for (let ri = 0; ri < routes.length; ri++) {
 const R = routes[ri];
 let uri = null;
@@ -764,28 +781,31 @@ try {
 uri = tryCall(resolver, 'insert', itemUri, values);
 if (!uri) { log(R.name + '：insert 返回 null'); continue; }
 const os = tryCall(resolver, 'openOutputStream', uri);
-if (!os) { log(R.name + '：openOutputStream 返回 null'); try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {} continue; }
-const put = R.open(os);
-for (let ci = 0; ci < chunks.length; ci++) put(chunks[ci]);
-try { tryCall(os, 'flush'); } catch (e) {}
+if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); continue; }
+const sink = R.open(os);
+for (let ci = 0; ci < chunks.length; ci++) sink.put(chunks[ci]);
+try { sink.end(); } catch (e) { log(R.name + '：关 writer 异常 ' + (e && e.message || e)); }
 try { tryCall(os, 'close'); } catch (e) {}
-let sz = -1;
-try {
-const proj = A.newArray('java.lang.String', 1);
-A.arraySet(proj, 0, '_size');
-const cur = tryCall(resolver, 'query', uri, proj, null, null, null);
-if (cur && tryCall(cur, 'moveToFirst')) { sz = tryCall(cur, 'getLong', 0); try { tryCall(cur, 'close'); } catch (e) {} }
-} catch (e) { log(R.name + '：_size 校验异常 ' + (e && e.message || e)); }
-if (sz === blob.size) { log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname); return true; }
-if (sz < 0) { log('写入完成但无法校验落盘大小（_size 读不到），按成功处理：' + R.name); return true; }
+const sz = probeSize(uri);
+if (sz >= 0 && sz === blob.size) {
+log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname);
+if (pending) tryDel(pending);
+return true;
+}
+if (sz >= 0) {
 log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判失败换下一条');
-try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {}   // 删掉这条空/残缺记录，别在下载里留垃圾
+tryDel(uri);   // 删掉这条空/残缺记录，别在「下载」里留垃圾
+continue;
+}
+log(R.name + '：写调用无异常，但探针读不到落盘大小（无法判定）');
+if (pending) tryDel(uri); else pending = uri;
 } catch (e) {
 log(R.name + ' 异常：' + (e && e.message || e));
-if (uri) { try { tryCall(resolver, 'delete', uri, null, null); } catch (e2) {} }
+if (uri) tryDel(uri);
 }
 }
-log('五条写入路径全部失败 → 回退 plus.io（内容保留，位置在应用专属）');
+if (pending) { log('探针不可用：保留第一条无异常路径产出的文件（未能验证大小）'); return true; }
+log('全部写入路径失败 → 回退 plus.io（内容保留，位置在应用专属）');
 return false;
 } catch (e) {
 log('失败：' + (e && e.message));
