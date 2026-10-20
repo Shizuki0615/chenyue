@@ -55,6 +55,7 @@ if (_shellOrigTitleNView === null) _shellOrigTitleNView = false;
 }
 function shellMarkFs(on) {
 _shellFsOnFlag = !!on;
+try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
 try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
 try {
 if (window.plus && plus.webview) {
@@ -461,7 +462,7 @@ if (e.key === 'Enter' || e.key === ' ') openFsHelp(e);
 }
 function syncFsClass() {
 const d = document.documentElement;
-const _fs = isFullscreen();
+const _fs = isFullscreen() || shellFsOn();
 d.classList.toggle('fs-active', _fs);
 d.classList.toggle('shell-fs-active', shellFsOn());
 if (isIOS) d.classList.toggle('ios-native-fs', _fs);

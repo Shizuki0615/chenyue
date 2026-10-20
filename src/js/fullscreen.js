@@ -94,21 +94,14 @@
   }
   function shellMarkFs(on) {
     _shellFsOnFlag = !!on;
-    // v3.33.x FIX：套壳原生全屏不挂 .fs-active——该类是给浏览器 Fullscreen API 用的，
-    // 会改 chat-head/.gs-title 等的 padding-top（假设浏览器全屏语义）。套壳里
-    // setFullscreen(true) 只隐藏系统状态栏、WebView 安全区语义不变，挂 .fs-active
-    // 反而把状态行顶到屏幕最顶端、把页面标题挤没（用户实报：状态栏覆盖手机顶格、
-    // 标题栏消失）。移动端 .phone 默认已是 100dvh + padding:0，无需 .fs-active 帮忙。
-    // fsVisualActive()/fsAnyActive() 仍读 shellFsOn()，开关显示不受影响。
-
-    // v3.33.x：套壳全屏态 CSS 钩子——只用于隐藏页面标题，不改顶部 padding（否则又回到
-    // 状态栏顶格重叠的老问题）。
+    // v3.33.x：套壳原生全屏挂 .fs-active——用户要的就是「App 状态栏（时间/电量/品牌）
+    // 覆盖手机系统状态栏」的沉浸观感，.fs-active 让 .phone 铺满、状态行顶到屏幕顶端。
+    // 原生标题栏(titleNView)另行 setStyle(false) 隐藏，不会被状态行盖住后又「消失」。
+    try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
     try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
 
-    // v3.33.x：隐藏套壳原生标题栏(titleNView)——它显示页面 <title>「辰光玥影」。
-    // 原 .fs-active 把状态行顶到 y=0 时恰好盖住了透明标题栏的文字，标题「消失」；
-    // 用户明确这是全屏下应保留的正常行为、不要让它再显示。撤掉 .fs-active 后标题栏
-    // 重新露出，这里主动隐藏原生标题栏来保持「全屏不显示页面标题」的视觉；退出全屏还原。
+    // v3.33.x：隐藏套壳原生标题栏(titleNView)——它显示页面 <title>「辰光玥影」，
+    // 全屏下不应露出。退出全屏时还原。
     try {
       if (window.plus && plus.webview) {
         const wv = plus.webview.currentWebview();
@@ -658,11 +651,9 @@
   // v3.5.11x：Fullscreen API 激活时给根元素加 fs-active 类（挖孔屏顶部安全区适配）
   function syncFsClass() {
     const d = document.documentElement;
-    // v3.33.x FIX：套壳原生全屏不参与 .fs-active 判定（见 shellMarkFs 注释）——
-    // .fs-active 只给浏览器 Fullscreen API 用（isFullscreen()）。套壳全屏由
-    // setFullscreen 原生处理，CSS 走默认移动端形态（.phone 100dvh + .statusbar
-    // safe-area padding），不再被 .fs-active 改写顶部间距。
-    const _fs = isFullscreen();
+    // v3.33.x：套壳原生全屏也算「全屏态」——不并进来时回前台被重放的重放调用会把
+    // 刚挂上的 .fs-active 又撤掉（.phone 高度/顶部安全区随之回退），全屏形同没开。
+    const _fs = isFullscreen() || shellFsOn();
     d.classList.toggle('fs-active', _fs);
     // v3.33.x：套壳原生全屏态 CSS 钩子——shellMarkFs 已在切换时 toggle，这里再按
     // shellFsOn() 实态兜底同步一次（原生 isFullscreen 可能在 shellMarkFs 之外变化）。
