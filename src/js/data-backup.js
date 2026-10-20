@@ -967,52 +967,106 @@
 
   async function saveViaMediaStoreDownload(blob, fname, mime) {
     const plus = window.plus;
-    if (!plus || !plus.android || typeof plus.android.importClass !== 'function') return false;
+    if (!plus || !plus.android) return false;
+    const A = plus.android;
+    const hasImport = typeof A.importClass === 'function';
+    const hasInvoke = typeof A.invoke === 'function';
+    const hasInvokeStatic = typeof A.invokeStaticMethod === 'function';
     const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
+    log('进入，importClass=' + hasImport + ' invoke=' + hasInvoke + ' invokeStatic=' + hasInvokeStatic);
+    if (!hasInvoke) { log('无 A.invoke，无法继续'); return false; }
+
     try {
-      const A = plus.android;
-      const cls = function (n) { const c = A.importClass(n); if (!c) throw new Error('importClass 失败：' + n); return c; };
-      const tryCall = function (o, n) {
-        const a = [].slice.call(arguments, 2);
-        if (o && typeof o[n] === 'function') return o[n].apply(o, a);
-        if (typeof A.invoke === 'function') return A.invoke.apply(A, [o, n].concat(a));
-        throw new Error('该运行时没有 plus.android.invoke');
+      // ---- 统一调用工具：强制走 A.invoke / A.invokeStaticMethod ----
+      // Native.js 包装对象上的 .method() 是 JS 层快捷调用，在某些设备上会静默返回
+      // 而不真正调 Java 方法。这里强制走 A.invoke 通道确保跨语言边界正确。
+      const javaStatic = function (clsName, methodName) {
+        const args = [].slice.call(arguments, 2);
+        if (hasInvokeStatic) {
+          try { return A.invokeStaticMethod.apply(A, [clsName, methodName].concat(args)); } catch (e) { /* fallthrough */ }
+        }
+        // 兼容：用 importClass 拿类再调
+        try {
+          if (hasImport) {
+            const c = A.importClass(clsName);
+            if (c && typeof c[methodName] === 'function') return c[methodName].apply(c, args);
+          }
+        } catch (e) {}
+        throw new Error('静态调用失败：' + clsName + '.' + methodName);
+      };
+      const javaCall = function (obj, methodName) {
+        const args = [].slice.call(arguments, 2);
+        if (obj === null || obj === undefined) throw new Error('javaCall(' + methodName + '): obj 为 null');
+        if (!hasInvoke) throw new Error('无 A.invoke');
+        return A.invoke.apply(A, [obj, methodName].concat(args));
+      };
+      const javaNew = function (clsName) {
+        // importClass 拿类引用 → new 实例；构造函数参数通过 A.invoke 传
+        if (!hasImport) throw new Error('无 importClass');
+        const Cls = A.importClass(clsName);
+        if (!Cls) throw new Error('importClass 返回 null：' + clsName);
+        const args = [].slice.call(arguments, 1);
+        try {
+          // 直接 new（无参构造）
+          if (!args.length) return new Cls();
+          // 有参构造：通过 invokeStaticMethod 用反射 Constructor.newInstance
+          if (hasInvokeStatic) {
+            // 先拿 Class 对象
+            const clazz = javaStatic(clsName, 'class'); // 可能不行...
+            // 直接 new 试试
+            return new (Cls.bind.apply(Cls, [null].concat(args)))();
+          }
+          return new Cls();
+        } catch (e) { throw new Error('new ' + clsName + '(' + args.length + ' args) 失败：' + (e && e.message)); }
       };
 
-      // ---- 前置条件：SDK ≥ 29（Android 10+ MediaStore 可用） ----
+      // ---- SDK 检查：Build.VERSION.SDK_INT ----
+      // Build.VERSION 是静态字段，SDK_INT 是 VERSION 类的静态字段
       let sdk = 0;
       try {
-        const Build = cls('android.os.Build');
-        const ver = tryCall(Build, 'VERSION');
-        if (ver) { try { sdk = Number(tryCall(ver, 'SDK_INT')) || 0; } catch (e) {} }
-      } catch (e) {}
-      if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，跳过 MediaStore 交给 plus.io'); return false; }
+        const VERSION = javaStatic('android.os.Build', 'VERSION');
+        log('Build.VERSION=', typeof VERSION);
+        if (VERSION) {
+          try { sdk = Number(javaStatic('android.os.Build$VERSION', 'SDK_INT')) || 0; } catch (e) {
+            // 有些 ROM 不支持内部类的 invokeStatic，试试 VERSION.SDK_INT 字段
+            try { sdk = Number(javaCall(VERSION, 'getSDK_INT')) || 0; } catch (e2) {
+              try { sdk = Number(VERSION.SDK_INT) || 0; } catch (e3) {}
+            }
+          }
+        }
+      } catch (e) { log('SDK 检查异常', e && e.message); }
+      log('SDK_INT=' + sdk);
+      if (!(sdk >= 29)) { log('SDK 不够，跳过 MediaStore'); return false; }
 
-      // ---- 构造 MediaStore.Downloads Uri ----
+      // ---- Uri.parse ----
       const DL_URI = 'content://media/external/downloads';
-      const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
       let itemUri = null;
-      try {
-        const Uri = cls('android.net.Uri');
-        itemUri = tryCall(Uri, 'parse', DL_URI);
-      } catch (e) {}
-      if (!itemUri) { log('Uri.parse 失败'); return false; }
+      try { itemUri = javaStatic('android.net.Uri', 'parse', DL_URI); } catch (e) { log('Uri.parse 异常', e && e.message); }
+      log('itemUri=', itemUri ? 'ok' : 'null');
+      if (!itemUri) return false;
 
-      // ---- ContentValues：文件名 + MIME + relative_path='Download' ----
-      const values = new (cls('android.content.ContentValues'))();
-      tryCall(values, 'put', COL_NAME, fname);
-      tryCall(values, 'put', COL_MIME, mime || 'application/octet-stream');
-      tryCall(values, 'put', COL_REL, 'Download');
+      // ---- ContentValues ----
+      const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
+      let values;
+      try { values = javaNew('android.content.ContentValues'); } catch (e) { log('ContentValues new 失败', e && e.message); return false; }
+      log('ContentValues=', values ? 'ok' : 'null');
+      try { javaCall(values, 'put', COL_NAME, fname); } catch (e) { log('values.put name 异常', e && e.message); }
+      try { javaCall(values, 'put', COL_MIME, mime || 'application/octet-stream'); } catch (e) {}
+      try { javaCall(values, 'put', COL_REL, 'Download'); } catch (e) {}
 
-      const resolver = tryCall(A.runtimeMainActivity(), 'getContentResolver');
-      if (!resolver) { log('getContentResolver 返回 null'); return false; }
+      // ---- ContentResolver ----
+      const activity = A.runtimeMainActivity();
+      let resolver;
+      try { resolver = javaCall(activity, 'getContentResolver'); } catch (e) { log('getContentResolver 异常', e && e.message); return false; }
+      log('resolver=', resolver ? 'ok' : 'null');
+      if (!resolver) return false;
 
-      // ---- 非文本 blob 跳过 MediaStore（JSON 备份主路径才走这里） ----
+      // ---- 非文本跳过 ----
       const t = (blob.type || '').toLowerCase();
       const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
-      if (!isText) { log('非文本备份（' + (t || '未知') + '），跳过 MediaStore 交给 plus.io'); return false; }
+      if (!isText) { log('非文本，跳过 MediaStore'); return false; }
 
-      // ---- blob 转字符串（文本直接 .text()）----
+      // ---- blob → 字符串 ----
       let text;
       try { text = await blob.text(); } catch (e) {}
       if (typeof text !== 'string') {
@@ -1023,113 +1077,115 @@
           fr.readAsText(blob);
         });
       }
-      if (typeof text !== 'string') { log('blob.text 拿不到字符串'); return false; }
+      if (typeof text !== 'string') { log('blob 转字符串失败'); return false; }
+      log('文本长度=' + text.length + ' 预期落盘=' + blob.size);
 
-      // ---- 写入路径：全部纯 String 写入，零 byte[] 依赖 ----
-      // 每条 route 的 open(os) 返回 { put(chunk), end() }——分批写入后关 writer。
+      // ---- 写入 routes ----
+      // 每条 route 的 open(os) 返回 { put(chunk), end() }
+      // **关键**：所有 Java 方法调用强制走 javaCall（= A.invoke），不走 .method() 快捷
       const routes = [
-        { name: '①PrintWriter.print', open: function (os) {
-          const w = new (cls('java.io.PrintWriter'))(os);
-          return { put: function (c) { tryCall(w, 'print', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } },
-        { name: '②PrintWriter.write', open: function (os) {
-          const w = new (cls('java.io.PrintWriter'))(os);
-          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } },
-        { name: '③OutputStreamWriter.write', open: function (os) {
-          const w = new (cls('java.io.OutputStreamWriter'))(os);
-          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } },
-        { name: '④OutputStreamWriter.write(UTF-8)', open: function (os) {
-          const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
-          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } },
-        { name: '⑤PrintStream.print', open: function (os) {
-          const w = new (cls('java.io.PrintStream'))(os);
-          return { put: function (c) { tryCall(w, 'print', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } },
-        { name: '⑥OutputStreamWriter.append', open: function (os) {
-          const w = new (cls('java.io.OutputStreamWriter'))(os);
-          return { put: function (c) { tryCall(w, 'append', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
-        } }
+        { name: '①PrintWriter.print', cls: 'java.io.PrintWriter', ctor: function (os) { return javaNew('java.io.PrintWriter', os); },
+          put: function (w, c) { return javaCall(w, 'print', c); } },
+        { name: '②PrintWriter.write', cls: 'java.io.PrintWriter', ctor: function (os) { return javaNew('java.io.PrintWriter', os); },
+          put: function (w, c) { return javaCall(w, 'write', c); } },
+        { name: '③OutputStreamWriter.write', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os); },
+          put: function (w, c) { return javaCall(w, 'write', c); } },
+        { name: '④OutputStreamWriter.write(UTF-8)', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os, 'UTF-8'); },
+          put: function (w, c) { return javaCall(w, 'write', c); } },
+        { name: '⑤PrintStream.print', cls: 'java.io.PrintStream', ctor: function (os) { return javaNew('java.io.PrintStream', os); },
+          put: function (w, c) { return javaCall(w, 'print', c); } },
+        { name: '⑥OutputStreamWriter.append', cls: 'java.io.OutputStreamWriter', ctor: function (os) { return javaNew('java.io.OutputStreamWriter', os); },
+          put: function (w, c) { return javaCall(w, 'append', c); } }
       ];
 
-      // ---- probeSize：读 MediaStore 落盘大小，带 3 次重试 ----
-      // MediaStore.insert 后索引更新有延迟，写入完毕立即查 size 常返回 -1；
-      // 重试 3 次（间隔 300ms）给系统落盘时间。全部失败时返回 -1（"读不到"）。
+      // ---- probeSize：3 次重试 ----
       const probeSizeOnce = function (u) {
         try {
-          const pfd = tryCall(resolver, 'openFileDescriptor', u, 'r');
-          if (pfd) { try { const n = tryCall(pfd, 'getStatSize'); try { tryCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {} }
+          const pfd = javaCall(resolver, 'openFileDescriptor', u, 'r');
+          if (pfd) {
+            try { const n = javaCall(pfd, 'getStatSize'); try { javaCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {}
+          }
         } catch (e) {}
         try {
-          const ins = tryCall(resolver, 'openInputStream', u);
-          if (ins) { try { const n = tryCall(ins, 'available'); try { tryCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {} }
+          const ins = javaCall(resolver, 'openInputStream', u);
+          if (ins) {
+            try { const n = javaCall(ins, 'available'); try { javaCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {}
+          }
         } catch (e) {}
         return -1;
       };
       const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
       const probeSize = async function (u) {
-        let last = -1;
         for (let i = 0; i < 3; i++) {
           if (i > 0) await sleep(300);
-          last = probeSizeOnce(u);
-          if (last >= 0) return last;
+          const n = probeSizeOnce(u);
+          if (n >= 0) return n;
         }
-        return last;
+        return -1;
       };
-      const tryDel = function (u) { try { tryCall(resolver, 'delete', u, null, null); } catch (e) {} };
+      const tryDel = function (u) { try { javaCall(resolver, 'delete', u, null, null); } catch (e) {} };
 
-      // ---- 分批：每 10 万字符一批写入 ----
+      // ---- 分批 ----
       const CHARS = 100000;
       const chunks = [];
       for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
       if (!chunks.length) chunks.push('');
 
-      // ---- 依次尝试各条 route，直到有一条成功 ----
-      let pendingUri = null;      // 探针全 -1 时保留的候选 uri（不删、判成功）
+      // ---- 依次尝试各 route ----
       for (let ri = 0; ri < routes.length; ri++) {
         const R = routes[ri];
-        let uri = null, os = null, sink = null;
-        let writeOk = true;       // 写入过程是否无任何异常
+        let uri = null, os = null, w = null;
+        let writeOk = true;
         try {
-          uri = tryCall(resolver, 'insert', itemUri, values);
+          uri = javaCall(resolver, 'insert', itemUri, values);
           if (!uri) { log(R.name + '：insert 返回 null'); continue; }
-          os = tryCall(resolver, 'openOutputStream', uri);
-          if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); continue; }
-          sink = R.open(os);
-          for (let ci = 0; ci < chunks.length; ci++) {
-            try { sink.put(chunks[ci]); } catch (e) { writeOk = false; throw e; }
-          }
-          try { sink.end(); } catch (e) { log(R.name + '：关 writer 异常 ' + (e && e.message || e)); writeOk = false; }
-          try { tryCall(os, 'close'); } catch (e) {}
-          os = null; sink = null;
+          os = javaCall(resolver, 'openOutputStream', uri);
+          if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); uri = null; continue; }
+          log(R.name + '：insert+openOS 成功，开始写入');
 
+          // 构造 writer（全部走 javaNew = importClass + new）
+          try { w = R.ctor(os); } catch (e) { log(R.name + '：ctor 异常', e && e.message); w = null; }
+          if (!w) { log(R.name + '：ctor 返回 null'); tryDel(uri); uri = null; continue; }
+
+          // 分批写入（全部走 javaCall = A.invoke）
+          for (let ci = 0; ci < chunks.length; ci++) {
+            try { R.put(w, chunks[ci]); } catch (e) {
+              log(R.name + '：put(' + ci + ') 异常', e && e.message);
+              writeOk = false; break;
+            }
+          }
+
+          // 关 writer
+          try { javaCall(w, 'flush'); } catch (e) { /* some writers might not have flush */ }
+          try { javaCall(w, 'close'); } catch (e) { log(R.name + '：writer.close 异常', e && e.message); writeOk = false; }
+          try { javaCall(os, 'close'); } catch (e) {}
+          w = null; os = null;
+
+          // probeSize
           const sz = await probeSize(uri);
+          log(R.name + '：probeSize=' + sz + ' 期望=' + blob.size + ' writeOk=' + writeOk);
           if (sz >= 0 && sz === blob.size) {
-            log('✅ MediaStore 写入成功：' + R.name + '（落盘 ' + sz + ' / 期望 ' + blob.size + ' 字节）→ Download/' + fname);
-            if (pendingUri) tryDel(pendingUri);
+            log('✅ 成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname);
             return true;
           }
           if (sz >= 0) {
-            log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判残缺，换下一条');
+            log(R.name + '：' + sz + ' ≠ ' + blob.size + ' → 残缺，换下一条');
             tryDel(uri);
             uri = null;
             continue;
           }
-          // sz === -1：探针读不到，但如果写入过程无异常 → 信它一次，判成功
+          // sz === -1：探针读不到
           if (writeOk) {
-            log(R.name + '：探针读不到落盘大小（-1），但写入无异常 → 保留文件判成功');
-            if (pendingUri) tryDel(pendingUri);
+            log(R.name + '：probeSize=-1 但 writeOk → 信它，保留文件');
             return true;
           } else {
-            log(R.name + '：探针读不到 + 写入有异常 → 换下一条');
+            log(R.name + '：probeSize=-1 + 写入异常 → 换下');
             tryDel(uri);
             uri = null;
           }
         } catch (e) {
-          log(R.name + ' 异常：' + (e && e.message || e));
-          if (uri) tryDel(uri);
+          log(R.name + ' 顶层异常', e && e.message);
+          if (uri) { try { javaCall(os, 'close'); } catch (e2) {} tryDel(uri); }
         }
       }
       log('❌ MediaStore 全部 ' + routes.length + ' 条路径失败 → 回退 plus.io');
@@ -1139,23 +1195,6 @@
       return false;
     }
   }
-
-  // 套壳 App（HBuilderX 5+）：plus.io 公共目录写入（MediaStore 失败时的回退）——
-  // 注意：plus.io PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS 在 Android 10+ 分区存储下
-  // 映射到 **应用专属目录**（/Android/data/<pkg>/...），卸载 App 会删除。
-  // 真正的系统 Download 目录只靠上面的 MediaStore 路径。
-  // plus.io 能用但卸载丢；PRIVATE_DOCUMENTS 是最后兜底（总能写但一定卸载丢）。
-  // FIX 2026-10-19（d2d9bb8）：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——
-  //   该版本 FileWriter 对非 String 入参隐式 String(data)，Blob → "[object Blob]"（14 字符垃圾），
-  //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件是垃圾
-  //   → 用户点"打开/导入"全挂 = 表面"下载不了"。
-  //   当次修法：Blob→Uint8Array 再 write。但实报仍失败——同一套 String(data) 隐式转换会把
-  //   Uint8Array 序列化成 "123,34,104,..."（逗号分隔字节），照样是垃圾。
-  // FIX 2026-10-20：统一走 String 写入——FileWriter.write(String) 是 plus.io 全版本最稳的入参：
-  //   ① 文本类 blob（JSON/text/xml，备份主路径）→ blob.text() 拿原始字符串直接 write；
-  //   ② 二进制 blob（docx 等）→ ArrayBuffer→Uint8Array→逐字节 String.fromCharCode 拼成 binary string，
-  //      write 时原样落盘（FileWriter 对 String 写入不做编码转换，每个 char code 当一个字节）。
-  //   另加：每步独立 Promise + 超时防挂起；逐目录三级回退；console.error 定位失败点。
   async function saveViaPlusPublicDir(blob, fname) {
     const plus = window.plus;
     if (!plus || !plus.io) return 'skip';
