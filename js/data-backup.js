@@ -669,6 +669,7 @@ else localStorage.setItem('xy-home-v2:__last-backup', String(Date.now()));
 impShow('正在导出…', '正在准备保存文件', 92);
 const saveRes = await saveBackupFile(blob, fname);
 impHide();
+if (saveRes === 'ok-silent') { return; }
 if (saveRes === 'ok') { toast(doneText); return; }
 if (window.openModal) {
 window.openModal('备份已打包完成（' + sizeStr + '）', '', () => {
@@ -835,7 +836,7 @@ try {
 const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
 if (await saveViaMediaStoreDownload(blob, fname, mime)) {
 toast('已保存到手机「下载」目录：' + fname + '（在「文件管理 → 下载」里可找到，卸载 App 不会丢）');
-return 'ok';
+return 'ok-silent'; // 自己已 toast 精准提示；调用方别再 toast doneText 把它盖了
 }
 } catch (e) {}
 const r = await saveViaPlusPublicDir(blob, fname);
@@ -849,7 +850,7 @@ where = '（应用专属目录，卸载 App 会删除：' + r.path + '）';
 where = '（应用专属目录，卸载 App 会删除）';
 }
 toast('已保存' + where + '：' + fname);
-return 'ok';
+return 'ok-silent'; // 同上，自己已 toast 带位置+卸载提醒的提示
 }
 }
 const file = new File([blob], fname, { type: blob.type || 'application/json;charset=utf-8' });

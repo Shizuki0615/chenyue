@@ -940,6 +940,10 @@
     impShow('正在导出…', '正在准备保存文件', 92);
     const saveRes = await saveBackupFile(blob, fname);
     impHide();
+    // 'ok' = 网页下载兜底（navigator.share / showSaveFilePicker）成功 → toast doneText 给用户看导出体积
+    // 'ok-silent' = plus 原生路径（MediaStore / plus.io）成功 → saveBackupFile 内部已 toast 更精准的位置/卸载提示，
+    //              这里别再 toast doneText 把好提示覆盖掉
+    if (saveRes === 'ok-silent') { return; }
     if (saveRes === 'ok') { toast(doneText); return; }
     // v3.9.x：'cancel' 不再直接放弃——华为/夸克等浏览器分享面板会立刻 AbortError
     //（分享面板不弹、直接返回「已取消保存」），数据其实已打包好，统一走「确定后下载」
@@ -1173,7 +1177,7 @@
         const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
         if (await saveViaMediaStoreDownload(blob, fname, mime)) {
           toast('已保存到手机「下载」目录：' + fname + '（在「文件管理 → 下载」里可找到，卸载 App 不会丢）');
-          return 'ok';
+          return 'ok-silent'; // 自己已 toast 精准提示；调用方别再 toast doneText 把它盖了
         }
       } catch (e) {}
       // ② 兜底：plus.io 应用专属目录（PUBLIC_*/PRIVATE_* 都在 Android/data/<包名>/ 下，卸载即丢；
@@ -1189,7 +1193,7 @@
           where = '（应用专属目录，卸载 App 会删除）';
         }
         toast('已保存' + where + '：' + fname);
-        return 'ok';
+        return 'ok-silent'; // 同上，自己已 toast 带位置+卸载提醒的提示
       }
       // 两条原生路都不可用 → 走下面的网页下载兜底，行为与旧版一致
     }
