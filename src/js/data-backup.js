@@ -1025,41 +1025,52 @@
       const out = call(resolver, 'openOutputStream', recordUri);
       if (!out) { log('openOutputStream 返回 null'); return false; }
 
-      const t = (blob.type || '').toLowerCase();
-      const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
-      if (isText) {
-        // 文本（JSON 备份主路径）：OutputStreamWriter 按 UTF-8 写入，原样落盘
-        const str = await rawBlobText(blob);
-        const w = new (cls('java.io.OutputStreamWriter'))(out, 'UTF-8');
-        call(w, 'write', str);
-        call(w, 'flush');
-        call(w, 'close');
-      } else {
-        // 二进制（docx 等）：base64 → Java 侧 Base64.decode 得 byte[] → write(byte[])
-        // Base64.DEFAULT 也是静态常量（同样取不到），直接用其真实值 0
-        const b64 = await blobToBase64(blob);
-        const B64 = cls('android.util.Base64');
-        call(out, 'write', call(B64, 'decode', b64, 0));
-        call(out, 'flush');
-        call(out, 'close');
+      // [FIX 2026-10-20] 写入字节：实测 MediaStore 位置正确（insert / openOutputStream 都通）
+      //   但落盘文件 0 字节——文本路径的 `new java.io.OutputStreamWriter(out,'UTF-8').write(String)`
+      //   在 Native.js 下没有真正写出（构造/重载静默失效，且 14MB 大字符串一次过桥风险高）。
+      //   统一改为「Blob 分块 → base64 → Java Base64.decode 得 byte[] → OutputStream.write(byte[])」：
+      //   · write(byte[]) 是纯实例方法，最稳，不依赖任何静态常量、不依赖 writer 构造
+      //   · 每块 510000 字节（3 的倍数）——保证每块 base64 自身合法、可独立 decode，
+      //     且单块 base64 约 680KB 过桥，避免整份 14MB（base64 后约 19MB）一次性推过 JS-Native 桥
+      const CHUNK = 3 * 170000; // 510000 字节
+      const decodeB64 = function (b64) {
+        let arr = null;
+        try { const B64 = cls('android.util.Base64'); if (typeof B64.decode === 'function') arr = B64.decode(b64, 0); } catch (e) {}
+        if (!arr && typeof A.invokeStaticMethod === 'function') { try { arr = A.invokeStaticMethod('android.util.Base64', 'decode', b64, 0); } catch (e) {} }
+        return arr;
+      };
+      let wrote = 0;
+      for (let off = 0; off < blob.size; off += CHUNK) {
+        const part = blob.slice(off, Math.min(off + CHUNK, blob.size));
+        const bytes = decodeB64(await blobToBase64(part));
+        if (!bytes) { log('Base64.decode 失败 @' + off + '（已写入 ' + wrote + ' 字节）'); return false; }
+        call(out, 'write', bytes);
+        wrote += part.size;
       }
-      log('已写入 MediaStore 下载目录：Download/' + fname);
+      try { call(out, 'flush'); } catch (e) {}
+      try { call(out, 'close'); } catch (e) {}
+
+      // 软校验：query MediaStore 的 _size 列确认真实落盘大小（读不到就不阻塞，交给用户实测）
+      try {
+        const proj = A.newArray('java.lang.String', 1);
+        A.arraySet(proj, 0, '_size');
+        const cur = call(resolver, 'query', recordUri, proj, null, null, null);
+        if (cur && call(cur, 'moveToFirst')) {
+          const sz = call(cur, 'getLong', 0);
+          try { call(cur, 'close'); } catch (e) {}
+          if (typeof sz === 'number' && sz >= 0 && sz !== blob.size) {
+            log('落盘大小不符：_size=' + sz + ' ≠ ' + blob.size + '，判失败 → 回退 plus.io 保住内容');
+            return false;
+          }
+        }
+      } catch (e) {}
+
+      log('已写入 MediaStore 下载目录：Download/' + fname + '（' + wrote + '/' + blob.size + ' 字节）');
       return true;
     } catch (e) {
       log('失败：' + (e && e.message));
       return false;
     }
-  }
-
-  // Blob → 原始文本；个别老内核没有 blob.text()，或对大文件静默返回空串 → FileReader 兜底
-  async function rawBlobText(blob) {
-    if (typeof blob.text === 'function') { try { const s = await blob.text(); if (s !== '' || !blob.size) return s; } catch (e) {} }
-    return await new Promise((res, rej) => {
-      const fr = new FileReader();
-      fr.onload = () => res(String(fr.result));
-      fr.onerror = () => rej(fr.error || new Error('readAsText'));
-      fr.readAsText(blob);
-    });
   }
 
   // 套壳 App（HBuilderX 5+）退路：写 plus.io 的应用专属目录（PUBLIC_DOWNLOADS → PUBLIC_DOCUMENTS

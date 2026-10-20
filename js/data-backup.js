@@ -716,36 +716,42 @@ const recordUri = call(resolver, 'insert', itemUri, values);
 if (!recordUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
 const out = call(resolver, 'openOutputStream', recordUri);
 if (!out) { log('openOutputStream 返回 null'); return false; }
-const t = (blob.type || '').toLowerCase();
-const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
-if (isText) {
-const str = await rawBlobText(blob);
-const w = new (cls('java.io.OutputStreamWriter'))(out, 'UTF-8');
-call(w, 'write', str);
-call(w, 'flush');
-call(w, 'close');
-} else {
-const b64 = await blobToBase64(blob);
-const B64 = cls('android.util.Base64');
-call(out, 'write', call(B64, 'decode', b64, 0));
-call(out, 'flush');
-call(out, 'close');
+const CHUNK = 3 * 170000; // 510000 字节
+const decodeB64 = function (b64) {
+let arr = null;
+try { const B64 = cls('android.util.Base64'); if (typeof B64.decode === 'function') arr = B64.decode(b64, 0); } catch (e) {}
+if (!arr && typeof A.invokeStaticMethod === 'function') { try { arr = A.invokeStaticMethod('android.util.Base64', 'decode', b64, 0); } catch (e) {} }
+return arr;
+};
+let wrote = 0;
+for (let off = 0; off < blob.size; off += CHUNK) {
+const part = blob.slice(off, Math.min(off + CHUNK, blob.size));
+const bytes = decodeB64(await blobToBase64(part));
+if (!bytes) { log('Base64.decode 失败 @' + off + '（已写入 ' + wrote + ' 字节）'); return false; }
+call(out, 'write', bytes);
+wrote += part.size;
 }
-log('已写入 MediaStore 下载目录：Download/' + fname);
+try { call(out, 'flush'); } catch (e) {}
+try { call(out, 'close'); } catch (e) {}
+try {
+const proj = A.newArray('java.lang.String', 1);
+A.arraySet(proj, 0, '_size');
+const cur = call(resolver, 'query', recordUri, proj, null, null, null);
+if (cur && call(cur, 'moveToFirst')) {
+const sz = call(cur, 'getLong', 0);
+try { call(cur, 'close'); } catch (e) {}
+if (typeof sz === 'number' && sz >= 0 && sz !== blob.size) {
+log('落盘大小不符：_size=' + sz + ' ≠ ' + blob.size + '，判失败 → 回退 plus.io 保住内容');
+return false;
+}
+}
+} catch (e) {}
+log('已写入 MediaStore 下载目录：Download/' + fname + '（' + wrote + '/' + blob.size + ' 字节）');
 return true;
 } catch (e) {
 log('失败：' + (e && e.message));
 return false;
 }
-}
-async function rawBlobText(blob) {
-if (typeof blob.text === 'function') { try { const s = await blob.text(); if (s !== '' || !blob.size) return s; } catch (e) {} }
-return await new Promise((res, rej) => {
-const fr = new FileReader();
-fr.onload = () => res(String(fr.result));
-fr.onerror = () => rej(fr.error || new Error('readAsText'));
-fr.readAsText(blob);
-});
 }
 async function saveViaPlusPublicDir(blob, fname) {
 const plus = window.plus;
