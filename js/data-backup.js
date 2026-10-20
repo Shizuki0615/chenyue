@@ -712,42 +712,81 @@ call(values, 'put', COL_NAME, fname);
 call(values, 'put', COL_MIME, mime || 'application/octet-stream');
 call(values, 'put', COL_REL, 'Download');
 const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
-const recordUri = call(resolver, 'insert', itemUri, values);
-if (!recordUri) { log('insert 返回 null（无写权限或被拒）'); return false; }
-const out = call(resolver, 'openOutputStream', recordUri);
-if (!out) { log('openOutputStream 返回 null'); return false; }
-const CHUNK = 3 * 170000; // 510000 字节
-const decodeB64 = function (b64) {
-let arr = null;
-try { const B64 = cls('android.util.Base64'); if (typeof B64.decode === 'function') arr = B64.decode(b64, 0); } catch (e) {}
-if (!arr && typeof A.invokeStaticMethod === 'function') { try { arr = A.invokeStaticMethod('android.util.Base64', 'decode', b64, 0); } catch (e) {} }
-return arr;
-};
-let wrote = 0;
-for (let off = 0; off < blob.size; off += CHUNK) {
-const part = blob.slice(off, Math.min(off + CHUNK, blob.size));
-const bytes = decodeB64(await blobToBase64(part));
-if (!bytes) { log('Base64.decode 失败 @' + off + '（已写入 ' + wrote + ' 字节）'); return false; }
-call(out, 'write', bytes);
-wrote += part.size;
+const t = (blob.type || '').toLowerCase();
+const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+if (!isText) { log('非文本备份（' + (t || '未知') + '），跳过 MediaStore 交给 plus.io'); return false; }
+let text;
+if (typeof blob.text === 'function') { try { text = await blob.text(); } catch (e) {} }
+if (typeof text !== 'string') {
+text = await new Promise(function (res, rej) {
+const fr = new FileReader();
+fr.onload = function () { res(String(fr.result)); };
+fr.onerror = function () { rej(fr.error || new Error('readAsText')); };
+fr.readAsText(blob);
+});
 }
-try { call(out, 'flush'); } catch (e) {}
-try { call(out, 'close'); } catch (e) {}
+const tryCall = function (o, n) {
+const a = [].slice.call(arguments, 2);
+if (o && typeof o[n] === 'function') return o[n].apply(o, a);
+if (typeof A.invoke === 'function') return A.invoke.apply(A, [o, n].concat(a));
+throw new Error('该运行时没有 plus.android.invoke');
+};
+const routes = [
+{ name: '①String.getBytes+write', open: function (os) {
+const S = cls('java.lang.String');
+return function (chunk) { tryCall(os, 'write', tryCall(new S(chunk), 'getBytes', 'UTF-8')); };
+} },
+{ name: '②Charset.encode+write', open: function (os) {
+const cs = tryCall(cls('java.nio.charset.Charset'), 'forName', 'UTF-8');
+return function (chunk) { tryCall(os, 'write', tryCall(tryCall(cs, 'encode', chunk), 'array')); };
+} },
+{ name: '③PrintWriter.print', open: function (os) {
+const w = new (cls('java.io.PrintWriter'))(os);
+return function (chunk) { tryCall(w, 'print', chunk); };
+} },
+{ name: '④OutputStreamWriter(out)', open: function (os) {
+const w = new (cls('java.io.OutputStreamWriter'))(os);
+return function (chunk) { tryCall(w, 'write', chunk); };
+} },
+{ name: '⑤OutputStreamWriter(out,UTF-8)', open: function (os) {
+const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
+return function (chunk) { tryCall(w, 'write', chunk); };
+} }
+];
+const CHARS = 100000;
+const chunks = [];
+for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
+if (!chunks.length) chunks.push('');
+for (let ri = 0; ri < routes.length; ri++) {
+const R = routes[ri];
+let uri = null;
+try {
+uri = tryCall(resolver, 'insert', itemUri, values);
+if (!uri) { log(R.name + '：insert 返回 null'); continue; }
+const os = tryCall(resolver, 'openOutputStream', uri);
+if (!os) { log(R.name + '：openOutputStream 返回 null'); try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {} continue; }
+const put = R.open(os);
+for (let ci = 0; ci < chunks.length; ci++) put(chunks[ci]);
+try { tryCall(os, 'flush'); } catch (e) {}
+try { tryCall(os, 'close'); } catch (e) {}
+let sz = -1;
 try {
 const proj = A.newArray('java.lang.String', 1);
 A.arraySet(proj, 0, '_size');
-const cur = call(resolver, 'query', recordUri, proj, null, null, null);
-if (cur && call(cur, 'moveToFirst')) {
-const sz = call(cur, 'getLong', 0);
-try { call(cur, 'close'); } catch (e) {}
-if (typeof sz === 'number' && sz >= 0 && sz !== blob.size) {
-log('落盘大小不符：_size=' + sz + ' ≠ ' + blob.size + '，判失败 → 回退 plus.io 保住内容');
+const cur = tryCall(resolver, 'query', uri, proj, null, null, null);
+if (cur && tryCall(cur, 'moveToFirst')) { sz = tryCall(cur, 'getLong', 0); try { tryCall(cur, 'close'); } catch (e) {} }
+} catch (e) { log(R.name + '：_size 校验异常 ' + (e && e.message || e)); }
+if (sz === blob.size) { log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname); return true; }
+if (sz < 0) { log('写入完成但无法校验落盘大小（_size 读不到），按成功处理：' + R.name); return true; }
+log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判失败换下一条');
+try { tryCall(resolver, 'delete', uri, null, null); } catch (e) {}   // 删掉这条空/残缺记录，别在下载里留垃圾
+} catch (e) {
+log(R.name + ' 异常：' + (e && e.message || e));
+if (uri) { try { tryCall(resolver, 'delete', uri, null, null); } catch (e2) {} }
+}
+}
+log('五条写入路径全部失败 → 回退 plus.io（内容保留，位置在应用专属）');
 return false;
-}
-}
-} catch (e) {}
-log('已写入 MediaStore 下载目录：Download/' + fname + '（' + wrote + '/' + blob.size + ' 字节）');
-return true;
 } catch (e) {
 log('失败：' + (e && e.message));
 return false;
