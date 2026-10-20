@@ -679,6 +679,149 @@ doneText, '仍未触发下载。请重新点击「导出数据」并确认保存
 toast('备份已打包（' + sizeStr + '），请重新点击「导出数据」触发下载并保存文件（唯一备份）');
 }
 }
+async function saveViaMediaStoreDownload(blob, fname, mime) {
+const plus = window.plus;
+if (!plus || !plus.android) return false;
+const A = plus.android;
+const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
+const t = (blob.type || '').toLowerCase();
+const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+if (!isText) { log('非文本，跳过 MediaStore'); return false; }
+let text;
+try { text = await blob.text(); } catch (e) { log('blob.text 失败 ' + (e && e.message)); return false; }
+if (typeof text !== 'string' || !text) { log('blob.text 为空'); return false; }
+const classOf = function (n) {
+if (typeof A.importClass !== 'function') throw new Error('无 importClass');
+const c = A.importClass(n);
+if (!c) throw new Error('importClass 返回 null: ' + n);
+return c;
+};
+const call = function (obj, method) {          // 实例方法 → 强制 A.invoke
+const args = [].slice.call(arguments, 2);
+if (typeof A.invoke !== 'function') throw new Error('无 A.invoke');
+return A.invoke.apply(A, [obj, method].concat(args));
+};
+const ctor = function (n) {                     // 构造 → importClass + new
+const C = classOf(n);
+const args = [].slice.call(arguments, 1);
+return Reflect.construct(C, args);
+};
+let itemUri;
+try { itemUri = classOf('android.net.Uri').parse('content://media/external/downloads'); }
+catch (e) { log('Uri.parse 异常 ' + (e && e.message)); return false; }
+if (!itemUri) { log('Uri.parse 返回 null'); return false; }
+let values;
+try {
+values = ctor('android.content.ContentValues');
+call(values, 'put', '_display_name', fname);
+call(values, 'put', 'mime_type', mime || 'application/json');
+call(values, 'put', 'relative_path', 'Download');   // 真·Download 子目录
+} catch (e) { log('ContentValues 异常 ' + (e && e.message)); return false; }
+let resolver;
+try { resolver = call(A.runtimeMainActivity(), 'getContentResolver'); }
+catch (e) { log('getContentResolver 异常 ' + (e && e.message)); return false; }
+if (!resolver) { log('resolver 为 null'); return false; }
+const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+const sizeOf = async function (u) {
+for (let i = 0; i < 3; i++) {
+if (i) await sleep(300);
+try {
+const pfd = call(resolver, 'openFileDescriptor', u, 'r');
+if (pfd) {
+const n = call(pfd, 'getStatSize');
+try { call(pfd, 'close'); } catch (e) {}
+if (typeof n === 'number' && n > 0) return n;
+}
+} catch (e) {}
+try {
+const ins = call(resolver, 'openInputStream', u);
+if (ins) {
+const n = call(ins, 'available');
+try { call(ins, 'close'); } catch (e) {}
+if (typeof n === 'number' && n > 0) return n;
+}
+} catch (e) {}
+}
+return -1;
+};
+const delUri = function (u) { try { call(resolver, 'delete', u, null, null); } catch (e) {} };
+const TMP = '__mochi_backup_tmp.json';
+const writeTempFile = function (str, name) {
+const io = plus.io;
+if (!io) return Promise.reject(new Error('无 plus.io'));
+const dirs = [];
+if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+const tryOne = function (idx) {
+if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+const d = dirs[idx];
+return new Promise(function (resolve, reject) {
+let done = false;
+const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
+try {
+io.requestFileSystem(d.v, function (fs) {
+fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
+fe.createWriter(function (w) {
+w.onwriteend = function () {
+if (done) return;
+done = true; clearTimeout(timer);
+let p = '';
+try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
+resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
+};
+w.onerror = fail;
+try { w.write(str); } catch (e) { fail(e); }
+}, fail);
+}, fail);
+}, fail);
+} catch (e) { fail(e); }
+}).catch(function () { return tryOne(idx + 1); });
+};
+return tryOne(0);
+};
+let tmp;
+try {
+tmp = await writeTempFile(text, TMP);
+log('临时文件 = ' + tmp.path + '（' + tmp.dir + '，' + text.length + ' 字符）');
+} catch (e) { log('临时文件失败：' + (e && e.message)); return false; }
+if (tmp && tmp.path) {
+let uri = null, os = null, fis = null;
+try {
+uri = call(resolver, 'insert', itemUri, values);
+if (!uri) { log('insert 为 null'); }
+else {
+os = call(resolver, 'openOutputStream', uri);
+if (!os) { log('openOutputStream 为 null'); delUri(uri); uri = null; }
+else {
+const fileObj = ctor('java.io.File', tmp.path);
+fis = ctor('java.io.FileInputStream', fileObj);
+const moved = call(fis, 'transferTo', os);
+try { call(fis, 'close'); } catch (e) {}
+try { call(os, 'flush'); } catch (e) {}
+try { call(os, 'close'); } catch (e) {}
+fis = null; os = null;
+const sz = await sizeOf(uri);
+log('transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
+if (sz === blob.size || sz > 0) {
+log('✅ 成功 transferTo → Download/' + fname);
+return true;
+}
+delUri(uri);
+uri = null;
+}
+}
+} catch (e) {
+log('transferTo 异常：' + (e && e.message));
+try { if (fis) call(fis, 'close'); } catch (e2) {}
+try { if (os) call(os, 'close'); } catch (e2) {}
+if (uri) delUri(uri);
+}
+}
+log('❌ MediaStore 失败 → 回退 plus.io');
+return false;
+}
 async function saveViaPlusPublicDir(blob, fname) {
 const plus = window.plus;
 if (!plus || !plus.io) return 'skip';
@@ -751,15 +894,22 @@ return { ok: false };
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
 if (window.plus && window.plus.io) {
 impShow('正在导出…', '正在保存到下载目录…', 95);
+const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
+try {
+if (await saveViaMediaStoreDownload(blob, fname, mime)) {
+toast('已保存到系统「下载」目录：' + fname + '（文件管理器里能找到，卸载 App 不会丢）');
+return 'ok';
+}
+} catch (e) { /* MediaStore 异常不阻塞，继续试 plus.io */ }
 const r = await saveViaPlusPublicDir(blob, fname);
 if (r.ok) {
 let where;
 if (r.dir === 'PRIVATE_DOCUMENTS') {
 where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
 } else if (r.path) {
-where = '（' + r.path + '）';
+where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
 } else {
-where = '（系统下载目录）';
+where = '（应用专属目录，卸载 App 会删除）';
 }
 toast('已保存' + where + '：' + fname);
 return 'ok';

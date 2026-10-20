@@ -956,6 +956,196 @@
     }
   }
 
+  // ===== 套壳 App（HBuilderX 5+）：把备份写进系统真正的「下载」目录（卸载 App 不丢）=====
+  // 本机运行时取证（来自用户诊断日志，已确认）：
+  //   plus.android.importClass ✅ / plus.android.invoke ✅ /
+  //   plus.android.invokeStaticMethod ❌（本机不存在）/ 静态字段读取返回 undefined / A.newArray ❌。
+  //   → 因此只允许两种调用方式：
+  //     ① importClass 拿类对象后，静态方法直接「类.方法()」（如 Uri.parse）
+  //     ② 实例方法走 plus.android.invoke(obj, '方法', ...参数)；构造用 new 类(参数)
+  //   严禁触碰 invokeStaticMethod / 静态字段 / byte[]（三者在目标机均不可用）。
+  // 写入策略（v8.x 最终版，三轮踩坑后收敛）：
+  //   唯一写入路径 = 私有/公共临时文件 → FileInputStream.transferTo(MediaStore OutputStream)。
+  //   原因：
+  //     · transferTo 在 Java 侧**没有重载**（只有一个 (OutputStream) 版本），不存在
+  //       Native.js 重载解析选错（write(char[]) 拿到 null）→ 静默 0 字节 的隐患；
+  //     · OutputStreamWriter / PrintWriter 经 A.invoke 传大字符串时，Native.js 桥会把
+  //       字符串截断到 ~2214 字节（本机实测 15MB 备份只落盘 2214B），故全部 Writer 兜底
+  //       路线已删除——大文件只能靠 transferTo（整条链路只在最后一步跨 Java，字符串不跨桥）。
+  //   临时文件目录三级回退：PUBLIC_DOWNLOADS → PUBLIC_DOCUMENTS → PRIVATE_DOCUMENTS。
+  //     （本机 PRIVATE_DOCUMENTS 报「执行出错」，必须先试公共目录；公共目录写成功后
+  //      FileInputStream 也能打开其 toLocalURL 路径，transferTo 即可完成。）
+  // 为什么必须走 MediaStore（Android 10+ 分区存储）：
+  //   直接写 /storage/emulated/0/Download 需 MANAGE_EXTERNAL_STORAGE 权限；
+  //   MediaStore.insert 免权限、落在真·Download，且卸载 App 文件保留。
+  async function saveViaMediaStoreDownload(blob, fname, mime) {
+    const plus = window.plus;
+    if (!plus || !plus.android) return false;
+    const A = plus.android;
+    const log = function () { try { console.error.apply(console, ['[backup:media]'].concat([].slice.call(arguments))); } catch (e) {} };
+
+    // ---- 仅文本备份走 MediaStore（JSON 主路径；二进制交 plus.io 兜底）----
+    const t = (blob.type || '').toLowerCase();
+    const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
+    if (!isText) { log('非文本，跳过 MediaStore'); return false; }
+
+    let text;
+    try { text = await blob.text(); } catch (e) { log('blob.text 失败 ' + (e && e.message)); return false; }
+    if (typeof text !== 'string' || !text) { log('blob.text 为空'); return false; }
+
+    // ---- 三个工具：只用本机可用的 API ----
+    const classOf = function (n) {
+      if (typeof A.importClass !== 'function') throw new Error('无 importClass');
+      const c = A.importClass(n);
+      if (!c) throw new Error('importClass 返回 null: ' + n);
+      return c;
+    };
+    const call = function (obj, method) {          // 实例方法 → 强制 A.invoke
+      const args = [].slice.call(arguments, 2);
+      if (typeof A.invoke !== 'function') throw new Error('无 A.invoke');
+      return A.invoke.apply(A, [obj, method].concat(args));
+    };
+    const ctor = function (n) {                     // 构造 → importClass + new
+      const C = classOf(n);
+      const args = [].slice.call(arguments, 1);
+      return Reflect.construct(C, args);
+    };
+
+    // ---- Uri.parse('content://media/external/downloads')：类对象直调静态方法 ----
+    let itemUri;
+    try { itemUri = classOf('android.net.Uri').parse('content://media/external/downloads'); }
+    catch (e) { log('Uri.parse 异常 ' + (e && e.message)); return false; }
+    if (!itemUri) { log('Uri.parse 返回 null'); return false; }
+
+    // ---- ContentValues：new + put（全走 A.invoke）----
+    let values;
+    try {
+      values = ctor('android.content.ContentValues');
+      call(values, 'put', '_display_name', fname);
+      call(values, 'put', 'mime_type', mime || 'application/json');
+      call(values, 'put', 'relative_path', 'Download');   // 真·Download 子目录
+    } catch (e) { log('ContentValues 异常 ' + (e && e.message)); return false; }
+
+    // ---- ContentResolver ----
+    let resolver;
+    try { resolver = call(A.runtimeMainActivity(), 'getContentResolver'); }
+    catch (e) { log('getContentResolver 异常 ' + (e && e.message)); return false; }
+    if (!resolver) { log('resolver 为 null'); return false; }
+
+    // ---- probeSize：openFileDescriptor(uri,'r').getStatSize()，3 次重试（insert 后有延迟）----
+    const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    const sizeOf = async function (u) {
+      for (let i = 0; i < 3; i++) {
+        if (i) await sleep(300);
+        try {
+          const pfd = call(resolver, 'openFileDescriptor', u, 'r');
+          if (pfd) {
+            const n = call(pfd, 'getStatSize');
+            try { call(pfd, 'close'); } catch (e) {}
+            if (typeof n === 'number' && n > 0) return n;
+          }
+        } catch (e) {}
+        try {
+          const ins = call(resolver, 'openInputStream', u);
+          if (ins) {
+            const n = call(ins, 'available');
+            try { call(ins, 'close'); } catch (e) {}
+            if (typeof n === 'number' && n > 0) return n;
+          }
+        } catch (e) {}
+      }
+      return -1;
+    };
+    const delUri = function (u) { try { call(resolver, 'delete', u, null, null); } catch (e) {} };
+
+    // ---- 临时文件写入：三级目录回退（公共下载 → 公共文档 → 应用私有）----
+    // 本机 PRIVATE_DOCUMENTS 报「执行出错」，故先试公共目录；公共目录 toLocalURL 路径
+    // FileInputStream 可打开，transferTo 即可完成。
+    const TMP = '__mochi_backup_tmp.json';
+    const writeTempFile = function (str, name) {
+      const io = plus.io;
+      if (!io) return Promise.reject(new Error('无 plus.io'));
+      const dirs = [];
+      if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
+      if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
+      try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+      const tryOne = function (idx) {
+        if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+        const d = dirs[idx];
+        return new Promise(function (resolve, reject) {
+          let done = false;
+          const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+          const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
+          try {
+            io.requestFileSystem(d.v, function (fs) {
+              fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
+                fe.createWriter(function (w) {
+                  w.onwriteend = function () {
+                    if (done) return;
+                    done = true; clearTimeout(timer);
+                    let p = '';
+                    try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
+                    resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
+                  };
+                  w.onerror = fail;
+                  try { w.write(str); } catch (e) { fail(e); }
+                }, fail);
+              }, fail);
+            }, fail);
+          } catch (e) { fail(e); }
+        }).catch(function () { return tryOne(idx + 1); });
+      };
+      return tryOne(0);
+    };
+
+    // ===== 唯一写入路径：临时文件 + FileInputStream.transferTo(MediaStore OutputStream) =====
+    let tmp;
+    try {
+      tmp = await writeTempFile(text, TMP);
+      log('临时文件 = ' + tmp.path + '（' + tmp.dir + '，' + text.length + ' 字符）');
+    } catch (e) { log('临时文件失败：' + (e && e.message)); return false; }
+
+    if (tmp && tmp.path) {
+      let uri = null, os = null, fis = null;
+      try {
+        uri = call(resolver, 'insert', itemUri, values);
+        if (!uri) { log('insert 为 null'); }
+        else {
+          os = call(resolver, 'openOutputStream', uri);
+          if (!os) { log('openOutputStream 为 null'); delUri(uri); uri = null; }
+          else {
+            const fileObj = ctor('java.io.File', tmp.path);
+            fis = ctor('java.io.FileInputStream', fileObj);
+            const moved = call(fis, 'transferTo', os);
+            try { call(fis, 'close'); } catch (e) {}
+            try { call(os, 'flush'); } catch (e) {}
+            try { call(os, 'close'); } catch (e) {}
+            fis = null; os = null;
+            const sz = await sizeOf(uri);
+            log('transferTo：返回 ' + moved + '，落盘 ' + sz + ' / 期望 ' + blob.size);
+            if (sz === blob.size || sz > 0) {
+              log('✅ 成功 transferTo → Download/' + fname);
+              return true;
+            }
+            delUri(uri);
+            uri = null;
+          }
+        }
+      } catch (e) {
+        log('transferTo 异常：' + (e && e.message));
+        try { if (fis) call(fis, 'close'); } catch (e2) {}
+        try { if (os) call(os, 'close'); } catch (e2) {}
+        if (uri) delUri(uri);
+      }
+    }
+
+    // Writer 路线（OutputStreamWriter/PrintWriter）已删除：
+    // 本机实测 A.invoke 传大字符串会被 Native.js 桥截断到 ~2214 字节，
+    // 15MB 备份只落盘 2214B，无法修复 → 唯一可靠路径是 transferTo。
+    log('❌ MediaStore 失败 → 回退 plus.io');
+    return false;
+  }
+
   // 套壳 App（HBuilderX 5+）：把文件直接写到系统公共「下载」目录——
   // 这样卸载 App 不会连带删掉备份（应用私有目录 _doc/ 卸载即清空）。
   // 用 plus.io 的 PUBLIC_DOWNLOADS（系统 Download 目录）；失败退回 PUBLIC_DOCUMENTS，
@@ -1063,25 +1253,32 @@
   // FIX 2026-09-11 #333：参数化分享标题/文件 MIME/保存框类型——诊断 docx 导出复用本链路
   // （设备.js buildDocxBlob 产物），不再只能分享「JSON 备份」。默认值保持原行为零变化。
   async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-    // 套壳 App（HBuilderX 5+）：优先写到系统公共「下载」目录——卸载 App 不会连带删备份。
+    // 套壳 App（HBuilderX 5+）：MediaStore 优先 → plus.io 回退 → 网页下载兜底
     if (window.plus && window.plus.io) {
       impShow('正在导出…', '正在保存到下载目录…', 95);
+      // ① MediaStore（Android 10+）——唯一能写到**系统真正 Download 目录**的路径，卸载不丢
+      const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
+      try {
+        if (await saveViaMediaStoreDownload(blob, fname, mime)) {
+          toast('已保存到系统「下载」目录：' + fname + '（文件管理器里能找到，卸载 App 不会丢）');
+          return 'ok';
+        }
+      } catch (e) { /* MediaStore 异常不阻塞，继续试 plus.io */ }
+      // ② plus.io（旧安卓回退）——注意 Android 10+ 分区存储下映射到应用专属目录，卸载会丢
       const r = await saveViaPlusPublicDir(blob, fname);
       if (r.ok) {
-        // 按实际落盘目录给清晰提示：公共下载/公共文档可直接在系统文件管理器找到；
-        // 应用私有目录卸载会丢，需提醒用户尽快转存到公共目录。
         let where;
         if (r.dir === 'PRIVATE_DOCUMENTS') {
           where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
         } else if (r.path) {
-          where = '（' + r.path + '）';
+          where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
         } else {
-          where = '（系统下载目录）';
+          where = '（应用专属目录，卸载 App 会删除）';
         }
         toast('已保存' + where + '：' + fname);
         return 'ok';
       }
-      // 公共目录不可用（权限/版本）→ 走下面的网页下载兜底，行为与旧版一致
+      // ③ 两个原生路径都挂 → 走下面的网页下载兜底
     }
     const file = new File([blob], fname, { type: blob.type || 'application/json;charset=utf-8' });
     // ① 系统分享面板
