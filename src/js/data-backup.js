@@ -940,10 +940,6 @@
     impShow('正在导出…', '正在准备保存文件', 92);
     const saveRes = await saveBackupFile(blob, fname);
     impHide();
-    // 'ok' = 网页下载兜底（navigator.share / showSaveFilePicker）成功 → toast doneText 给用户看导出体积
-    // 'ok-silent' = plus 原生路径（MediaStore / plus.io）成功 → saveBackupFile 内部已 toast 更精准的位置/卸载提示，
-    //              这里别再 toast doneText 把好提示覆盖掉
-    if (saveRes === 'ok-silent') { return; }
     if (saveRes === 'ok') { toast(doneText); return; }
     // v3.9.x：'cancel' 不再直接放弃——华为/夸克等浏览器分享面板会立刻 AbortError
     //（分享面板不弹、直接返回「已取消保存」），数据其实已打包好，统一走「确定后下载」
@@ -960,15 +956,15 @@
     }
   }
 
-  // 套壳 App（HBuilderX 5+）：真正把备份写进手机「系统下载」公共目录——**这是唯一能在卸载 App 后
-  // 仍然保留备份的位置**。
-  // 2026-10-20 纠错：plus.io 的 PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS 绝对路径其实是
-  //   /storage/emulated/0/Android/data/<包名>/.<AppID>/downloads|documents —— 都落在「应用专属目录」下，
-  //   卸载 App 会被一起删除。所以「写这两个目录」≠「存到手机下载」；要卸载不丢，只能走原生 API：
-  //   · Android 10+（API 29+）：MediaStore.Downloads 插入一条下载记录 + 按流写入，系统「文件管理 → 下载」
-  //     立即可见、免存储权限、卸载不删（本函数走这条）。
-  //   · API 29 以下：MediaStore.Downloads 不存在 → 返回 false，退回下面的 plus.io 应用目录（旧行为）。
-  // 仅用 Native.js（plus.android）调公开 Java 类，不需要额外模块权限。
+  // ===== 套壳 App（HBuilderX 5+）公共目录写入 =====
+  // 目标：写到系统真正的 Download 目录，卸载 App 不丢（与应用专属目录 /Android/data/<pkg>/... 不同）。
+  // 两条路径，优先级：MediaStore（Android 10+） > plus.io PUBLIC_DOWNLOADS（旧安卓）。
+  // v3.xx：MediaStore 通过 Native.js 调用 ContentResolver.insert + OutputStreamWriter/PrintWriter
+  //   等纯 String writer 写入——全部路径**不依赖 byte[]**（byte[] 跨 Native.js 往返在部分机型上
+  //   返回 null 导致 NPE）。probeSize 在 insert 后有延迟，带 3 次重试。
+  // v3.xx：plus.io 路径统一走 FileWriter.write(String)，避免 Blob/Uint8Array 被隐式 String() 转成
+  //   "[object Blob]" 或 "123,34,..." 垃圾（见 saveViaPlusPublicDir 注释）。
+
   async function saveViaMediaStoreDownload(blob, fname, mime) {
     const plus = window.plus;
     if (!plus || !plus.android || typeof plus.android.importClass !== 'function') return false;
@@ -976,59 +972,49 @@
     try {
       const A = plus.android;
       const cls = function (n) { const c = A.importClass(n); if (!c) throw new Error('importClass 失败：' + n); return c; };
-      // 取属性：先直接 . 访问，取不到再用 getAttribute 兜底（不同运行时暴露方式略有差异）
-      const get = function (o, n) { let v; try { v = o[n]; } catch (e) {} if (v === undefined || v === null) { try { v = A.getAttribute(o, n); } catch (e) {} } return v; };
-      // 调方法：先直接调用，不是函数再走 invoke 兜底
-      const call = function (o, n) {
+      const tryCall = function (o, n) {
         const a = [].slice.call(arguments, 2);
-        if (o && typeof o[n] === 'function') { try { return o[n].apply(o, a); } catch (e) {} }
-        return A.invoke.apply(A, [o, n].concat(a));
+        if (o && typeof o[n] === 'function') return o[n].apply(o, a);
+        if (typeof A.invoke === 'function') return A.invoke.apply(A, [o, n].concat(a));
+        throw new Error('该运行时没有 plus.android.invoke');
       };
 
-      // MediaStore.Downloads 自 API 29 起才有
-      const Build = cls('android.os.Build');
-      const sdk = get(get(Build, 'VERSION'), 'SDK_INT');
-      if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，MediaStore.Downloads 不可用'); return false; }
+      // ---- 前置条件：SDK ≥ 29（Android 10+ MediaStore 可用） ----
+      let sdk = 0;
+      try {
+        const Build = cls('android.os.Build');
+        const ver = tryCall(Build, 'VERSION');
+        if (ver) { try { sdk = Number(tryCall(ver, 'SDK_INT')) || 0; } catch (e) {} }
+      } catch (e) {}
+      if (!(sdk >= 29)) { log('SDK_INT=' + sdk + ' < 29，跳过 MediaStore 交给 plus.io'); return false; }
 
-      // [关键修复 2026-10-20] Native.js 取不到 MediaStore 的静态嵌套类/常量——
-      //   实测 importClass('android.provider.MediaStore') 后 get('Downloads')/get('MediaColumns')
-      //   与 Environment.DIRECTORY_DOWNLOADS 全返回 undefined（用户诊断实报
-      //   「[backup:media] MediaStore / Environment 常量取不到」）。
-      //   所以这里**完全不碰静态常量**，全部改用字符串字面量——它们就是那些常量在
-      //   Android SDK 源码里的真实值，insert/put 完全等价：
-      //     MediaStore.Downloads.EXTERNAL_CONTENT_URI = "content://media/external/downloads"
-      //     MediaColumns.DISPLAY_NAME  = "_display_name"
-      //     MediaColumns.MIME_TYPE     = "mime_type"
-      //     MediaColumns.RELATIVE_PATH = "relative_path"（API 29+，值 "Download" = Environment.DIRECTORY_DOWNLOADS）
+      // ---- 构造 MediaStore.Downloads Uri ----
       const DL_URI = 'content://media/external/downloads';
       const COL_NAME = '_display_name', COL_MIME = 'mime_type', COL_REL = 'relative_path';
-
-      // Uri 是抽象类不能 new，只能走静态方法 Uri.parse(String)（直接调 / invokeStaticMethod 双保险）
       let itemUri = null;
       try {
         const Uri = cls('android.net.Uri');
-        if (typeof Uri.parse === 'function') itemUri = Uri.parse(DL_URI);
+        itemUri = tryCall(Uri, 'parse', DL_URI);
       } catch (e) {}
-      if (!itemUri && typeof A.invokeStaticMethod === 'function') {
-        try { itemUri = A.invokeStaticMethod('android.net.Uri', 'parse', DL_URI); } catch (e) {}
-      }
-      if (!itemUri) { log('Uri.parse 失败（拿不到 content://media/external/downloads）'); return false; }
+      if (!itemUri) { log('Uri.parse 失败'); return false; }
 
+      // ---- ContentValues：文件名 + MIME + relative_path='Download' ----
       const values = new (cls('android.content.ContentValues'))();
-      call(values, 'put', COL_NAME, fname);
-      call(values, 'put', COL_MIME, mime || 'application/octet-stream');
-      call(values, 'put', COL_REL, 'Download');
+      tryCall(values, 'put', COL_NAME, fname);
+      tryCall(values, 'put', COL_MIME, mime || 'application/octet-stream');
+      tryCall(values, 'put', COL_REL, 'Download');
 
-      const resolver = call(A.runtimeMainActivity(), 'getContentResolver');
-      // 二进制（docx 等）不走 MediaStore：Native.js 下"字符串 → 原始字节"没有可靠写法，
-      // 交给下面的 plus.io 兜底（内容正确，只是位置在应用专属）。备份主路径是 UTF-8 JSON 文本。
+      const resolver = tryCall(A.runtimeMainActivity(), 'getContentResolver');
+      if (!resolver) { log('getContentResolver 返回 null'); return false; }
+
+      // ---- 非文本 blob 跳过 MediaStore（JSON 备份主路径才走这里） ----
       const t = (blob.type || '').toLowerCase();
       const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
       if (!isText) { log('非文本备份（' + (t || '未知') + '），跳过 MediaStore 交给 plus.io'); return false; }
 
-      // 取整份文本（保留 FileReader 兜底，个别老内核没有 blob.text()）
+      // ---- blob 转字符串（文本直接 .text()）----
       let text;
-      if (typeof blob.text === 'function') { try { text = await blob.text(); } catch (e) {} }
+      try { text = await blob.text(); } catch (e) {}
       if (typeof text !== 'string') {
         text = await new Promise(function (res, rej) {
           const fr = new FileReader();
@@ -1037,118 +1023,128 @@
           fr.readAsText(blob);
         });
       }
+      if (typeof text !== 'string') { log('blob.text 拿不到字符串'); return false; }
 
-      // 不吞异常的调用：写入失败原因必须进日志（旧版 call() 把异常静默吞掉，
-      // 才会出现"日志说已写入、文件却是 0 字节"这种无从定位的情况）
-      const tryCall = function (o, n) {
-        const a = [].slice.call(arguments, 2);
-        if (o && typeof o[n] === 'function') return o[n].apply(o, a);
-        if (typeof A.invoke === 'function') return A.invoke.apply(A, [o, n].concat(a));
-        throw new Error('该运行时没有 plus.android.invoke');
-      };
-
-      // [FIX 2026-10-20 v4] 真机日志定位到两个硬事实，这版据此重写：
-      //   1) Java 数组（byte[]）在 HBuilderX Native.js 下**往返不可用**——实报
-      //      「①String.getBytes+write 异常：java.lang.NullPointerException: Attempt to get length of
-      //        null array; at android.os.ParcelFileDescriptor$AutoCloseOutputStream」：
-      //      String.getBytes() / ByteBuffer.array() 返回的 byte[] 到 JS 侧就是 null，再喂回 write(byte[])
-      //      必炸。→ 彻底删掉所有「先拿 byte[] 再写」的路径，只留「把 String 交给 Java 侧自己编码落盘」。
-      //   2) 校验用的 plus.android.newArray **不存在**（实报「A.newArray is not a function」）。
-      //      → 探针换成不需要数组参数、也不需要数组返回的两个标准调用：
-      //        resolver.openFileDescriptor(u,'r').getStatSize()（long）/ resolver.openInputStream(u).available()（int）
-      //   每条路径跑一轮「insert → 写全部块 → 关流 → 探针量真实落盘大小」：
-      //   对得上才成；已知不符（含 0 字节）就删掉这条记录换下一条；探针读不到就留作候选。
+      // ---- 写入路径：全部纯 String 写入，零 byte[] 依赖 ----
+      // 每条 route 的 open(os) 返回 { put(chunk), end() }——分批写入后关 writer。
       const routes = [
         { name: '①PrintWriter.print', open: function (os) {
-            const w = new (cls('java.io.PrintWriter'))(os);
-            return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
-          } },
+          const w = new (cls('java.io.PrintWriter'))(os);
+          return { put: function (c) { tryCall(w, 'print', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } },
         { name: '②PrintWriter.write', open: function (os) {
-            const w = new (cls('java.io.PrintWriter'))(os);
-            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
-          } },
-        { name: '③Writer.write(out)', open: function (os) {
-            const w = new (cls('java.io.OutputStreamWriter'))(os);
-            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
-          } },
-        { name: '④Writer.write(out,UTF-8)', open: function (os) {
-            const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
-            return { put: function (c) { tryCall(w, 'write', c); }, end: function () { tryCall(w, 'close'); } };
-          } },
+          const w = new (cls('java.io.PrintWriter'))(os);
+          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } },
+        { name: '③OutputStreamWriter.write', open: function (os) {
+          const w = new (cls('java.io.OutputStreamWriter'))(os);
+          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } },
+        { name: '④OutputStreamWriter.write(UTF-8)', open: function (os) {
+          const w = new (cls('java.io.OutputStreamWriter'))(os, 'UTF-8');
+          return { put: function (c) { tryCall(w, 'write', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } },
         { name: '⑤PrintStream.print', open: function (os) {
-            const w = new (cls('java.io.PrintStream'))(os);
-            return { put: function (c) { tryCall(w, 'print', c); }, end: function () { tryCall(w, 'close'); } };
-          } },
-        { name: '⑥Writer.append(out)', open: function (os) {
-            const w = new (cls('java.io.OutputStreamWriter'))(os);
-            return { put: function (c) { tryCall(w, 'append', c); }, end: function () { tryCall(w, 'flush'); tryCall(w, 'close'); } };
-          } }
+          const w = new (cls('java.io.PrintStream'))(os);
+          return { put: function (c) { tryCall(w, 'print', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } },
+        { name: '⑥OutputStreamWriter.append', open: function (os) {
+          const w = new (cls('java.io.OutputStreamWriter'))(os);
+          return { put: function (c) { tryCall(w, 'append', c); }, end: function () { try { tryCall(w, 'flush'); } catch (e) {} tryCall(w, 'close'); } };
+        } }
       ];
 
-      // 探针：量真实落盘大小。**不用数组参数、也不用数组返回**（plus.android 没有 newArray）
-      const probeSize = function (u) {
+      // ---- probeSize：读 MediaStore 落盘大小，带 3 次重试 ----
+      // MediaStore.insert 后索引更新有延迟，写入完毕立即查 size 常返回 -1；
+      // 重试 3 次（间隔 300ms）给系统落盘时间。全部失败时返回 -1（"读不到"）。
+      const probeSizeOnce = function (u) {
         try {
           const pfd = tryCall(resolver, 'openFileDescriptor', u, 'r');
-          if (pfd) { const n = tryCall(pfd, 'getStatSize'); try { tryCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+          if (pfd) { try { const n = tryCall(pfd, 'getStatSize'); try { tryCall(pfd, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {} }
         } catch (e) {}
         try {
           const ins = tryCall(resolver, 'openInputStream', u);
-          if (ins) { const n = tryCall(ins, 'available'); try { tryCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; }
+          if (ins) { try { const n = tryCall(ins, 'available'); try { tryCall(ins, 'close'); } catch (e) {} if (typeof n === 'number') return n; } catch (e) {} }
         } catch (e) {}
         return -1;
       };
+      const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+      const probeSize = async function (u) {
+        let last = -1;
+        for (let i = 0; i < 3; i++) {
+          if (i > 0) await sleep(300);
+          last = probeSizeOnce(u);
+          if (last >= 0) return last;
+        }
+        return last;
+      };
       const tryDel = function (u) { try { tryCall(resolver, 'delete', u, null, null); } catch (e) {} };
 
-      // 整串分块过桥（每块 ≤10 万字符 ≈ ≤30 万 UTF-8 字节），避免整份备份一次推过 JSBridge
+      // ---- 分批：每 10 万字符一批写入 ----
       const CHARS = 100000;
       const chunks = [];
       for (let i = 0; i < text.length; i += CHARS) chunks.push(text.slice(i, i + CHARS));
       if (!chunks.length) chunks.push('');
 
-      let pending = null;   // 探针读不到大小时留下的候选 uri（先不删，只留一条）
+      // ---- 依次尝试各条 route，直到有一条成功 ----
+      let pendingUri = null;      // 探针全 -1 时保留的候选 uri（不删、判成功）
       for (let ri = 0; ri < routes.length; ri++) {
         const R = routes[ri];
-        let uri = null;
+        let uri = null, os = null, sink = null;
+        let writeOk = true;       // 写入过程是否无任何异常
         try {
           uri = tryCall(resolver, 'insert', itemUri, values);
           if (!uri) { log(R.name + '：insert 返回 null'); continue; }
-          const os = tryCall(resolver, 'openOutputStream', uri);
+          os = tryCall(resolver, 'openOutputStream', uri);
           if (!os) { log(R.name + '：openOutputStream 返回 null'); tryDel(uri); continue; }
-          const sink = R.open(os);
-          for (let ci = 0; ci < chunks.length; ci++) sink.put(chunks[ci]);
-          try { sink.end(); } catch (e) { log(R.name + '：关 writer 异常 ' + (e && e.message || e)); }
+          sink = R.open(os);
+          for (let ci = 0; ci < chunks.length; ci++) {
+            try { sink.put(chunks[ci]); } catch (e) { writeOk = false; throw e; }
+          }
+          try { sink.end(); } catch (e) { log(R.name + '：关 writer 异常 ' + (e && e.message || e)); writeOk = false; }
           try { tryCall(os, 'close'); } catch (e) {}
+          os = null; sink = null;
 
-          const sz = probeSize(uri);
+          const sz = await probeSize(uri);
           if (sz >= 0 && sz === blob.size) {
-            log('写入成功：' + R.name + '（' + sz + ' 字节）→ Download/' + fname);
-            if (pending) tryDel(pending);
+            log('✅ MediaStore 写入成功：' + R.name + '（落盘 ' + sz + ' / 期望 ' + blob.size + ' 字节）→ Download/' + fname);
+            if (pendingUri) tryDel(pendingUri);
             return true;
           }
           if (sz >= 0) {
-            log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判失败换下一条');
-            tryDel(uri);   // 删掉这条空/残缺记录，别在「下载」里留垃圾
+            log(R.name + '：落盘 ' + sz + ' 字节 ≠ 期望 ' + blob.size + '，判残缺，换下一条');
+            tryDel(uri);
+            uri = null;
             continue;
           }
-          log(R.name + '：写调用无异常，但探针读不到落盘大小（无法判定）');
-          if (pending) tryDel(uri); else pending = uri;
+          // sz === -1：探针读不到，但如果写入过程无异常 → 信它一次，判成功
+          if (writeOk) {
+            log(R.name + '：探针读不到落盘大小（-1），但写入无异常 → 保留文件判成功');
+            if (pendingUri) tryDel(pendingUri);
+            return true;
+          } else {
+            log(R.name + '：探针读不到 + 写入有异常 → 换下一条');
+            tryDel(uri);
+            uri = null;
+          }
         } catch (e) {
           log(R.name + ' 异常：' + (e && e.message || e));
           if (uri) tryDel(uri);
         }
       }
-      if (pending) { log('探针不可用：保留第一条无异常路径产出的文件（未能验证大小）'); return true; }
-      log('全部写入路径失败 → 回退 plus.io（内容保留，位置在应用专属）');
+      log('❌ MediaStore 全部 ' + routes.length + ' 条路径失败 → 回退 plus.io');
       return false;
     } catch (e) {
-      log('失败：' + (e && e.message));
+      log('MediaStore 顶层异常：' + (e && e.message));
       return false;
     }
   }
 
-  // 套壳 App（HBuilderX 5+）退路：写 plus.io 的应用专属目录（PUBLIC_DOWNLOADS → PUBLIC_DOCUMENTS
-  // → PRIVATE_DOCUMENTS）。注意三者都在 Android/data/<包名>/ 下，**卸载 App 都会删**——只作兜底，
-  // 提示里会对用户明说「卸载会丢」。saveViaMediaStoreDownload 成功时不会走到这里。
+  // 套壳 App（HBuilderX 5+）：plus.io 公共目录写入（MediaStore 失败时的回退）——
+  // 注意：plus.io PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS 在 Android 10+ 分区存储下
+  // 映射到 **应用专属目录**（/Android/data/<pkg>/...），卸载 App 会删除。
+  // 真正的系统 Download 目录只靠上面的 MediaStore 路径。
+  // plus.io 能用但卸载丢；PRIVATE_DOCUMENTS 是最后兜底（总能写但一定卸载丢）。
   // FIX 2026-10-19（d2d9bb8）：原实现把 JS Blob 直接喂给 plus.io FileWriter.write()——
   //   该版本 FileWriter 对非 String 入参隐式 String(data)，Blob → "[object Blob]"（14 字符垃圾），
   //   onwriteend 照样 fire、Promise 照常 resolve {ok:true}、toast 还说"已保存"，但文件是垃圾
@@ -1167,36 +1163,17 @@
     const log = function () { try { console.error.apply(console, ['[backup:plus]'].concat([].slice.call(arguments))); } catch (e) {} };
 
     // ---- 把 blob 转成 FileWriter.write(String) 能原样落盘的字符串 ----
-    // 读字节：优先用现代 Promise API；若内核缺失 blob.text()/arrayBuffer() 则回退 FileReader
-    //（老 WebView 都支持 FileReader），避免个别 HBuilderX 运行时的内核直接抛错＝又失败。
-    const blobText = async (b) => {
-      if (typeof b.text === 'function') { try { return await b.text(); } catch (e) {} }
-      return await new Promise((res, rej) => {
-        const fr = new FileReader();
-        fr.onload = () => res(String(fr.result));
-        fr.onerror = () => rej(fr.error || new Error('readAsText'));
-        fr.readAsText(b);
-      });
-    };
-    const blobU8 = async (b) => {
-      if (typeof b.arrayBuffer === 'function') { try { return new Uint8Array(await b.arrayBuffer()); } catch (e) {} }
-      return await new Promise((res, rej) => {
-        const fr = new FileReader();
-        fr.onload = () => res(new Uint8Array(fr.result));
-        fr.onerror = () => rej(fr.error || new Error('readAsArrayBuffer'));
-        fr.readAsArrayBuffer(b);
-      });
-    };
     let writeStr = '';
     try {
       const t = (blob.type || '').toLowerCase();
       const isText = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded))/.test(t) || /\.json$/i.test(fname);
       if (isText) {
         // 文本：直接取原始字符串（JSON 备份主路径，零编码损耗）
-        writeStr = await blobText(blob);
+        writeStr = await blob.text();
       } else {
         // 二进制：逐字节拼成 binary string（char code = 字节值，write 时原样落盘）
-        const u8 = await blobU8(blob);
+        const buf = await blob.arrayBuffer();
+        const u8 = new Uint8Array(buf);
         // 分批 String.fromCharCode 避免大数组 apply 栈溢出
         const CHUNK = 0x8000;
         let out = '';
@@ -1270,33 +1247,32 @@
   // FIX 2026-09-11 #333：参数化分享标题/文件 MIME/保存框类型——诊断 docx 导出复用本链路
   // （设备.js buildDocxBlob 产物），不再只能分享「JSON 备份」。默认值保持原行为零变化。
   async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-    // 套壳 App（HBuilderX 5+）：先尝试写进手机「系统下载」公共目录——**只有这里卸载 App 不会丢**。
+    // 套壳 App（HBuilderX 5+）：MediaStore 优先 → plus.io 回退 → 网页下载兜底
     if (window.plus && window.plus.io) {
-      impShow('正在导出…', '正在保存到手机下载目录…', 95);
-      // ① 首选：MediaStore 写系统下载目录（Android 10+ 免存储权限，卸载不丢）
+      impShow('正在导出…', '正在保存到下载目录…', 95);
+      // ① MediaStore（Android 10+）——唯一能写到**系统真正 Download 目录**的路径，卸载不丢
+      const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
       try {
-        const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
         if (await saveViaMediaStoreDownload(blob, fname, mime)) {
-          toast('已保存到手机「下载」目录：' + fname + '（在「文件管理 → 下载」里可找到，卸载 App 不会丢）');
-          return 'ok-silent'; // 自己已 toast 精准提示；调用方别再 toast doneText 把它盖了
+          toast('已保存到系统「下载」目录：' + fname + '（文件管理器里能找到，卸载 App 不会丢）');
+          return 'ok';
         }
-      } catch (e) {}
-      // ② 兜底：plus.io 应用专属目录（PUBLIC_*/PRIVATE_* 都在 Android/data/<包名>/ 下，卸载即丢；
-      //    提示里明说"卸载会删除"，让用户自己决定要不要转存）
+      } catch (e) { /* MediaStore 异常不阻塞，继续试 plus.io */ }
+      // ② plus.io（旧安卓回退）——注意 Android 10+ 分区存储下映射到应用专属目录，卸载会丢
       const r = await saveViaPlusPublicDir(blob, fname);
       if (r.ok) {
         let where;
         if (r.dir === 'PRIVATE_DOCUMENTS') {
-          where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
+          where = '（应用私有目录，卸载 App 会删除：' + r.path + '，建议尽快转存到下载目录）';
         } else if (r.path) {
-          where = '（应用专属目录，卸载 App 会删除：' + r.path + '）';
+          where = '（应用专属目录，卸载 App 会删除：' + r.path + '，建议尽快转存）';
         } else {
           where = '（应用专属目录，卸载 App 会删除）';
         }
         toast('已保存' + where + '：' + fname);
-        return 'ok-silent'; // 同上，自己已 toast 带位置+卸载提醒的提示
+        return 'ok';
       }
-      // 两条原生路都不可用 → 走下面的网页下载兜底，行为与旧版一致
+      // ③ 两个原生路径都挂 → 走下面的网页下载兜底
     }
     const file = new File([blob], fname, { type: blob.type || 'application/json;charset=utf-8' });
     // ① 系统分享面板
