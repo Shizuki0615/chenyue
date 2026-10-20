@@ -902,11 +902,10 @@ html.ios-pwa-standalone.ios-cover-top body { height:var(--mochi-ios-h, 100vh); m
 .fs-active .phone .page.full .gs-title, .fs-active .phone .page.full .card-tabs,
 .fs-active .phone .page.full .div-h-title, .fs-active .phone .page.full .stats-top-name { padding-top: max(env(safe-area-inset-top, 0px), 12px); }
 
-/* v3.33.x：套壳原生全屏（shell-fs-active 类，由 fullscreen.js 的 shellMarkFs 控制）——
-   不复用 .fs-active（那会改顶部 padding 导致状态栏顶格重叠）。只隐藏桌面左上角
-   品牌文字（用户可自定义为「辰光玥影」等页面标题），保留状态栏时间/电量与安全区
-   padding。原生 titleNView 的隐藏由 fullscreen.js 里 plus.webview.setStyle 处理。 */
-html.shell-fs-active .statusbar .brand { display: none; }
+/* v3.33.x：套壳原生全屏（shell-fs-active 类）——
+   品牌文字（用户可自定义为 Shizuki 等）保留显示；原生 titleNView（辰光玥影）
+   由 fullscreen.js 里 plus.webview.setStyle({titleNView:false}) 隐藏。
+   状态栏时间/电量/品牌顶到屏幕顶端，覆盖手机系统状态栏。 */
 
 /* v3.26.x：iOS 真全屏（浏览器原生全屏 .ios-native-fs / 桌面全屏 .ios-fs-active）下
    收紧顶部栏贴顶—— iOS 系统状态栏（含灵动岛）始终由系统占据在内容上方、网页内容
