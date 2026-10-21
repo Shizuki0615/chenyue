@@ -602,11 +602,11 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
   }
   /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
   @supports (height: 100dvh) { .phone { height:100svh; height:100dvh; } }
-  .statusbar {
+  .phone .statusbar {
     /* v3.5.127：max 兜底——真全屏挖孔屏 env() 返回 0 时保留最小留白。
        v3.28.x #114：优先用 JS 实测的 --mochi-safe-top（iOS standalone 下
        env(safe-area-inset-top) 返回 0 时兜底），未设时回落 env() */
-    padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
+    padding-top:max(calc(20px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 20px);
     padding-bottom:10px;
   }
 }
@@ -633,7 +633,7 @@ html.force-mobile .phone {
 /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
 @supports (height: 100dvh) { html.force-mobile .phone { height:100svh; height:100dvh; } }
 html.force-mobile .statusbar {
-  padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
+  padding-top:max(calc(20px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 20px);
   padding-bottom:10px;
 }
 html.force-mobile .phone input:not([readonly]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]):not([type="month"]):not([type="week"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
@@ -933,7 +933,7 @@ html.ios-native-fs .phone .page.full .stats-top-name { padding-top: 10px; }
    v3.28.x #114（复现）：安全区避让改由上方 .ios-pwa-standalone.ios-fs-active .phone
    的 padding-top 统一承担（.phone 整体下移到系统状态栏下方），这里只留 14px 常态
    留白，不再重复加 env/safe-area——否则与 .phone 顶部内边距叠加成双倍白带。 */
-html.ios-fs-active .phone .statusbar { padding-top:35px; }
+html.ios-fs-active .phone .statusbar { padding-top:20px; }
 /* FIX 2026-09-05 #189：iPad（tablet）主屏幕全屏需要可见效果——#111 为修 iPhone16
    「全屏后桌面顶部一行不见了、被遮挡」改为全屏态保留模拟状态栏，但 iPad 无灵动岛、
    系统状态栏独立成条、网页本来就盖不上去，保留后【全屏模式】开关在 iPad 上毫无
@@ -985,7 +985,7 @@ html.tablet .phone {
 @supports (height: 100dvh) { html.tablet .phone { height:100svh; height:100dvh; } }
 html.tablet .phone.no-statusbar { padding:0; }
 html.tablet .statusbar {
-  padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
+  padding-top:max(calc(20px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 20px);
   padding-bottom:10px;
 }
 /* 平板真全屏（Fullscreen API / display_override）：仍是整屏铺满（与手机端一致） */
@@ -1129,7 +1129,7 @@ input.ce-ghost, textarea.ce-ghost {
 
 .statusbar {
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 4px 12px; font-size:13px; font-weight:600; z-index:2;
+  padding:4px 4px 12px; font-size:13px; font-weight:600; z-index:2;
 }
 /* v3.26.x #199：浏览器覆盖形态（雨见/Via 等沉浸式安卓壳：页面顶到系统状态栏下，
    screen==inner、standalone=false）——mobile-adapt.js syncVvFit 实测 env 写
@@ -1138,7 +1138,7 @@ input.ce-ghost, textarea.ce-ghost {
    该形态无 .phone padding 兜底链，必须由状态栏自身抬升）。iOS standalone 不挂
    类、规则不生效，既有避让链（.phone padding-top / ios-fs-active）不受影响。 */
 html.mochi-cover-top .phone .statusbar {
-  padding-top:max(calc(35px + var(--mochi-safe-top, 0px)), 35px);
+  padding-top:max(calc(20px + var(--mochi-safe-top, 0px)), 20px);
 }
 /* v3.26.x #537：iOS 独立应用【普通态·覆盖形态】（ios-cover-top 类由 mobile-adapt.js
    syncVvFit 按共享判定器 iosCover 挂/摘）——该形态 .phone 铺满整块物理屏、页面顶到
@@ -1154,7 +1154,7 @@ html.mochi-cover-top .phone .statusbar {
    「底部栏不贴手机底部」（原来 .phone 的 18px 内边距与 34px 避让叠成 52px 空档）。 */
 html.ios-cover-top .phone { padding-bottom:0; }
 html.ios-cover-top .phone .statusbar {
-  padding-top:max(calc(35px + var(--mochi-safe-top, 0px)), 35px);
+  padding-top:max(calc(20px + var(--mochi-safe-top, 0px)), 20px);
 }
 /* v3.26.x #199：Gecko 系（Firefox/雨见等）滚动锚定会在删除/新增消息改动上方
    内容时自行调整 chat-body 的 scrollTop，与 chat.js #162 贴底钉住逻辑对打
