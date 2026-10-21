@@ -1323,48 +1323,74 @@ step();
 if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
 if (camBtn) camBtn.addEventListener('click', vtToggleCam);
 if (flipBtn) flipBtn.addEventListener('click', vtFlip);
-const vtSelfOff = document.getElementById('vt-self-off');
-if (vtSelfOff) vtSelfOff.addEventListener('click', function () { if (VT.camOff) vtToggleCam(); else vtStartCam(); });
 (function initVtSelfDrag() {
 const v = document.getElementById('vt-self');
+const off = document.getElementById('vt-self-off');
 const stage = document.getElementById('vt-stage');
 if (!v || !stage) return;
-let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+function syncPeer(el, l, t) {
+const peer = el === v ? off : v;
+if (!peer) return;
+peer.style.left = l;
+peer.style.top = t;
+peer.style.right = l ? 'auto' : '';
+}
+function bind(el, blockDefault) {
+if (!el) return null;
+let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
 function place(l, t) {
 const sr = stage.getBoundingClientRect();
 const pad = 6;
-const maxL = Math.max(pad, sr.width - v.offsetWidth - pad);
-const maxT = Math.max(pad, sr.height - v.offsetHeight - pad);
-v.style.left = Math.min(Math.max(pad, l), maxL) + 'px';
-v.style.top = Math.min(Math.max(pad, t), maxT) + 'px';
-v.style.right = 'auto';
+const maxL = Math.max(pad, sr.width - el.offsetWidth - pad);
+const maxT = Math.max(pad, sr.height - el.offsetHeight - pad);
+const nl = Math.min(Math.max(pad, l), maxL) + 'px';
+const nt = Math.min(Math.max(pad, t), maxT) + 'px';
+el.style.left = nl;
+el.style.top = nt;
+el.style.right = 'auto';
+syncPeer(el, nl, nt);
 }
-v.addEventListener('pointerdown', function (ev) {
-if (!VT.mode || VT.camOff || v.hidden) return;
+el.addEventListener('pointerdown', function (ev) {
+if (!VT.mode || el.hidden) return;
+if (el === v && VT.camOff) return;
 if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
 const sr = stage.getBoundingClientRect();
-const vr = v.getBoundingClientRect();
+const vr = el.getBoundingClientRect();
 dragging = true;
+moved = false;
 sx = ev.clientX; sy = ev.clientY;
 ox = vr.left - sr.left; oy = vr.top - sr.top;
 place(ox, oy); // 默认是 right 定位：一开拖就落成 left/top，避免两个方向打架
-v.classList.add('dragging');
-try { v.setPointerCapture && v.setPointerCapture(ev.pointerId); } catch (e) {}
-try { ev.preventDefault(); } catch (e) {}
+el.classList.add('dragging');
+try { el.setPointerCapture && el.setPointerCapture(ev.pointerId); } catch (e) {}
+if (blockDefault) { try { ev.preventDefault(); } catch (e) {} }
 });
-v.addEventListener('pointermove', function (ev) {
+el.addEventListener('pointermove', function (ev) {
 if (!dragging) return;
-place(ox + (ev.clientX - sx), oy + (ev.clientY - sy));
+const dx = ev.clientX - sx, dy = ev.clientY - sy;
+if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+moved = true;
+place(ox + dx, oy + dy);
 try { ev.preventDefault(); } catch (e) {}
 });
 function endDrag(ev) {
 if (!dragging) return;
 dragging = false;
-v.classList.remove('dragging');
-try { if (v.releasePointerCapture && ev && ev.pointerId !== undefined) v.releasePointerCapture(ev.pointerId); } catch (e) {}
+el.classList.remove('dragging');
+try { if (el.releasePointerCapture && ev && ev.pointerId !== undefined) el.releasePointerCapture(ev.pointerId); } catch (e) {}
 }
-v.addEventListener('pointerup', endDrag);
-v.addEventListener('pointercancel', endDrag);
+el.addEventListener('pointerup', endDrag);
+el.addEventListener('pointercancel', endDrag);
+return function wasMoved() { return moved; };
+}
+bind(v, true);
+const offMoved = bind(off, false);
+if (off) {
+off.addEventListener('click', function (ev) {
+if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
+if (VT.camOff) vtToggleCam(); else vtStartCam();
+});
+}
 })();
 const vtRow = document.getElementById('call-vt-row');
 if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });

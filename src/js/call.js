@@ -1769,49 +1769,79 @@
   if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
   if (camBtn) camBtn.addEventListener('click', vtToggleCam);
   if (flipBtn) flipBtn.addEventListener('click', vtFlip);
-  const vtSelfOff = document.getElementById('vt-self-off');
-  if (vtSelfOff) vtSelfOff.addEventListener('click', function () { if (VT.camOff) vtToggleCam(); else vtStartCam(); });
-  // 摄像头小窗拖动：视频态里把「我的画面」拖到舞台任意角落（钳在舞台内，不跑出画面）
+  // 摄像头小窗拖动：视频画面 + 关摄像头占位块共用一套（两个元素位置同步）。
+  // 占位块同时是「点一下重试」的按钮 ⇒ 位移超过阈值才算拖，没动就交还给 click 重试。
   (function initVtSelfDrag() {
     const v = document.getElementById('vt-self');
+    const off = document.getElementById('vt-self-off');
     const stage = document.getElementById('vt-stage');
     if (!v || !stage) return;
-    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
-    function place(l, t) {
-      const sr = stage.getBoundingClientRect();
-      const pad = 6;
-      const maxL = Math.max(pad, sr.width - v.offsetWidth - pad);
-      const maxT = Math.max(pad, sr.height - v.offsetHeight - pad);
-      v.style.left = Math.min(Math.max(pad, l), maxL) + 'px';
-      v.style.top = Math.min(Math.max(pad, t), maxT) + 'px';
-      v.style.right = 'auto';
+    // 拖哪个就把位置同步给另一个：关摄像头/重新打开时小窗不跳位
+    function syncPeer(el, l, t) {
+      const peer = el === v ? off : v;
+      if (!peer) return;
+      peer.style.left = l;
+      peer.style.top = t;
+      peer.style.right = l ? 'auto' : '';
     }
-    v.addEventListener('pointerdown', function (ev) {
-      if (!VT.mode || VT.camOff || v.hidden) return;
-      if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
-      const sr = stage.getBoundingClientRect();
-      const vr = v.getBoundingClientRect();
-      dragging = true;
-      sx = ev.clientX; sy = ev.clientY;
-      ox = vr.left - sr.left; oy = vr.top - sr.top;
-      place(ox, oy); // 默认是 right 定位：一开拖就落成 left/top，避免两个方向打架
-      v.classList.add('dragging');
-      try { v.setPointerCapture && v.setPointerCapture(ev.pointerId); } catch (e) {}
-      try { ev.preventDefault(); } catch (e) {}
-    });
-    v.addEventListener('pointermove', function (ev) {
-      if (!dragging) return;
-      place(ox + (ev.clientX - sx), oy + (ev.clientY - sy));
-      try { ev.preventDefault(); } catch (e) {}
-    });
-    function endDrag(ev) {
-      if (!dragging) return;
-      dragging = false;
-      v.classList.remove('dragging');
-      try { if (v.releasePointerCapture && ev && ev.pointerId !== undefined) v.releasePointerCapture(ev.pointerId); } catch (e) {}
+    function bind(el, blockDefault) {
+      if (!el) return null;
+      let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+      function place(l, t) {
+        const sr = stage.getBoundingClientRect();
+        const pad = 6;
+        const maxL = Math.max(pad, sr.width - el.offsetWidth - pad);
+        const maxT = Math.max(pad, sr.height - el.offsetHeight - pad);
+        const nl = Math.min(Math.max(pad, l), maxL) + 'px';
+        const nt = Math.min(Math.max(pad, t), maxT) + 'px';
+        el.style.left = nl;
+        el.style.top = nt;
+        el.style.right = 'auto';
+        syncPeer(el, nl, nt);
+      }
+      el.addEventListener('pointerdown', function (ev) {
+        if (!VT.mode || el.hidden) return;
+        if (el === v && VT.camOff) return;
+        if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
+        const sr = stage.getBoundingClientRect();
+        const vr = el.getBoundingClientRect();
+        dragging = true;
+        moved = false;
+        sx = ev.clientX; sy = ev.clientY;
+        ox = vr.left - sr.left; oy = vr.top - sr.top;
+        place(ox, oy); // 默认是 right 定位：一开拖就落成 left/top，避免两个方向打架
+        el.classList.add('dragging');
+        try { el.setPointerCapture && el.setPointerCapture(ev.pointerId); } catch (e) {}
+        if (blockDefault) { try { ev.preventDefault(); } catch (e) {} }
+      });
+      el.addEventListener('pointermove', function (ev) {
+        if (!dragging) return;
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        // 占位块是按钮：先给一个几像素的容差，轻微抖动不算拖动，点击照常触发
+        if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+        moved = true;
+        place(ox + dx, oy + dy);
+        try { ev.preventDefault(); } catch (e) {}
+      });
+      function endDrag(ev) {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('dragging');
+        try { if (el.releasePointerCapture && ev && ev.pointerId !== undefined) el.releasePointerCapture(ev.pointerId); } catch (e) {}
+      }
+      el.addEventListener('pointerup', endDrag);
+      el.addEventListener('pointercancel', endDrag);
+      return function wasMoved() { return moved; };
     }
-    v.addEventListener('pointerup', endDrag);
-    v.addEventListener('pointercancel', endDrag);
+    bind(v, true);
+    const offMoved = bind(off, false);
+    if (off) {
+      off.addEventListener('click', function (ev) {
+        // 刚刚是真拖动：这一下抬起不当点击用（否则松手就把摄像头又打开了）
+        if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
+        if (VT.camOff) vtToggleCam(); else vtStartCam();
+      });
+    }
   })();
   const vtRow = document.getElementById('call-vt-row');
   if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });

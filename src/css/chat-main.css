@@ -1670,8 +1670,9 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18);
   color:rgba(255,255,255,.78); font-size:9px; line-height:1.35; text-align:center;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  padding:0 4px; cursor:pointer;
+  padding:0 4px; cursor:grab; touch-action:none;
 }
+.vt-self-off.dragging { cursor:grabbing; }
 .vt-self-off[hidden] { display:none; }
 .vt-self-off svg { width:20px; height:20px; }
 .call-btn.call-vt { background:#3a7bd5; }
