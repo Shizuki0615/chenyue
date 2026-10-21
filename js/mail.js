@@ -927,7 +927,9 @@ stickerN: (p.sticker || []).length, imageN: (p.image || []).length
 function taLetterContent(cfg, cid) {
 const pool = mailCardPool(cid);
 const hasCustom = pool.text.some(s => typeof s === 'string' && /[A-Za-z0-9\u4e00-\u9fff\u3041-\u3096\u30a1-\u30fa]/.test(s));
-const words = hasCustom ? pool.text : (pool.defText.length ? pool.defText : TA_LETTERS);
+const _custom = pool.text || [];
+const _def = pool.defText || [];
+const words = (_custom.length || _def.length) ? _custom.concat(_def) : TA_LETTERS;
 const maxN = Math.max(1, words.length);
 const wantMin = Math.min(Math.max(1, cfg.minCards || 1), maxN);
 const wantMax = Math.min(Math.max(wantMin, cfg.maxCards || wantMin), maxN);

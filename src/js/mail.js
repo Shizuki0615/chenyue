@@ -1375,11 +1375,13 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     // 正文——退回系统预设默认字卡正文（defText）。否则信件正文只剩用户加的那几张符号，用户报
     //「信都是颜文字」。含中文/字母的自定义字卡行为不变。
     const hasCustom = pool.text.some(s => typeof s === 'string' && /[A-Za-z0-9\u4e00-\u9fff\u3041-\u3096\u30a1-\u30fa]/.test(s));
-    // 有自定义字卡 → 正文主体用自定义；无自定义 → 整体回退默认字卡池（再空才用固定文案）
-    const words = hasCustom ? pool.text : (pool.defText.length ? pool.defText : TA_LETTERS);
-    // v3.6.x：条数在「最少/最多字卡条数」之间随机；上限不超过池子大小——
-    // 移除自定义字卡内置预设后用户没添加字卡时 words 回退为固定文案，
-    // 条数超过池子会从同几段里反复抽 → 内容复制粘贴很多次（已修）。
+    // FIX 2026-10-21 #信箱minCards：words 改为「自定义 + 默认字卡池并集」——之前只取三者之一
+    // （自定义 OR 默认 OR TA_LETTERS），用户只配了少量自定义卡或禁用了默认池时 maxN 被压得
+    // 比 minCards 还小 → wantMin = min(10, 3) = 3，信件实际卡数远低于用户设置值。
+    // 并集保证 maxN 反映真实可用卡数，minCards 设置才生效。两池都空才落回 TA_LETTERS 长段落。
+    const _custom = pool.text || [];
+    const _def = pool.defText || [];
+    const words = (_custom.length || _def.length) ? _custom.concat(_def) : TA_LETTERS;
     const maxN = Math.max(1, words.length);
     const wantMin = Math.min(Math.max(1, cfg.minCards || 1), maxN);
     const wantMax = Math.min(Math.max(wantMin, cfg.maxCards || wantMin), maxN);
@@ -1387,7 +1389,6 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     const parts = [];
     for (let i = 0; i < n; i++) {
       // v3.8.x：有自定义字卡时，每张卡按 dc-overall 概率混入默认字卡（自定义+默认一起用）；
-      //   无自定义时正文整体已是默认字卡池，不再重复混入
       if (hasCustom) {
         const d = pickDefaultMailCard(pool, cid);
         if (d) { parts.push(d); continue; }
