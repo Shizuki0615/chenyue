@@ -13,7 +13,8 @@ busy: c['call-busy'] !== undefined ? c['call-busy'] : CALL.busy,
 reject: c['call-reject'] !== undefined ? c['call-reject'] : CALL.reject,
 hangup: c['call-hangup'] !== undefined ? c['call-hangup'] : CALL.hangup,
 nohangup: c['call-no-hangup'] === 1 || c['call-no-hangup'] === '1',
-resume: c['call-resume'] !== undefined ? c['call-resume'] : 1
+resume: c['call-resume'] !== undefined ? c['call-resume'] : 1,
+taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60
 };
 }
 const CALL_BG_KEY = 'call-bg';
@@ -246,6 +247,23 @@ const miniBtn = document.getElementById('call-minimize-btn');
 const miniAv = document.getElementById('call-mini-av');
 const miniName = document.getElementById('call-mini-name');
 const miniTime = document.getElementById('call-mini-time');
+const vtBtn = document.getElementById('call-vt-btn');
+const camBtn = document.getElementById('call-cam-btn');
+const flipBtn = document.getElementById('call-flip-btn');
+const VT = {
+mode: false,      // 是否处于视频态
+camOff: false,    // 用户手动关了摄像头
+facing: 'user',   // 当前摄像头方向
+stream: null,
+starting: false,
+gen: 0,           // 摄像头请求代次：切后台/关摄像头时 +1，让在飞的旧请求作废（防两路流叠着抢摄像头）
+watchdog: null,
+taCam: false,     // 本次 TA 是否开摄像头（掷骰结果）
+taBg: '',         // 本次 TA 的画面
+rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
+entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
+poolAsked: false  // 画面库等待回填只问一次，防递归
+};
 let _miniSafeTopCache = -1;
 function miniSafeTop() {
 try {
@@ -409,9 +427,13 @@ if (hangBtn) hangBtn.hidden = !(mode === 'calling' || mode === 'active');
 if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
 if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
 if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
+if (vtBtn) vtBtn.hidden = !(mode === 'active');
+if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
+if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
 }
 function minimizeCall() {
 if (!currentCall) return;
+if (VT.mode) { vtExit(); return; }
 if (mask) mask.hidden = true;
 if (cdEl) cdEl.hidden = true;
 if (mini) {
@@ -477,6 +499,7 @@ clearCallActive(); // v3.26.x：正常结束清除进行中标记（中断恢复
 try { store.set('records-call-last', String(Date.now())); } catch (e) {}
 if (window.stopSfx) window.stopSfx('ring');
 if (window.musicHoldForCall) window.musicHoldForCall(false);
+vtTeardown();
 stopTimers();
 if (mask) mask.hidden = true;
 if (mini) mini.hidden = true;
@@ -674,8 +697,9 @@ setMaskBtns('active');
 if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg> 通话已接通');
 startCallDuration();
 saveCallActive(); // v3.26.x：接通后更新持久化（记下 connectedTime 供中断恢复算时长）
+vtRollTaCam(currentCall.cid);
 setTimeout(() => {
-if (currentCall && currentCall.status === 'connected') {
+if (currentCall && currentCall.status === 'connected' && !VT.mode) {
 if (callMiniEnabled()) {
 if (mask) mask.hidden = true;
 if (mini) {
@@ -733,8 +757,10 @@ toast('通话已接通');
 if (statusEl) statusEl.textContent = '正在通话...';
 startCallDuration();
 saveCallActive(); // v3.26.x：去电接通后更新持久化
+setMaskBtns('active'); // 去电接通后亮出「视频」按钮（hanging/mini 原本已在）
+vtRollTaCam(callRef.cid);
 setTimeout(() => {
-if (currentCall === callRef && callRef.status === 'connected') {
+if (currentCall === callRef && callRef.status === 'connected' && !VT.mode) {
 if (callMiniEnabled()) {
 if (mask) mask.hidden = true;
 if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); /* v3.26.x #137 显示时校正 */ }
@@ -953,6 +979,360 @@ else if (window.chatAppendToDeskMsg) { window.chatAppendToDeskMsg(cid, sysHtml);
 } catch (e) {}
 try { if (!document.getElementById('page-home').hidden && window.__renderHomeCall) window.__renderHomeCall(); } catch (e) {}
 }
+const VT_POOL_KEY = 'call-ta-bg-pool';
+const VT_POOL_MAX = 8;
+const VT_LAST_KEY = 'call-ta-bg-last';
+function vtSupported() {
+return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+function vtCid() { return (currentCall && currentCall.cid) || window.__activeCid || 'default'; }
+function vtStoreFor(cid) {
+try { return (window.storeFor && window.storeFor(cid)) || store; } catch (e) { return store; }
+}
+function vtReadPool(cid) {
+try {
+const raw = vtStoreFor(cid).get(VT_POOL_KEY);
+if (Array.isArray(raw)) return raw.filter(function (x) { return typeof x === 'string' && x; });
+const a = JSON.parse(raw || '[]');
+return Array.isArray(a) ? a.filter(function (x) { return typeof x === 'string' && x; }) : [];
+} catch (e) { return []; }
+}
+function vtRandomBg(cid) {
+const pool = vtReadPool(cid);
+if (!pool.length) return '';
+let last = -1;
+try { last = parseInt(vtStoreFor(cid).get(VT_LAST_KEY), 10); } catch (e) { last = -1; }
+let idx = Math.floor(Math.random() * pool.length);
+if (pool.length > 1 && idx === last) idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
+try { vtStoreFor(cid).set(VT_LAST_KEY, String(idx)); } catch (e) {}
+return pool[idx] || '';
+}
+function vtRollTaCam(cid) {
+const p = Number(callCfg(cid || vtCid()).taCam) || 0;
+const pool = vtReadPool(cid || vtCid());
+VT.rolled = true;
+VT.taCam = p > 0 && pool.length > 0 && Math.random() * 100 < p;
+VT.taBg = VT.taCam ? vtRandomBg(cid || vtCid()) : '';
+}
+function vtPaintTa() {
+const img = document.getElementById('vt-ta-img');
+const avBox = document.getElementById('vt-ta-av');
+const ring = document.getElementById('vt-ta-av-ring');
+if (!img || !avBox) return;
+if (VT.taCam && VT.taBg) {
+img.src = VT.taBg;
+img.hidden = false;
+avBox.hidden = true;
+} else {
+img.hidden = true;
+img.removeAttribute('src');
+avBox.hidden = false;
+let av = '';
+try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
+fillAv(ring, av);
+}
+if (statusEl) statusEl.textContent = VT.taCam ? '视频通话中' : '对方未开启摄像头';
+}
+function partnerAvOf(cid) {
+const s = vtStoreFor(cid);
+return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
+}
+function vtSelfState(state, txt) {
+const v = document.getElementById('vt-self');
+const off = document.getElementById('vt-self-off');
+const t = document.getElementById('vt-self-off-txt');
+if (state === 'on') {
+if (v) v.hidden = false;
+if (off) off.hidden = true;
+return;
+}
+if (v) v.hidden = true;
+if (off) off.hidden = false;
+if (t && txt) t.textContent = txt;
+}
+function vtSyncCamBtn() {
+if (!camBtn) return;
+camBtn.classList.toggle('off', !!VT.camOff);
+const t = document.getElementById('call-cam-txt');
+if (t) t.textContent = VT.camOff ? '打开' : '关闭';
+const slash = document.getElementById('call-cam-slash');
+if (slash) slash.style.display = VT.camOff ? '' : 'none';
+}
+function vtStopCam() {
+VT.gen++;
+if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+VT.starting = false;
+if (VT.stream) {
+try { VT.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+VT.stream = null;
+}
+const v = document.getElementById('vt-self');
+try { if (v) { v.pause && v.pause(); v.srcObject = null; } } catch (e) {}
+}
+function vtStartCam() {
+if (!VT.mode || VT.camOff) return;
+if (VT.stream || VT.starting) return;
+if (!vtSupported()) { vtSelfState('fail', '这个浏览器不支持摄像头'); return; }
+const v = document.getElementById('vt-self');
+if (!v) return;
+VT.starting = true;
+vtSelfState('opening', '正在打开…');
+let settled = false;
+const gen = VT.gen; // 这一发请求的代次：期间关摄像头/切后台/翻转 → gen 变，回来的一律作废并释放
+VT.watchdog = setTimeout(function () {
+if (settled) return;
+settled = true;
+VT.gen++;
+VT.starting = false;
+VT.watchdog = null;
+vtSelfState('fail', '摄像头没有响应，点这里重试');
+}, 9000);
+const constraints = {
+audio: false,
+video: {
+facingMode: VT.facing === 'environment' ? { ideal: 'environment' } : { ideal: 'user' },
+width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 }
+}
+};
+let req = null;
+try { req = navigator.mediaDevices.getUserMedia(constraints); } catch (e) { req = Promise.reject(e); }
+req.then(function (stream) {
+if (settled || gen !== VT.gen) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} return; }
+settled = true;
+if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+VT.starting = false;
+if (!VT.mode || VT.camOff) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} return; }
+VT.stream = stream;
+try {
+v.classList.toggle('rear', VT.facing === 'environment');
+v.srcObject = stream;
+if (v.play) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+} catch (e) {}
+vtSelfState('on');
+vtSyncCamBtn();
+}).catch(function (err) {
+if (settled || gen !== VT.gen) return;
+settled = true;
+if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+VT.starting = false;
+const name = (err && err.name) || '';
+let msg = '摄像头打不开';
+if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
+else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
+else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
+vtSelfState('fail', msg + '，点这里重试');
+toast(msg + '（可在手机设置里给浏览器开摄像头权限）');
+});
+}
+function vtToggleCam() {
+if (!VT.mode) return;
+if (VT.camOff) {
+VT.camOff = false;
+vtSyncCamBtn();
+vtStartCam();
+} else {
+VT.camOff = true;
+vtStopCam();
+vtSelfState('off', '摄像头已关');
+vtSyncCamBtn();
+}
+}
+function vtFlip() {
+if (!VT.mode || VT.camOff || VT.starting) return;
+VT.facing = VT.facing === 'user' ? 'environment' : 'user';
+vtStopCam();
+const v = document.getElementById('vt-self');
+if (v) v.classList.toggle('rear', VT.facing === 'environment');
+vtStartCam();
+}
+function vtSetPanel(on) {
+const panel = document.getElementById('call-panel');
+const stage = document.getElementById('vt-stage');
+const title = document.getElementById('call-title');
+const vTxt = document.getElementById('call-vt-txt');
+if (panel) panel.classList.toggle('vt', !!on);
+if (stage) stage.hidden = !on;
+if (title) title.textContent = on ? '视频通话' : '语音通话';
+if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+const rowVal = document.getElementById('call-vt-row-val');
+if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
+}
+function vtEnter() {
+if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
+if (!vtSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
+if (VT.mode) return;
+if (!VT.rolled || VT.entered) vtRollTaCam(currentCall.cid);
+VT.entered = true;
+VT.mode = true;
+VT.camOff = false;
+VT.facing = 'user';
+vtSetPanel(true);
+vtSelfState('opening', '正在打开…');
+vtSyncCamBtn();
+vtPaintTa();
+if (mask) mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+if (window.closeChatCallPanel) { try { window.closeChatCallPanel(); } catch (e) {} }
+setMaskBtns('active');
+vtStartCam();
+saveCallActive();
+}
+function vtExit() {
+if (!VT.mode) return;
+VT.mode = false;
+vtStopCam();
+vtSetPanel(false);
+if (statusEl) statusEl.textContent = '正在通话...';
+setMaskBtns('active');
+if (currentCall && currentCall.status === 'connected' && callMiniEnabled()) {
+if (mask) mask.hidden = true;
+if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); }
+} else {
+if (mask) mask.hidden = false;
+syncCallAv();
+syncCallName();
+}
+}
+function vtTeardown() {
+VT.mode = false;
+VT.camOff = false;
+VT.facing = 'user';
+VT.rolled = false;
+VT.entered = false;
+VT.taCam = false;
+VT.taBg = '';
+vtStopCam();
+vtSetPanel(false);
+vtSelfState('off', '摄像头已关');
+const img = document.getElementById('vt-ta-img');
+if (img) { img.hidden = true; img.removeAttribute('src'); }
+const av = document.getElementById('vt-ta-av');
+if (av) av.hidden = true;
+}
+function vtCommitPool(mutate, done) {
+const cid = window.__activeCid || 'default';
+const s = vtStoreFor(cid);
+let finished = false;
+const finish = function (next) {
+if (finished) return;
+finished = true;
+if (next) { try { s.set(VT_POOL_KEY, JSON.stringify(next)); } catch (e) {} }
+if (done) done(next || null);
+};
+let waiting = false;
+try { waiting = !!(s.awaitingBigKey && s.awaitingBigKey(VT_POOL_KEY)); } catch (e) { waiting = false; }
+if (!waiting) { finish(mutate(vtReadPool(cid))); return; }
+try { if (s.requestBigKey) s.requestBigKey(VT_POOL_KEY); } catch (e) {}
+try {
+if (s.whenBigKeyBack) s.whenBigKeyBack(VT_POOL_KEY, function () { if (!finished) finish(mutate(vtReadPool(cid))); });
+} catch (e) {}
+setTimeout(function () {
+if (finished) return;
+toast('画面库还在读取，这次没有改动，请过几秒再试');
+finish(null);
+}, 2600);
+}
+function vtRenderPool() {
+const grid = document.getElementById('vt-pool-grid');
+if (!grid) return;
+const cid = window.__activeCid || 'default';
+const pool = vtReadPool(cid);
+const empty = document.getElementById('vt-pool-empty');
+const add = document.getElementById('vt-pool-add');
+if (empty) empty.hidden = pool.length > 0;
+if (add) add.hidden = pool.length >= VT_POOL_MAX;
+grid.innerHTML = '';
+pool.forEach(function (src, i) {
+const cell = document.createElement('div');
+cell.className = 'avlib-cell';
+const img = document.createElement('img');
+img.src = src;
+img.alt = 'TA 的画面';
+const del = document.createElement('button');
+del.className = 'avlib-del';
+del.type = 'button';
+del.textContent = '✕';
+del.addEventListener('click', function (ev) {
+ev.stopPropagation();
+vtCommitPool(function (cur) {
+const a = cur.slice();
+a.splice(i, 1);
+return a;
+}, function (next) {
+if (!next) return;
+vtRenderPool();
+toast('已移除这张画面');
+});
+});
+cell.appendChild(img);
+cell.appendChild(del);
+grid.appendChild(cell);
+});
+if (!pool.length && !VT.poolAsked) {
+try {
+const s = vtStoreFor(cid);
+if (s.awaitingBigKey && s.awaitingBigKey(VT_POOL_KEY) && s.whenBigKeyBack) {
+VT.poolAsked = true;
+s.whenBigKeyBack(VT_POOL_KEY, function () { VT.poolAsked = false; vtRenderPool(); });
+}
+} catch (e) {}
+}
+}
+function vtAddBg() {
+const cid = window.__activeCid || 'default';
+if (vtReadPool(cid).length >= VT_POOL_MAX) { toast('最多 8 张，先删掉一张再添加'); return; }
+if (!window.mochiFilePick) { toast('图片选择组件没加载上，请重开页面再试'); return; }
+window.mochiFilePick({
+id: 'vt-pool-pick', accept: 'image/*', multiple: true,
+onFiles: function (files) {
+const list = (files || []).slice(0, VT_POOL_MAX);
+if (!list.length) { toast('没有取到图片，请再选一次'); return; }
+if (!window.mochiImgIngest) { toast('图片处理组件没加载上，请重开页面再试'); return; }
+let i = 0, added = 0, failed = 0;
+const finish = function () {
+vtRenderPool();
+if (added) toast('已添加 ' + added + ' 张画面');
+else if (failed) toast('图片处理失败，换一张试试');
+};
+const step = function () {
+if (i >= list.length) { finish(); return; }
+if (vtReadPool(cid).length >= VT_POOL_MAX) { finish(); return; }
+const f = list[i++];
+window.mochiImgIngest(f, { maxSide: 1280, quality: 0.8, tag: 'vt-bg' }).then(function (r) {
+if (!r || r.st !== 'ok' || !r.data) { failed++; step(); return; }
+vtCommitPool(function (cur) {
+return cur.concat([r.data]).slice(0, VT_POOL_MAX);
+}, function (next) {
+if (next) added++; else failed++;
+step();
+});
+}).catch(function () { failed++; step(); });
+};
+step();
+}
+});
+}
+if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
+if (camBtn) camBtn.addEventListener('click', vtToggleCam);
+if (flipBtn) flipBtn.addEventListener('click', vtFlip);
+const vtSelfOff = document.getElementById('vt-self-off');
+if (vtSelfOff) vtSelfOff.addEventListener('click', function () { if (VT.camOff) vtToggleCam(); else vtStartCam(); });
+const vtRow = document.getElementById('call-vt-row');
+if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
+const vtPoolAdd = document.getElementById('vt-pool-add');
+if (vtPoolAdd) vtPoolAdd.addEventListener('click', vtAddBg);
+document.addEventListener('contact-switched', function () { VT.poolAsked = false; vtRenderPool(); });
+const vtSettingsRow = document.getElementById('row-call-settings');
+if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTimeout(vtRenderPool, 0); });
+vtRenderPool();
+document.addEventListener('visibilitychange', function () {
+if (document.visibilityState === 'hidden') {
+if (VT.mode) { vtStopCam(); vtSelfState('off', '已暂停'); }
+} else if (VT.mode && !VT.camOff && mask && !mask.hidden) {
+vtStartCam();
+}
+});
 function bootCallResume() {
 try { recoverCall(); } catch (e) {}
 setTimeout(function () { try { resumeHeldCall(); } catch (e) {} }, 1200);

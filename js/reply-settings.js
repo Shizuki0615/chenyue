@@ -59,6 +59,7 @@ const DEFAULTS = {
 'fd-kaomoji-en': 1, 'fd-emoji-en': 1, 'fd-sticker-en': 1, 'fd-image-en': 1,
 'fd-punct-en': 0,
 'call-incoming': 15, 'call-pickup': 70, 'call-busy': 15, 'call-reject': 15, 'call-hangup': 2,
+'call-ta-cam': 60,
 'call-resume': 1,
 'call-no-hangup': 0,
 'cs-normal': 0, 'cs-trigger-name': 1, 'cs-trigger-bar': 0,

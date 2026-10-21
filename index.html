@@ -2813,6 +2813,72 @@ color:#fff; font-size:10px; font-weight:600;
 .call-reject { background:#ff4d4f; }
 .call-answer { background:#52c41a; }
 .call-btn:active { transform:scale(.94); }
+.call-panel.vt {
+position:relative; width:min(360px, 92vw); height:min(72vh, 640px);
+padding:0; overflow:hidden; background:#111;
+display:flex; flex-direction:column; justify-content:flex-end;
+}
+.call-panel.vt .call-head { position:absolute; top:0; left:0; right:0; margin:0; padding:12px 14px 0; z-index:4; }
+.call-panel.vt .call-title { color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+.call-panel.vt .call-minimize { background:rgba(0,0,0,.4); border-color:rgba(255,255,255,.28); color:#fff; }
+.call-panel.vt .call-av { display:none; }
+.call-panel.vt .call-name,
+.call-panel.vt .call-status,
+.call-panel.vt .call-duration,
+.call-panel.vt .call-countdown { position:relative; z-index:3; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+.call-panel.vt .call-name { margin-bottom:0; }
+.call-panel.vt .call-duration { font-size:22px; }
+.call-panel.vt .call-btns { position:relative; z-index:3; gap:10px; margin-top:14px; padding:0 12px 18px; }
+.call-panel.vt .call-btn { width:54px; height:54px; font-size:9px; }
+.call-panel.vt .call-btn svg { width:21px; height:21px; }
+.vt-stage { position:absolute; inset:0; z-index:1; overflow:hidden; background:#111; }
+.vt-stage[hidden] { display:none; }
+.vt-ta {
+position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+animation:vtBreath 14s ease-in-out infinite alternate;
+transform-origin:50% 45%;
+}
+@keyframes vtBreath {
+from { transform:scale(1.02); }
+to { transform:scale(1.075); }
+}
+.vt-ta-av {
+position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+background:radial-gradient(circle at 50% 36%, #2c2c34, #0c0c0f 72%);
+}
+.vt-ta-av[hidden] { display:none; }
+.vt-av-ring {
+width:106px; height:106px; border-radius:50%; overflow:hidden;
+background:#e9e9e9; box-shadow:0 10px 28px rgba(0,0,0,.45);
+display:flex; align-items:center; justify-content:center;
+}
+.vt-av-ring img { width:100%; height:100%; object-fit:cover; display:block; }
+.vt-av-ring svg { width:38px; height:38px; }
+.vt-shade {
+position:absolute; left:0; right:0; bottom:0; height:46%; z-index:2; pointer-events:none;
+background:linear-gradient(to top, rgba(0,0,0,.66), rgba(0,0,0,.22) 52%, transparent);
+}
+.vt-self {
+position:absolute; top:52px; right:12px; z-index:3;
+width:76px; height:104px; border-radius:12px; object-fit:cover; background:#000;
+transform:scaleX(-1); box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.vt-self.rear { transform:none; }
+.vt-self[hidden] { display:none; }
+.vt-self-off {
+position:absolute; top:52px; right:12px; z-index:3;
+width:76px; height:104px; border-radius:12px;
+background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18);
+color:rgba(255,255,255,.78); font-size:9px; line-height:1.35; text-align:center;
+display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+padding:0 4px; cursor:pointer;
+}
+.vt-self-off[hidden] { display:none; }
+.vt-self-off svg { width:20px; height:20px; }
+.call-btn.call-vt { background:#3a7bd5; }
+.call-btn.call-cam,
+.call-btn.call-flip { background:rgba(255,255,255,.22); color:#fff; }
+.call-btn.call-cam.off { background:rgba(255,255,255,.32); }
 .call-mini {
 position:fixed; left:50%; bottom:calc(96px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px))); transform:translateX(-50%);
 z-index:95;
@@ -10291,7 +10357,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792575479194" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792598243193" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -11272,12 +11338,25 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 
 <!-- 通话弹层（来电/去电/通话中） -->
 <div class="call-mask" id="call-mask" hidden>
-  <div class="call-panel">
+  <div class="call-panel" id="call-panel">
     <div class="call-head">
-      <span class="call-title">语音通话</span>
+      <span class="call-title" id="call-title">语音通话</span>
       <button class="call-minimize" id="call-minimize-btn" title="缩小到小框">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>
       </button>
+    </div>
+    <!-- 视频通话舞台：TA 的画面（背景图）/ 头像 + 我的摄像头小窗。语音模式整块隐藏 -->
+    <div class="vt-stage" id="vt-stage" hidden>
+      <img class="vt-ta" id="vt-ta-img" alt="" hidden>
+      <div class="vt-ta-av" id="vt-ta-av" hidden>
+        <div class="vt-av-ring" id="vt-ta-av-ring"></div>
+      </div>
+      <div class="vt-shade"></div>
+      <video class="vt-self" id="vt-self" playsinline muted autoplay></video>
+      <div class="vt-self-off" id="vt-self-off" role="button" title="点一下重试摄像头">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
+        <span id="vt-self-off-txt">摄像头已关</span>
+      </div>
     </div>
     <div class="call-av" id="call-av"></div>
     <div class="call-name" id="call-name">TA</div>
@@ -11285,6 +11364,19 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     <div class="call-duration" id="call-duration">00:00</div>
     <div class="call-countdown" id="call-countdown" hidden></div>
     <div class="call-btns">
+      <!-- 视频相关按钮：语音接通时只显示「视频」，进入视频后换成摄像头开关/翻转/切语音 -->
+      <button class="call-btn call-vt" id="call-vt-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/></svg>
+        <span id="call-vt-txt">视频</span>
+      </button>
+      <button class="call-btn call-cam" id="call-cam-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/><path id="call-cam-slash" d="M3 3l18 18" style="display:none"/></svg>
+        <span id="call-cam-txt">关闭</span>
+      </button>
+      <button class="call-btn call-flip" id="call-flip-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 01-13.7 5.7"/><path d="M4 12a8 8 0 0113.7-5.7"/><path d="M4 17v-4h4"/><path d="M20 7v4h-4"/></svg>
+        <span>翻转</span>
+      </button>
       <button class="call-btn call-hang" id="call-hang-btn" hidden>
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.1.25-4.5.7v2.1c0 .4-.2.7-.6.9-.8.4-1.5.9-2.2 1.5-.3.3-.7.3-1 0l-1.9-1.9c-.3-.3-.3-.8 0-1.1C4.8 8.9 8.2 7 12 7s7.2 1.9 10.2 5.2c.3.3.3.8 0 1.1l-1.9 1.9c-.3.3-.7.3-1 0-.7-.6-1.4-1.1-2.2-1.5-.4-.2-.6-.5-.6-.9v-2.1C15.1 9.25 13.6 9 12 9z"/></svg>
         挂断
@@ -13591,6 +13683,17 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
         <div class="sm-set-hint" style="padding:0 16px 8px">【通话背景图片】作用于接通后的「通话小框」（底部那条悬浮通话条）。来电 / 去电弹出的方形通话弹窗默认也用它；一旦在下面「通话半框背景图片」单独设过，弹窗就只显示那一张。两者互不影响，都按联系人各自保存。</div>
+        <!-- 视频通话：TA 开摄像头概率 + TA 的画面图池（按联系人各自保存） -->
+        <div class="gs-title">视频通话</div>
+        <div class="set-group glass">
+          <div class="gs-row"><span>TA 开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
+        </div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">接通电话时按这个概率掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两通用同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
+        <div class="gs-title">TA 的画面</div>
+        <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
+        <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
+        <button class="div-draw" id="vt-pool-add" style="margin:0 16px 10px;width:calc(100% - 32px)">＋ 添加画面（最多 8 张）</button>
+        <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「TA 那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
         <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口 + 来电/去电弹窗专属背景图片 -->
         <div class="gs-title">通话半框</div>
         <div class="set-group glass">
@@ -15240,6 +15343,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <!-- #651：打开来电弹窗预览——联系人来电时的大弹窗（非迷你小框），纯查看不产生真实通话，点任意处退出；#987 起通话中点击＝展开真实通话面板 -->
           <div class="call-panel-row" id="call-view-row" title="打开联系人打给你 / 你打给联系人时的方形通话弹窗（非通话小框）；空闲时是预览，点任意处退出，通话中点击＝展开通话面板">
             <span class="cpr-txt">打开来电弹窗</span><span class="cpr-val">预览</span>
+          </div>
+          <div class="call-panel-row" id="call-vt-row" title="接通后点这里打开视频通话（调用手机摄像头；TA 那侧开不开由通话设置里的概率决定）">
+            <span class="cpr-txt">视频通话</span><span class="cpr-val" id="call-vt-row-val">开启摄像头</span>
           </div>
           <button class="call-panel-dial" id="call-panel-dial" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
@@ -22002,4 +22108,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvhx5nyy -->
+<!-- __MOCHI_EOF__ mviapks9 -->
