@@ -3076,6 +3076,22 @@ offerRemoveDamagedSong(m);
 return;
 }
 try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
+if (neaReady() && m.neteaseId) {
+console.log('[VIP-Diag] playTrack 正常路径走后端 neaReady=true neteaseId=' + m.neteaseId);
+neaFetchSongUrl(m.neteaseId, function (res) {
+const url = res && res.url;
+if (currentId !== m.id) return; // 空窗期切歌
+if (url) {
+console.log('[VIP-Diag] 后端给了直链，用它播！br=' + (res && res.code));
+audio.src = url;
+} else {
+console.log('[VIP-Diag] 后端没给直链，回落 meting。原因:', res && res.reason);
+audio.src = m.url;
+}
+startPlayback(m);
+});
+return;
+}
 audio.src = m.url;
 startPlayback(m);
 }

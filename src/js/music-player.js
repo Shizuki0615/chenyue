@@ -3872,9 +3872,31 @@
       offerRemoveDamagedSong(m);
       return;
     }
-    // v3.5.118：网易云外链防盗链（带 Referer 时返回 403 无法播放）——
-    // 设置 referrerPolicy=no-referrer 让请求不带 Referer，原曲可直接播放
+    // v3.41.0 核心修复：只要配了后端 + 登录（neaReady）且有 neteaseId，
+    // 正常播放路径里就优先走后端 /song/url/v1 拿直链。
+    //
+    // 根因：此前 VIP 后端逻辑只写在 retryWithHttpsUrl（onerror 重试函数）里。
+    // meting API 对 VIP 歌返回的是「可播的 30 秒试听流」（不是硬失败 404），
+    // 不触发 onerror → retryWithHttpsUrl 永远不被调 → VIP 后端永远不被用 → 播 30 秒。
+    //
+    // 修复：把后端路径提到正常播放链路，后端取不到才回落公开 meting URL。
     try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
+    if (neaReady() && m.neteaseId) {
+      console.log('[VIP-Diag] playTrack 正常路径走后端 neaReady=true neteaseId=' + m.neteaseId);
+      neaFetchSongUrl(m.neteaseId, function (res) {
+        const url = res && res.url;
+        if (currentId !== m.id) return; // 空窗期切歌
+        if (url) {
+          console.log('[VIP-Diag] 后端给了直链，用它播！br=' + (res && res.code));
+          audio.src = url;
+        } else {
+          console.log('[VIP-Diag] 后端没给直链，回落 meting。原因:', res && res.reason);
+          audio.src = m.url;
+        }
+        startPlayback(m);
+      });
+      return;
+    }
     audio.src = m.url;
     startPlayback(m);
   }
