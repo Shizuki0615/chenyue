@@ -3678,19 +3678,7 @@
           <div class="gs-row"><span>刷新后恢复通话</span><label class="toggle"><input type="checkbox" id="call-resume"><span class="tk"></span></label></div>
         </div>
         <div class="sm-set-hint" style="padding:0 16px 8px">开启后，通话接通中刷新页面或意外退出，重新打开时通话面板与计时从接通时刻继续，如同没断过；关闭则刷新算通话中断，主页通话记录里记一条红色「中断」条目。</div>
-        <div class="gs-title">通话背景</div>
-        <div class="set-group glass">
-          <div class="set-row" id="call-bg-row">
-            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
-            <div class="txt">通话背景图片</div>
-            <div class="val" id="call-bg-val"></div>
-          </div>
-          <div class="set-row" id="call-bg-remove" hidden>
-            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></div>
-            <div class="txt">移除通话背景</div>
-          </div>
-        </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【通话背景图片】作用于接通后的「通话小框」（底部那条悬浮通话条）。来电 / 去电弹出的方形通话弹窗默认也用它；一旦在下面「通话半框背景图片」单独设过，弹窗就只显示那一张。两者互不影响，都按联系人各自保存。</div>
+        <!-- 通话背景 / 通话半框背景已移至聊天设置 → 美化 → 通话（视觉相关设置集中在美化页） -->
         <!-- 视频通话：TA 开摄像头概率 + TA 的画面图池（按联系人各自保存） -->
         <div class="gs-title">视频通话</div>
         <div class="set-group glass">
@@ -3702,7 +3690,7 @@
         <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
         <button class="div-draw" id="vt-pool-add" style="margin:0 16px 10px;width:calc(100% - 32px)">＋ 添加画面（最多 8 张）</button>
         <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「TA 那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
-        <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口 + 来电/去电弹窗专属背景图片 -->
+        <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口；背景设置已移至聊天设置 → 美化 → 通话 -->
         <div class="gs-title">通话半框</div>
         <div class="set-group glass">
           <div class="set-row" id="call-half-open">
@@ -3710,17 +3698,7 @@
             <div class="txt">打开通话半框</div>
             <div class="val">前往打开</div>
           </div>
-          <div class="set-row" id="call-half-bg-row">
-            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
-            <div class="txt">通话半框背景图片</div>
-            <div class="val" id="call-half-bg-val"></div>
-          </div>
-          <div class="set-row" id="call-half-bg-remove" hidden>
-            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></div>
-            <div class="txt">移除通话半框背景</div>
-          </div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【通话半框背景图片】作用于「联系人打给你 / 你打给联系人」时弹出的那个方形通话弹窗（就是聊天「更多功能→通话」里「打开来电弹窗」预览的那个框）。没设过它时弹窗沿用上面的通话背景；设过就只显示它。通话小框不受影响，按联系人各自保存。</div>
       </div>
     </div>
 
@@ -5331,23 +5309,6 @@
         </div>
         <div class="poke-card-scroll">
           <div class="call-panel-status" id="call-panel-status">空闲 · 点击拨打语音通话</div>
-          <!-- v3.12.x：通话半框内直接修改联系人头像（点头像行）与通话卡片背景图片 -->
-          <div class="call-panel-row" id="call-av-edit-row" title="修改联系人头像">
-            <span class="cpr-txt">联系人头像</span><span class="cpr-val" id="call-av-edit-val">点击更换</span>
-          </div>
-          <div class="call-panel-row" id="call-bg-edit-row" title="设置通话背景图片">
-            <span class="cpr-txt">通话背景图片</span><span class="cpr-val" id="call-bg-edit-val"></span>
-          </div>
-          <div class="call-panel-row call-panel-row-danger" id="call-bg-edit-remove" hidden title="移除通话背景图片">
-            <span class="cpr-txt">移除通话背景</span><span class="cpr-val">恢复默认</span>
-          </div>
-          <!-- #651：通话功能页内直接上传/移除「通话半框背景」（与设置页同键 call-half-bg，实时回显本半框）；#987 起作用于来电/去电的方形通话弹窗 -->
-          <div class="call-panel-row" id="call-half-bg-edit-row" title="设置来电 / 去电那个方形通话弹窗的背景图片（没设过时弹窗显示通话背景；通话小框不受影响）">
-            <span class="cpr-txt">通话半框背景图片</span><span class="cpr-val" id="call-half-bg-edit-val"></span>
-          </div>
-          <div class="call-panel-row call-panel-row-danger" id="call-half-bg-edit-remove" hidden title="移除来电 / 去电弹窗背景图片">
-            <span class="cpr-txt">移除通话半框背景</span><span class="cpr-val">恢复默认</span>
-          </div>
           <!-- #651：打开来电弹窗预览——联系人来电时的大弹窗（非迷你小框），纯查看不产生真实通话，点任意处退出；#987 起通话中点击＝展开真实通话面板 -->
           <div class="call-panel-row" id="call-view-row" title="打开联系人打给你 / 你打给联系人时的方形通话弹窗（非通话小框）；空闲时是预览，点任意处退出，通话中点击＝展开通话面板">
             <span class="cpr-txt">打开来电弹窗</span><span class="cpr-val">预览</span>
@@ -6791,6 +6752,33 @@
           <div class="val" id="cs-bg-fullbars-val">关 · 栏位盖住</div>
         </div>
       </div>
+      <div class="gs-title">通话</div>
+      <div class="set-group glass">
+        <div class="set-row" id="call-av-edit-row" title="修改联系人头像">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>
+          <div class="txt">联系人头像<span class="sub">打开头像库更换 TA 的头像</span></div>
+          <div class="val" id="call-av-edit-val">点击更换</div>
+        </div>
+        <div class="set-row" id="call-bg-edit-row" title="设置通话背景图片（作用于接通后的通话小框；来电/去电弹窗没单独设半框背景时也用它）">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
+          <div class="txt">通话背景图片</div>
+          <div class="val" id="call-bg-edit-val"></div>
+        </div>
+        <div class="set-row" id="call-bg-edit-remove" hidden title="移除通话背景图片">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></div>
+          <div class="txt">移除通话背景</div>
+        </div>
+        <div class="set-row" id="call-half-bg-edit-row" title="设置来电 / 去电那个方形通话弹窗的背景图片（没设过时弹窗显示通话背景；通话小框不受影响）">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
+          <div class="txt">通话半框背景图片</div>
+          <div class="val" id="call-half-bg-edit-val"></div>
+        </div>
+        <div class="set-row" id="call-half-bg-edit-remove" hidden title="移除来电 / 去电弹窗背景图片">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></div>
+          <div class="txt">移除通话半框背景</div>
+        </div>
+      </div>
+      <div class="sm-set-hint" style="padding:0 16px 8px">【通话背景图片】作用于接通后的「通话小框」（底部那条悬浮通话条）。来电 / 去电弹出的方形通话弹窗默认也用它；一旦单独设过「通话半框背景图片」，弹窗就只显示那一张。【通话半框背景图片】作用于「联系人打给你 / 你打给联系人」时弹出的那个方形通话弹窗（就是聊天「更多功能→通话」里「打开来电弹窗」预览的那个框）。没设过它时弹窗沿用上面的通话背景；设过就只显示它。通话小框不受影响，两者都按联系人各自保存。</div>
       <div class="gs-title">顶栏 / 底栏与气泡透明</div>
       <div class="set-group glass">
         <div class="set-row" id="cs-bar-op">
