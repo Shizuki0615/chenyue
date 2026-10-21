@@ -2703,7 +2703,7 @@ audio.src = neteaseOuterUrl(m.neteaseId);
 }
 startPlayback(m);
 };
-if (neaKeepVip() && neaReady()) {
+if (neaReady()) {
 neaFetchSongUrl(m.neteaseId, function (url) {
 if (url) playResolved(url);
 else resolveNeteaseDirectUrl(m, playResolved);

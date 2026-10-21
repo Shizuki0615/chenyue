@@ -3397,8 +3397,12 @@
       }
       startPlayback(m);
     };
-    // v3.33.x：开关开着且已登录 → 先经用户自己的后端取直链；取到即用，取不到回落公开链路
-    if (neaKeepVip() && neaReady()) {
+    // v3.33.x（FIX 2026-10-21）：只要配了后端 + 登录（neaReady），就先经后端取直链。
+    // 之前条件是 neaKeepVip() && neaReady()——把播放链路绑死在「保留会员歌曲」开关上，
+    // 但那个开关语义是"导入歌单时要不要剔除 VIP 歌"，跟播放完全无关。
+    // 用户配了后端 + 登录 = 他的 cookie 可用，所有歌（免费+VIP）都应该先走他的后端拿直链
+    //（更快、更准、VIP 也能播全），拿不到才回落公开 meting。
+    if (neaReady()) {
       neaFetchSongUrl(m.neteaseId, function (url) {
         if (url) playResolved(url);
         else resolveNeteaseDirectUrl(m, playResolved);
