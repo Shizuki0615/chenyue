@@ -426,7 +426,7 @@ padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 }
 @supports (height: 100dvh) { .phone { height:100svh; height:100dvh; } }
 .statusbar {
-padding-top:max(calc(22px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 22px);
+padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
 padding-bottom:10px;
 }
 }
@@ -10291,7 +10291,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792551368305" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792552455802" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22002,4 +22002,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvhisvw1 -->
+<!-- __MOCHI_EOF__ mvhjg70a -->

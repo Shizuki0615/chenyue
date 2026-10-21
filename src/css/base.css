@@ -606,7 +606,7 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
     /* v3.5.127：max 兜底——真全屏挖孔屏 env() 返回 0 时保留最小留白。
        v3.28.x #114：优先用 JS 实测的 --mochi-safe-top（iOS standalone 下
        env(safe-area-inset-top) 返回 0 时兜底），未设时回落 env() */
-    padding-top:max(calc(22px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 22px);
+    padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
     padding-bottom:10px;
   }
 }
