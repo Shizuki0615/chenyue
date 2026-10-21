@@ -603,10 +603,10 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
   /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
   @supports (height: 100dvh) { .phone { height:100svh; height:100dvh; } }
   .statusbar {
-    /* v3.5.127：max 兜底——真全屏挖孔屏 env() 返回 0 时保留 14px 最小留白。
+    /* v3.5.127：max 兜底——真全屏挖孔屏 env() 返回 0 时保留最小留白。
        v3.28.x #114：优先用 JS 实测的 --mochi-safe-top（iOS standalone 下
        env(safe-area-inset-top) 返回 0 时兜底），未设时回落 env() */
-    padding-top:max(calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 14px);
+    padding-top:max(calc(22px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 22px);
     padding-bottom:10px;
   }
 }
