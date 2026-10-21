@@ -1482,6 +1482,12 @@
       if (off) off.hidden = true;
       return;
     }
+    // 关摄像头/打开中：占位块跟到小窗当前位置，拖动过之后关摄像头不跳回右上角
+    if (v && off) {
+      off.style.left = v.style.left || '';
+      off.style.top = v.style.top || '';
+      off.style.right = v.style.left ? 'auto' : '';
+    }
     if (v) v.hidden = true;
     if (off) off.hidden = false;
     if (t && txt) t.textContent = txt;
@@ -1643,6 +1649,9 @@
     VT.taBg = '';
     vtStopCam();
     vtSetPanel(false);
+    // 下一通从默认右上角开始（拖动位置只在本次通话内保留）
+    const selfV = document.getElementById('vt-self');
+    if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; }
     vtSelfState('off', '摄像头已关');
     const img = document.getElementById('vt-ta-img');
     if (img) { img.hidden = true; img.removeAttribute('src'); }
@@ -1762,6 +1771,48 @@
   if (flipBtn) flipBtn.addEventListener('click', vtFlip);
   const vtSelfOff = document.getElementById('vt-self-off');
   if (vtSelfOff) vtSelfOff.addEventListener('click', function () { if (VT.camOff) vtToggleCam(); else vtStartCam(); });
+  // 摄像头小窗拖动：视频态里把「我的画面」拖到舞台任意角落（钳在舞台内，不跑出画面）
+  (function initVtSelfDrag() {
+    const v = document.getElementById('vt-self');
+    const stage = document.getElementById('vt-stage');
+    if (!v || !stage) return;
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    function place(l, t) {
+      const sr = stage.getBoundingClientRect();
+      const pad = 6;
+      const maxL = Math.max(pad, sr.width - v.offsetWidth - pad);
+      const maxT = Math.max(pad, sr.height - v.offsetHeight - pad);
+      v.style.left = Math.min(Math.max(pad, l), maxL) + 'px';
+      v.style.top = Math.min(Math.max(pad, t), maxT) + 'px';
+      v.style.right = 'auto';
+    }
+    v.addEventListener('pointerdown', function (ev) {
+      if (!VT.mode || VT.camOff || v.hidden) return;
+      if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
+      const sr = stage.getBoundingClientRect();
+      const vr = v.getBoundingClientRect();
+      dragging = true;
+      sx = ev.clientX; sy = ev.clientY;
+      ox = vr.left - sr.left; oy = vr.top - sr.top;
+      place(ox, oy); // 默认是 right 定位：一开拖就落成 left/top，避免两个方向打架
+      v.classList.add('dragging');
+      try { v.setPointerCapture && v.setPointerCapture(ev.pointerId); } catch (e) {}
+      try { ev.preventDefault(); } catch (e) {}
+    });
+    v.addEventListener('pointermove', function (ev) {
+      if (!dragging) return;
+      place(ox + (ev.clientX - sx), oy + (ev.clientY - sy));
+      try { ev.preventDefault(); } catch (e) {}
+    });
+    function endDrag(ev) {
+      if (!dragging) return;
+      dragging = false;
+      v.classList.remove('dragging');
+      try { if (v.releasePointerCapture && ev && ev.pointerId !== undefined) v.releasePointerCapture(ev.pointerId); } catch (e) {}
+    }
+    v.addEventListener('pointerup', endDrag);
+    v.addEventListener('pointercancel', endDrag);
+  })();
   const vtRow = document.getElementById('call-vt-row');
   if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
   const vtPoolAdd = document.getElementById('vt-pool-add');

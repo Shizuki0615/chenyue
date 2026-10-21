@@ -2862,7 +2862,9 @@ background:linear-gradient(to top, rgba(0,0,0,.66), rgba(0,0,0,.22) 52%, transpa
 position:absolute; top:52px; right:12px; z-index:3;
 width:76px; height:104px; border-radius:12px; object-fit:cover; background:#000;
 transform:scaleX(-1); box-shadow:0 4px 14px rgba(0,0,0,.4);
+touch-action:none; cursor:grab;
 }
+.vt-self.dragging { cursor:grabbing; }
 .vt-self.rear { transform:none; }
 .vt-self[hidden] { display:none; }
 .vt-self-off {
@@ -10357,7 +10359,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792598243193" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792598813799" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22108,4 +22110,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mviapks9 -->
+<!-- __MOCHI_EOF__ mvib1t2f -->

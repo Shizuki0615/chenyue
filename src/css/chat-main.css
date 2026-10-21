@@ -1654,12 +1654,14 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   position:absolute; left:0; right:0; bottom:0; height:46%; z-index:2; pointer-events:none;
   background:linear-gradient(to top, rgba(0,0,0,.66), rgba(0,0,0,.22) 52%, transparent);
 }
-/* 我的摄像头小窗：前置镜像（后置不镜像，见 .rear） */
+/* 我的摄像头小窗：前置镜像（后置不镜像，见 .rear）；可拖动（touch-action 关掉页面滚动手势） */
 .vt-self {
   position:absolute; top:52px; right:12px; z-index:3;
   width:76px; height:104px; border-radius:12px; object-fit:cover; background:#000;
   transform:scaleX(-1); box-shadow:0 4px 14px rgba(0,0,0,.4);
+  touch-action:none; cursor:grab;
 }
+.vt-self.dragging { cursor:grabbing; }
 .vt-self.rear { transform:none; }
 .vt-self[hidden] { display:none; }
 .vt-self-off {
