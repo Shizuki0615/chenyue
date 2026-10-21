@@ -53,19 +53,42 @@ _shellOrigTitleNView = (s && s.titleNView !== undefined) ? s.titleNView : false;
 } catch (e) { _shellOrigTitleNView = false; }
 if (_shellOrigTitleNView === null) _shellOrigTitleNView = false;
 }
+let _tnvRetryTimer = null;
+function shellApplyTitleNView(hide) {
+let wv = null;
+try { wv = (window.plus && plus.webview) ? plus.webview.currentWebview() : null; } catch (e) {}
+if (!wv || typeof wv.setStyle !== 'function') return false;
+if (_tnvRetryTimer) { clearTimeout(_tnvRetryTimer); _tnvRetryTimer = null; }
+if (!hide) {
+if (_shellOrigTitleNView !== null) { try { wv.setStyle({ titleNView: _shellOrigTitleNView }); } catch (e) {} }
+return true;
+}
+shellSaveOrigTitleNView();
+const apply = function () { try { wv.setStyle({ titleNView: false }); } catch (e) {} };
+const applyCollapsed = function () {
+try {
+wv.setStyle({ titleNView: { height: '0px', titleText: '', backgroundColor: '#00000000', splitLine: { color: '#00000000' } } });
+} catch (e) {}
+};
+apply();
+const verify = function (delay, n) {
+_tnvRetryTimer = setTimeout(function () {
+_tnvRetryTimer = null;
+let cur;
+try { const st = typeof wv.getStyle === 'function' ? wv.getStyle() : null; cur = st ? st.titleNView : undefined; } catch (e) { cur = undefined; }
+if (cur === false || cur === null) return;      // 已隐藏，收工
+if (cur && typeof cur === 'object') applyCollapsed(); else apply();
+if (n < 3) verify(n === 0 ? 600 : 1500, n + 1);
+}, delay);
+};
+verify(120, 0);
+return true;
+}
 function shellMarkFs(on) {
 _shellFsOnFlag = !!on;
 try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
 try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
-try {
-if (window.plus && plus.webview) {
-const wv = plus.webview.currentWebview();
-if (wv && typeof wv.setStyle === 'function') {
-if (on) { shellSaveOrigTitleNView(); wv.setStyle({ titleNView: false }); }
-else if (_shellOrigTitleNView !== null) { wv.setStyle({ titleNView: _shellOrigTitleNView }); }
-}
-}
-} catch (e) {}
+try { shellApplyTitleNView(!!on); } catch (e) {}
 }
 function shellEnsureFs() {
 const n = shellNav();

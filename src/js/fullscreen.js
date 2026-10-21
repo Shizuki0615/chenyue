@@ -92,25 +92,56 @@
     } catch (e) { _shellOrigTitleNView = false; }
     if (_shellOrigTitleNView === null) _shellOrigTitleNView = false;
   }
+  // v3.33.x：隐藏套壳原生标题栏(titleNView)——它显示页面 <title>「辰光玥影」，
+  // 且作为原生控件占着 WebView 顶部 44~96px，CSS 无法越过 WebView 边界把它盖住。
+  // 实测：主 WebView 上首次 setStyle({titleNView:false}) 常不立即生效（返回后
+  // getStyle 仍是原配置），必须延迟读回校验、不生效就再补一次，否则标题栏一直在、
+  // 网页状态栏永远顶不到屏幕顶端。
+  let _tnvRetryTimer = null;
+  function shellApplyTitleNView(hide) {
+    let wv = null;
+    try { wv = (window.plus && plus.webview) ? plus.webview.currentWebview() : null; } catch (e) {}
+    if (!wv || typeof wv.setStyle !== 'function') return false;
+    if (_tnvRetryTimer) { clearTimeout(_tnvRetryTimer); _tnvRetryTimer = null; }
+    if (!hide) {
+      if (_shellOrigTitleNView !== null) { try { wv.setStyle({ titleNView: _shellOrigTitleNView }); } catch (e) {} }
+      return true;
+    }
+    shellSaveOrigTitleNView();
+    const apply = function () { try { wv.setStyle({ titleNView: false }); } catch (e) {} };
+    // 第二级：false 在主 WebView 上个别版本会被忽略——改用对象形式把标题栏压成 0 高、
+    // 全透明、清空文字（视觉上等同于没有），WebView 内容区随之顶到屏幕顶端。
+    const applyCollapsed = function () {
+      try {
+        wv.setStyle({ titleNView: { height: '0px', titleText: '', backgroundColor: '#00000000', splitLine: { color: '#00000000' } } });
+      } catch (e) {}
+    };
+    apply();
+    // 读回校验：titleNView 仍是对象/undefined 就再补，最多 3 次（120/600/1500ms）
+    const verify = function (delay, n) {
+      _tnvRetryTimer = setTimeout(function () {
+        _tnvRetryTimer = null;
+        let cur;
+        try { const st = typeof wv.getStyle === 'function' ? wv.getStyle() : null; cur = st ? st.titleNView : undefined; } catch (e) { cur = undefined; }
+        if (cur === false || cur === null) return;      // 已隐藏，收工
+        // cur 为对象=标题栏确实还在（读回可信）→ 压成 0 高；
+        // cur 为 undefined=该版本 getStyle 不返回 titleNView，无法判断，保守重试 false，
+        // 绝不能盲目用对象形式覆盖（可能把已隐藏好的标题栏又唤醒）。
+        if (cur && typeof cur === 'object') applyCollapsed(); else apply();
+        if (n < 3) verify(n === 0 ? 600 : 1500, n + 1);
+      }, delay);
+    };
+    verify(120, 0);
+    return true;
+  }
   function shellMarkFs(on) {
     _shellFsOnFlag = !!on;
     // v3.33.x：套壳原生全屏挂 .fs-active——用户要的就是「App 状态栏（时间/电量/品牌）
     // 覆盖手机系统状态栏」的沉浸观感，.fs-active 让 .phone 铺满、状态行顶到屏幕顶端。
-    // 原生标题栏(titleNView)另行 setStyle(false) 隐藏，不会被状态行盖住后又「消失」。
     try { document.documentElement.classList.toggle('fs-active', !!on); } catch (e) {}
     try { document.documentElement.classList.toggle('shell-fs-active', !!on); } catch (e) {}
-
-    // v3.33.x：隐藏套壳原生标题栏(titleNView)——它显示页面 <title>「辰光玥影」，
-    // 全屏下不应露出。退出全屏时还原。
-    try {
-      if (window.plus && plus.webview) {
-        const wv = plus.webview.currentWebview();
-        if (wv && typeof wv.setStyle === 'function') {
-          if (on) { shellSaveOrigTitleNView(); wv.setStyle({ titleNView: false }); }
-          else if (_shellOrigTitleNView !== null) { wv.setStyle({ titleNView: _shellOrigTitleNView }); }
-        }
-      }
-    } catch (e) {}
+    // 隐藏/还原原生标题栏（「辰光玥影」那条）
+    try { shellApplyTitleNView(!!on); } catch (e) {}
   }
   // 幂等恢复原生全屏：已在全屏不动；仍非全屏按 DCloud 已知坑先 false 再 true 重设一次
   //（系统原生交互/软键盘弹出后会切回非全屏，此时单次 setFullscreen(true) 无效）
