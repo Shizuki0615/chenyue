@@ -806,16 +806,36 @@
   function neaReady() { return !!(neaBase() && neaCookie()); }
   // 经用户自己的后端取播放直链：NeteaseCloudMusicApi 的 /song/url/v1 带 cookie，
   // 会员歌返回可播 url；取不到（未登录/该曲真失效/后端不通）一律回调 null，由调用方回落旧链路
+  // FIX 2026-10-21：返回完整诊断对象 {url, code, reason} 供调用方给用户真实错误提示
   function neaFetchSongUrl(id, cb) {
-    if (!neaReady()) { cb(null); return; }
-    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j) {
+    if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后端' }); return; }
+    const ck = neaCookie();
+    console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
+    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j, err) {
       let url = '';
+      let code = 0;
+      let reason = '';
       try {
-        const d = j && j.data && j.data[0];
-        if (d && typeof d.url === 'string') url = d.url;
-      } catch (e) {}
-      // 与 resolveNeteaseDirectUrl 同口径：http 直链在 https 页面会被混合内容拦截，统一修成 https
-      cb(url ? String(url).replace(/^http:/i, 'https:') : null);
+        if (err) { reason = err; console.log('[VIP-Diag] 后端请求失败:', err); }
+        else {
+          const d = j && j.data && j.data[0];
+          code = d ? d.code : (j && j.code) || 0;
+          if (d && typeof d.url === 'string') url = d.url;
+          if (!url) {
+            // 后端返回 code 语义：200=正常但这首歌需要会员/地区限制；404=该歌曲不存在或 VIP 专属；
+            // -462=需要验证码。不管哪种，后端没给 url 说明公开链路也不会给完整直链
+            reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
+            console.log('[VIP-Diag] 后端未给直链:', reason);
+          } else {
+            console.log('[VIP-Diag] 后端给直链成功 br=', d.br, 'size=', d.size);
+          }
+        }
+      } catch (e) { reason = '解析失败: ' + e.message; }
+      cb && cb({
+        url: url ? String(url).replace(/^http:/i, 'https:') : null,
+        code: code,
+        reason: reason
+      });
     });
   }
   // 归一化后端地址：去尾斜杠。显式写了协议就按用户写的走（自建后端常只有 http://IP:端口，
@@ -3402,12 +3422,23 @@
     // 但那个开关语义是"导入歌单时要不要剔除 VIP 歌"，跟播放完全无关。
     // 用户配了后端 + 登录 = 他的 cookie 可用，所有歌（免费+VIP）都应该先走他的后端拿直链
     //（更快、更准、VIP 也能播全），拿不到才回落公开 meting。
+    console.log('[VIP-Diag] playTrack neaReady=' + neaReady() + ' keepVip=' + neaKeepVip() + ' neteaseId=' + m.neteaseId);
     if (neaReady()) {
-      neaFetchSongUrl(m.neteaseId, function (url) {
-        if (url) playResolved(url);
-        else resolveNeteaseDirectUrl(m, playResolved);
+      neaFetchSongUrl(m.neteaseId, function (res) {
+        const url = res && res.url;
+        console.log('[VIP-Diag] 后端返回 url=' + !!url + ' code=' + (res && res.code) + ' reason=' + (res && res.reason));
+        if (url) {
+          playResolved(url);
+        } else {
+          // 后端没给直链 → 回落公开 meting。诊断：cookie 刚重登过还失败？
+          // 给用户真实提示，别默默回落让他不知道
+          const ckStatus = neaCookie() ? 'cookie 有效（刚拿了 ' + neaCookie().length + ' 字）' : 'cookie 缺失';
+          console.log('[VIP-Diag] 后端未给直链！回落公开 meting。原因:', res && res.reason, ckStatus);
+          resolveNeteaseDirectUrl(m, playResolved);
+        }
       });
     } else {
+      console.log('[VIP-Diag] neaReady=false, 直接走公开 meting（后端=' + !!neaBase() + ' cookie=' + !!neaCookie() + '）');
       resolveNeteaseDirectUrl(m, playResolved);
     }
     return true;

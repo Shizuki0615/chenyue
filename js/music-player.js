@@ -605,14 +605,32 @@ function neaKeepVip() { return !!(NEA.gStore && NEA.gStore.get(NEA.keyKeepVip) =
 function neaSetKeepVip(on) { if (NEA.gStore) NEA.gStore.set(NEA.keyKeepVip, on ? '1' : '0'); }
 function neaReady() { return !!(neaBase() && neaCookie()); }
 function neaFetchSongUrl(id, cb) {
-if (!neaReady()) { cb(null); return; }
-neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j) {
+if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后端' }); return; }
+const ck = neaCookie();
+console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
+neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j, err) {
 let url = '';
+let code = 0;
+let reason = '';
 try {
+if (err) { reason = err; console.log('[VIP-Diag] 后端请求失败:', err); }
+else {
 const d = j && j.data && j.data[0];
+code = d ? d.code : (j && j.code) || 0;
 if (d && typeof d.url === 'string') url = d.url;
-} catch (e) {}
-cb(url ? String(url).replace(/^http:/i, 'https:') : null);
+if (!url) {
+reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
+console.log('[VIP-Diag] 后端未给直链:', reason);
+} else {
+console.log('[VIP-Diag] 后端给直链成功 br=', d.br, 'size=', d.size);
+}
+}
+} catch (e) { reason = '解析失败: ' + e.message; }
+cb && cb({
+url: url ? String(url).replace(/^http:/i, 'https:') : null,
+code: code,
+reason: reason
+});
 });
 }
 function neaNormBase(s) {
@@ -2703,12 +2721,21 @@ audio.src = neteaseOuterUrl(m.neteaseId);
 }
 startPlayback(m);
 };
+console.log('[VIP-Diag] playTrack neaReady=' + neaReady() + ' keepVip=' + neaKeepVip() + ' neteaseId=' + m.neteaseId);
 if (neaReady()) {
-neaFetchSongUrl(m.neteaseId, function (url) {
-if (url) playResolved(url);
-else resolveNeteaseDirectUrl(m, playResolved);
+neaFetchSongUrl(m.neteaseId, function (res) {
+const url = res && res.url;
+console.log('[VIP-Diag] 后端返回 url=' + !!url + ' code=' + (res && res.code) + ' reason=' + (res && res.reason));
+if (url) {
+playResolved(url);
+} else {
+const ckStatus = neaCookie() ? 'cookie 有效（刚拿了 ' + neaCookie().length + ' 字）' : 'cookie 缺失';
+console.log('[VIP-Diag] 后端未给直链！回落公开 meting。原因:', res && res.reason, ckStatus);
+resolveNeteaseDirectUrl(m, playResolved);
+}
 });
 } else {
+console.log('[VIP-Diag] neaReady=false, 直接走公开 meting（后端=' + !!neaBase() + ' cookie=' + !!neaCookie() + '）');
 resolveNeteaseDirectUrl(m, playResolved);
 }
 return true;
