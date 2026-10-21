@@ -9858,6 +9858,7 @@ const chatCallClose = document.getElementById('chat-call-close');
 const callPanelName = document.getElementById('call-panel-name');
 const callPanelStatus = document.getElementById('call-panel-status');
 const callPanelDial = document.getElementById('call-panel-dial');
+const callPanelDialVt = document.getElementById('call-panel-dial-vt');
 const callPanelHang = document.getElementById('call-panel-hang');
 let callPanelTimer = null;
 function fmtCallDur(sec) {
@@ -9879,10 +9880,12 @@ st.status === 'ringing' ? ((st.name || pName) + ' 来电…') :
 st.status === 'calling' ? ('正在呼叫 ' + (st.name || pName) + '…') : '通话中';
 }
 if (callPanelDial) callPanelDial.hidden = true;
+if (callPanelDialVt) callPanelDialVt.hidden = true;
 if (callPanelHang) callPanelHang.hidden = false;
 } else {
-if (callPanelStatus) callPanelStatus.textContent = '空闲 · 点击拨打语音通话';
+if (callPanelStatus) callPanelStatus.textContent = '空闲 · 选择拨打语音或视频通话';
 if (callPanelDial) callPanelDial.hidden = false;
+if (callPanelDialVt) callPanelDialVt.hidden = false;
 if (callPanelHang) callPanelHang.hidden = true;
 }
 }
@@ -10000,6 +10003,16 @@ if (window.placeCall) window.placeCall();
 else {
 const name = chatPartnerName();
 addRec({ side: 'out', text: '拨打 ' + name + ' 语音通话', special: 'call' });
+if (window.logFish) window.logFish();
+}
+setTimeout(updateCallPanel, 120);
+});
+if (callPanelDialVt) callPanelDialVt.addEventListener('click', (e) => {
+e.stopPropagation();
+if (window.placeCall) window.placeCall(true);
+else {
+const name = chatPartnerName();
+addRec({ side: 'out', text: '拨打 ' + name + ' 视频通话', special: 'call' });
 if (window.logFish) window.logFish();
 }
 setTimeout(updateCallPanel, 120);

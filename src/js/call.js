@@ -341,6 +341,7 @@
     taBg: '',         // 本次 TA 的画面
     rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
     entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
+    startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -1057,8 +1058,10 @@
     endCall('已挂断');
   }
   // 去电：拨打 → 忙线/拒绝/接通/未接（星言概率）
-  window.placeCall = function () {
+  window.placeCall = function (asVideo) {
     if (currentCall) { toast('已有通话中'); return; }
+    // 直接打视频：接通后自动进视频；语音拨打不设这个标记
+    VT.startAsVideo = !!asVideo;
     // #651：预览中手动拨打——先拆预览弹层再进入真实去电
     closeCallPreview();
     const name = partnerName();
@@ -1078,7 +1081,7 @@
     if (durEl) durEl.textContent = '00:00';
     if (mask) mask.hidden = false;
     setMaskBtns('calling');
-    if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' +  name + ' 语音通话');
+    if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' +  name + (VT.startAsVideo ? ' 视频通话' : ' 语音通话'));
     const r = Math.random() * 100;
     const cc = callCfg();
     setTimeout(() => {
@@ -1100,6 +1103,10 @@
         saveCallActive(); // v3.26.x：去电接通后更新持久化
         setMaskBtns('active'); // 去电接通后亮出「视频」按钮（hanging/mini 原本已在）
         vtRollTaCam(callRef.cid);
+        // 直接打视频：接通后自动进视频（不用等用户再点一次「视频」）
+        if (VT.startAsVideo) {
+          vtEnter();
+        }
         // v3.7.x：小框开关隐藏时接通后保持大面板常驻（不自动最小化）
         setTimeout(() => {
           if (currentCall === callRef && callRef.status === 'connected' && !VT.mode) {
@@ -1652,6 +1659,7 @@
     VT.facing = 'user';
     VT.rolled = false;
     VT.entered = false;
+    VT.startAsVideo = false;
     VT.taCam = false;
     VT.taBg = '';
     vtStopCam();
