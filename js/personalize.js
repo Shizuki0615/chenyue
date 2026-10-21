@@ -5890,8 +5890,9 @@ if (window.deskRebuild) window.deskRebuild();
 lib.remove();
 toast('已添加到本页');
 };
+const IS_ICON_TILE = (w) => (w.indexOf('app-') === 0 || w === 'apps' || w === 'p2apps' || w === 'p3apps');
 WIDGET_IDS.forEach(wid => {
-if (wid.indexOf('app-') === 0) {
+if (IS_ICON_TILE(wid)) {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 const curPage = node && node.closest('.page-slide') ? Array.prototype.indexOf.call(pagesBox.querySelectorAll('.page-slide'), node.closest('.page-slide')) : -1;
 const nm = WIDGET_NAMES[wid] || wid;
