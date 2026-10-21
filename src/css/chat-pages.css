@@ -2482,10 +2482,18 @@
 /* FIX 2026-10-21 回信/写信寄出按钮"飞上去"——根因：全局 .page 有 overflow-y:auto，
    cal-scroll（内部滚动容器）缺 min-height:0 导致 flex:1 不生效，整个 .page 跟着信纸内容
    被撑高开始滚动，mail-send-bar 作为 page 的 flex 子元素自然被推到视口外。
-   修复：这两个页面禁用 page 自身滚动（overflow:hidden），滚动完全交给 cal-scroll；
-   并强制 cal-scroll 可压缩（min-height:0），让 flex:1 + overflow-y:auto 真正接管。 */
-#page-mail-write, #page-mail-reply { overflow:hidden; }
-#page-mail-write > .cal-scroll, #page-mail-reply > .cal-scroll { min-height:0; }
+   第一层防线：禁用 page 自身滚动 + cal-scroll 可压缩。
+   第二层防线（修完仍有用户报飞）：mail-send-bar 改为 absolute 钉在 page 底部——
+   不管 page 自己滚不滚、iOS 键盘弹起时 dvh 抖不抖，按钮永远钉在可视区底。
+   cal-scroll 加 padding-bottom 给绝对定位的 send bar 让位，信纸内容不被盖住。 */
+#page-mail-write, #page-mail-reply { position:relative; overflow:hidden; }
+#page-mail-write > .cal-scroll, #page-mail-reply > .cal-scroll {
+  min-height:0;
+  padding-bottom: calc(72px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
+}
+#page-mail-write > .mail-send-bar, #page-mail-reply > .mail-send-bar {
+  position:absolute; left:0; right:0; bottom:0; z-index:10;
+}
 /* 写信/回信：工具栏（v3.6.x 只留 表情包/图片） */
 .mail-toolbar {
   display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;
