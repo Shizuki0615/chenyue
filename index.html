@@ -440,7 +440,7 @@ padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 }
 @supports (height: 100dvh) { html.force-mobile .phone { height:100svh; height:100dvh; } }
 html.force-mobile .statusbar {
-padding-top:max(calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 14px);
+padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
 padding-bottom:10px;
 }
 html.force-mobile .phone input:not([readonly]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not([type="date"]):not([type="time"]):not([type="datetime-local"]):not([type="month"]):not([type="week"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
@@ -551,7 +551,7 @@ html.ios-native-fs .phone .page.full .stats-top-name { padding-top: 10px; }
 .ios-fs-active .phone .page.full .card-tabs,
 .ios-fs-active .phone .page.full .div-h-title,
 .ios-fs-active .phone .page.full .stats-top-name { padding-top: 10px; }
-html.ios-fs-active .phone .statusbar { padding-top:14px; }
+html.ios-fs-active .phone .statusbar { padding-top:35px; }
 html.tablet.ios-pwa-standalone.ios-fs-active .phone .statusbar { display:none; }
 @media (max-width: 900px) {
 .fs-css-active .phone { padding-top: max(env(safe-area-inset-top, 0px), 12px); }
@@ -566,7 +566,7 @@ padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 @supports (height: 100dvh) { html.tablet .phone { height:100svh; height:100dvh; } }
 html.tablet .phone.no-statusbar { padding:0; }
 html.tablet .statusbar {
-padding-top:max(calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 14px);
+padding-top:max(calc(35px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))), 35px);
 padding-bottom:10px;
 }
 html.tablet.fs-active .phone, html.tablet.fs-css-active .phone { width:100vw; max-width:none; }
@@ -653,14 +653,14 @@ stroke: var(--ink);
 .mw-bars { fill: var(--ink); }
 .statusbar {
 display:flex; align-items:center; justify-content:space-between;
-padding:4px 4px 12px; font-size:13px; font-weight:600; z-index:2;
+padding:0 4px 12px; font-size:13px; font-weight:600; z-index:2;
 }
 html.mochi-cover-top .phone .statusbar {
-padding-top:max(calc(14px + var(--mochi-safe-top, 0px)), 14px);
+padding-top:max(calc(35px + var(--mochi-safe-top, 0px)), 35px);
 }
 html.ios-cover-top .phone { padding-bottom:0; }
 html.ios-cover-top .phone .statusbar {
-padding-top:max(calc(14px + var(--mochi-safe-top, 0px)), 14px);
+padding-top:max(calc(35px + var(--mochi-safe-top, 0px)), 35px);
 }
 .chat-body { overflow-anchor: none; }
 .chat-body.scroll-anchor-auto { overflow-anchor: auto; }
@@ -10291,7 +10291,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792552677436" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792556832648" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22002,4 +22002,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvhjky0s -->
+<!-- __MOCHI_EOF__ mvhm207c -->
