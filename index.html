@@ -8190,7 +8190,11 @@ opacity:var(--tabbar-ico-a, 1);
 .tabbar.tabbar-faint:active .tab { opacity:1; }
 .tabbar[hidden] { display:none; }
 .phone.no-statusbar { padding:0; }
-.phone.no-statusbar .statusbar { display:none; }
+.phone.no-statusbar .statusbar {
+padding-left: calc(18px + var(--mochi-side-adj,0px));
+padding-right: calc(18px + var(--mochi-side-adj,0px));
+flex-shrink: 0;
+}
 .page.full { padding: 0; }
 .page.full .gs-title { padding-left:18px; padding-right:18px; }
 .page.full .set-group { margin-left:18px; margin-right:18px; }
@@ -10287,7 +10291,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792547851736" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792551368305" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -21998,4 +22002,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvhgpihk -->
+<!-- __MOCHI_EOF__ mvhisvw1 -->

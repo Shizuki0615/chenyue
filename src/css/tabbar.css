@@ -41,9 +41,16 @@
 /* 独立全屏页（聊天等）隐藏底部导航 */
 .tabbar[hidden] { display:none; }
 
-/* 全屏页：隐藏状态栏、去手机内边距；各区块自行对齐 */
+/* 全屏页：去手机内边距；各区块自行对齐 */
 .phone.no-statusbar { padding:0; }
-.phone.no-statusbar .statusbar { display:none; }
+/* #状态栏常驻：真机语义——时间/电量/品牌那一行在桌面与所有全屏页（聊天/设置等）
+   都常驻，不再随全屏页隐藏。原为 display:none（切进聊天就消失）。
+   .phone 此时 padding:0，故在此补回与桌面一致的左右边距，避免品牌/时间贴边。 */
+.phone.no-statusbar .statusbar {
+  padding-left: calc(18px + var(--mochi-side-adj,0px));
+  padding-right: calc(18px + var(--mochi-side-adj,0px));
+  flex-shrink: 0;
+}
 .page.full { padding: 0; }
 
 /* 全屏页内容统一左右 18px 边距（避免内容贴边/飞出屏幕） */
