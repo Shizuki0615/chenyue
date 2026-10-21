@@ -31,7 +31,9 @@
       // 同时兜住「挂断几率为 0 仍被挂断」：该设置按桌面（联系人）隔离存储，从未保存过该键的
       // 联系人会回落 2% 默认值，总开关与下方 hangup<=0 双重硬闸一起把这类情况全部拦死
       nohangup: c['call-no-hangup'] === 1 || c['call-no-hangup'] === '1',
-      resume: c['call-resume'] !== undefined ? c['call-resume'] : 1
+      resume: c['call-resume'] !== undefined ? c['call-resume'] : 1,
+      // 视频通话：TA 那侧开摄像头的概率（通话设置页 call-ta-cam，按联系人各自保存）
+      taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60
     };
   }
 
@@ -323,6 +325,24 @@
   const miniAv = document.getElementById('call-mini-av');
   const miniName = document.getElementById('call-mini-name');
   const miniTime = document.getElementById('call-mini-time');
+  const vtBtn = document.getElementById('call-vt-btn');
+  const camBtn = document.getElementById('call-cam-btn');
+  const flipBtn = document.getElementById('call-flip-btn');
+  // 视频通话运行时状态（只活在内存：刷新恢复的通话一律从语音开始，避免无手势自动开摄像头）
+  const VT = {
+    mode: false,      // 是否处于视频态
+    camOff: false,    // 用户手动关了摄像头
+    facing: 'user',   // 当前摄像头方向
+    stream: null,
+    starting: false,
+    gen: 0,           // 摄像头请求代次：切后台/关摄像头时 +1，让在飞的旧请求作废（防两路流叠着抢摄像头）
+    watchdog: null,
+    taCam: false,     // 本次 TA 是否开摄像头（掷骰结果）
+    taBg: '',         // 本次 TA 的画面
+    rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
+    entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
+    poolAsked: false  // 画面库等待回填只问一次，防递归
+  };
   // 小框位置持久化（可拖动）
   // v3.5.108：校验保存的位置有效（形如「数字px」且在视口内），
   //   无效/越界/空值一律忽略并清除，回退默认底部居中——避免旧坏数据导致小框闪到别处
@@ -580,11 +600,17 @@
     if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
     if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
     if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
+    // 视频按钮：只有接通后才有意义；摄像头开关/翻转只在视频态出现
+    if (vtBtn) vtBtn.hidden = !(mode === 'active');
+    if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
+    if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
   }
   // 缩小到小框（弹层 → 底部小框；小框被隐藏时仅收起大面板，通话转后台）
   // v3.7.x：通话小框开关关闭 → 不显示悬浮小框（后台通话，经通话半框挂断）
   function minimizeCall() {
     if (!currentCall) return;
+    // 视频态点「缩小」＝先退回语音，再按小框开关走（摄像头必须停，见 vtExit）
+    if (VT.mode) { vtExit(); return; }
     if (mask) mask.hidden = true;
     if (cdEl) cdEl.hidden = true;
     if (mini) {
@@ -689,6 +715,7 @@
     if (window.stopSfx) window.stopSfx('ring');
     // v3.5.129：通话结束恢复音乐播放/悬浮小框
     if (window.musicHoldForCall) window.musicHoldForCall(false);
+    vtTeardown();
     stopTimers();
     if (mask) mask.hidden = true;
     if (mini) mini.hidden = true;
@@ -996,9 +1023,11 @@
     if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg> 通话已接通');
     startCallDuration();
     saveCallActive(); // v3.26.x：接通后更新持久化（记下 connectedTime 供中断恢复算时长）
+    // 视频：接通时先掷一次 TA 摄像头（进视频时若还没进过就沿用这次结果）
+    vtRollTaCam(currentCall.cid);
     // 2 秒后最小化小框（星言一致）；v3.7.x：小框开关隐藏时保持大面板常驻
     setTimeout(() => {
-      if (currentCall && currentCall.status === 'connected') {
+      if (currentCall && currentCall.status === 'connected' && !VT.mode) {
         if (callMiniEnabled()) {
           if (mask) mask.hidden = true;
           if (mini) {
@@ -1069,9 +1098,11 @@
         if (statusEl) statusEl.textContent = '正在通话...';
         startCallDuration();
         saveCallActive(); // v3.26.x：去电接通后更新持久化
+        setMaskBtns('active'); // 去电接通后亮出「视频」按钮（hanging/mini 原本已在）
+        vtRollTaCam(callRef.cid);
         // v3.7.x：小框开关隐藏时接通后保持大面板常驻（不自动最小化）
         setTimeout(() => {
-          if (currentCall === callRef && callRef.status === 'connected') {
+          if (currentCall === callRef && callRef.status === 'connected' && !VT.mode) {
             if (callMiniEnabled()) {
               if (mask) mask.hidden = true;
           if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); /* v3.26.x #137 显示时校正 */ }
@@ -1378,6 +1409,472 @@
     } catch (e) {}
     try { if (!document.getElementById('page-home').hidden && window.__renderHomeCall) window.__renderHomeCall(); } catch (e) {}
   }
+  // ===== 视频通话 =====
+  // 我方是真实摄像头流（getUserMedia）；TA 那侧没有对端，用设置里的图片池当「她的画面」，
+  // 没开摄像头/没有图片时显示头像——和微信里对方关摄像头的观感一致。
+  const VT_POOL_KEY = 'call-ta-bg-pool';
+  const VT_POOL_MAX = 8;
+  const VT_LAST_KEY = 'call-ta-bg-last';
+  function vtSupported() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+  function vtCid() { return (currentCall && currentCall.cid) || window.__activeCid || 'default'; }
+  function vtStoreFor(cid) {
+    try { return (window.storeFor && window.storeFor(cid)) || store; } catch (e) { return store; }
+  }
+  // 图片池是 >200KB 的大键：同会话走内存缓存，切后台被放掉后需按需回填（数据层 #1218 那套）
+  function vtReadPool(cid) {
+    try {
+      const raw = vtStoreFor(cid).get(VT_POOL_KEY);
+      if (Array.isArray(raw)) return raw.filter(function (x) { return typeof x === 'string' && x; });
+      const a = JSON.parse(raw || '[]');
+      return Array.isArray(a) ? a.filter(function (x) { return typeof x === 'string' && x; }) : [];
+    } catch (e) { return []; }
+  }
+  function vtRandomBg(cid) {
+    const pool = vtReadPool(cid);
+    if (!pool.length) return '';
+    let last = -1;
+    try { last = parseInt(vtStoreFor(cid).get(VT_LAST_KEY), 10); } catch (e) { last = -1; }
+    let idx = Math.floor(Math.random() * pool.length);
+    // 不连续用同一张（池里只有 1 张时无解，允许重复）
+    if (pool.length > 1 && idx === last) idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
+    try { vtStoreFor(cid).set(VT_LAST_KEY, String(idx)); } catch (e) {}
+    return pool[idx] || '';
+  }
+  function vtRollTaCam(cid) {
+    const p = Number(callCfg(cid || vtCid()).taCam) || 0;
+    const pool = vtReadPool(cid || vtCid());
+    VT.rolled = true;
+    VT.taCam = p > 0 && pool.length > 0 && Math.random() * 100 < p;
+    VT.taBg = VT.taCam ? vtRandomBg(cid || vtCid()) : '';
+  }
+  // TA 那侧：开摄像头＝图片池里的一张，关着＝大头像
+  function vtPaintTa() {
+    const img = document.getElementById('vt-ta-img');
+    const avBox = document.getElementById('vt-ta-av');
+    const ring = document.getElementById('vt-ta-av-ring');
+    if (!img || !avBox) return;
+    if (VT.taCam && VT.taBg) {
+      img.src = VT.taBg;
+      img.hidden = false;
+      avBox.hidden = true;
+    } else {
+      img.hidden = true;
+      img.removeAttribute('src');
+      avBox.hidden = false;
+      let av = '';
+      try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
+      fillAv(ring, av);
+    }
+    if (statusEl) statusEl.textContent = VT.taCam ? '视频通话中' : '对方未开启摄像头';
+  }
+  function partnerAvOf(cid) {
+    const s = vtStoreFor(cid);
+    return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
+  }
+  function vtSelfState(state, txt) {
+    const v = document.getElementById('vt-self');
+    const off = document.getElementById('vt-self-off');
+    const t = document.getElementById('vt-self-off-txt');
+    if (state === 'on') {
+      if (v) v.hidden = false;
+      if (off) off.hidden = true;
+      return;
+    }
+    // 关摄像头/打开中：占位块跟到小窗当前位置，拖动过之后关摄像头不跳回右上角
+    if (v && off) {
+      off.style.left = v.style.left || '';
+      off.style.top = v.style.top || '';
+      off.style.right = v.style.left ? 'auto' : '';
+    }
+    if (v) v.hidden = true;
+    if (off) off.hidden = false;
+    if (t && txt) t.textContent = txt;
+  }
+  function vtSyncCamBtn() {
+    if (!camBtn) return;
+    camBtn.classList.toggle('off', !!VT.camOff);
+    const t = document.getElementById('call-cam-txt');
+    if (t) t.textContent = VT.camOff ? '打开' : '关闭';
+    const slash = document.getElementById('call-cam-slash');
+    if (slash) slash.style.display = VT.camOff ? '' : 'none';
+  }
+  function vtStopCam() {
+    VT.gen++;
+    if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+    VT.starting = false;
+    if (VT.stream) {
+      try { VT.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+      VT.stream = null;
+    }
+    const v = document.getElementById('vt-self');
+    try { if (v) { v.pause && v.pause(); v.srcObject = null; } } catch (e) {}
+  }
+  function vtCamFail(msg) {
+    // 打不开就当「摄像头没开」：按钮显示「打开」，点一下重试（失败不静默重试，避免循环弹权限）
+    VT.camOff = true;
+    vtSelfState('fail', msg);
+    vtSyncCamBtn();
+  }
+  function vtStartCam() {
+    if (!VT.mode || VT.camOff) return;
+    if (VT.stream || VT.starting) return;
+    if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); return; }
+    const v = document.getElementById('vt-self');
+    if (!v) return;
+    VT.starting = true;
+    vtSelfState('opening', '正在打开…');
+    let settled = false;
+    const gen = VT.gen; // 这一发请求的代次：期间关摄像头/切后台/翻转 → gen 变，回来的一律作废并释放
+    // 部分安卓壳的 getUserMedia 永不 resolve 也不 reject——超时就按失败处理，别让界面卡在「正在打开」
+    VT.watchdog = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      VT.gen++;
+      VT.starting = false;
+      VT.watchdog = null;
+      vtCamFail('摄像头没有响应，点这里重试');
+    }, 9000);
+    const constraints = {
+      audio: false,
+      video: {
+        facingMode: VT.facing === 'environment' ? { ideal: 'environment' } : { ideal: 'user' },
+        width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 }
+      }
+    };
+    let req = null;
+    try { req = navigator.mediaDevices.getUserMedia(constraints); } catch (e) { req = Promise.reject(e); }
+    req.then(function (stream) {
+      if (settled || gen !== VT.gen) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} return; }
+      settled = true;
+      if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+      VT.starting = false;
+      if (!VT.mode || VT.camOff) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} return; }
+      VT.stream = stream;
+      try {
+        v.classList.toggle('rear', VT.facing === 'environment');
+        v.srcObject = stream;
+        if (v.play) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+      } catch (e) {}
+      vtSelfState('on');
+      vtSyncCamBtn();
+    }).catch(function (err) {
+      if (settled || gen !== VT.gen) return;
+      settled = true;
+      if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
+      VT.starting = false;
+      const name = (err && err.name) || '';
+      let msg = '摄像头打不开';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
+      else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
+      else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
+      vtCamFail(msg + '，点这里重试');
+      toast(msg + '（可在手机设置里给浏览器开摄像头权限）');
+    });
+  }
+  function vtToggleCam() {
+    if (!VT.mode) return;
+    if (VT.camOff) {
+      VT.camOff = false;
+      vtSyncCamBtn();
+      vtStartCam();
+    } else {
+      VT.camOff = true;
+      vtStopCam();
+      vtSelfState('off', '摄像头已关');
+      vtSyncCamBtn();
+    }
+  }
+  function vtFlip() {
+    if (!VT.mode || VT.camOff || VT.starting) return;
+    VT.facing = VT.facing === 'user' ? 'environment' : 'user';
+    vtStopCam();
+    const v = document.getElementById('vt-self');
+    if (v) v.classList.toggle('rear', VT.facing === 'environment');
+    vtStartCam();
+  }
+  function vtSetPanel(on) {
+    const panel = document.getElementById('call-panel');
+    const stage = document.getElementById('vt-stage');
+    const title = document.getElementById('call-title');
+    const vTxt = document.getElementById('call-vt-txt');
+    if (panel) panel.classList.toggle('vt', !!on);
+    if (stage) stage.hidden = !on;
+    if (title) title.textContent = on ? '视频通话' : '语音通话';
+    if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+    const rowVal = document.getElementById('call-vt-row-val');
+    if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
+  }
+  function vtEnter() {
+    if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
+    if (!vtSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
+    if (VT.mode) return;
+    // 本通第一次进视频沿用接通时那次掷骰；之后再切进来重掷一次。
+    // 刷新恢复的通话没有接通钩子（rolled 还是 false）→ 这里补掷，否则恢复后永远显示头像
+    if (!VT.rolled || VT.entered) vtRollTaCam(currentCall.cid);
+    VT.entered = true;
+    VT.mode = true;
+    VT.camOff = false;
+    VT.facing = 'user';
+    vtSetPanel(true);
+    vtSelfState('opening', '正在打开…');
+    vtSyncCamBtn();
+    vtPaintTa();
+    if (mask) mask.hidden = false;
+    if (mini) mini.hidden = true;
+    if (cdEl) cdEl.hidden = true;
+    // 半框是聊天页 DOM：进视频要把它收掉，否则退出视频回到小框时它会叠在下面
+    try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
+    setMaskBtns('active');
+    vtStartCam();
+    saveCallActive();
+  }
+  function vtExit() {
+    if (!VT.mode) return;
+    VT.mode = false;
+    vtStopCam();
+    vtSetPanel(false);
+    if (statusEl) statusEl.textContent = '正在通话...';
+    setMaskBtns('active');
+    if (currentCall && currentCall.status === 'connected' && callMiniEnabled()) {
+      if (mask) mask.hidden = true;
+      if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); }
+    } else {
+      if (mask) mask.hidden = false;
+      syncCallAv();
+      syncCallName();
+    }
+  }
+  function vtTeardown() {
+    VT.mode = false;
+    VT.camOff = false;
+    VT.facing = 'user';
+    VT.rolled = false;
+    VT.entered = false;
+    VT.taCam = false;
+    VT.taBg = '';
+    vtStopCam();
+    vtSetPanel(false);
+    // 下一通从默认右上角开始（拖动位置只在本次通话内保留）
+    const selfV = document.getElementById('vt-self');
+    if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; selfV.classList.remove('rear'); }
+    vtSelfState('off', '摄像头已关');
+    const img = document.getElementById('vt-ta-img');
+    if (img) { img.hidden = true; img.removeAttribute('src'); }
+    const av = document.getElementById('vt-ta-av');
+    if (av) av.hidden = true;
+  }
+  // 设置页「TA 的画面」图池
+  // 读-改-写先问数据层「这一格现在读不读得到」——大键被切后台放掉时读空≠没有，
+  // 盲目整包写回会把库里的图顶掉（头像池 #1349b 同款闸门）
+  // cid 显式传入：压缩期间用户切了联系人，写入仍必须落在选图时的那个桌面（不能跟着 __activeCid 漂）
+  function vtCommitPool(cid, mutate, done) {
+    const s = vtStoreFor(cid);
+    let finished = false;
+    const finish = function (next) {
+      if (finished) return;
+      finished = true;
+      if (next) { try { s.set(VT_POOL_KEY, JSON.stringify(next)); } catch (e) {} }
+      if (done) done(next || null);
+    };
+    let waiting = false;
+    try { waiting = !!(s.awaitingBigKey && s.awaitingBigKey(VT_POOL_KEY)); } catch (e) { waiting = false; }
+    if (!waiting) { finish(mutate(vtReadPool(cid))); return; }
+    try { if (s.requestBigKey) s.requestBigKey(VT_POOL_KEY); } catch (e) {}
+    try {
+      if (s.whenBigKeyBack) s.whenBigKeyBack(VT_POOL_KEY, function () { if (!finished) finish(mutate(vtReadPool(cid))); });
+    } catch (e) {}
+    setTimeout(function () {
+      if (finished) return;
+      toast('画面库还在读取，这次没有改动，请过几秒再试');
+      finish(null);
+    }, 2600);
+  }
+  function vtRenderPool() {
+    const grid = document.getElementById('vt-pool-grid');
+    if (!grid) return;
+    const cid = window.__activeCid || 'default';
+    const pool = vtReadPool(cid);
+    const empty = document.getElementById('vt-pool-empty');
+    const add = document.getElementById('vt-pool-add');
+    if (empty) empty.hidden = pool.length > 0;
+    if (add) add.hidden = pool.length >= VT_POOL_MAX;
+    grid.innerHTML = '';
+    pool.forEach(function (src) {
+      const cell = document.createElement('div');
+      cell.className = 'avlib-cell';
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = 'TA 的画面';
+      const del = document.createElement('button');
+      del.className = 'avlib-del';
+      del.type = 'button';
+      del.textContent = '✕';
+      del.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        vtCommitPool(cid, function (cur) {
+          // 按内容删而不是按渲染时的下标：期间池子变过（连续删/新加进来）也不会删错图
+          const a = cur.slice();
+          const at = a.indexOf(src);
+          if (at >= 0) a.splice(at, 1);
+          return a;
+        }, function (next) {
+          if (!next) return;
+          vtRenderPool();
+          toast('已移除这张画面');
+        });
+      });
+      cell.appendChild(img);
+      cell.appendChild(del);
+      grid.appendChild(cell);
+    });
+    // 读空但库里本该有一份（切后台刚回来）→ 等它回填后重画一次
+    if (!pool.length && !VT.poolAsked) {
+      try {
+        const s = vtStoreFor(cid);
+        if (s.awaitingBigKey && s.awaitingBigKey(VT_POOL_KEY) && s.whenBigKeyBack) {
+          VT.poolAsked = true;
+          s.whenBigKeyBack(VT_POOL_KEY, function () { VT.poolAsked = false; vtRenderPool(); });
+        }
+      } catch (e) {}
+    }
+  }
+  function vtAddBg() {
+    const cid = window.__activeCid || 'default';
+    if (vtReadPool(cid).length >= VT_POOL_MAX) { toast('最多 8 张，先删掉一张再添加'); return; }
+    if (!window.mochiFilePick) { toast('图片选择组件没加载上，请重开页面再试'); return; }
+    window.mochiFilePick({
+      id: 'vt-pool-pick', accept: 'image/*', multiple: true,
+      onFiles: function (files) {
+        const list = (files || []).slice(0, VT_POOL_MAX);
+        if (!list.length) { toast('没有取到图片，请再选一次'); return; }
+        if (!window.mochiImgIngest) { toast('图片处理组件没加载上，请重开页面再试'); return; }
+        let i = 0, added = 0, failed = 0;
+        const finish = function () {
+          vtRenderPool();
+          if (added) toast('已添加 ' + added + ' 张画面');
+          else if (failed) toast('图片处理失败，换一张试试');
+        };
+        // 串行处理：每张压缩→写池→下一张，避免并发读改写互相覆盖
+        const step = function () {
+          if (i >= list.length) { finish(); return; }
+          if (vtReadPool(cid).length >= VT_POOL_MAX) { finish(); return; }
+          const f = list[i++];
+          window.mochiImgIngest(f, { maxSide: 1280, quality: 0.8, tag: 'vt-bg' }).then(function (r) {
+            if (!r || r.st !== 'ok' || !r.data) { failed++; step(); return; }
+            vtCommitPool(cid, function (cur) {
+              return cur.concat([r.data]).slice(0, VT_POOL_MAX);
+            }, function (next) {
+              if (next) added++; else failed++;
+              step();
+            });
+          }).catch(function () { failed++; step(); });
+        };
+        step();
+      }
+    });
+  }
+  if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
+  if (camBtn) camBtn.addEventListener('click', vtToggleCam);
+  if (flipBtn) flipBtn.addEventListener('click', vtFlip);
+  // 摄像头小窗拖动：视频画面 + 关摄像头占位块共用一套（两个元素位置同步）。
+  // 占位块同时是「点一下重试」的按钮 ⇒ 位移超过阈值才算拖，没动就交还给 click 重试。
+  (function initVtSelfDrag() {
+    const v = document.getElementById('vt-self');
+    const off = document.getElementById('vt-self-off');
+    const stage = document.getElementById('vt-stage');
+    if (!v || !stage) return;
+    // 拖哪个就把位置同步给另一个：关摄像头/重新打开时小窗不跳位
+    function syncPeer(el, l, t) {
+      const peer = el === v ? off : v;
+      if (!peer) return;
+      peer.style.left = l;
+      peer.style.top = t;
+      peer.style.right = l ? 'auto' : '';
+    }
+    function bind(el, blockDefault) {
+      if (!el) return null;
+      let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+      function place(l, t) {
+        const sr = stage.getBoundingClientRect();
+        const pad = 6;
+        const maxL = Math.max(pad, sr.width - el.offsetWidth - pad);
+        const maxT = Math.max(pad, sr.height - el.offsetHeight - pad);
+        const nl = Math.min(Math.max(pad, l), maxL) + 'px';
+        const nt = Math.min(Math.max(pad, t), maxT) + 'px';
+        el.style.left = nl;
+        el.style.top = nt;
+        el.style.right = 'auto';
+        syncPeer(el, nl, nt);
+      }
+      el.addEventListener('pointerdown', function (ev) {
+        if (!VT.mode || el.hidden) return;
+        if (el === v && VT.camOff) return;
+        if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
+        const sr = stage.getBoundingClientRect();
+        const vr = el.getBoundingClientRect();
+        dragging = true;
+        moved = false;
+        sx = ev.clientX; sy = ev.clientY;
+        ox = vr.left - sr.left; oy = vr.top - sr.top;
+        place(ox, oy); // 默认是 right 定位：一开拖就落成 left/top，避免两个方向打架
+        el.classList.add('dragging');
+        try { el.setPointerCapture && el.setPointerCapture(ev.pointerId); } catch (e) {}
+        if (blockDefault) { try { ev.preventDefault(); } catch (e) {} }
+      });
+      el.addEventListener('pointermove', function (ev) {
+        if (!dragging) return;
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        // 占位块是按钮：先给一个几像素的容差，轻微抖动不算拖动，点击照常触发
+        if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+        moved = true;
+        place(ox + dx, oy + dy);
+        try { ev.preventDefault(); } catch (e) {}
+      });
+      function endDrag(ev) {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('dragging');
+        try { if (el.releasePointerCapture && ev && ev.pointerId !== undefined) el.releasePointerCapture(ev.pointerId); } catch (e) {}
+      }
+      el.addEventListener('pointerup', endDrag);
+      el.addEventListener('pointercancel', endDrag);
+      return function wasMoved() { return moved; };
+    }
+    bind(v, true);
+    const offMoved = bind(off, false);
+    if (off) {
+      off.addEventListener('click', function (ev) {
+        // 刚刚是真拖动：这一下抬起不当点击用（否则松手就把摄像头又打开了）
+        if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
+        if (VT.camOff) vtToggleCam(); else vtStartCam();
+      });
+    }
+  })();
+  const vtRow = document.getElementById('call-vt-row');
+  if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
+  const vtPoolAdd = document.getElementById('vt-pool-add');
+  if (vtPoolAdd) vtPoolAdd.addEventListener('click', vtAddBg);
+  document.addEventListener('contact-switched', function () {
+    VT.poolAsked = false;
+    vtRenderPool();
+    // 通话中换了头像/画面池归属桌面：视频态里的 TA 头像要跟着刷新（只重画，不重掷）
+    if (VT.mode) vtPaintTa();
+  });
+  const vtSettingsRow = document.getElementById('row-call-settings');
+  if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTimeout(vtRenderPool, 0); });
+  vtRenderPool();
+  // 切后台/锁屏：摄像头必须停（系统也会掐断，不停会黑屏；回来再按需重建）
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') {
+      // 本来就把摄像头关着的，保持「摄像头已关」文案；开着才提示「已暂停」
+      if (VT.mode) { vtStopCam(); if (!VT.camOff) vtSelfState('off', '已暂停'); }
+    } else if (VT.mode && !VT.camOff && mask && !mask.hidden) {
+      vtStartCam();
+    }
+  });
+
   // #161：冷启动恢复——restore 完成后检查响铃挂起（3 分钟内重开浏览器 → 重新响铃可接听；
   // resumeHeldCall 读后即清 + 写 {ts:0}，重复触发幂等无副作用）
   function bootCallResume() {

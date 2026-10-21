@@ -1368,12 +1368,25 @@
 
 <!-- 通话弹层（来电/去电/通话中） -->
 <div class="call-mask" id="call-mask" hidden>
-  <div class="call-panel">
+  <div class="call-panel" id="call-panel">
     <div class="call-head">
-      <span class="call-title">语音通话</span>
+      <span class="call-title" id="call-title">语音通话</span>
       <button class="call-minimize" id="call-minimize-btn" title="缩小到小框">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>
       </button>
+    </div>
+    <!-- 视频通话舞台：TA 的画面（背景图）/ 头像 + 我的摄像头小窗。语音模式整块隐藏 -->
+    <div class="vt-stage" id="vt-stage" hidden>
+      <img class="vt-ta" id="vt-ta-img" alt="" hidden>
+      <div class="vt-ta-av" id="vt-ta-av" hidden>
+        <div class="vt-av-ring" id="vt-ta-av-ring"></div>
+      </div>
+      <div class="vt-shade"></div>
+      <video class="vt-self" id="vt-self" playsinline muted autoplay></video>
+      <div class="vt-self-off" id="vt-self-off" role="button" title="点一下重试摄像头">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
+        <span id="vt-self-off-txt">摄像头已关</span>
+      </div>
     </div>
     <div class="call-av" id="call-av"></div>
     <div class="call-name" id="call-name">TA</div>
@@ -1381,6 +1394,19 @@
     <div class="call-duration" id="call-duration">00:00</div>
     <div class="call-countdown" id="call-countdown" hidden></div>
     <div class="call-btns">
+      <!-- 视频相关按钮：语音接通时只显示「视频」，进入视频后换成摄像头开关/翻转/切语音 -->
+      <button class="call-btn call-vt" id="call-vt-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/></svg>
+        <span id="call-vt-txt">视频</span>
+      </button>
+      <button class="call-btn call-cam" id="call-cam-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/><path id="call-cam-slash" d="M3 3l18 18" style="display:none"/></svg>
+        <span id="call-cam-txt">关闭</span>
+      </button>
+      <button class="call-btn call-flip" id="call-flip-btn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 01-13.7 5.7"/><path d="M4 12a8 8 0 0113.7-5.7"/><path d="M4 17v-4h4"/><path d="M20 7v4h-4"/></svg>
+        <span>翻转</span>
+      </button>
       <button class="call-btn call-hang" id="call-hang-btn" hidden>
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.1.25-4.5.7v2.1c0 .4-.2.7-.6.9-.8.4-1.5.9-2.2 1.5-.3.3-.7.3-1 0l-1.9-1.9c-.3-.3-.3-.8 0-1.1C4.8 8.9 8.2 7 12 7s7.2 1.9 10.2 5.2c.3.3.3.8 0 1.1l-1.9 1.9c-.3.3-.7.3-1 0-.7-.6-1.4-1.1-2.2-1.5-.4-.2-.6-.5-.6-.9v-2.1C15.1 9.25 13.6 9 12 9z"/></svg>
         挂断
@@ -1868,6 +1894,29 @@
            只放「了解应用本身」的只读信息；会改数据/开关的仍留工具 tag。
            版本号 / 署名 / 防骗声明在分区外常驻底部，不随标签切换 -->
       <div class="them-sec" data-sec="about">
+      <!-- #722（2026-09-18 用户直派）：项目周期与「内容仅供参考」常驻说明条——本项目功能太多、工程量太大，
+           2026.8.12 开工 ~ 2026.9.30 完结永久停更，没能把所有内容全部检查完写的有没有错误，需向用户明示仅供参考。
+           用 set-alert 现成样式放分区顶部（不新增 set-group，verify-about-cat B1/B2/B5 口径不变；非 set-row，设置搜索不受影响） -->
+      <div class="set-alert" id="about-eol-note"><b>本项目 2026.8.12 开工，2026.9.30 完结，之后永久停更、不再更新。</b>功能太多、工程量太大，没能把所有内容全部检查完、写的有没有错误没法逐一保证——所以本站所有内容仅供参考。停更后遇到问题可先看「使用说明」和「常见问题」；重要数据请定期导出备份。</div>
+      <!-- #792（2026-09-18 用户直派）：数据与存储必读——小白用户对「数据为什么会没」有大量重复疑问
+           （浏览器自动清数据 / 存储权限 / 无痕模式 / 备份 / 是不是 bug），逐条写成只读说明放关于段最顶。
+           三处同步：详版弹窗文案在 personalize.js initAboutInfo，短版功能说明在 settings-help.js，警示条+行在此 -->
+      <div class="set-alert" id="about-storage-note"><b>数据无价，先懂三条设备限制：</b>① 本站数据只存在你这台手机的这个浏览器里，没有云端、不会自动同步；② 浏览器 / 手机系统在「清理垃圾、释放空间、存储不足、长时间不打开」时会自动清掉网站数据；③ 无痕（隐私）模式一关就全部清空。这些都不是 bug、删了也找不回——唯一防线是定期导出备份（设置 → 通用 → 导出数据）。逐条详解见下方「数据与存储（重要）」。</div>
+      <!-- #884（2026-09-20 用户直派「低电量模式会卡也要在关于里写清楚」）：关于段第三条必读警示条，
+           与 工具段「手机卡顿说明」、使用说明第 11 节、settings-help 功能说明、诊断【性能】帧率行五处同口径。
+           非 set-row＝设置搜索不受影响（同 #722/#792 口径）；verify-about-cat B1/B2/B5 只数分组与入口行，不拦 -->
+      <div class="set-alert" id="about-storage-reduce"><b>减少数据被手机清掉的几率（照做能大幅降低丢数据概率）：</b>① <b>把本站「添加到主屏幕」用</b>——iPhone：Safari 底部中间的分享按钮（方框加箭头）→「添加到主屏幕」，之后从桌面图标打开；浏览器里直接打开的网页，是手机清数据时最先被清的，桌面图标的存储耐用得多。② <b>给手机留几个 GB 空闲存储</b>（设置 → 通用 → iPhone 储存空间）：手机越满，系统越会回收网页数据。③ <b>别点 Safari 的「清除历史记录与网站数据」</b>——那会连本站数据一起清掉。④ <b>导出的备份文件存多处</b>（发微信给自己 / 云盘 / 文件 App 各留一份），别只留一个地方。</div>
+      <!-- #959（2026-09-21 用户直派「这个要写在关于里提醒 iOS 用户」）：iPhone/iPad Safari 7 天清空规则单列一条。
+           仅 iOS 显示——pwa.js 载入时对非 iOS 置 hidden（JS 未跑＝保留，宁可多提醒一句，不误藏）。
+           非 set-row＝设置搜索不受影响（同 #722/#792 口径）。 -->
+      <div class="set-alert" id="about-ios-pwa-note"><b>iPhone / iPad（Safari）用户必看：不装到桌面，数据会被「7 天规则」清空。</b>没把本站「添加到主屏幕」时，Apple 会在<b>连续 7 天没打开本站</b>后自动清空它的全部本地数据——这是 Safari 的隐私策略（ITP），任何网站都躲不过，网站也没法用代码阻止；<b>添加到主屏幕后从桌面图标打开就不受这条限制</b>（主屏应用不计入这 7 天）。<b>注意：主屏幕应用和 Safari 是两套独立存储</b>，所以请按顺序做：① 先导出一份完整备份（设置 → 通用 → 导出数据），存到「文件」App 或微信收藏；② 点 Safari 底部的分享按钮（方框加箭头）→「添加到主屏幕」→ 添加；③ 回手机桌面，点新出现的 Mochi 图标打开；④ 在打开的桌面应用里 设置 → 通用 → 导入数据，选第①步的备份文件恢复。之后平时都从桌面图标用，Safari 清不清都不影响你的数据。（安卓没有这条 7 天规则，但存储紧张时系统也会清网页数据，仍要定期导出备份。）</div>
+      <!-- #1370（2026-09-28 用户直派「需要在使用说明和功能里说明 手机需要关省电模式之类的防止卡顿」）：这条警示条现在讲两件事——
+           ①省电模式把整机调半速（#884 原口径）；②「另一种卡」＝系统省电/后台管控把网页收回（表现＝切回来白一下、页面自己重载）。
+           同一套「回收」口径写在：使用说明第 10 节（前提 5＋挂久失效那两条）、第 11 节（新增三条）、第 12 节保活条、
+           本条警示条、设置页 #bg-keep-sub、settings-help「后台保活」「后台通知」两条、device.js 诊断【保活现场】回收计数行（#1199）。
+           改任一处须一起改；尤其不许把「关 Edge 睡眠标签页 / Chrome 内存节省程序」写成对**已加到桌面的本站**有效的办法——
+           那两个只管浏览器标签页（#1199 已据此改掉诊断文案，本批把其余镜面跟上并删掉「最有效的一步」那句旧结论）。 -->
+      <div class="set-alert" id="about-perf-note"><b>手机发卡？先查「省电模式」：</b>iPhone 的「低电量模式」、安卓各家的「省电模式 / 低电量模式 / 超级省电」都会把手机调成半速——帧率锁半、处理器降速，表现为滑动、切页、打字全都变卡。<b>这是系统行为，不是网站坏了，关掉立刻恢复</b>（iPhone：设置 → 电池 → 关掉「低电量模式」；安卓：设置 → 电池，各厂商叫法不同）。安卓用户若只卡这一个应用，再检查「电池优化 / 后台运行限制」有没有把浏览器限死。确认没开省电还卡，再到 设置 → 信息诊断 →「手机卡顿说明」按清单对症处理。<b>另一种「卡」不是数据多，是手机把网页收回了</b>（切回来先白一下、页面自己重载、后台消息与弹窗有一截没收到）：① 系统设置 → 应用 → 本浏览器 → 省电 / 电池策略选「<b>无限制 / 允许后台活动</b>」；② 最近任务里把本站<b>锁定</b>、别横向划掉；③ <b>Edge「睡眠标签页」/ Chrome「内存节省程序」只管浏览器标签页，已加到桌面的本站改那两处没有用</b>。步骤与原理见 使用说明第 11 节。</div>
       <div class="set-group glass">
         <div class="gs-title">数据与存储（重要）</div>
         <div class="set-row" id="row-faq-st-lose">
@@ -3664,6 +3713,17 @@
           </div>
         </div>
         <div class="sm-set-hint" style="padding:0 16px 8px">【通话背景图片】作用于接通后的「通话小框」（底部那条悬浮通话条）。来电 / 去电弹出的方形通话弹窗默认也用它；一旦在下面「通话半框背景图片」单独设过，弹窗就只显示那一张。两者互不影响，都按联系人各自保存。</div>
+        <!-- 视频通话：TA 开摄像头概率 + TA 的画面图池（按联系人各自保存） -->
+        <div class="gs-title">视频通话</div>
+        <div class="set-group glass">
+          <div class="gs-row"><span>TA 开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
+        </div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">接通电话时按这个概率掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
+        <div class="gs-title">TA 的画面</div>
+        <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
+        <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
+        <button class="div-draw" id="vt-pool-add" style="margin:0 16px 10px;width:calc(100% - 32px)">＋ 添加画面（最多 8 张）</button>
+        <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「TA 那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
         <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口 + 来电/去电弹窗专属背景图片 -->
         <div class="gs-title">通话半框</div>
         <div class="set-group glass">
@@ -5313,6 +5373,9 @@
           <!-- #651：打开来电弹窗预览——联系人来电时的大弹窗（非迷你小框），纯查看不产生真实通话，点任意处退出；#987 起通话中点击＝展开真实通话面板 -->
           <div class="call-panel-row" id="call-view-row" title="打开联系人打给你 / 你打给联系人时的方形通话弹窗（非通话小框）；空闲时是预览，点任意处退出，通话中点击＝展开通话面板">
             <span class="cpr-txt">打开来电弹窗</span><span class="cpr-val">预览</span>
+          </div>
+          <div class="call-panel-row" id="call-vt-row" title="接通后点这里打开视频通话（调用手机摄像头；TA 那侧开不开由通话设置里的概率决定）">
+            <span class="cpr-txt">视频通话</span><span class="cpr-val" id="call-vt-row-val">开启摄像头</span>
           </div>
           <button class="call-panel-dial" id="call-panel-dial" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
