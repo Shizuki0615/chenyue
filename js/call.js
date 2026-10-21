@@ -1074,10 +1074,15 @@ VT.stream = null;
 const v = document.getElementById('vt-self');
 try { if (v) { v.pause && v.pause(); v.srcObject = null; } } catch (e) {}
 }
+function vtCamFail(msg) {
+VT.camOff = true;
+vtSelfState('fail', msg);
+vtSyncCamBtn();
+}
 function vtStartCam() {
 if (!VT.mode || VT.camOff) return;
 if (VT.stream || VT.starting) return;
-if (!vtSupported()) { vtSelfState('fail', '这个浏览器不支持摄像头'); return; }
+if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); return; }
 const v = document.getElementById('vt-self');
 if (!v) return;
 VT.starting = true;
@@ -1090,7 +1095,7 @@ settled = true;
 VT.gen++;
 VT.starting = false;
 VT.watchdog = null;
-vtSelfState('fail', '摄像头没有响应，点这里重试');
+vtCamFail('摄像头没有响应，点这里重试');
 }, 9000);
 const constraints = {
 audio: false,
@@ -1125,7 +1130,7 @@ let msg = '摄像头打不开';
 if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
 else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
 else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
-vtSelfState('fail', msg + '，点这里重试');
+vtCamFail(msg + '，点这里重试');
 toast(msg + '（可在手机设置里给浏览器开摄像头权限）');
 });
 }
@@ -1178,7 +1183,7 @@ vtPaintTa();
 if (mask) mask.hidden = false;
 if (mini) mini.hidden = true;
 if (cdEl) cdEl.hidden = true;
-if (window.closeChatCallPanel) { try { window.closeChatCallPanel(); } catch (e) {} }
+try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
 setMaskBtns('active');
 vtStartCam();
 saveCallActive();
@@ -1210,15 +1215,14 @@ VT.taBg = '';
 vtStopCam();
 vtSetPanel(false);
 const selfV = document.getElementById('vt-self');
-if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; }
+if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; selfV.classList.remove('rear'); }
 vtSelfState('off', '摄像头已关');
 const img = document.getElementById('vt-ta-img');
 if (img) { img.hidden = true; img.removeAttribute('src'); }
 const av = document.getElementById('vt-ta-av');
 if (av) av.hidden = true;
 }
-function vtCommitPool(mutate, done) {
-const cid = window.__activeCid || 'default';
+function vtCommitPool(cid, mutate, done) {
 const s = vtStoreFor(cid);
 let finished = false;
 const finish = function (next) {
@@ -1250,7 +1254,7 @@ const add = document.getElementById('vt-pool-add');
 if (empty) empty.hidden = pool.length > 0;
 if (add) add.hidden = pool.length >= VT_POOL_MAX;
 grid.innerHTML = '';
-pool.forEach(function (src, i) {
+pool.forEach(function (src) {
 const cell = document.createElement('div');
 cell.className = 'avlib-cell';
 const img = document.createElement('img');
@@ -1262,9 +1266,10 @@ del.type = 'button';
 del.textContent = '✕';
 del.addEventListener('click', function (ev) {
 ev.stopPropagation();
-vtCommitPool(function (cur) {
+vtCommitPool(cid, function (cur) {
 const a = cur.slice();
-a.splice(i, 1);
+const at = a.indexOf(src);
+if (at >= 0) a.splice(at, 1);
 return a;
 }, function (next) {
 if (!next) return;
@@ -1308,7 +1313,7 @@ if (vtReadPool(cid).length >= VT_POOL_MAX) { finish(); return; }
 const f = list[i++];
 window.mochiImgIngest(f, { maxSide: 1280, quality: 0.8, tag: 'vt-bg' }).then(function (r) {
 if (!r || r.st !== 'ok' || !r.data) { failed++; step(); return; }
-vtCommitPool(function (cur) {
+vtCommitPool(cid, function (cur) {
 return cur.concat([r.data]).slice(0, VT_POOL_MAX);
 }, function (next) {
 if (next) added++; else failed++;
@@ -1396,13 +1401,17 @@ const vtRow = document.getElementById('call-vt-row');
 if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
 const vtPoolAdd = document.getElementById('vt-pool-add');
 if (vtPoolAdd) vtPoolAdd.addEventListener('click', vtAddBg);
-document.addEventListener('contact-switched', function () { VT.poolAsked = false; vtRenderPool(); });
+document.addEventListener('contact-switched', function () {
+VT.poolAsked = false;
+vtRenderPool();
+if (VT.mode) vtPaintTa();
+});
 const vtSettingsRow = document.getElementById('row-call-settings');
 if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTimeout(vtRenderPool, 0); });
 vtRenderPool();
 document.addEventListener('visibilitychange', function () {
 if (document.visibilityState === 'hidden') {
-if (VT.mode) { vtStopCam(); vtSelfState('off', '已暂停'); }
+if (VT.mode) { vtStopCam(); if (!VT.camOff) vtSelfState('off', '已暂停'); }
 } else if (VT.mode && !VT.camOff && mask && !mask.hidden) {
 vtStartCam();
 }

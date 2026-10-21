@@ -10360,7 +10360,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792598998536" data-version="v8.73">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792599449205" data-version="v8.73">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13691,7 +13691,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-group glass">
           <div class="gs-row"><span>TA 开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">接通电话时按这个概率掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两通用同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">接通电话时按这个概率掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
         <div class="gs-title">TA 的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
         <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
@@ -22111,4 +22111,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvib5rm0 -->
+<!-- __MOCHI_EOF__ mvibffcl -->
