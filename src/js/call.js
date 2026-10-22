@@ -333,7 +333,7 @@
   const VT = {
     mode: false,      // 是否处于视频态
     camOff: false,    // 用户手动关了摄像头
-    facing: 'user',   // 当前摄像头方向
+    facing: 'environment',   // 当前摄像头方向（默认后置，用户可用「切换」翻到前置）
     stream: null,
     starting: false,
     gen: 0,           // 摄像头请求代次：切后台/关摄像头时 +1，让在飞的旧请求作废（防两路流叠着抢摄像头）
@@ -728,6 +728,9 @@
     // v3.5.129：通话结束恢复音乐播放/悬浮小框
     if (window.musicHoldForCall) window.musicHoldForCall(false);
     vtTeardown();
+    // 标题统一回落「语音通话」：否则视频挂断后标题会带到下一通
+    const endTtl = document.getElementById('call-title');
+    if (endTtl) endTtl.textContent = '语音通话';
     stopTimers();
     if (mask) mask.hidden = true;
     if (mini) mini.hidden = true;
@@ -994,6 +997,9 @@
     if (nameEl) nameEl.textContent = name;
     if (statusEl) statusEl.textContent = '对方来电...';
     if (durEl) durEl.textContent = '00:00';
+    // 来电固定走语音接听：标题兜底写成「语音通话」，避免上一通视频的标题残留
+    const inTtl = document.getElementById('call-title');
+    if (inTtl) inTtl.textContent = '语音通话';
     if (mask) mask.hidden = false;
     setMaskBtns('ringing');
     let wroteSysMsg = false;
@@ -1090,6 +1096,9 @@
     if (nameEl) nameEl.textContent = name;
     if (statusEl) statusEl.textContent = '正在呼叫...';
     if (durEl) durEl.textContent = '00:00';
+    // 标题跟着拨打方式走：视频拨打在响铃阶段就写「视频通话」，别等接通才改
+    const callTtl = document.getElementById('call-title');
+    if (callTtl) callTtl.textContent = VT.startAsVideo ? '视频通话' : '语音通话';
     if (mask) mask.hidden = false;
     setMaskBtns('calling');
     if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' +  name + (VT.startAsVideo ? ' 视频通话' : ' 语音通话'));
@@ -1778,7 +1787,8 @@
     VT.entered = true;
     VT.mode = true;
     VT.camOff = false;
-    VT.facing = 'user';
+    // 默认后置：进视频先给背面视角，用户点「切换」再翻到前置
+    VT.facing = 'environment';
     VT.minimized = false;
     vtSwap(false);
     vtClearMini();
@@ -1821,7 +1831,7 @@
     VT.minimized = false;
     vtClearMini();
     VT.camOff = false;
-    VT.facing = 'user';
+    VT.facing = 'environment';
     VT.rolled = false;
     VT.entered = false;
     VT.startAsVideo = false;
