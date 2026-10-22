@@ -1425,6 +1425,17 @@
   function vtSupported() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   }
+  // 摄像头打不开时补一句「为什么」：App 壳（HBuilderX 打包）/ 非 HTTPS 页面是手机端最常见的两种环境问题，
+  // 光说「没有权限」用户会去翻系统设置，翻完还是打不开。小窗只放大白话短句，长解释走 toast。
+  function vtCamHint() {
+    let h = '';
+    try { if (!window.isSecureContext) h += '这个页面不是用 HTTPS 打开的，系统不允许网页取摄像头；'; } catch (e) {}
+    if (window.plus) h += '当前是 App 内置网页，App 需要把相机权限转给网页（打包时勾相机模块）；也可以先用手机浏览器打开本站；';
+    return h;
+  }
+  function vtCamToast(msg) {
+    toast(msg + '（' + (vtCamHint() || '关掉占用相机的其他应用后点一下重试') + '）');
+  }
   function vtCid() { return (currentCall && currentCall.cid) || window.__activeCid || 'default'; }
   function vtStoreFor(cid) {
     try { return (window.storeFor && window.storeFor(cid)) || store; } catch (e) { return store; }
@@ -1527,7 +1538,7 @@
   function vtStartCam() {
     if (!VT.mode || VT.camOff) return;
     if (VT.stream || VT.starting) return;
-    if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); return; }
+    if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); vtCamToast('这个浏览器不支持摄像头'); return; }
     const v = document.getElementById('vt-self');
     if (!v) return;
     VT.starting = true;
@@ -1542,6 +1553,7 @@
       VT.starting = false;
       VT.watchdog = null;
       vtCamFail('摄像头没有响应，点这里重试');
+      vtCamToast('摄像头没有响应');
     }, 9000);
     const constraints = {
       audio: false,
@@ -1577,7 +1589,9 @@
       else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
       else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
       vtCamFail(msg + '，点这里重试');
-      toast(msg + '（可在手机设置里给浏览器开摄像头权限）');
+      // 权限被拒是系统设置问题；其余（被占用/没有设备）与环境无关，不再啰嗦 App/HTTPS 那段
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') toast(msg + '（可在手机设置里给浏览器 / App 开摄像头权限）');
+      else vtCamToast(msg);
     });
   }
   function vtToggleCam() {
