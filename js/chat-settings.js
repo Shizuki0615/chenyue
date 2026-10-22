@@ -1916,6 +1916,38 @@ const chatBeautySaveRow = document.getElementById('row-chat-beauty-save');
 if (chatBeautySaveRow) chatBeautySaveRow.addEventListener('click', () => window.saveChatBeautyScheme());
 const chatBeautySchemesRow = document.getElementById('row-chat-beauty-schemes');
 if (chatBeautySchemesRow) chatBeautySchemesRow.addEventListener('click', () => window.openChatBeautySchemes());
+const CS_RESET_KEEP = ['cs-bg', 'cs-bg-fit', 'cs-bg-fullbars', 'cs-bg-pos-x', 'cs-bg-pos-y', 'cs-bg-size'];
+const CS_RESET_KEYS = CHAT_BEAUTY_KEYS.filter(k => CS_RESET_KEEP.indexOf(k) < 0)
+.concat(['cs-mark-x', 'cs-mark-y', 'cs-time-x', 'cs-time-y']);
+const csResetBeauty = row('cs-reset-beauty');
+if (csResetBeauty) {
+csResetBeauty.addEventListener('click', () => {
+if (!window.openTCPanel) return;
+const runReset = (keepCss) => {
+CS_RESET_KEYS.forEach(k => {
+if (keepCss && k === 'cs-bubble-css') return;
+try { store.remove(k); } catch (e) {}
+});
+try { applyCss(); } catch (e) {}
+try { applySettings(); } catch (e) {}
+toast(keepCss ? '已恢复初始美化（气泡 CSS 已保留）' : '已恢复初始美化');
+};
+window.openTCPanel('恢复初始美化', '' +
+'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想弄清「气泡 CSS 到底生效了没」，用「保留气泡 CSS」——其余项归零后若效果出现，说明之前是被滑块/颜色压住了。</div>' +
+'<div class="mail-actions">' +
+'<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
+'<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
+'<button class="cc-tool" id="cs-reset-all" style="color:#d64545">全部恢复</button>' +
+'</div>');
+const closeTc = () => { try { document.getElementById('tc-mask').hidden = true; } catch (e) {} };
+const cBtn = document.getElementById('cs-reset-cancel');
+if (cBtn) cBtn.addEventListener('click', closeTc);
+const kBtn = document.getElementById('cs-reset-keepcss');
+if (kBtn) kBtn.addEventListener('click', () => { runReset(true); closeTc(); });
+const aBtn = document.getElementById('cs-reset-all');
+if (aBtn) aBtn.addEventListener('click', () => { runReset(false); closeTc(); });
+});
+}
 (function initChatSettingsTabs() {
 const tabsEl = document.getElementById('cs-tabs');
 const page = document.getElementById('page-chat-settings');

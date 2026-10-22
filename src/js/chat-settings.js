@@ -2439,6 +2439,45 @@
   const chatBeautySchemesRow = document.getElementById('row-chat-beauty-schemes');
   if (chatBeautySchemesRow) chatBeautySchemesRow.addEventListener('click', () => window.openChatBeautySchemes());
 
+  // ===== 恢复初始美化（#新）：一键抹回出厂观感 =====
+  // 为什么加：用户写了自己的气泡 CSS 却看不出效果，怀疑是别的美化项在压它（典型是动过
+  // 「气泡透明度」后 #732 的强制层用 !important 钉住 background，自定义背景就失效了）。
+  // 给两档：保留气泡 CSS（只重置其他项，纯粹用来对照 CSS 本身有没有问题）／全部恢复。
+  // 范围只含观感键；壁纸全套（cs-bg / 铺满 / 位置 / 缩放）与自定义头像图一律不动，
+  // 那是用户上传的图，删了找不回来——壁纸另有「移除聊天壁纸」。
+  const CS_RESET_KEEP = ['cs-bg', 'cs-bg-fit', 'cs-bg-fullbars', 'cs-bg-pos-x', 'cs-bg-pos-y', 'cs-bg-size'];
+  const CS_RESET_KEYS = CHAT_BEAUTY_KEYS.filter(k => CS_RESET_KEEP.indexOf(k) < 0)
+    .concat(['cs-mark-x', 'cs-mark-y', 'cs-time-x', 'cs-time-y']);
+  const csResetBeauty = row('cs-reset-beauty');
+  if (csResetBeauty) {
+    csResetBeauty.addEventListener('click', () => {
+      if (!window.openTCPanel) return;
+      const runReset = (keepCss) => {
+        CS_RESET_KEYS.forEach(k => {
+          if (keepCss && k === 'cs-bubble-css') return;
+          try { store.remove(k); } catch (e) {}
+        });
+        try { applyCss(); } catch (e) {}
+        try { applySettings(); } catch (e) {}
+        toast(keepCss ? '已恢复初始美化（气泡 CSS 已保留）' : '已恢复初始美化');
+      };
+      window.openTCPanel('恢复初始美化', '' +
+        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想弄清「气泡 CSS 到底生效了没」，用「保留气泡 CSS」——其余项归零后若效果出现，说明之前是被滑块/颜色压住了。</div>' +
+        '<div class="mail-actions">' +
+        '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
+        '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
+        '<button class="cc-tool" id="cs-reset-all" style="color:#d64545">全部恢复</button>' +
+        '</div>');
+      const closeTc = () => { try { document.getElementById('tc-mask').hidden = true; } catch (e) {} };
+      const cBtn = document.getElementById('cs-reset-cancel');
+      if (cBtn) cBtn.addEventListener('click', closeTc);
+      const kBtn = document.getElementById('cs-reset-keepcss');
+      if (kBtn) kBtn.addEventListener('click', () => { runReset(true); closeTc(); });
+      const aBtn = document.getElementById('cs-reset-all');
+      if (aBtn) aBtn.addEventListener('click', () => { runReset(false); closeTc(); });
+    });
+  }
+
   // 聊天设置页：顶部标签切换（美化 / 功能 / 数据），复用 .them-tabs/.them-sec 结构互斥显示
   (function initChatSettingsTabs() {
     const tabsEl = document.getElementById('cs-tabs');
