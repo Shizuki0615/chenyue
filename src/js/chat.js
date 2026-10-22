@@ -17081,6 +17081,18 @@ window.mochiMapBubbleCss = function (css, scope) {
   };
   css = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
   if (!css) return { out: '', hint: null };
+  // #新：用户按设置页示例写 CSS 时通常会把作用域 `#page-chat` 一起带上，旧实现又把 scope
+  // 前缀拼一次，产出 `#page-chat #page-chat .msg-in .msg-bubble`——要求「同 id 祖孙嵌套」，
+  // 页面上只有一个 #page-chat，选择器永远匹配不到 → 「贴了 CSS 完全没变化」。
+  // 统一先剥掉文本里已写的作用域，再只由 scope 参数补一次（群聊 #page-group-chat 同理）。
+  // 用 (?![-\w]) 边界，避免误伤 #page-chat-settings / #page-group-chat 之外的同前缀 id。
+  if (scope) {
+    var scId = scope.trim();
+    if (scId) {
+      var reSc = new RegExp(scId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\w-])', 'g');
+      css = css.replace(reSc, '');
+    }
+  }
   // 纯声明（无大括号）→ 直接套双方气泡
   if (css.indexOf('{') < 0) return { out: wrap(css), hint: null };
   var _mapBc = function (src, names, rep) {
@@ -17092,7 +17104,7 @@ window.mochiMapBubbleCss = function (css, scope) {
     }
     return r;
   };
-  var OUT_B = scope + '.msg-out .msg-bubble', IN_B = scope + '.msg-in .msg-bubble';
+  var OUT_B = '.msg-out .msg-bubble', IN_B = '.msg-in .msg-bubble';
   var OUT_NAMES = [
     'message-sent', 'message-me', 'message-mine', 'chat-me', 'msg-me', 'msg-sent', 'sent',
     'mine', 'me', 'left', 'my-bubble', 'bubble-mine', 'bubble-self', 'self', 'myself', 'sender',
@@ -17104,10 +17116,23 @@ window.mochiMapBubbleCss = function (css, scope) {
     'bubble-other', 'partner-bubble', 'them', 'recipient', 'guest', 'receiver',
     'bubble-right', 'msg-right', 'message-right', 'chat-right'
   ];
+  // #新：'msg-bubble' 必须排在首位——旧表里 'msg'/'bubble' 都被 (?![-\w]) 的连字符边界挡住，
+  // `.msg-bubble` 一个都认不出，整条规则就按「已命中」原样下发（无作用域、特异性 (0,1,0)
+  // 输给基础规则 `#page-chat .msg-in .msg-bubble`）→ 用户写 `.msg-bubble{background:…}` 等于没写。
   var SH_NAMES = [
-    'chat-bubble', 'message-bubble', 'text-bubble', 'word-bubble', 'chat-text',
+    'msg-bubble', 'chat-bubble', 'message-bubble', 'text-bubble', 'word-bubble', 'chat-text',
     'bubble', 'message', 'msg'
   ];
+  // 逐选择器补作用域：逗号分隔的多选择器要各自补，否则第二个会漏成全局（污染群聊）
+  var scopeSel = function (sel) {
+    if (!scope) return sel;
+    var tag = scope.trim();
+    return sel.split(',').map(function (p) {
+      p = p.trim();
+      if (!p) return p;
+      return p.indexOf(tag) === 0 ? p : scope + p;
+    }).join(',');
+  };
   var out = '', hasMapped = false, fallbackDecls = [];
   var re = /([^{}]*)\{([^{}]*)\}/g, m;
   while ((m = re.exec(css))) {
@@ -17118,15 +17143,15 @@ window.mochiMapBubbleCss = function (css, scope) {
       continue;
     }
     var mapped = sel;
-    mapped = _mapBc(mapped, ['msg-out'], scope + '.msg-out');
-    mapped = _mapBc(mapped, ['msg-in'], scope + '.msg-in');
+    mapped = _mapBc(mapped, ['msg-out'], '.msg-out');
+    mapped = _mapBc(mapped, ['msg-in'], '.msg-in');
     mapped = _mapBc(mapped, ['mb.self'], OUT_B);
     mapped = _mapBc(mapped, ['mb.other'], IN_B);
     mapped = _mapBc(mapped, OUT_NAMES, OUT_B);
     mapped = _mapBc(mapped, IN_NAMES, IN_B);
-    mapped = _mapBc(mapped, SH_NAMES, scope + '.msg-bubble.msg-bubble');
+    mapped = _mapBc(mapped, SH_NAMES, '.msg-bubble.msg-bubble');
     if (/\.msg-bubble|\.msg-out|\.msg-in/.test(mapped)) {
-      out += mapped + '{' + decls + '}';
+      out += scopeSel(mapped) + '{' + decls + '}';
       hasMapped = true;
     } else if (fallbackDecls.indexOf(decls) < 0) {
       fallbackDecls.push(decls);

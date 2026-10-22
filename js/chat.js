@@ -13605,6 +13605,13 @@ scope + '.msg-in .msg-bubble{' + decls + '!important;}';
 };
 css = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
 if (!css) return { out: '', hint: null };
+if (scope) {
+var scId = scope.trim();
+if (scId) {
+var reSc = new RegExp(scId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\w-])', 'g');
+css = css.replace(reSc, '');
+}
+}
 if (css.indexOf('{') < 0) return { out: wrap(css), hint: null };
 var _mapBc = function (src, names, rep) {
 var r = src;
@@ -13615,7 +13622,7 @@ r = r.replace(re2, rep);
 }
 return r;
 };
-var OUT_B = scope + '.msg-out .msg-bubble', IN_B = scope + '.msg-in .msg-bubble';
+var OUT_B = '.msg-out .msg-bubble', IN_B = '.msg-in .msg-bubble';
 var OUT_NAMES = [
 'message-sent', 'message-me', 'message-mine', 'chat-me', 'msg-me', 'msg-sent', 'sent',
 'mine', 'me', 'left', 'my-bubble', 'bubble-mine', 'bubble-self', 'self', 'myself', 'sender',
@@ -13628,9 +13635,18 @@ var IN_NAMES = [
 'bubble-right', 'msg-right', 'message-right', 'chat-right'
 ];
 var SH_NAMES = [
-'chat-bubble', 'message-bubble', 'text-bubble', 'word-bubble', 'chat-text',
+'msg-bubble', 'chat-bubble', 'message-bubble', 'text-bubble', 'word-bubble', 'chat-text',
 'bubble', 'message', 'msg'
 ];
+var scopeSel = function (sel) {
+if (!scope) return sel;
+var tag = scope.trim();
+return sel.split(',').map(function (p) {
+p = p.trim();
+if (!p) return p;
+return p.indexOf(tag) === 0 ? p : scope + p;
+}).join(',');
+};
 var out = '', hasMapped = false, fallbackDecls = [];
 var re = /([^{}]*)\{([^{}]*)\}/g, m;
 while ((m = re.exec(css))) {
@@ -13641,15 +13657,15 @@ if (!sel) { out += wrap(decls); hasMapped = true; }
 continue;
 }
 var mapped = sel;
-mapped = _mapBc(mapped, ['msg-out'], scope + '.msg-out');
-mapped = _mapBc(mapped, ['msg-in'], scope + '.msg-in');
+mapped = _mapBc(mapped, ['msg-out'], '.msg-out');
+mapped = _mapBc(mapped, ['msg-in'], '.msg-in');
 mapped = _mapBc(mapped, ['mb.self'], OUT_B);
 mapped = _mapBc(mapped, ['mb.other'], IN_B);
 mapped = _mapBc(mapped, OUT_NAMES, OUT_B);
 mapped = _mapBc(mapped, IN_NAMES, IN_B);
-mapped = _mapBc(mapped, SH_NAMES, scope + '.msg-bubble.msg-bubble');
+mapped = _mapBc(mapped, SH_NAMES, '.msg-bubble.msg-bubble');
 if (/\.msg-bubble|\.msg-out|\.msg-in/.test(mapped)) {
-out += mapped + '{' + decls + '}';
+out += scopeSel(mapped) + '{' + decls + '}';
 hasMapped = true;
 } else if (fallbackDecls.indexOf(decls) < 0) {
 fallbackDecls.push(decls);
