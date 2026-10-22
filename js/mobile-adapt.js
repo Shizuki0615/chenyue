@@ -1545,6 +1545,22 @@ kbUndockPanels();
 } catch (eCN) {}
 }
 try {
+window.mochiKbHealPhone = function (force) {
+try {
+var ae = document.activeElement;
+var foc = !!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'
+|| ae.isContentEditable || (ae.classList && ae.classList.contains('ce-box'))));
+if (foc && (!force || !_aVvShrunkSeen)) return false;
+if (_aKb || _aProv || _aClosing) { _aKbCloseNow('panel-heal'); return true; }
+if (_aPhone && (_aPhone.style.height || _aPhone.style.alignSelf)) {
+_aPhone.style.height = ''; _aPhone.style.alignSelf = '';
+return true;
+}
+return false;
+} catch (eH) { return false; }
+};
+} catch (eH0) {}
+try {
 document.addEventListener('touchstart', function (e) {
 try {
 if (!_aKb) return;

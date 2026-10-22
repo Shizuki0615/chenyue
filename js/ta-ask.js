@@ -1646,10 +1646,41 @@ body.innerHTML = html;
 if (window.mochiPickDoorSweep) { try { window.mochiPickDoorSweep(true); } catch (eS) {} }
 body.scrollTop = 0;
 mask.hidden = false;
+try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (eH) {}
+try {
+if (!body.__kbHealBound) {
+body.__kbHealBound = true;
+body.addEventListener('focusout', function () {
+setTimeout(function () { try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (eH2) {} }, 320);
+});
+}
+} catch (eB) {}
+try {
+if (!mask.__kbHealTimer && window.setInterval) {
+mask.__kbHealTimer = setInterval(function () {
+try {
+if (mask.hidden) { clearInterval(mask.__kbHealTimer); mask.__kbHealTimer = null; return; }
+var vv = window.visualViewport, ih = window.innerHeight || 0;
+var ph = document.querySelector('.phone');
+if (!ph || !ph.style.height) return;
+if (vv && ih && vv.height >= ih - 60 && window.mochiKbHealPhone) window.mochiKbHealPhone(true);
+} catch (eHT) {}
+}, 700);
+}
+} catch (eBT) {}
 }
 window.openTCPanel = openTCPanel;
 const tcClose = document.getElementById('tc-mask-close');
 if (tcClose) tcClose.addEventListener('click', () => { document.getElementById('tc-mask').hidden = true; });
+try {
+const tcMaskEl = document.getElementById('tc-mask');
+if (tcMaskEl && window.MutationObserver) {
+new MutationObserver(function () {
+if (!tcMaskEl.hidden) return;
+setTimeout(function () { try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (e) {} }, 260);
+}).observe(tcMaskEl, { attributes: true, attributeFilter: ['hidden'] });
+}
+} catch (eTC) {}
 window.openTC = function (msgIdx) {
 msgIdx = locateCardIdx(msgIdx, 'ask-choose', 'choiceStatus');
 if (msgIdx < 0) return;

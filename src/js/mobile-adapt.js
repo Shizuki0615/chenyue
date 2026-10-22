@@ -2743,6 +2743,32 @@
             kbUndockPanels();
           } catch (eCN) {}
         }
+        // #新：外部弹层（气泡 CSS / 字体 / 恢复初始 等 openTCPanel 系列）收放时的键盘残留自愈。
+        // 现场：tc-mask 被 display:none 收走后焦点已退回 body，但 _aKb 若还挂着，.phone 会
+        // 一直停在键盘期的收缩高度 → 其下露出整块 body 白底（用户实报「输代码时面板下方
+        // 冒出一整块白色空白」）。只在「无文本聚焦」时执行：有聚焦＝键盘可能真在场，
+        // 收缩是正确的，绝不能动（否则输入栏被丢到键盘后面）。
+        try {
+          window.mochiKbHealPhone = function (force) {
+            try {
+              var ae = document.activeElement;
+              var foc = !!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'
+                || ae.isContentEditable || (ae.classList && ae.classList.contains('ce-box'))));
+              // force＝调用方已用「可视高回到无键盘水平」反证键盘不在场（例如安卓返回键收键盘、
+              // 焦点还留在 ce-box 上）：此时不该再被聚焦状态挡住。但「本会话从未见过真实 vv 收缩」
+              // 的内核（X5 等纯悬浮键盘：vv 恒等于 innerHeight，靠推定停靠）不能用这条反证——
+              // 它的 vv 读数本来就分不出键盘在不在，强清会把推定停靠拆掉、面板当场沉到键盘后。
+              if (foc && (!force || !_aVvShrunkSeen)) return false;
+              if (_aKb || _aProv || _aClosing) { _aKbCloseNow('panel-heal'); return true; }
+              // 收口已落但内联高度半途残留（少数内核动画期写一半被打断）
+              if (_aPhone && (_aPhone.style.height || _aPhone.style.alignSelf)) {
+                _aPhone.style.height = ''; _aPhone.style.alignSelf = '';
+                return true;
+              }
+              return false;
+            } catch (eH) { return false; }
+          };
+        } catch (eH0) {}
         try {
           document.addEventListener('touchstart', function (e) {
             try {

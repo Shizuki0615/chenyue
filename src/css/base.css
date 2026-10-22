@@ -592,6 +592,11 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
      刻意排除 .ios-pwa-standalone：那一路的形态（覆盖／保留／iPad）各有一条自己的高度与
      锁法（#114/#148/#185/#537 的针都在那里），本批不越过去动它＝iOS 主屏幕零变化。 */
   html:not(.ios-pwa-standalone), html:not(.ios-pwa-standalone) body { overflow:hidden; align-items:flex-start; }
+  /* 弹层开着（气泡 CSS / 字体 / 恢复初始 等 .tc-mask 系列）而 .phone 因键盘残留停在
+     收缩高度时，其下露出的 body 区与遮罩同色——否则是一整块刺眼的白（用户实报
+     「输入代码时面板下方冒出来的白色空白」）。.phone 满高时 body 全被 .phone 遮住，
+     此规则零观感变化；不依赖内核的键盘读数，残留清不掉时也不会露白。 */
+  html:has(.tc-mask:not([hidden])) body { background:var(--overlay-bg); }
   .phone {
     /* v3.5.139：显式声明——padding(0 18px 18px) 必须算进 100dvh 内，
        否则实际高度超视口、底部导航栏/组件被截 */
@@ -624,6 +629,8 @@ html.force-mobile, html.force-mobile body { padding:0; min-height:100vh; min-hei
 /* #1340：同一条文档不变量——force-mobile 复刻的就是上方竖屏形态（手机伪装桌面 UA 时媒体
    查询不命中、只能靠这个类复刻），漏一份就等于「桌面站点」模式下整页照旧可被拖走 */
 html.force-mobile:not(.ios-pwa-standalone), html.force-mobile:not(.ios-pwa-standalone) body { overflow:hidden; align-items:flex-start; }
+/* 同上：force-mobile（手机伪装桌面 UA）形态的 .tc-mask 打开期底色兜底 */
+html.force-mobile:has(.tc-mask:not([hidden])) body { background:var(--overlay-bg); }
 html.force-mobile .phone {
   box-sizing:border-box;
   width:100vw; height:100vh;

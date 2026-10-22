@@ -1996,11 +1996,49 @@ function openTCPanel(title, html) {
   // v3.5.130：滚动位置复位——复用同一容器，上次滚到底会从旧偏移开始显示
   body.scrollTop = 0;
   mask.hidden = false;
+  // #新：面板下方「一整块白色空白」的正面修复。成因＝弹层里的输入框（气泡 CSS/字体等）
+  // 敲字后 .phone 停在键盘期的收缩高度，其下露出 body 白底（绝对定位的 .tc-mask 只铺到
+  // .phone 底边）。开面板时先清一次（此刻还没有焦点，永远安全），输入框失焦后再清一次。
+  try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (eH) {}
+  try {
+    if (!body.__kbHealBound) {
+      body.__kbHealBound = true;
+      body.addEventListener('focusout', function () {
+        setTimeout(function () { try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (eH2) {} }, 320);
+      });
+    }
+  } catch (eB) {}
+  // 面板开着期间轻量轮询：可视高已回到「无键盘」水平而 .phone 还带内联高度＝读数反证键盘不在场
+  // （安卓返回键收键盘、焦点仍留在 ce-box 的最常见路径），此时强制清残留，白块当场消失。
+  try {
+    if (!mask.__kbHealTimer && window.setInterval) {
+      mask.__kbHealTimer = setInterval(function () {
+        try {
+          if (mask.hidden) { clearInterval(mask.__kbHealTimer); mask.__kbHealTimer = null; return; }
+          var vv = window.visualViewport, ih = window.innerHeight || 0;
+          var ph = document.querySelector('.phone');
+          if (!ph || !ph.style.height) return;
+          if (vv && ih && vv.height >= ih - 60 && window.mochiKbHealPhone) window.mochiKbHealPhone(true);
+        } catch (eHT) {}
+      }, 700);
+    }
+  } catch (eBT) {}
 }
 // 供聊天搜索等外部模块复用该弹层
 window.openTCPanel = openTCPanel;
   const tcClose = document.getElementById('tc-mask-close');
   if (tcClose) tcClose.addEventListener('click', () => { document.getElementById('tc-mask').hidden = true; });
+  // #新：任何路径关掉 tc-mask（✕ / 点遮罩 / 各调用方直写 hidden）后都补一次键盘残留自愈，
+  // 否则「输代码时冒出来的那块白色空白」会一直挂到下次开面板才消。
+  try {
+    const tcMaskEl = document.getElementById('tc-mask');
+    if (tcMaskEl && window.MutationObserver) {
+      new MutationObserver(function () {
+        if (!tcMaskEl.hidden) return;
+        setTimeout(function () { try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (e) {} }, 260);
+      }).observe(tcMaskEl, { attributes: true, attributeFilter: ['hidden'] });
+    }
+  } catch (eTC) {}
 
   // 打开选择题（读聊天记录里的卡片）
   window.openTC = function (msgIdx) {
