@@ -1687,6 +1687,8 @@
     }
     const t = document.getElementById('call-swap-txt');
     if (t) t.textContent = next ? '看对方' : '看自己';
+    // 小窗跟着大画面一起换：大画面里谁占满屏，缩下去的小窗里就谁占满屏
+    if (VT.minimized) vtPaintMini();
   }
   // 视频态的小框＝一块正在播的视频小窗：TA 的画面铺满 + 自己的摄像头缩在右上角。
   // 这是「视频缩小之后还是视频」的观感来源（另一部分是 VT.mode/摄像头流一直不停）。
@@ -1694,6 +1696,7 @@
     if (!mini) return;
     const on = !!(VT.mode && VT.minimized);
     mini.classList.toggle('vt', on);
+    mini.classList.toggle('swap', on && !!VT.swap);
     if (!on) { vtClearMini(); return; }
     const frame = document.getElementById('call-mini-frame');
     const avBox = document.getElementById('call-mini-av');
@@ -1736,7 +1739,7 @@
     }
     const avBox = document.getElementById('call-mini-av');
     if (avBox) avBox.hidden = false;
-    if (mini) mini.classList.remove('vt');
+    if (mini) mini.classList.remove('vt', 'swap');
   }
   // 视频态点「缩小」：只收起大面板，通话仍是视频（不调 vtExit，不关摄像头）
   function vtMinimize() {

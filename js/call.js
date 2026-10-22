@@ -1227,11 +1227,13 @@ VT.swapPos = null;
 }
 const t = document.getElementById('call-swap-txt');
 if (t) t.textContent = next ? '看对方' : '看自己';
+if (VT.minimized) vtPaintMini();
 }
 function vtPaintMini() {
 if (!mini) return;
 const on = !!(VT.mode && VT.minimized);
 mini.classList.toggle('vt', on);
+mini.classList.toggle('swap', on && !!VT.swap);
 if (!on) { vtClearMini(); return; }
 const frame = document.getElementById('call-mini-frame');
 const avBox = document.getElementById('call-mini-av');
@@ -1272,7 +1274,7 @@ ms.hidden = true;
 }
 const avBox = document.getElementById('call-mini-av');
 if (avBox) avBox.hidden = false;
-if (mini) mini.classList.remove('vt');
+if (mini) mini.classList.remove('vt', 'swap');
 }
 function vtMinimize() {
 if (!currentCall) return;

@@ -1754,12 +1754,24 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .call-mini.vt .call-mini-av img { width:48px; height:48px; border-radius:50%; object-fit:cover; }
 .call-mini.vt .call-mini-self {
   position:absolute; top:6px; right:6px; z-index:2;
-  width:36px; height:48px; border-radius:8px; object-fit:cover;
+  width:26px; height:36px; border-radius:7px; object-fit:cover;
   background:#000; box-shadow:0 2px 8px rgba(0,0,0,.45);
   transform:scaleX(-1);
 }
 .call-mini.vt .call-mini-self.rear { transform:none; }
 .call-mini.vt .call-mini-self[hidden] { display:none; }
+/* 小窗跟着「大画面」同步：大画面里谁占满屏，小窗里就谁占满屏（互换时自己铺满、TA 缩右上） */
+.call-mini.vt.swap .call-mini-self {
+  top:0; left:0; right:auto; width:100%; height:100%; border-radius:0; box-shadow:none;
+  z-index:1;
+}
+.call-mini.vt.swap .call-mini-frame,
+.call-mini.vt.swap .call-mini-av {
+  top:6px; right:6px; bottom:auto; left:auto;
+  width:26px; height:36px; border-radius:7px; overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.45); z-index:2;
+}
+.call-mini.vt.swap .call-mini-av img { width:100%; height:100%; border-radius:7px; object-fit:cover; }
 .call-mini.vt .call-mini-info {
   position:absolute; left:9px; bottom:9px; z-index:3;
   max-width:66px; color:#fff;
