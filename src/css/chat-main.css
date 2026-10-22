@@ -534,11 +534,15 @@ body.cs-time-divider .msg-time-divider { display:flex; }
 }
 .chat-send {
   outline:none; cursor:pointer; flex-shrink:0;
-  background:var(--send-bg, #111111); color:var(--send-ink, #ffffff); font-size:14px; font-weight:600;
-  padding:12px 24px; border-radius:99px; font-family:inherit;
-  /* 涓庡叾浠栬緭鍏ユ爮鍔熻兘鎸夐挳涓€鑷寸殑鐏拌壊鎻忚竟 */
+  width:38px; height:38px; border-radius:50%;
+  background:var(--send-bg, var(--cs-out-surface, var(--msg-out-bg, #111111))); color:var(--send-ink, #ffffff);
   border:1px solid rgba(0,0,0,.1);
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  display:flex; align-items:center; justify-content:center;
+  padding:0;
 }
+.chat-send svg { width:20px; height:20px; }
+.chat-send:disabled { opacity:.45; cursor:default; }
 
 /* 鍏ㄥ睆鑱婂ぉ锛氬ご閮?娑堟伅/杈撳叆鏍忓乏鍙?18px 瀵归綈锛岃儗鏅摵婊?*/
 #page-chat {
@@ -651,7 +655,6 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
    360px 屏开满「语音＋批量」后输入框仍保有 4em 以上可用宽（单聊/群聊两排同吃）。 */
 @media (max-width: 480px) {
   .chat-input-row { gap:5px; padding:12px 8px 12px 10px; }
-  .chat-send { padding:12px 16px; }
 }
 
 /* 鎷嶄竴鎷?/ 鎹㈠ご鍍忥細灞呬腑鐏板瓧灏忓崱鐗囷紙鍙€夐檮甯︿竴寮犲ご鍍忓浘锛?*/
