@@ -1677,8 +1677,31 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .vt-self-off svg { width:20px; height:20px; }
 .call-btn.call-vt { background:#3a7bd5; }
 .call-btn.call-cam,
-.call-btn.call-flip { background:rgba(255,255,255,.22); color:#fff; }
+.call-btn.call-flip,
+.call-btn.call-swap { background:rgba(255,255,255,.22); color:#fff; }
 .call-btn.call-cam.off { background:rgba(255,255,255,.32); }
+
+/* ===== 视频画面互换（#vt-stage.swap）=====
+   正常：TA 铺满 + 我的摄像头右上小窗。
+   互换：我的摄像头铺满 + TA 变右上小窗（微信里点小窗放大自己的观感）。
+   只为「谁占满屏」换位置：小窗尺寸/圆角/阴影沿用原样式，读起来还是同一个界面。 */
+.vt-stage.swap .vt-self,
+.vt-stage.swap .vt-self-off {
+  inset:0; width:100%; height:100%; border-radius:0; box-shadow:none;
+  z-index:1; touch-action:auto;
+}
+.vt-stage.swap .vt-self { object-fit:cover; cursor:pointer; }
+.vt-stage.swap .vt-self-off { font-size:12px; gap:8px; cursor:pointer; }
+.vt-stage.swap .vt-ta,
+.vt-stage.swap .vt-ta-av {
+  top:52px; right:12px; bottom:auto; left:auto;
+  width:76px; height:104px; border-radius:12px; overflow:hidden;
+  box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:3; animation:none;
+  cursor:pointer;
+}
+.vt-stage.swap .vt-ta { object-fit:cover; }
+.vt-stage.swap .vt-av-ring { width:56px; height:56px; box-shadow:none; }
+.vt-stage.swap .vt-av-ring svg { width:22px; height:22px; }
 
 /* 閫氳瘽灏忔锛堟帴閫氬悗鏈€灏忓寲锛涚櫧鑹层€佸彲鎷栧姩锛涗綅浜庤緭鍏ユ爮涓婃柟锛?   v3.5.110锛歜ottom 鍔?safe-area锛屽叏闈㈠睆鍏ㄥ睆妯″紡涓嬩笌杈撳叆鏍忓悓姝ヤ笂绉伙紝涓嶉敊浣?*/
 .call-mini {
@@ -1709,6 +1732,9 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 }
 .call-mini-av img { width:100%; height:100%; object-fit:cover; display:block; }
 .call-mini-av svg { width:16px; height:16px; }
+/* 视频通话缩小后仍是视频：小框里换成 TA 的画面缩略图（矩形，不再用圆形头像），名字后缀标「视频」 */
+.call-mini.vt .call-mini-av { width:44px; height:56px; border-radius:10px; }
+.call-mini.vt .call-mini-name::after { content:' · 视频'; font-weight:400; opacity:.6; }
 .call-mini-info { display:flex; flex-direction:column; }
 .call-mini-name { font-size:12px; font-weight:700; }
 .call-mini-time { font-size:10px; opacity:.75; font-variant-numeric:tabular-nums; }

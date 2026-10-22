@@ -326,6 +326,7 @@
   const miniName = document.getElementById('call-mini-name');
   const miniTime = document.getElementById('call-mini-time');
   const vtBtn = document.getElementById('call-vt-btn');
+  const swapBtn = document.getElementById('call-swap-btn');
   const camBtn = document.getElementById('call-cam-btn');
   const flipBtn = document.getElementById('call-flip-btn');
   // 视频通话运行时状态（只活在内存：刷新恢复的通话一律从语音开始，避免无手势自动开摄像头）
@@ -342,6 +343,9 @@
     rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
     entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
     startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
+    swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
+    swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
+    minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -563,6 +567,9 @@
   let shownName = null;
   function syncCallAv() {
     if (!currentCall) return;
+    // 视频态的头像位不参与（大面板头像已隐藏；缩到小框时由 vtPaintMini 换成画面缩略图），
+    // 这里若继续按联系人头像刷，会把小框里的 TA 画面顶回圆形头像
+    if (VT.mode) return;
     let av = '';
     try {
       const s = (window.storeFor && window.storeFor(currentCall.cid)) || store;
@@ -601,8 +608,11 @@
     if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
     if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
     if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
-    // 视频按钮：只有接通后才有意义；摄像头开关/翻转只在视频态出现
-    if (vtBtn) vtBtn.hidden = !(mode === 'active');
+    // 视频按钮：只有接通后才有意义；但视频态里不再出现「语音」按钮——
+    // 语音/视频两套控件分开摆：视频态只有「切换/摄像头/翻转/挂断」，
+    // 想退回语音走通话半框的「视频通话」行（相当于微信的「…」菜单）
+    if (vtBtn) vtBtn.hidden = !(mode === 'active' && !VT.mode);
+    if (swapBtn) swapBtn.hidden = !(mode === 'active' && VT.mode);
     if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
     if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
   }
@@ -610,8 +620,9 @@
   // v3.7.x：通话小框开关关闭 → 不显示悬浮小框（后台通话，经通话半框挂断）
   function minimizeCall() {
     if (!currentCall) return;
-    // 视频态点「缩小」＝先退回语音，再按小框开关走（摄像头必须停，见 vtExit）
-    if (VT.mode) { vtExit(); return; }
+    // 视频态点「缩小」＝缩成视频小框（以前这里是 vtExit，等于把视频退回语音；
+    // 现在通话本身还是视频：摄像头不停，点小框回来仍是视频画面）
+    if (VT.mode) { vtMinimize(); return; }
     if (mask) mask.hidden = true;
     if (cdEl) cdEl.hidden = true;
     if (mini) {
@@ -1153,6 +1164,8 @@
   //   不同时先切桌面——半框标题/背景都按当前桌面读，不切就会把 A 的通话显示成 B（同 #811 串身份口径）。
   function openCallHalfFromMini() {
     if (!currentCall) return;
+    // 视频态的小框＝这通视频还在继续：点它直接回到视频界面（不再弹通话半框）
+    if (VT.mode) { vtExpand(); return; }
     const ownerCid = currentCall.cid || window.__activeCid || 'default';
     if (ownerCid !== (window.__activeCid || 'default')) {
       try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e) {}
@@ -1640,9 +1653,74 @@
     if (panel) panel.classList.toggle('vt', !!on);
     if (stage) stage.hidden = !on;
     if (title) title.textContent = on ? '视频通话' : '语音通话';
-    if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+    if (vTxt) vTxt.textContent = '视频';
     const rowVal = document.getElementById('call-vt-row-val');
     if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
+  }
+  // 画面互换：只切 class，不动摄像头流。我的画面铺满 ↔ TA 铺满（TA 缩成右上小窗）
+  // 互换时把拖动写下的 left/top 临时收起（内联定位会压住「铺满」样式），撤回时原样还原，
+  // 不弄丢用户摆好的小窗位置。
+  function vtSwap(on) {
+    if (!VT.mode && on !== false) return;
+    const stage = document.getElementById('vt-stage');
+    const v = document.getElementById('vt-self');
+    const off = document.getElementById('vt-self-off');
+    const next = (on === undefined) ? !VT.swap : !!on;
+    if (next === VT.swap) return;
+    VT.swap = next;
+    if (stage) stage.classList.toggle('swap', next);
+    if (v && off) {
+      if (next) {
+        VT.swapPos = { l: v.style.left, t: v.style.top, r: v.style.right, ol: off.style.left, ot: off.style.top, or: off.style.right };
+        v.style.left = ''; v.style.top = ''; v.style.right = '';
+        off.style.left = ''; off.style.top = ''; off.style.right = '';
+      } else if (VT.swapPos) {
+        v.style.left = VT.swapPos.l; v.style.top = VT.swapPos.t; v.style.right = VT.swapPos.r;
+        off.style.left = VT.swapPos.ol; off.style.top = VT.swapPos.ot; off.style.right = VT.swapPos.or;
+        VT.swapPos = null;
+      }
+    }
+    const t = document.getElementById('call-swap-txt');
+    if (t) t.textContent = next ? '看对方' : '看自己';
+  }
+  // 视频态的小框：头像位换成 TA 的当前画面（TA 没开摄像头就回退头像），并标「视频」。
+  // 这是「视频通话缩小之后还是视频」的看得到的那一半（另一半是 VT.mode/摄像头流不动）。
+  function vtPaintMini() {
+    if (!mini) return;
+    const on = !!(VT.mode && VT.minimized);
+    mini.classList.toggle('vt', on);
+    if (!on) return;
+    let thumb = '';
+    if (VT.taCam && VT.taBg) thumb = VT.taBg;
+    else { try { thumb = partnerAvOf(vtCid()); } catch (e) { thumb = ''; } }
+    fillAv(miniAv, thumb);
+  }
+  // 视频态点「缩小」：只收起大面板，通话仍是视频（不调 vtExit，不关摄像头）
+  function vtMinimize() {
+    if (!currentCall) return;
+    // 小框被用户关掉时不能缩：否则视频界面没有任何入口回去（半框里那行只会「切回语音」）
+    if (!mini || !callMiniEnabled()) { toast('通话小框已关闭，视频通话不能缩小'); return; }
+    if (mask) mask.hidden = true;
+    if (cdEl) cdEl.hidden = true;
+    VT.minimized = true;
+    syncCallName();
+    vtPaintMini();
+    mini.hidden = false;
+    liftMiniIntoSafeArea();
+  }
+  // 点视频小框 → 直接回到视频界面（以前是小框统一弹通话半框）
+  function vtExpand() {
+    if (!VT.mode || !currentCall) return false;
+    VT.minimized = false;
+    if (mini) { mini.hidden = true; mini.classList.remove('vt'); }
+    if (mask) mask.hidden = false;
+    if (cdEl) cdEl.hidden = true;
+    try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
+    setMaskBtns('active');
+    vtSetPanel(true);
+    vtPaintMini();
+    vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
+    return true;
   }
   function vtEnter() {
     if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
@@ -1655,6 +1733,9 @@
     VT.mode = true;
     VT.camOff = false;
     VT.facing = 'user';
+    VT.minimized = false;
+    vtSwap(false);
+    if (mini) mini.classList.remove('vt');
     vtSetPanel(true);
     vtSelfState('opening', '正在打开…');
     vtSyncCamBtn();
@@ -1670,11 +1751,15 @@
   }
   function vtExit() {
     if (!VT.mode) return;
+    vtSwap(false);
     VT.mode = false;
+    VT.minimized = false;
+    if (mini) mini.classList.remove('vt');
     vtStopCam();
     vtSetPanel(false);
     if (statusEl) statusEl.textContent = '正在通话...';
     setMaskBtns('active');
+    shownAv = null; // 小框头像位在视频态被换成了画面缩略图，这里强制重填回联系人头像
     if (currentCall && currentCall.status === 'connected' && callMiniEnabled()) {
       if (mask) mask.hidden = true;
       if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); }
@@ -1685,12 +1770,16 @@
     }
   }
   function vtTeardown() {
+    vtSwap(false);
     VT.mode = false;
+    VT.minimized = false;
+    if (mini) mini.classList.remove('vt');
     VT.camOff = false;
     VT.facing = 'user';
     VT.rolled = false;
     VT.entered = false;
     VT.startAsVideo = false;
+    shownAv = null;
     VT.taCam = false;
     VT.taBg = '';
     vtStopCam();
@@ -1817,6 +1906,7 @@
   if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
   if (camBtn) camBtn.addEventListener('click', vtToggleCam);
   if (flipBtn) flipBtn.addEventListener('click', vtFlip);
+  if (swapBtn) swapBtn.addEventListener('click', function () { vtSwap(); });
   // 摄像头小窗拖动：视频画面 + 关摄像头占位块共用一套（两个元素位置同步）。
   // 占位块同时是「点一下重试」的按钮 ⇒ 位移超过阈值才算拖，没动就交还给 click 重试。
   (function initVtSelfDrag() {
@@ -1849,6 +1939,7 @@
       }
       el.addEventListener('pointerdown', function (ev) {
         if (!VT.mode || el.hidden) return;
+        if (VT.swap) return; // 互换后我的画面铺满，不再是可拖动的小窗
         if (el === v && VT.camOff) return;
         if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
         const sr = stage.getBoundingClientRect();
@@ -1881,7 +1972,21 @@
       el.addEventListener('pointercancel', endDrag);
       return function wasMoved() { return moved; };
     }
-    bind(v, true);
+    const vMoved = bind(v, true);
+    // 点小窗＝把自己放大（微信里点小窗的观感）；真拖动过的那一下不当作点击
+    if (v) {
+      v.addEventListener('click', function () {
+        if (VT.swap) return;
+        if (vMoved && vMoved()) return;
+        vtSwap(true);
+      });
+    }
+    // 互换后 TA 缩成右上小窗：点它换回来
+    const taImg = document.getElementById('vt-ta-img');
+    const taAv = document.getElementById('vt-ta-av');
+    const tapTaBack = function () { if (VT.swap) vtSwap(false); };
+    if (taImg) taImg.addEventListener('click', tapTaBack);
+    if (taAv) taAv.addEventListener('click', tapTaBack);
     const offMoved = bind(off, false);
     if (off) {
       off.addEventListener('click', function (ev) {

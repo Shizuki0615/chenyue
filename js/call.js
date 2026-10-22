@@ -248,6 +248,7 @@ const miniAv = document.getElementById('call-mini-av');
 const miniName = document.getElementById('call-mini-name');
 const miniTime = document.getElementById('call-mini-time');
 const vtBtn = document.getElementById('call-vt-btn');
+const swapBtn = document.getElementById('call-swap-btn');
 const camBtn = document.getElementById('call-cam-btn');
 const flipBtn = document.getElementById('call-flip-btn');
 const VT = {
@@ -263,6 +264,9 @@ taBg: '',         // 本次 TA 的画面
 rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
 entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
 startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
+swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
+swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
+minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
 poolAsked: false  // 画面库等待回填只问一次，防递归
 };
 let _miniSafeTopCache = -1;
@@ -394,6 +398,7 @@ let shownAv = null;
 let shownName = null;
 function syncCallAv() {
 if (!currentCall) return;
+if (VT.mode) return;
 let av = '';
 try {
 const s = (window.storeFor && window.storeFor(currentCall.cid)) || store;
@@ -428,13 +433,14 @@ if (hangBtn) hangBtn.hidden = !(mode === 'calling' || mode === 'active');
 if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
 if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
 if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
-if (vtBtn) vtBtn.hidden = !(mode === 'active');
+if (vtBtn) vtBtn.hidden = !(mode === 'active' && !VT.mode);
+if (swapBtn) swapBtn.hidden = !(mode === 'active' && VT.mode);
 if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
 if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
 }
 function minimizeCall() {
 if (!currentCall) return;
-if (VT.mode) { vtExit(); return; }
+if (VT.mode) { vtMinimize(); return; }
 if (mask) mask.hidden = true;
 if (cdEl) cdEl.hidden = true;
 if (mini) {
@@ -784,6 +790,7 @@ if (miniBtn) miniBtn.addEventListener('click', minimizeCall);
 if (document.getElementById('call-mini-hang')) document.getElementById('call-mini-hang').addEventListener('click', userHangup);
 function openCallHalfFromMini() {
 if (!currentCall) return;
+if (VT.mode) { vtExpand(); return; }
 const ownerCid = currentCall.cid || window.__activeCid || 'default';
 if (ownerCid !== (window.__activeCid || 'default')) {
 try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e) {}
@@ -1191,9 +1198,66 @@ const vTxt = document.getElementById('call-vt-txt');
 if (panel) panel.classList.toggle('vt', !!on);
 if (stage) stage.hidden = !on;
 if (title) title.textContent = on ? '视频通话' : '语音通话';
-if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+if (vTxt) vTxt.textContent = '视频';
 const rowVal = document.getElementById('call-vt-row-val');
 if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
+}
+function vtSwap(on) {
+if (!VT.mode && on !== false) return;
+const stage = document.getElementById('vt-stage');
+const v = document.getElementById('vt-self');
+const off = document.getElementById('vt-self-off');
+const next = (on === undefined) ? !VT.swap : !!on;
+if (next === VT.swap) return;
+VT.swap = next;
+if (stage) stage.classList.toggle('swap', next);
+if (v && off) {
+if (next) {
+VT.swapPos = { l: v.style.left, t: v.style.top, r: v.style.right, ol: off.style.left, ot: off.style.top, or: off.style.right };
+v.style.left = ''; v.style.top = ''; v.style.right = '';
+off.style.left = ''; off.style.top = ''; off.style.right = '';
+} else if (VT.swapPos) {
+v.style.left = VT.swapPos.l; v.style.top = VT.swapPos.t; v.style.right = VT.swapPos.r;
+off.style.left = VT.swapPos.ol; off.style.top = VT.swapPos.ot; off.style.right = VT.swapPos.or;
+VT.swapPos = null;
+}
+}
+const t = document.getElementById('call-swap-txt');
+if (t) t.textContent = next ? '看对方' : '看自己';
+}
+function vtPaintMini() {
+if (!mini) return;
+const on = !!(VT.mode && VT.minimized);
+mini.classList.toggle('vt', on);
+if (!on) return;
+let thumb = '';
+if (VT.taCam && VT.taBg) thumb = VT.taBg;
+else { try { thumb = partnerAvOf(vtCid()); } catch (e) { thumb = ''; } }
+fillAv(miniAv, thumb);
+}
+function vtMinimize() {
+if (!currentCall) return;
+if (!mini || !callMiniEnabled()) { toast('通话小框已关闭，视频通话不能缩小'); return; }
+if (mask) mask.hidden = true;
+if (cdEl) cdEl.hidden = true;
+VT.minimized = true;
+syncCallName();
+vtPaintMini();
+mini.hidden = false;
+liftMiniIntoSafeArea();
+}
+function vtExpand() {
+if (!VT.mode || !currentCall) return false;
+VT.minimized = false;
+if (mini) { mini.hidden = true; mini.classList.remove('vt'); }
+if (mask) mask.hidden = false;
+if (cdEl) cdEl.hidden = true;
+try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
+setMaskBtns('active');
+vtSetPanel(true);
+vtPaintMini();
+vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
+return true;
 }
 function vtEnter() {
 if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
@@ -1204,6 +1268,9 @@ VT.entered = true;
 VT.mode = true;
 VT.camOff = false;
 VT.facing = 'user';
+VT.minimized = false;
+vtSwap(false);
+if (mini) mini.classList.remove('vt');
 vtSetPanel(true);
 vtSelfState('opening', '正在打开…');
 vtSyncCamBtn();
@@ -1218,11 +1285,15 @@ saveCallActive();
 }
 function vtExit() {
 if (!VT.mode) return;
+vtSwap(false);
 VT.mode = false;
+VT.minimized = false;
+if (mini) mini.classList.remove('vt');
 vtStopCam();
 vtSetPanel(false);
 if (statusEl) statusEl.textContent = '正在通话...';
 setMaskBtns('active');
+shownAv = null; // 小框头像位在视频态被换成了画面缩略图，这里强制重填回联系人头像
 if (currentCall && currentCall.status === 'connected' && callMiniEnabled()) {
 if (mask) mask.hidden = true;
 if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); }
@@ -1233,12 +1304,16 @@ syncCallName();
 }
 }
 function vtTeardown() {
+vtSwap(false);
 VT.mode = false;
+VT.minimized = false;
+if (mini) mini.classList.remove('vt');
 VT.camOff = false;
 VT.facing = 'user';
 VT.rolled = false;
 VT.entered = false;
 VT.startAsVideo = false;
+shownAv = null;
 VT.taCam = false;
 VT.taBg = '';
 vtStopCam();
@@ -1357,6 +1432,7 @@ step();
 if (vtBtn) vtBtn.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
 if (camBtn) camBtn.addEventListener('click', vtToggleCam);
 if (flipBtn) flipBtn.addEventListener('click', vtFlip);
+if (swapBtn) swapBtn.addEventListener('click', function () { vtSwap(); });
 (function initVtSelfDrag() {
 const v = document.getElementById('vt-self');
 const off = document.getElementById('vt-self-off');
@@ -1386,6 +1462,7 @@ syncPeer(el, nl, nt);
 }
 el.addEventListener('pointerdown', function (ev) {
 if (!VT.mode || el.hidden) return;
+if (VT.swap) return; // 互换后我的画面铺满，不再是可拖动的小窗
 if (el === v && VT.camOff) return;
 if (ev.button !== undefined && ev.button > 0) return; // 只认左键/单指
 const sr = stage.getBoundingClientRect();
@@ -1417,7 +1494,19 @@ el.addEventListener('pointerup', endDrag);
 el.addEventListener('pointercancel', endDrag);
 return function wasMoved() { return moved; };
 }
-bind(v, true);
+const vMoved = bind(v, true);
+if (v) {
+v.addEventListener('click', function () {
+if (VT.swap) return;
+if (vMoved && vMoved()) return;
+vtSwap(true);
+});
+}
+const taImg = document.getElementById('vt-ta-img');
+const taAv = document.getElementById('vt-ta-av');
+const tapTaBack = function () { if (VT.swap) vtSwap(false); };
+if (taImg) taImg.addEventListener('click', tapTaBack);
+if (taAv) taAv.addEventListener('click', tapTaBack);
 const offMoved = bind(off, false);
 if (off) {
 off.addEventListener('click', function (ev) {
