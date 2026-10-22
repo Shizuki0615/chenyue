@@ -1436,6 +1436,21 @@
   function vtCamToast(msg) {
     toast(msg + '（' + (vtCamHint() || '关掉占用相机的其他应用后点一下重试') + '）');
   }
+  // App（HBuilderX / uni-app 打包）里网页取摄像头：manifest 勾了 Camera 模块只是声明，
+  // 系统运行时权限没授予时，安卓 WebView 的 getUserMedia 往往既不 resolve 也不 reject
+  // （表现就是 9 秒后「摄像头没有响应」）。这里先主动拉起系统授权框，再真的去要流。
+  // 只拉一次；回调不来（个别 ROM）用 1.5s 兜底继续，避免把界面卡死在等授权。
+  let vtPermAsked = false;
+  function vtAskAppCamPerm(then) {
+    let done = false;
+    const go = function () { if (done) return; done = true; then(); };
+    try {
+      if (vtPermAsked || !(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
+      vtPermAsked = true;
+      plus.android.requestPermissions(['android.permission.CAMERA'], go, go);
+      setTimeout(go, 1500);
+    } catch (e) { go(); }
+  }
   function vtCid() { return (currentCall && currentCall.cid) || window.__activeCid || 'default'; }
   function vtStoreFor(cid) {
     try { return (window.storeFor && window.storeFor(cid)) || store; } catch (e) { return store; }
@@ -1539,6 +1554,8 @@
     if (!VT.mode || VT.camOff) return;
     if (VT.stream || VT.starting) return;
     if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); vtCamToast('这个浏览器不支持摄像头'); return; }
+    // App 里第一次开摄像头：先拉系统授权，再真的去要流（见 vtAskAppCamPerm）
+    if (!vtPermAsked && window.plus) { vtAskAppCamPerm(function () { vtStartCam(); }); return; }
     const v = document.getElementById('vt-self');
     if (!v) return;
     VT.starting = true;

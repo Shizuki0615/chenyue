@@ -999,6 +999,17 @@ return h;
 function vtCamToast(msg) {
 toast(msg + '（' + (vtCamHint() || '关掉占用相机的其他应用后点一下重试') + '）');
 }
+let vtPermAsked = false;
+function vtAskAppCamPerm(then) {
+let done = false;
+const go = function () { if (done) return; done = true; then(); };
+try {
+if (vtPermAsked || !(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
+vtPermAsked = true;
+plus.android.requestPermissions(['android.permission.CAMERA'], go, go);
+setTimeout(go, 1500);
+} catch (e) { go(); }
+}
 function vtCid() { return (currentCall && currentCall.cid) || window.__activeCid || 'default'; }
 function vtStoreFor(cid) {
 try { return (window.storeFor && window.storeFor(cid)) || store; } catch (e) { return store; }
@@ -1097,6 +1108,7 @@ function vtStartCam() {
 if (!VT.mode || VT.camOff) return;
 if (VT.stream || VT.starting) return;
 if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); vtCamToast('这个浏览器不支持摄像头'); return; }
+if (!vtPermAsked && window.plus) { vtAskAppCamPerm(function () { vtStartCam(); }); return; }
 const v = document.getElementById('vt-self');
 if (!v) return;
 VT.starting = true;
