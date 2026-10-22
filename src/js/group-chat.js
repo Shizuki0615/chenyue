@@ -3022,7 +3022,7 @@ if (defs && defs.type === 'text' && defs.text) t = defs.text;
     document.getElementById('gc-font-upload').addEventListener('click', () => {
       // FIX 2026-09-18 #755：统一走 window.mochiFilePick（原实现 detached＋无 label＋accept 迟到）
       window.mochiFilePick({
-        id: 'mochi-gc-fontdlg-pick', accept: '.ttf,.otf,.woff,.woff2',
+        id: 'mochi-gc-fontdlg-pick', accept: window.mochiFontPickAccept,
         onFiles: (files) => {
         const f = files && files[0];
         if (!f) { toast('没有取到字体文件，请再选一次'); return; }
@@ -3380,7 +3380,7 @@ if (defs && defs.type === 'text' && defs.text) t = defs.text;
         wrap.appendChild(mkAct('上传字体文件（ttf / otf / woff / woff2）', () => {
           // FIX 2026-09-18 #755：统一走 window.mochiFilePick（原实现 detached＋无 label＋accept 迟到）
           window.mochiFilePick({
-            id: 'mochi-gc-font-pick', accept: '.ttf,.otf,.woff,.woff2',
+            id: 'mochi-gc-font-pick', accept: window.mochiFontPickAccept,
             onFiles: (files) => {
               const f = files && files[0];
               if (!f) { toast('没有取到字体文件，请再选一次'); return; }

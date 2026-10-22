@@ -4379,7 +4379,7 @@ window.openTCPanel('全局字体', '' +
 '<button id="cs-font-sync" style="width:100%;padding:10px;border:1px solid var(--card-border,#ddd);border-radius:10px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);font-size:13px">同步到全部桌面</button></div>');
 document.getElementById('cs-font-upload').addEventListener('click', () => {
 window.mochiFilePick({
-id: 'mochi-deskcs-font-pick', accept: '.ttf,.otf,.woff,.woff2',
+id: 'mochi-deskcs-font-pick', accept: window.mochiFontPickAccept,
 onFiles: (files) => {
 const f = files && files[0];
 if (!f) { toast('没有取到字体文件，请再选一次'); return; }

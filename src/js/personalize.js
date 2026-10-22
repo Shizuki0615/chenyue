@@ -5416,7 +5416,7 @@ try {
       document.getElementById('cs-font-upload').addEventListener('click', () => {
         // FIX 2026-09-18 #755：统一走 window.mochiFilePick（原实现 detached＋无 label＋accept 迟到）
         window.mochiFilePick({
-          id: 'mochi-deskcs-font-pick', accept: '.ttf,.otf,.woff,.woff2',
+          id: 'mochi-deskcs-font-pick', accept: window.mochiFontPickAccept,
           onFiles: (files) => {
           const f = files && files[0];
           if (!f) { toast('没有取到字体文件，请再选一次'); return; }

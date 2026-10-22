@@ -2492,7 +2492,7 @@ window.openTCPanel('群聊字体', '' +
 '<div class="mail-actions"><button class="cc-tool" id="gc-font-upload">上传字体</button><button class="cc-tool" id="gc-font-clear">恢复默认</button><button class="cc-tool" id="gc-font-ok">应用</button></div>');
 document.getElementById('gc-font-upload').addEventListener('click', () => {
 window.mochiFilePick({
-id: 'mochi-gc-fontdlg-pick', accept: '.ttf,.otf,.woff,.woff2',
+id: 'mochi-gc-fontdlg-pick', accept: window.mochiFontPickAccept,
 onFiles: (files) => {
 const f = files && files[0];
 if (!f) { toast('没有取到字体文件，请再选一次'); return; }
@@ -2832,7 +2832,7 @@ wrap.appendChild(mkNote('群聊字体（边打边看，清空输入框即恢复�
 wrap.appendChild(finp);
 wrap.appendChild(mkAct('上传字体文件（ttf / otf / woff / woff2）', () => {
 window.mochiFilePick({
-id: 'mochi-gc-font-pick', accept: '.ttf,.otf,.woff,.woff2',
+id: 'mochi-gc-font-pick', accept: window.mochiFontPickAccept,
 onFiles: (files) => {
 const f = files && files[0];
 if (!f) { toast('没有取到字体文件，请再选一次'); return; }

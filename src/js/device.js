@@ -4507,6 +4507,10 @@ window.mochiImportLog = function (what) {
 // 单一来源：各数据导入入口一律读这一个值，不再逐入口手抄（本族 #677→#755→#920→#991→#1014 的
 // 教训＝手抄必漏，每漏一处就是下一张「换个型号又坏了」的报障）。
 window.mochiDataPickAccept = '.json,application/json,text/plain,application/octet-stream';
+// 字体选择 accept：必须带 MIME 类型——iOS 对「只有扩展名（.ttf/.otf/.woff/.woff2）」的 accept
+// 不提供「浏览/文件」入口，只会弹出相机选择器（用户实报「上传字体不能打开系统文件夹」）。
+// 加上 font/* 与 application/octet-stream 后，iOS 会按通用文档类型调起 Files，桌面端仍按扩展名过滤。
+window.mochiFontPickAccept = '.ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2,application/octet-stream';
 window.mochiModalPickOk = function (cfg) {
   var o = cfg || {};
   var okBtn = o.okBtn;
