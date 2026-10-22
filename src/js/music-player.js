@@ -806,16 +806,36 @@
   function neaReady() { return !!(neaBase() && neaCookie()); }
   // 经用户自己的后端取播放直链：NeteaseCloudMusicApi 的 /song/url/v1 带 cookie，
   // 会员歌返回可播 url；取不到（未登录/该曲真失效/后端不通）一律回调 null，由调用方回落旧链路
+  // FIX 2026-10-21：返回完整诊断对象 {url, code, reason} 供调用方给用户真实错误提示
   function neaFetchSongUrl(id, cb) {
-    if (!neaReady()) { cb(null); return; }
-    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j) {
+    if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后端' }); return; }
+    const ck = neaCookie();
+    console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
+    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j, err) {
       let url = '';
+      let code = 0;
+      let reason = '';
       try {
-        const d = j && j.data && j.data[0];
-        if (d && typeof d.url === 'string') url = d.url;
-      } catch (e) {}
-      // 与 resolveNeteaseDirectUrl 同口径：http 直链在 https 页面会被混合内容拦截，统一修成 https
-      cb(url ? String(url).replace(/^http:/i, 'https:') : null);
+        if (err) { reason = err; console.log('[VIP-Diag] 后端请求失败:', err); }
+        else {
+          const d = j && j.data && j.data[0];
+          code = d ? d.code : (j && j.code) || 0;
+          if (d && typeof d.url === 'string') url = d.url;
+          if (!url) {
+            // 后端返回 code 语义：200=正常但这首歌需要会员/地区限制；404=该歌曲不存在或 VIP 专属；
+            // -462=需要验证码。不管哪种，后端没给 url 说明公开链路也不会给完整直链
+            reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
+            console.log('[VIP-Diag] 后端未给直链:', reason);
+          } else {
+            console.log('[VIP-Diag] 后端给直链成功 br=', d.br, 'size=', d.size);
+          }
+        }
+      } catch (e) { reason = '解析失败: ' + e.message; }
+      cb && cb({
+        url: url ? String(url).replace(/^http:/i, 'https:') : null,
+        code: code,
+        reason: reason
+      });
     });
   }
   // 归一化后端地址：去尾斜杠。显式写了协议就按用户写的走（自建后端常只有 http://IP:端口，
@@ -1185,6 +1205,9 @@
         body += '<div class="sm-set-row" style="border-top:1px solid var(--line);padding-top:10px">' +
           '<span>保留会员歌曲<div style="font-size:12px;opacity:.7;font-weight:400;margin-top:2px">开启后不再自动移除会员/付费歌，播放改走你的后端直链</div></span>' +
           '<label class="toggle"><input type="checkbox" id="nea-keep-vip"' + (neaKeepVip() ? ' checked' : '') + '><span class="tk"></span></label></div>';
+        // v3.40.0：一键诊断 VIP 播放——把 cookie/后端/VIP 歌直链全跑完，用户点一下出结果框
+        body += '<div style="border-top:1px solid var(--line);padding-top:10px"><button class="cc-tool" id="nea-diag-vip">🔍 诊断 VIP 播放</button>' +
+          '<span id="nea-diag-status" style="font-size:12px;opacity:.7;margin-left:8px"></span></div>';
         // 歌单列表
         body += '<div class="sm-fld"><label>我的歌单</label><div id="nea-pls" style="max-height:260px;overflow:auto">' + (neaLoadedPls ? '' : '<div style="opacity:.6">加载中…</div>') + '</div></div>';
       }
@@ -1225,6 +1248,91 @@
         toast('已退出登录');
       });
       bind('nea-import-liked', () => { importLiked(); });
+      // v3.40.0：一键诊断 VIP 播放
+      bind('nea-diag-vip', () => {
+        const st = document.getElementById('nea-diag-status');
+        if (st) st.textContent = '诊断中…';
+        const _ck = neaCookie();
+        const _base = neaBase();
+        const cookieEnc = encodeURIComponent(_ck || '');
+        const TEST_FREE_ID = '33894312';  // 童声版情非得已 fee=0
+        const TEST_VIP_ID = '167876';     // 许嵩-有何不可 fee=1 VIP
+        const out = [];
+        out.push('=== 基础状态 ===');
+        out.push('后端地址: ' + (_base || '❌ 未配置'));
+        out.push('Cookie 长度: ' + (_ck ? _ck.length + ' 字' : '❌ 未登录 (cookie 为空)'));
+        out.push('neaReady (后端+cookie): ' + (neaReady() ? '✅ 是' : '❌ 否'));
+        out.push('保留会员歌曲开关: ' + (neaKeepVip() ? '开' : '关'));
+        out.push('');
+        // 并行打 3 个接口
+        const runTest = (path) => new Promise(res => {
+          try {
+            let ctrl; try { ctrl = new AbortController(); } catch(e){}
+            const timer = setTimeout(() => { try{ ctrl&&ctrl.abort(); }catch(e){} res({err:'超时'}); }, 8000);
+            fetch(_base + path, ctrl ? { signal: ctrl.signal } : undefined)
+              .then(r => r.json())
+              .then(j => { clearTimeout(timer); res({ j }); })
+              .catch(e => { clearTimeout(timer); res({ err: String(e.message||e) }); });
+          } catch(e) { res({ err: String(e) }); }
+        });
+        Promise.all([
+          runTest('/login/status?cookie=' + cookieEnc),
+          runTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc),
+          runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc),
+        ]).then(([ls, free, vip]) => {
+          // login/status
+          out.push('=== /login/status ===');
+          if (ls.err) out.push('❌ 请求失败: ' + ls.err);
+          else {
+            const acc = ls.j?.data?.account;
+            const prof = ls.j?.data?.profile;
+            if (acc || prof) {
+              out.push('✅ 登录态有效');
+              out.push('昵称: ' + (acc?.userNickName || prof?.nickname || '?'));
+              out.push('VIP 类型: ' + (acc?.vipType ?? '未知') + (acc?.vipType ? '(>0 表示你有 VIP)' : '(0=未开通)'));
+            } else {
+              out.push('❌ cookie 无效！后端返回未登录');
+              out.push('→ 请点"退出登录"后重新扫码');
+            }
+          }
+          out.push('');
+          // 免费歌
+          out.push('=== /song/url/v1 免费歌 (ID=' + TEST_FREE_ID + ') ===');
+          if (free.err) out.push('❌ 请求失败: ' + free.err);
+          else {
+            const d = free.j?.data?.[0] || {};
+            out.push('code=' + (d.code ?? '?') + ' url=' + (d.url ? '✅ 有完整直链 (' + (d.size||0) + ' 字节)' : '❌ 无'));
+          }
+          out.push('');
+          // VIP 歌
+          out.push('=== /song/url/v1 VIP 歌 (ID=' + TEST_VIP_ID + ') ===');
+          if (vip.err) out.push('❌ 请求失败: ' + vip.err);
+          else {
+            const d = vip.j?.data?.[0] || {};
+            if (d.url) {
+              out.push('✅ 后端给了 VIP 完整直链！code=200 br=' + (d.br||0));
+              out.push('→ 你播 VIP 歌应该没问题了，刷新页面再试');
+            } else {
+              out.push('❌ 后端没给直链 code=' + d.code);
+              if (d.code === 404) out.push('→ VIP 受限！可能 cookie 过期 / 你账号对这首歌没权限 / 后端 NeteaseCloudMusicApi 版本太旧');
+              else if (d.code === 200) out.push('→ code=200 但 url 空，这首歌可能是地区限制或下架');
+              else out.push('→ 后端返回异常 code=' + d.code);
+            }
+          }
+          out.push('');
+          out.push('=== 播放路径判定 ===');
+          out.push('播放时条件 if(neaReady()) = ' + (neaReady() ? '✅ 是 (会先打后端)' : '❌ 否 (直接走公开 meting → VIP 必 30 秒)'));
+          // 弹结果框
+          const report = out.join('\n');
+          if (st) st.textContent = '';
+          try {
+            window.openModal('🔍 VIP 播放诊断结果', report);
+          } catch(e) {
+            alert(report);
+          }
+          console.log('[VIP-Diag] 诊断报告:\n' + report);
+        });
+      });
       // v3.33.x：保留会员歌曲开关——切换即写全局根键并联动隐藏/恢复「清理会员歌曲」按钮
       const kvEl = document.getElementById('nea-keep-vip');
       if (kvEl) kvEl.addEventListener('change', () => {
@@ -3397,13 +3505,28 @@
       }
       startPlayback(m);
     };
-    // v3.33.x：开关开着且已登录 → 先经用户自己的后端取直链；取到即用，取不到回落公开链路
-    if (neaKeepVip() && neaReady()) {
-      neaFetchSongUrl(m.neteaseId, function (url) {
-        if (url) playResolved(url);
-        else resolveNeteaseDirectUrl(m, playResolved);
+    // v3.33.x（FIX 2026-10-21）：只要配了后端 + 登录（neaReady），就先经后端取直链。
+    // 之前条件是 neaKeepVip() && neaReady()——把播放链路绑死在「保留会员歌曲」开关上，
+    // 但那个开关语义是"导入歌单时要不要剔除 VIP 歌"，跟播放完全无关。
+    // 用户配了后端 + 登录 = 他的 cookie 可用，所有歌（免费+VIP）都应该先走他的后端拿直链
+    //（更快、更准、VIP 也能播全），拿不到才回落公开 meting。
+    console.log('[VIP-Diag] playTrack neaReady=' + neaReady() + ' keepVip=' + neaKeepVip() + ' neteaseId=' + m.neteaseId);
+    if (neaReady()) {
+      neaFetchSongUrl(m.neteaseId, function (res) {
+        const url = res && res.url;
+        console.log('[VIP-Diag] 后端返回 url=' + !!url + ' code=' + (res && res.code) + ' reason=' + (res && res.reason));
+        if (url) {
+          playResolved(url);
+        } else {
+          // 后端没给直链 → 回落公开 meting。诊断：cookie 刚重登过还失败？
+          // 给用户真实提示，别默默回落让他不知道
+          const ckStatus = neaCookie() ? 'cookie 有效（刚拿了 ' + neaCookie().length + ' 字）' : 'cookie 缺失';
+          console.log('[VIP-Diag] 后端未给直链！回落公开 meting。原因:', res && res.reason, ckStatus);
+          resolveNeteaseDirectUrl(m, playResolved);
+        }
       });
     } else {
+      console.log('[VIP-Diag] neaReady=false, 直接走公开 meting（后端=' + !!neaBase() + ' cookie=' + !!neaCookie() + '）');
       resolveNeteaseDirectUrl(m, playResolved);
     }
     return true;
@@ -3749,9 +3872,31 @@
       offerRemoveDamagedSong(m);
       return;
     }
-    // v3.5.118：网易云外链防盗链（带 Referer 时返回 403 无法播放）——
-    // 设置 referrerPolicy=no-referrer 让请求不带 Referer，原曲可直接播放
+    // v3.41.0 核心修复：只要配了后端 + 登录（neaReady）且有 neteaseId，
+    // 正常播放路径里就优先走后端 /song/url/v1 拿直链。
+    //
+    // 根因：此前 VIP 后端逻辑只写在 retryWithHttpsUrl（onerror 重试函数）里。
+    // meting API 对 VIP 歌返回的是「可播的 30 秒试听流」（不是硬失败 404），
+    // 不触发 onerror → retryWithHttpsUrl 永远不被调 → VIP 后端永远不被用 → 播 30 秒。
+    //
+    // 修复：把后端路径提到正常播放链路，后端取不到才回落公开 meting URL。
     try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
+    if (neaReady() && m.neteaseId) {
+      console.log('[VIP-Diag] playTrack 正常路径走后端 neaReady=true neteaseId=' + m.neteaseId);
+      neaFetchSongUrl(m.neteaseId, function (res) {
+        const url = res && res.url;
+        if (currentId !== m.id) return; // 空窗期切歌
+        if (url) {
+          console.log('[VIP-Diag] 后端给了直链，用它播！br=' + (res && res.code));
+          audio.src = url;
+        } else {
+          console.log('[VIP-Diag] 后端没给直链，回落 meting。原因:', res && res.reason);
+          audio.src = m.url;
+        }
+        startPlayback(m);
+      });
+      return;
+    }
     audio.src = m.url;
     startPlayback(m);
   }

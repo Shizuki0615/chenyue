@@ -7414,8 +7414,10 @@ try {
       lib.remove();
       toast('已添加到本页');
     };
+    // v3.27.x：整组图标网格（apps/p2apps/p3apps）也归入「图标」tab，与用户预期一致
+    const IS_ICON_TILE = (w) => (w.indexOf('app-') === 0 || w === 'apps' || w === 'p2apps' || w === 'p3apps');
     WIDGET_IDS.forEach(wid => {
-      if (wid.indexOf('app-') === 0) {
+      if (IS_ICON_TILE(wid)) {
         // 图标分类：紧凑网格块（缩略首字 + 名字），点击添加；已在本页置灰
         const node = document.querySelector('[data-desk-widget="' + wid + '"]');
         const curPage = node && node.closest('.page-slide') ? Array.prototype.indexOf.call(pagesBox.querySelectorAll('.page-slide'), node.closest('.page-slide')) : -1;
