@@ -1732,9 +1732,44 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 }
 .call-mini-av img { width:100%; height:100%; object-fit:cover; display:block; }
 .call-mini-av svg { width:16px; height:16px; }
-/* 视频通话缩小后仍是视频：小框里换成 TA 的画面缩略图（矩形，不再用圆形头像），名字后缀标「视频」 */
-.call-mini.vt .call-mini-av { width:44px; height:56px; border-radius:10px; }
-.call-mini.vt .call-mini-name::after { content:' · 视频'; font-weight:400; opacity:.6; }
+/* 视频通话缩小 = 一块真正的视频小窗（不是头像胶囊）：TA 的画面铺满，
+   自己的摄像头缩在右上角小镜里，跟微信挂着小窗继续视频是同一件事。
+   语音通话仍是上面的白色胶囊（.call-mini 基础样式不动）。 */
+.call-mini.vt {
+  width:106px; height:142px; padding:0; gap:0;
+  display:block; overflow:hidden; border-radius:14px;
+  background:#111; border-color:rgba(255,255,255,.14);
+  box-shadow:0 8px 24px rgba(0,0,0,.32);
+}
+.call-mini.vt .call-mini-frame {
+  position:absolute; inset:0; z-index:1; width:100%; height:100%;
+  object-fit:cover; display:block;
+}
+.call-mini.vt .call-mini-frame[hidden] { display:none; }
+.call-mini.vt .call-mini-av {
+  position:absolute; inset:0; z-index:1; width:100%; height:100%;
+  border-radius:0; background:#16161c;
+}
+.call-mini.vt .call-mini-av[hidden] { display:none; }
+.call-mini.vt .call-mini-av img { width:48px; height:48px; border-radius:50%; object-fit:cover; }
+.call-mini.vt .call-mini-self {
+  position:absolute; top:6px; right:6px; z-index:2;
+  width:36px; height:48px; border-radius:8px; object-fit:cover;
+  background:#000; box-shadow:0 2px 8px rgba(0,0,0,.45);
+  transform:scaleX(-1);
+}
+.call-mini.vt .call-mini-self.rear { transform:none; }
+.call-mini.vt .call-mini-self[hidden] { display:none; }
+.call-mini.vt .call-mini-info {
+  position:absolute; left:9px; bottom:9px; z-index:3;
+  max-width:66px; color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.85);
+}
+.call-mini.vt .call-mini-name { font-size:11px; }
+.call-mini.vt .call-mini-time { font-size:9px; opacity:.9; }
+.call-mini.vt .call-mini-hang {
+  position:absolute; right:8px; bottom:8px; z-index:4; width:30px; height:30px;
+}
 .call-mini-info { display:flex; flex-direction:column; }
 .call-mini-name { font-size:12px; font-weight:700; }
 .call-mini-time { font-size:10px; opacity:.75; font-variant-numeric:tabular-nums; }

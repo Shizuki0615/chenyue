@@ -1105,6 +1105,8 @@ VT.stream = null;
 }
 const v = document.getElementById('vt-self');
 try { if (v) { v.pause && v.pause(); v.srcObject = null; } } catch (e) {}
+const ms = document.getElementById('call-mini-self');
+if (ms) { try { if (ms.pause) ms.pause(); ms.srcObject = null; } catch (e) {} ms.hidden = true; }
 }
 function vtCamFail(msg) {
 VT.camOff = true;
@@ -1154,6 +1156,7 @@ if (v.play) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
 } catch (e) {}
 vtSelfState('on');
 vtSyncCamBtn();
+if (VT.minimized) vtPaintMini();
 }).catch(function (err) {
 if (settled || gen !== VT.gen) return;
 settled = true;
@@ -1229,11 +1232,47 @@ function vtPaintMini() {
 if (!mini) return;
 const on = !!(VT.mode && VT.minimized);
 mini.classList.toggle('vt', on);
-if (!on) return;
-let thumb = '';
-if (VT.taCam && VT.taBg) thumb = VT.taBg;
-else { try { thumb = partnerAvOf(vtCid()); } catch (e) { thumb = ''; } }
-fillAv(miniAv, thumb);
+if (!on) { vtClearMini(); return; }
+const frame = document.getElementById('call-mini-frame');
+const avBox = document.getElementById('call-mini-av');
+const hasFrame = !!(VT.taCam && VT.taBg);
+if (frame) {
+if (hasFrame) { frame.src = VT.taBg; frame.hidden = false; }
+else { frame.hidden = true; frame.removeAttribute('src'); }
+}
+if (avBox) {
+avBox.hidden = hasFrame; // TA 开摄像头时让画面铺满，关着才显示头像兜底
+if (!hasFrame) {
+let av = '';
+try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
+fillAv(avBox, av);
+}
+}
+const ms = document.getElementById('call-mini-self');
+if (ms) {
+if (VT.stream) {
+try {
+if (ms.srcObject !== VT.stream) ms.srcObject = VT.stream;
+ms.classList.toggle('rear', VT.facing === 'environment');
+ms.hidden = false;
+if (ms.play) { const p = ms.play(); if (p && p.catch) p.catch(function () {}); }
+} catch (e) {}
+} else {
+ms.hidden = true;
+}
+}
+}
+function vtClearMini() {
+const frame = document.getElementById('call-mini-frame');
+if (frame) { frame.hidden = true; frame.removeAttribute('src'); }
+const ms = document.getElementById('call-mini-self');
+if (ms) {
+try { if (ms.pause) ms.pause(); ms.srcObject = null; } catch (e) {}
+ms.hidden = true;
+}
+const avBox = document.getElementById('call-mini-av');
+if (avBox) avBox.hidden = false;
+if (mini) mini.classList.remove('vt');
 }
 function vtMinimize() {
 if (!currentCall) return;
@@ -1249,13 +1288,13 @@ liftMiniIntoSafeArea();
 function vtExpand() {
 if (!VT.mode || !currentCall) return false;
 VT.minimized = false;
-if (mini) { mini.hidden = true; mini.classList.remove('vt'); }
+if (mini) mini.hidden = true;
 if (mask) mask.hidden = false;
 if (cdEl) cdEl.hidden = true;
 try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
 setMaskBtns('active');
 vtSetPanel(true);
-vtPaintMini();
+vtPaintMini(); // minimized=false → 顺手清掉小窗里的视频元素/缩略图
 vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
 return true;
 }
@@ -1270,7 +1309,7 @@ VT.camOff = false;
 VT.facing = 'user';
 VT.minimized = false;
 vtSwap(false);
-if (mini) mini.classList.remove('vt');
+vtClearMini();
 vtSetPanel(true);
 vtSelfState('opening', '正在打开…');
 vtSyncCamBtn();
@@ -1288,7 +1327,7 @@ if (!VT.mode) return;
 vtSwap(false);
 VT.mode = false;
 VT.minimized = false;
-if (mini) mini.classList.remove('vt');
+vtClearMini();
 vtStopCam();
 vtSetPanel(false);
 if (statusEl) statusEl.textContent = '正在通话...';
@@ -1307,7 +1346,7 @@ function vtTeardown() {
 vtSwap(false);
 VT.mode = false;
 VT.minimized = false;
-if (mini) mini.classList.remove('vt');
+vtClearMini();
 VT.camOff = false;
 VT.facing = 'user';
 VT.rolled = false;
@@ -1530,8 +1569,8 @@ vtRenderPool();
 document.addEventListener('visibilitychange', function () {
 if (document.visibilityState === 'hidden') {
 if (VT.mode) { vtStopCam(); if (!VT.camOff) vtSelfState('off', '已暂停'); }
-} else if (VT.mode && !VT.camOff && mask && !mask.hidden) {
-vtStartCam();
+} else if (VT.mode && !VT.camOff) {
+if ((mask && !mask.hidden) || VT.minimized) vtStartCam();
 }
 });
 function bootCallResume() {

@@ -1428,8 +1428,10 @@
   </div>
 </div>
 
-<!-- 通话小框（接通后最小化） -->
+<!-- 通话小框（接通后最小化；视频态是一块真正的视频小窗：TA 画面铺满 + 我的摄像头右上角） -->
 <div class="call-mini" id="call-mini" hidden>
+  <img class="call-mini-frame" id="call-mini-frame" alt="" hidden>
+  <video class="call-mini-self" id="call-mini-self" playsinline muted autoplay hidden></video>
   <div class="call-mini-av" id="call-mini-av"></div>
   <div class="call-mini-info">
     <div class="call-mini-name" id="call-mini-name">通话中</div>

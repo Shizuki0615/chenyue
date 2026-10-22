@@ -1556,6 +1556,9 @@
     }
     const v = document.getElementById('vt-self');
     try { if (v) { v.pause && v.pause(); v.srcObject = null; } } catch (e) {}
+    // 小窗里那一路是同一个流，流停了也别让 <video> 挂着黑帧
+    const ms = document.getElementById('call-mini-self');
+    if (ms) { try { if (ms.pause) ms.pause(); ms.srcObject = null; } catch (e) {} ms.hidden = true; }
   }
   function vtCamFail(msg) {
     // 打不开就当「摄像头没开」：按钮显示「打开」，点一下重试（失败不静默重试，避免循环弹权限）
@@ -1608,6 +1611,8 @@
       } catch (e) {}
       vtSelfState('on');
       vtSyncCamBtn();
+      // 缩在小框时也要把画面接到小窗那路 <video>（同一个流，不重新申请权限）
+      if (VT.minimized) vtPaintMini();
     }).catch(function (err) {
       if (settled || gen !== VT.gen) return;
       settled = true;
@@ -1683,17 +1688,55 @@
     const t = document.getElementById('call-swap-txt');
     if (t) t.textContent = next ? '看对方' : '看自己';
   }
-  // 视频态的小框：头像位换成 TA 的当前画面（TA 没开摄像头就回退头像），并标「视频」。
-  // 这是「视频通话缩小之后还是视频」的看得到的那一半（另一半是 VT.mode/摄像头流不动）。
+  // 视频态的小框＝一块正在播的视频小窗：TA 的画面铺满 + 自己的摄像头缩在右上角。
+  // 这是「视频缩小之后还是视频」的观感来源（另一部分是 VT.mode/摄像头流一直不停）。
   function vtPaintMini() {
     if (!mini) return;
     const on = !!(VT.mode && VT.minimized);
     mini.classList.toggle('vt', on);
-    if (!on) return;
-    let thumb = '';
-    if (VT.taCam && VT.taBg) thumb = VT.taBg;
-    else { try { thumb = partnerAvOf(vtCid()); } catch (e) { thumb = ''; } }
-    fillAv(miniAv, thumb);
+    if (!on) { vtClearMini(); return; }
+    const frame = document.getElementById('call-mini-frame');
+    const avBox = document.getElementById('call-mini-av');
+    const hasFrame = !!(VT.taCam && VT.taBg);
+    if (frame) {
+      if (hasFrame) { frame.src = VT.taBg; frame.hidden = false; }
+      else { frame.hidden = true; frame.removeAttribute('src'); }
+    }
+    if (avBox) {
+      avBox.hidden = hasFrame; // TA 开摄像头时让画面铺满，关着才显示头像兜底
+      if (!hasFrame) {
+        let av = '';
+        try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
+        fillAv(avBox, av);
+      }
+    }
+    // 自己的画面：同一个 MediaStream 喂给第二个 <video>，不重新申请权限、也不占第二路摄像头
+    const ms = document.getElementById('call-mini-self');
+    if (ms) {
+      if (VT.stream) {
+        try {
+          if (ms.srcObject !== VT.stream) ms.srcObject = VT.stream;
+          ms.classList.toggle('rear', VT.facing === 'environment');
+          ms.hidden = false;
+          if (ms.play) { const p = ms.play(); if (p && p.catch) p.catch(function () {}); }
+        } catch (e) {}
+      } else {
+        ms.hidden = true;
+      }
+    }
+  }
+  // 退出视频/缩回语音时清掉小窗里的视频元素与缩略图，避免隐藏元素继续解码
+  function vtClearMini() {
+    const frame = document.getElementById('call-mini-frame');
+    if (frame) { frame.hidden = true; frame.removeAttribute('src'); }
+    const ms = document.getElementById('call-mini-self');
+    if (ms) {
+      try { if (ms.pause) ms.pause(); ms.srcObject = null; } catch (e) {}
+      ms.hidden = true;
+    }
+    const avBox = document.getElementById('call-mini-av');
+    if (avBox) avBox.hidden = false;
+    if (mini) mini.classList.remove('vt');
   }
   // 视频态点「缩小」：只收起大面板，通话仍是视频（不调 vtExit，不关摄像头）
   function vtMinimize() {
@@ -1712,13 +1755,13 @@
   function vtExpand() {
     if (!VT.mode || !currentCall) return false;
     VT.minimized = false;
-    if (mini) { mini.hidden = true; mini.classList.remove('vt'); }
+    if (mini) mini.hidden = true;
     if (mask) mask.hidden = false;
     if (cdEl) cdEl.hidden = true;
     try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
     setMaskBtns('active');
     vtSetPanel(true);
-    vtPaintMini();
+    vtPaintMini(); // minimized=false → 顺手清掉小窗里的视频元素/缩略图
     vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
     return true;
   }
@@ -1735,7 +1778,7 @@
     VT.facing = 'user';
     VT.minimized = false;
     vtSwap(false);
-    if (mini) mini.classList.remove('vt');
+    vtClearMini();
     vtSetPanel(true);
     vtSelfState('opening', '正在打开…');
     vtSyncCamBtn();
@@ -1754,7 +1797,7 @@
     vtSwap(false);
     VT.mode = false;
     VT.minimized = false;
-    if (mini) mini.classList.remove('vt');
+    vtClearMini();
     vtStopCam();
     vtSetPanel(false);
     if (statusEl) statusEl.textContent = '正在通话...';
@@ -1773,7 +1816,7 @@
     vtSwap(false);
     VT.mode = false;
     VT.minimized = false;
-    if (mini) mini.classList.remove('vt');
+    vtClearMini();
     VT.camOff = false;
     VT.facing = 'user';
     VT.rolled = false;
@@ -2014,8 +2057,9 @@
     if (document.visibilityState === 'hidden') {
       // 本来就把摄像头关着的，保持「摄像头已关」文案；开着才提示「已暂停」
       if (VT.mode) { vtStopCam(); if (!VT.camOff) vtSelfState('off', '已暂停'); }
-    } else if (VT.mode && !VT.camOff && mask && !mask.hidden) {
-      vtStartCam();
+    } else if (VT.mode && !VT.camOff) {
+      // 大面板可见，或缩在小框里（小窗里也还在播自己的画面）→ 回来都要重建流
+      if ((mask && !mask.hidden) || VT.minimized) vtStartCam();
     }
   });
 
