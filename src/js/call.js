@@ -33,7 +33,9 @@
       nohangup: c['call-no-hangup'] === 1 || c['call-no-hangup'] === '1',
       resume: c['call-resume'] !== undefined ? c['call-resume'] : 1,
       // 视频通话：TA 那侧开摄像头的概率（通话设置页 call-ta-cam，按联系人各自保存）
-      taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60
+      taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60,
+      // TA 主动来电时「这通是视频」的概率（call-in-video，按联系人各自保存；0＝只打语音）
+      inVideo: c['call-in-video'] !== undefined ? Number(c['call-in-video']) : 30
     };
   }
 
@@ -990,6 +992,9 @@
     try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
     const name = partnerName();
     currentCall = bindCall({ direction: 'in', status: 'ringing', startTime: Date.now(), durationSec: 0 });
+    // TA 主动打来的这通是语音还是视频：响铃阶段就掷定，标题/系统消息/接听后进不进视频都认这一次结果
+    const inIsVideo = Math.random() * 100 < callCfg(currentCall.cid).inVideo;
+    currentCall.videoIn = inIsVideo;
     shownAv = null;
     shownName = null;
     syncCallAv();
@@ -997,14 +1002,18 @@
     if (nameEl) nameEl.textContent = name;
     if (statusEl) statusEl.textContent = '对方来电...';
     if (durEl) durEl.textContent = '00:00';
-    // 来电固定走语音接听：标题兜底写成「语音通话」，避免上一通视频的标题残留
+    // 标题跟着这次掷的结果走（同时也把上一通残留的标题覆盖掉）
     const inTtl = document.getElementById('call-title');
-    if (inTtl) inTtl.textContent = '语音通话';
+    if (inTtl) inTtl.textContent = inIsVideo ? '视频通话' : '语音通话';
     if (mask) mask.hidden = false;
     setMaskBtns('ringing');
     let wroteSysMsg = false;
     if ((!isReplay || !msgWritten) && window.chatAddSystem) {
-      window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' +  name + ' 给你打来了语音通话');
+      // 视频来电换摄像图标 + 「视频通话」文案，语音保持原样
+      const icon = inIsVideo
+        ? '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
+        : '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>';
+      window.chatAddSystem(icon +  name + (inIsVideo ? ' 给你打来了视频通话' : ' 给你打来了语音通话'));
       wroteSysMsg = true;
     }
     if (currentCall) currentCall.sysMsg = !!msgWritten || wroteSysMsg;
@@ -1043,6 +1052,8 @@
     saveCallActive(); // v3.26.x：接通后更新持久化（记下 connectedTime 供中断恢复算时长）
     // 视频：接通时先掷一次 TA 摄像头（进视频时若还没进过就沿用这次结果）
     vtRollTaCam(currentCall.cid);
+    // TA 打来的就是视频：接听即自动进视频（不用你再去点「视频」），与手动切换走同一套流程
+    if (currentCall.videoIn) vtEnter();
     // 2 秒后最小化小框（星言一致）；v3.7.x：小框开关隐藏时保持大面板常驻
     setTimeout(() => {
       if (currentCall && currentCall.status === 'connected' && !VT.mode) {

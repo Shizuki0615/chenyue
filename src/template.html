@@ -3688,9 +3688,10 @@
         <!-- 视频通话：TA 开摄像头概率 + TA 的画面图池（按联系人各自保存） -->
         <div class="gs-title">视频通话</div>
         <div class="set-group glass">
+          <div class="gs-row"><span>TA 来电打视频概率</span><div class="stepper" data-k="call-in-video" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-in-video-val" readonly><button class="stp-max">+</button></div></div>
           <div class="gs-row"><span>TA 开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">接通电话时按这个概率掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【TA 来电打视频概率】TA 主动来电时先掷一次：命中就是<b>视频来电</b>（标题写「视频通话」，聊天记录里也是「打来了视频通话」，你接听后直接进视频界面，与你自己点「视频」完全一致）；没命中就是普通语音来电。默认 30%，设 0＝TA 只打语音。来电接听之后你依然可以手动切换视频/语音，这里管的是「TA 打过来的那一通本身是哪种」。<br>【TA 开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里 TA 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「TA 的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示 TA 的头像，和微信里对方关摄像头一样。</div>
         <div class="gs-title">TA 的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
         <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>

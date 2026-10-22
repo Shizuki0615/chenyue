@@ -14,7 +14,8 @@ reject: c['call-reject'] !== undefined ? c['call-reject'] : CALL.reject,
 hangup: c['call-hangup'] !== undefined ? c['call-hangup'] : CALL.hangup,
 nohangup: c['call-no-hangup'] === 1 || c['call-no-hangup'] === '1',
 resume: c['call-resume'] !== undefined ? c['call-resume'] : 1,
-taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60
+taCam: c['call-ta-cam'] !== undefined ? Number(c['call-ta-cam']) : 60,
+inVideo: c['call-in-video'] !== undefined ? Number(c['call-in-video']) : 30
 };
 }
 const CALL_BG_KEY = 'call-bg';
@@ -663,6 +664,8 @@ if (window.musicHoldForCall) window.musicHoldForCall(true);
 try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
 const name = partnerName();
 currentCall = bindCall({ direction: 'in', status: 'ringing', startTime: Date.now(), durationSec: 0 });
+const inIsVideo = Math.random() * 100 < callCfg(currentCall.cid).inVideo;
+currentCall.videoIn = inIsVideo;
 shownAv = null;
 shownName = null;
 syncCallAv();
@@ -671,12 +674,15 @@ if (nameEl) nameEl.textContent = name;
 if (statusEl) statusEl.textContent = '对方来电...';
 if (durEl) durEl.textContent = '00:00';
 const inTtl = document.getElementById('call-title');
-if (inTtl) inTtl.textContent = '语音通话';
+if (inTtl) inTtl.textContent = inIsVideo ? '视频通话' : '语音通话';
 if (mask) mask.hidden = false;
 setMaskBtns('ringing');
 let wroteSysMsg = false;
 if ((!isReplay || !msgWritten) && window.chatAddSystem) {
-window.chatAddSystem('<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' +  name + ' 给你打来了语音通话');
+const icon = inIsVideo
+? '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
+: '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>';
+window.chatAddSystem(icon +  name + (inIsVideo ? ' 给你打来了视频通话' : ' 给你打来了语音通话'));
 wroteSysMsg = true;
 }
 if (currentCall) currentCall.sysMsg = !!msgWritten || wroteSysMsg;
@@ -709,6 +715,7 @@ if (window.chatAddSystem) window.chatAddSystem('<svg class="st-ico" viewBox="0 0
 startCallDuration();
 saveCallActive(); // v3.26.x：接通后更新持久化（记下 connectedTime 供中断恢复算时长）
 vtRollTaCam(currentCall.cid);
+if (currentCall.videoIn) vtEnter();
 setTimeout(() => {
 if (currentCall && currentCall.status === 'connected' && !VT.mode) {
 if (callMiniEnabled()) {
