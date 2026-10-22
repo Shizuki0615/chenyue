@@ -2307,6 +2307,12 @@
             ? (el.type !== 'checkbox' && el.type !== 'range' && el.type !== 'file' && el.type !== 'color' && !el.readOnly)
             : el.isContentEditable === true);
         }
+        // FIX 2026-10-23：焦点在 .phone 外部（body 级 fixed 浮层，如「边看边调」抽屉的
+        //   CSS 输入框）时，收缩 .phone 只把聊天输入栏推飞、对浮层内的输入框停靠毫无帮助
+        //   （浮层自带 visualViewport 抬升）。判据纯几何：元素是否 .phone 后代；零机型分支。
+        function _aInPhone(el) {
+          return !!(el && _aPhone && _aPhone.contains(el));
+        }
         // ===== FIX 2026-09-15 #530：安卓键盘期底部安全区归零 =====
         // 现象（vivo S20 Edge 浏览器态·非全屏，用户明说多机型同现、勿覆盖式乱改）：
         //   点聊天输入栏弹出输入法后，聊天输入栏与输入法之间露出一大块底色（暗色主题下
@@ -2406,7 +2412,7 @@
           // 假，双保险）；打字期深缩反之记 _aShrinkHadFoc=true＝#369 原语义证据位。
           // 键盘会话中（_aKb/_aProv）不重锚——停靠几何由主路径管理。
           var _ihN = window.innerHeight || 0;
-          var _focNow = _aIsText(_aTextFocused) || _aIsText(document.activeElement);
+          var _focNow = (_aIsText(_aTextFocused) && _aInPhone(_aTextFocused)) || (_aIsText(document.activeElement) && _aInPhone(document.activeElement));
           if (!_focNow && !_aKb && !_aProv && _ihN > 0 && h > 0
               && Math.abs(_ihN - h) <= 12
               && (h < _aH - 60 || _ihN < _aIH - 60)) {
@@ -2897,6 +2903,13 @@
               // #236/#209 所有「inner≥基线−12」判据从此恒真＝全数失明。改为仅浅漂移
               //（降幅 <22% 键盘下限，地址栏显隐量级）才跟随，深缩一律不吞。
               if (!_aKb && !_aProv && (ih >= _aIH - 12 || _aIH - ih < Math.round(Math.min(_aIH || ih, _aH || ih) * 0.22))) _aIH = ih;
+              if (_aProv && _aVV.height >= _aH - 60) _aProvClear();
+              return;
+            }
+            // FIX 2026-10-23：焦点在 .phone 外（边看边调抽屉的 CSS 输入框等 body 级浮层）
+            //   时，保底停靠收缩 .phone 只会把聊天输入栏推飞；浮层自带 visualViewport 抬升。
+            //   此处直接退出，不进 _aProvDock。
+            if (!_aInPhone(tgt)) {
               if (_aProv && _aVV.height >= _aH - 60) _aProvClear();
               return;
             }

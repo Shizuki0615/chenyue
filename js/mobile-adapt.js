@@ -1290,6 +1290,9 @@ return el && ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
 ? (el.type !== 'checkbox' && el.type !== 'range' && el.type !== 'file' && el.type !== 'color' && !el.readOnly)
 : el.isContentEditable === true);
 }
+function _aInPhone(el) {
+return !!(el && _aPhone && _aPhone.contains(el));
+}
 var _aSafeB = null;
 function syncSafeBottomA() {
 try {
@@ -1334,7 +1337,7 @@ if (h >= _aH - 60) _aVvStale = false; // #236：vv 回基准=读数诚实，解�
 if (h !== _aPrevH || h >= _aH - 60) _aKbMute = false;
 if (h !== _aPrevH) _aVvChgAt = Date.now();
 var _ihN = window.innerHeight || 0;
-var _focNow = _aIsText(_aTextFocused) || _aIsText(document.activeElement);
+var _focNow = (_aIsText(_aTextFocused) && _aInPhone(_aTextFocused)) || (_aIsText(document.activeElement) && _aInPhone(document.activeElement));
 if (!_focNow && !_aKb && !_aProv && _ihN > 0 && h > 0
 && Math.abs(_ihN - h) <= 12
 && (h < _aH - 60 || _ihN < _aIH - 60)) {
@@ -1669,6 +1672,10 @@ var tgt = (_aIsText(_aTextFocused) ? _aTextFocused : null) ||
 var ih = window.innerHeight;
 if (!tgt) {
 if (!_aKb && !_aProv && (ih >= _aIH - 12 || _aIH - ih < Math.round(Math.min(_aIH || ih, _aH || ih) * 0.22))) _aIH = ih;
+if (_aProv && _aVV.height >= _aH - 60) _aProvClear();
+return;
+}
+if (!_aInPhone(tgt)) {
 if (_aProv && _aVV.height >= _aH - 60) _aProvClear();
 return;
 }
