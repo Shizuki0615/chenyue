@@ -2840,10 +2840,21 @@
       try { store.set('group-chat-enabled', '0'); } catch (e) {}
     };
     closeIt();
+    // v8.41：hidden 属性对这几个元素**无效**——.set-row / .fav-tab 的作者样式写了
+    // display:flex / inline-flex，会压过 UA 的 [hidden]{display:none}（#938 同族坑：
+    // 用户实报「设置里『开启群聊』行还在」，只设 hidden 时属性 true 但肉眼照常显示）。
+    // 所以必须同时写内联 style.display='none'（内联优先级高于作者样式表）。
+    const hideEl = (el2) => {
+      if (!el2) return;
+      try { el2.hidden = true; } catch (e) {}
+      try { el2.style.display = 'none'; } catch (e) {}
+    };
     const hideDOM = () => {
-      try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
-      try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
-      try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+      try { hideEl(document.getElementById('sf-group-chat-row')); } catch (e) {}
+      try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(hideEl); } catch (e) {}
+      try { hideEl(document.querySelector('#page-reply-settings [data-rpanel="group"]')); } catch (e) {}
+      // 群聊页只置 hidden：base.css 已有 `.page[hidden]{display:none}` 兜底，写内联 display 会
+      // 把「信息诊断」的页面可达性自检（device.js 的群聊行）误报成「打不开」。
       try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
     };
     // 双保险：DOM 可能已 ready（sync inline）或还没 ready（defer）

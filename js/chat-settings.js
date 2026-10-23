@@ -2223,10 +2223,15 @@ try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } 
 try { store.set('group-chat-enabled', '0'); } catch (e) {}
 };
 closeIt();
+const hideEl = (el2) => {
+if (!el2) return;
+try { el2.hidden = true; } catch (e) {}
+try { el2.style.display = 'none'; } catch (e) {}
+};
 const hideDOM = () => {
-try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
-try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
-try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+try { hideEl(document.getElementById('sf-group-chat-row')); } catch (e) {}
+try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(hideEl); } catch (e) {}
+try { hideEl(document.querySelector('#page-reply-settings [data-rpanel="group"]')); } catch (e) {}
 try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
 };
 if (document.readyState === 'loading') {
