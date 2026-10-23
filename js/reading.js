@@ -309,6 +309,16 @@ page.innerHTML =
 '<button class="rd-back" id="rd-anno-pop-close" type="button">关闭</button></div>' +
 '<div class="rd-pop-list" id="rd-pop-list"></div>' +
 '</div>' +
+'<div class="rd-anno-ops" id="rd-anno-ops" hidden>' +
+'<button class="rd-menu-item" data-act="edit" type="button">修改这条批注</button>' +
+'<button class="rd-menu-item rd-menu-danger" data-act="del" type="button">删除这条批注</button>' +
+'</div>' +
+'<div class="rd-lost" id="rd-lost" hidden>' +
+'<div class="rd-import-head"><div class="rd-import-title">未定位的批注</div>' +
+'<button class="rd-back" id="rd-lost-close" type="button">关闭</button></div>' +
+'<div class="rd-lost-tip">重新导入后，这些批注没能在这本书里找到原来的句子。它们还留着，可以逐条删掉。</div>' +
+'<div class="rd-lost-list" id="rd-lost-list"></div>' +
+'</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(page);
@@ -346,6 +356,9 @@ rdClearSel(false);
 rdCloseSheet();
 rdClosePreview();
 rdClosePop();
+rdCloseAnnoOps();
+rdCloseLost();
+rdPopPos = -1;
 const prefs = document.getElementById('rd-prefs');
 if (prefs) prefs.hidden = true;
 const shelf = document.getElementById('rd-shelf');
@@ -386,7 +399,8 @@ let ch = (book.progress && book.progress.ch) || 0;
 if (ch < 0 || ch >= toc.length) ch = 0;
 rdBook = {
 id: id, toc: toc, ch: ch, off: (book.progress && book.progress.off) || 0,
-cache: {}, text: '', pages: [], pageIdx: 0, anno: []
+cache: {}, text: '', pages: [], pageIdx: 0, anno: [],
+lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 };
 rdEnsureChapter('offset');
 }
@@ -566,6 +580,9 @@ let rdSel = null;
 let rdDraft = null;
 let rdAnnoPool = [];
 let rdSuppressTap = false;
+let rdPopPos = -1;
+let rdOpsId = '';
+let rdOpsAt = 0;
 function rdDeviceId() {
 let id = '';
 try { id = store.get('reading-device-id') || ''; } catch (e) {}
@@ -834,21 +851,144 @@ rdClearSel(false);
 rdPaintPage();
 rdToast('已贴上');
 }
-function rdOpenPop(pos) {
+const RD_POP_MAX = 8;
+function rdOpenPop(pos, expand) {
 const b = rdBook;
 const list = document.getElementById('rd-pop-list');
 const pop = document.getElementById('rd-anno-pop');
 if (!b || !list || !pop) return;
 const items = (b.anno || []).filter(function (a) { return a && a.e === pos; })
 .sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
-if (!items.length) return;
+if (!items.length) { pop.hidden = true; return; }
 rdClearSel(true);
-list.innerHTML = items.map(function (a) {
-const who = a.by === 'me' ? '我' : '他';
-return '<div class="rd-pop-item"><div class="rd-pop-who">' + who + '</div>' +
+rdCloseAnnoOps();
+rdPopPos = pos;
+const all = !!expand || items.length <= RD_POP_MAX;
+const show = all ? items : items.slice(0, RD_POP_MAX);
+list.innerHTML = show.map(function (a) {
+const mine = a.by === 'me';
+return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
+(a.replyTo ? ' rd-pop-reply' : '') + '"' +
+' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
+'<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
 '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div></div>';
 }).join('');
+if (!all) {
+list.innerHTML += '<button class="rd-pop-more" type="button">还有 ' +
+(items.length - RD_POP_MAX) + ' 条，展开</button>';
+}
 pop.hidden = false;
+}
+function rdCloseAnnoOps() {
+const el = document.getElementById('rd-anno-ops');
+if (el) el.hidden = true;
+rdOpsId = '';
+}
+function rdOpenAnnoOps(id) {
+if (!id) return;
+rdOpsId = id;
+rdOpsAt = Date.now();
+const el = document.getElementById('rd-anno-ops');
+if (el) el.hidden = false;
+}
+function rdFindAnno(id) {
+const b = rdBook;
+if (!b || !id) return null;
+const arr = b.anno || [];
+for (let i = 0; i < arr.length; i++) if (arr[i] && arr[i].id === id) return arr[i];
+return null;
+}
+async function rdSaveAnnos(next, after) {
+const b = rdBook;
+if (!b) return false;
+try { await putAnnos(b.id, b.ch, next); }
+catch (e) { rdToast((e && e.message) || '批注没保存上：磁盘写入没有完成，请重试'); return false; }
+b.anno = next;
+rdPaintPage();
+if (after) after();
+return true;
+}
+function rdEditAnno(id) {
+const a = rdFindAnno(id);
+if (!a) return;
+rdCloseAnnoOps();
+if (!window.openModal) { rdToast('编辑框没有加载上，请重新打开页面'); return; }
+window.openModal('修改这条批注', a.text || '', function (v) {
+const t = String(v == null ? '' : v).trim();
+if (!t) { rdToast('批注不能是空的'); return; }
+const next = (rdBook.anno || []).map(function (x) {
+if (!x || x.id !== id) return x;
+return Object.assign({}, x, {
+text: t.slice(0, 500),
+editedAt: Date.now(),
+rev: (Number(x.rev) || 1) + 1
+});
+});
+const pos = a.e;
+rdSaveAnnos(next, function () { rdOpenPop(pos, true); rdToast('已改好'); });
+}, { textarea: true, textareaPlaceholder: '批注内容' });
+}
+function rdDeleteAnno(id) {
+const a = rdFindAnno(id);
+if (!a) return;
+rdCloseAnnoOps();
+if (!window.openModal) return;
+const tip = '「' + String(a.text || '').slice(0, 40) + '」删掉之后不能恢复。';
+window.openModal('删除这条批注？', '', function () {
+if (!rdBook) return;
+const pos = a.e;
+const next = (rdBook.anno || []).filter(function (x) { return !x || x.id !== id; });
+rdSaveAnnos(next, function () {
+const list = readIndex();
+const fb = rdFindBook(rdBook.id, list);
+if (fb) { fb.annoCount = Math.max(0, (Number(fb.annoCount) || 0) - 1); saveIndex(list); }
+rdOpenPop(pos, true);
+rdToast('已删除');
+});
+}, { noInput: true, staticText: tip, warn: true });
+}
+function rdRenderLost() {
+const list = document.getElementById('rd-lost-list');
+if (!list) return;
+const lost = (rdBook && Array.isArray(rdBook.lostAnnos)) ? rdBook.lostAnnos : [];
+if (!lost.length) {
+list.innerHTML = '<div class="rd-empty">没有未定位的批注</div>';
+return;
+}
+list.innerHTML = lost.map(function (a) {
+return '<div class="rd-lost-item">' +
+'<div class="rd-lost-quote">' + rdEsc(a.quote || '') + '</div>' +
+'<div class="rd-lost-text">' + rdEsc(a.text || '') + '</div>' +
+'<button class="rd-back" data-del="' + rdEsc(a.id || '') + '" type="button">删除</button></div>';
+}).join('');
+}
+function rdOpenLost() {
+closeToc();
+rdRenderLost();
+const el = document.getElementById('rd-lost');
+if (el) el.hidden = false;
+}
+function rdCloseLost() {
+const el = document.getElementById('rd-lost');
+if (el) el.hidden = true;
+}
+function rdDeleteLost(id) {
+if (!rdBook || !id) return;
+const lost = rdBook.lostAnnos || [];
+let target = null;
+for (let i = 0; i < lost.length; i++) if (lost[i] && lost[i].id === id) { target = lost[i]; break; }
+if (!target || !window.openModal) return;
+const tip = '「' + String(target.text || '').slice(0, 40) + '」删掉之后不能恢复。';
+window.openModal('删除这条批注？', '', function () {
+if (!rdBook) return;
+const next = (rdBook.lostAnnos || []).filter(function (x) { return !x || x.id !== id; });
+rdBook.lostAnnos = next;
+const list = readIndex();
+const fb = rdFindBook(rdBook.id, list);
+if (fb) { fb.lostAnnos = next; saveIndex(list); }
+rdRenderLost();
+rdToast('已删除');
+}, { noInput: true, staticText: tip, warn: true });
 }
 function rdBounce(dir) {
 const body = document.getElementById('rd-body');
@@ -1349,8 +1489,31 @@ document.addEventListener('pointerup', rdCancelPress, true);
 document.addEventListener('pointercancel', rdCancelPress, true);
 document.addEventListener('contextmenu', function (e) {
 const el = e.target;
-if (el && el.closest && (el.closest('#rd-grid .rd-book') || el.closest('#rd-body'))) e.preventDefault();
+if (el && el.closest && (el.closest('#rd-grid .rd-book') || el.closest('#rd-body') ||
+el.closest('#rd-pop-list .rd-pop-item'))) e.preventDefault();
 }, true);
+let rdPopTimer = 0, rdPopX = 0, rdPopY = 0;
+function rdCancelPopPress() { if (rdPopTimer) { clearTimeout(rdPopTimer); rdPopTimer = 0; } }
+document.addEventListener('pointerdown', function (e) {
+const el = e.target;
+if (!el || !el.closest) return;
+const item = el.closest('#rd-pop-list .rd-pop-item[data-mine]');
+if (!item) return;
+rdCancelPopPress();
+rdPopX = e.clientX; rdPopY = e.clientY;
+const id = item.getAttribute('data-id');
+rdPopTimer = setTimeout(function () {
+rdPopTimer = 0;
+try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
+rdOpenAnnoOps(id);
+}, 450);
+}, true);
+document.addEventListener('pointermove', function (e) {
+if (!rdPopTimer) return;
+if (Math.abs(e.clientX - rdPopX) > 10 || Math.abs(e.clientY - rdPopY) > 10) rdCancelPopPress();
+}, true);
+document.addEventListener('pointerup', rdCancelPopPress, true);
+document.addEventListener('pointercancel', rdCancelPopPress, true);
 document.addEventListener('click', function (e) {
 const el = e.target;
 if (!el || !el.closest) return;
@@ -1370,8 +1533,19 @@ e.preventDefault();
 rdCloseBookMenu();
 return;
 }
+const opBtn = el.closest('#rd-anno-ops [data-act]');
+if (opBtn) {
+e.preventDefault();
+const act = opBtn.getAttribute('data-act');
+const id = rdOpsId;
+if (act === 'edit') rdEditAnno(id);
+else if (act === 'del') rdDeleteAnno(id);
+return;
+}
+if (rdOpsId && Date.now() - rdOpsAt > 350 && !el.closest('#rd-anno-ops')) rdCloseAnnoOps();
 const mk = el.closest('.rd-mark');
 if (mk) { e.preventDefault(); rdOpenPop(Number(mk.getAttribute('data-pos'))); return; }
+if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
 const selBtn = el.closest('#rd-selbar [data-act]');
 if (selBtn) {
 e.preventDefault();
@@ -1424,7 +1598,10 @@ if (el.closest('#rd-toc-btn')) { e.preventDefault(); openToc(); return; }
 if (el.closest('#rd-toc-close')) { e.preventDefault(); closeToc(); return; }
 const tocRow = el.closest('#rd-toc-list [data-ch]');
 if (tocRow) { e.preventDefault(); rdJumpChapter(tocRow.getAttribute('data-ch')); return; }
-if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdToast('这里会列出重新导入后没能定位的批注'); return; }
+if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdOpenLost(); return; }
+if (el.closest('#rd-lost-close')) { e.preventDefault(); rdCloseLost(); return; }
+const lostDel = el.closest('#rd-lost-list [data-del]');
+if (lostDel) { e.preventDefault(); rdDeleteLost(lostDel.getAttribute('data-del')); return; }
 if (el.closest('#rd-import')) { e.preventDefault(); rdOpenImport(); return; }
 if (el.closest('#rd-import-close')) { e.preventDefault(); rdCloseImport(); return; }
 if (el.closest('#rd-import-go')) { e.preventDefault(); rdStartImport(); return; }

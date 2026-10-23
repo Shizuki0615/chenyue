@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 16px 24px}
@@ -94,6 +94,22 @@
 .rd-prev-quote{padding:10px;border-radius:10px;background:rgba(244,182,194,.16);font-size:13px;line-height:1.6;max-height:30%;overflow-y:auto;white-space:pre-wrap}
 .rd-prev-text{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-y:auto}
 .rd-pop-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px}
-.rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-pop-who{font-size:11px;opacity:.55;margin-bottom:4px}
 .rd-pop-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
+/* 我是实心点，他是空心圈；他的回应缩进一层 */
+.rd-pop-mine .rd-pop-who::before{content:'●';font-size:9px;margin-right:4px;vertical-align:1px}
+.rd-pop-his .rd-pop-who::before{content:'○';font-size:9px;margin-right:4px;vertical-align:1px}
+.rd-pop-reply{margin-left:20px}
+.rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
+
+/* 自己批注的长按菜单（底部半框） */
+.rd-anno-ops{position:absolute;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;padding:6px 8px 14px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+
+/* 重新导入后没能定位的批注 */
+.rd-lost{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
+.rd-lost-tip{font-size:12px;line-height:1.6;opacity:.7}
+.rd-lost-list{flex:1;min-height:0;overflow-y:auto}
+.rd-lost-item{padding:12px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-lost-quote{padding:8px 10px;border-radius:10px;background:rgba(244,182,194,.14);font-size:12px;line-height:1.5;white-space:pre-wrap}
+.rd-lost-text{margin-top:6px;font-size:14px;line-height:1.6;white-space:pre-wrap}
