@@ -1265,16 +1265,27 @@
     //   plus.io.PUBLIC_* 常量全抛 Java exception；MediaStore.insert 也可能因权限模型变更失效。
     //   直接跳过所有原生路径，走 App 壳 WebView 的 navigator.share / showSaveFilePicker ——
     //   这俩走浏览器沙盒+系统文件选择器，不依赖任何存储权限，在 Android 16 上必定可用。
-    let android16Plus = false;
+    //   Android 13+ 其实 PUBLIC_* 就已经不稳定，保险起见 Android 13+ 一律跳过原生链路。
+    let androidVer = 0;
     try {
-      if (window.plus && window.plus.android) {
-        const Build = window.plus.android.importClass('android.os.Build');
-        android16Plus = (Build.VERSION && Build.VERSION.SDK_INT) >= 35;
-      }
+      // ① 最稳：直接从 UA 读 Android 版本号（不依赖 plus.android 能不能 import 类）
+      const m = (navigator.userAgent || '').match(/Android\s+(\d+(?:\.\d+)?)/i);
+      if (m) androidVer = parseFloat(m[1]);
     } catch (e) {}
+    if (!androidVer && window.plus && window.plus.android) {
+      // ② 次稳：plus.android.importClass 同步阻塞路径（失败被 try/catch 吞掉时 android16Plus 保持 false）
+      try {
+        const Build = window.plus.android.importClass('android.os.Build');
+        const SDK_INT = Build && Build.VERSION && Build.VERSION.SDK_INT ? Build.VERSION.SDK_INT : 0;
+        if (SDK_INT >= 33) androidVer = 13;
+        else if (SDK_INT >= 35) androidVer = 16;
+      } catch (e) {}
+    }
+    // Android 13+（SDK 33+）plus.io PUBLIC_* 常量已不稳定；Android 16 彻底废掉 → 一律走网页兜底
+    const skipNative = androidVer >= 13;
     // 套壳 App（HBuilderX 5+）：MediaStore 优先 → plus.io 回退 → 网页下载兜底
-    //   Android 16+ 直接跳过原生链路，走网页兜底
-    if (window.plus && window.plus.io && !android16Plus) {
+    //   Android 13+ 直接跳过原生链路，走网页兜底
+    if (window.plus && window.plus.io && !skipNative) {
       impShow('正在导出…', '正在保存到下载目录…', 95);
       // ① MediaStore（Android 10+）——唯一能写到**系统真正 Download 目录**的路径，卸载不丢
       const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');

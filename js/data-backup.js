@@ -894,14 +894,21 @@ if (r.ok) return r;
 return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-let android16Plus = false;
+let androidVer = 0;
 try {
-if (window.plus && window.plus.android) {
-const Build = window.plus.android.importClass('android.os.Build');
-android16Plus = (Build.VERSION && Build.VERSION.SDK_INT) >= 35;
-}
+const m = (navigator.userAgent || '').match(/Android\s+(\d+(?:\.\d+)?)/i);
+if (m) androidVer = parseFloat(m[1]);
 } catch (e) {}
-if (window.plus && window.plus.io && !android16Plus) {
+if (!androidVer && window.plus && window.plus.android) {
+try {
+const Build = window.plus.android.importClass('android.os.Build');
+const SDK_INT = Build && Build.VERSION && Build.VERSION.SDK_INT ? Build.VERSION.SDK_INT : 0;
+if (SDK_INT >= 33) androidVer = 13;
+else if (SDK_INT >= 35) androidVer = 16;
+} catch (e) {}
+}
+const skipNative = androidVer >= 13;
+if (window.plus && window.plus.io && !skipNative) {
 impShow('正在导出…', '正在保存到下载目录…', 95);
 const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
 try {
