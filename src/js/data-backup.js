@@ -434,6 +434,11 @@
 
   async function doExport(mode) {
     const cfg = exportCfg(mode);
+    // 一起读书：书籍正文只在本地，不进备份（换机后重新导入原文即可）；
+    // 书架条目、进度、批注仍在备份里，所以正文键必须整键跳过。
+    const baseSkip = cfg.skip;
+    const READING_BODY_RE = /^xy-home-v2:reading-body:/;
+    cfg.skip = (k) => READING_BODY_RE.test(String(k || '')) || baseSkip(k);
     try {
       await runExport(cfg);
     } catch (e) {

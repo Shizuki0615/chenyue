@@ -309,6 +309,9 @@ let expKey = '';
 let expKeyBytes = 0;
 async function doExport(mode) {
 const cfg = exportCfg(mode);
+const baseSkip = cfg.skip;
+const READING_BODY_RE = /^xy-home-v2:reading-body:/;
+cfg.skip = (k) => READING_BODY_RE.test(String(k || '')) || baseSkip(k);
 try {
 await runExport(cfg);
 } catch (e) {
