@@ -1636,6 +1636,30 @@ tcPush(q, { popupProb: askPopupProb(s) });
 }
 setTimeout(maybeTriggerTC, 90000);
 setInterval(maybeTriggerTC, 240000);
+var _tcVvBound = false;
+function tcPinMask() {
+try {
+var m = document.getElementById('tc-mask');
+var vv = window.visualViewport;
+if (!m || m.hidden || !vv || !vv.width || !vv.height) return;
+m.style.position = 'fixed';
+m.style.left = (vv.offsetLeft || 0) + 'px';
+m.style.top = (vv.offsetTop || 0) + 'px';
+m.style.width = vv.width + 'px';
+m.style.height = vv.height + 'px';
+m.style.right = 'auto';
+m.style.bottom = 'auto';
+} catch (e) {}
+}
+function tcUnpinMask() {
+try {
+var m = document.getElementById('tc-mask');
+if (!m) return;
+["position", "left", "top", "width", "height", "right", "bottom"].forEach(function (k) {
+m.style.removeProperty(k);
+});
+} catch (e) {}
+}
 function openTCPanel(title, html) {
 const mask = document.getElementById('tc-mask');
 const body = document.getElementById('tc-body');
@@ -1646,6 +1670,24 @@ body.innerHTML = html;
 if (window.mochiPickDoorSweep) { try { window.mochiPickDoorSweep(true); } catch (eS) {} }
 body.scrollTop = 0;
 mask.hidden = false;
+tcPinMask();
+try {
+if (!_tcVvBound && window.visualViewport && window.visualViewport.addEventListener) {
+_tcVvBound = true;
+window.visualViewport.addEventListener('resize', tcPinMask);
+window.visualViewport.addEventListener('scroll', tcPinMask);
+}
+} catch (eVB) {}
+try {
+if (!mask.__pinObserved) {
+mask.__pinObserved = true;
+if (window.MutationObserver) {
+new MutationObserver(function () {
+if (mask.hidden) tcUnpinMask(); else tcPinMask();
+}).observe(mask, { attributes: true, attributeFilter: ['hidden'] });
+}
+}
+} catch (eOB) {}
 try { if (window.mochiKbHealPhone) window.mochiKbHealPhone(); } catch (eH) {}
 try {
 if (!body.__kbHealBound) {

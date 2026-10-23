@@ -1978,6 +1978,38 @@ const TC_DEFAULT = [
   setInterval(maybeTriggerTC, 240000);
 
   // 弹层通用
+// v8.43：.tc-mask 面板「输入代码时框飞走」收口——把遮罩钉在【视觉视口】上。
+// 根因：.tc-mask 是 .phone 里的 absolute 层，键盘期 .phone 高度跟着可视视口收缩，
+//   内核又会为「露出焦点输入框」平移视觉视口（vv.offsetTop > 0）；两个坐标系同时动，
+//   面板相对手指漂移＝用户实报的「输入气泡 CSS 代码时框会飞走」。
+// 处置：面板开着时用 visualViewport 的 offsetLeft/offsetTop/width/height 写 fixed 定位，
+//   遮罩永远正好覆盖「此刻真正看得见的那块区域」，vv 的 resize/scroll 逐拍同步；
+//   关闭（hidden 置真）时摘掉全部内联定位，回到 CSS 的 absolute 语义。
+// 零机型分支：只依赖标准 visualViewport 读数；无该 API 的老内核一个内联值都不写，行为不变。
+var _tcVvBound = false;
+function tcPinMask() {
+  try {
+    var m = document.getElementById('tc-mask');
+    var vv = window.visualViewport;
+    if (!m || m.hidden || !vv || !vv.width || !vv.height) return;
+    m.style.position = 'fixed';
+    m.style.left = (vv.offsetLeft || 0) + 'px';
+    m.style.top = (vv.offsetTop || 0) + 'px';
+    m.style.width = vv.width + 'px';
+    m.style.height = vv.height + 'px';
+    m.style.right = 'auto';
+    m.style.bottom = 'auto';
+  } catch (e) {}
+}
+function tcUnpinMask() {
+  try {
+    var m = document.getElementById('tc-mask');
+    if (!m) return;
+    ["position", "left", "top", "width", "height", "right", "bottom"].forEach(function (k) {
+      m.style.removeProperty(k);
+    });
+  } catch (e) {}
+}
 function openTCPanel(title, html) {
   const mask = document.getElementById('tc-mask');
   const body = document.getElementById('tc-body');
@@ -1996,6 +2028,28 @@ function openTCPanel(title, html) {
   // v3.5.130：滚动位置复位——复用同一容器，上次滚到底会从旧偏移开始显示
   body.scrollTop = 0;
   mask.hidden = false;
+  // v8.43：面板一开就钉到视觉视口上（见 tcPinMask 注释）；键盘弹起/视觉视口平移时
+  // 由 vv 的 resize/scroll 逐拍跟随，面板不再相对手指漂移。
+  tcPinMask();
+  try {
+    if (!_tcVvBound && window.visualViewport && window.visualViewport.addEventListener) {
+      _tcVvBound = true;
+      window.visualViewport.addEventListener('resize', tcPinMask);
+      window.visualViewport.addEventListener('scroll', tcPinMask);
+    }
+  } catch (eVB) {}
+  // 任何路径关面板（✕ / 各调用方直写 hidden=true）都要摘掉内联定位，否则下次
+  // 复用同一个 mask 时会带着上一轮的 fixed 尺寸打开（窗口尺寸变了就错位）。
+  try {
+    if (!mask.__pinObserved) {
+      mask.__pinObserved = true;
+      if (window.MutationObserver) {
+        new MutationObserver(function () {
+          if (mask.hidden) tcUnpinMask(); else tcPinMask();
+        }).observe(mask, { attributes: true, attributeFilter: ['hidden'] });
+      }
+    }
+  } catch (eOB) {}
   // #新：面板下方「一整块白色空白」的正面修复。成因＝弹层里的输入框（气泡 CSS/字体等）
   // 敲字后 .phone 停在键盘期的收缩高度，其下露出 body 白底（绝对定位的 .tc-mask 只铺到
   // .phone 底边）。开面板时先清一次（此刻还没有焦点，永远安全），输入框失焦后再清一次。

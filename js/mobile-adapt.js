@@ -1239,6 +1239,7 @@ function _aPinPan() {
 try {
 var _panTgt = _aIsText(document.activeElement) ? document.activeElement : (_aIsText(_aTextFocused) ? _aTextFocused : null);
 if (_panTgt && !_aInPhone(_panTgt)) return;
+if (_panTgt && _panTgt.closest && _panTgt.closest('.tc-mask:not([hidden])')) return;
 var offT = _aVV.offsetTop || 0;
 var winY = _aWinY();
 if (!_aKb && !_aProv) {

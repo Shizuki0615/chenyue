@@ -2252,6 +2252,10 @@
             //   输入栏毫无意义，直接退出，把平移权交还内核。
             var _panTgt = _aIsText(document.activeElement) ? document.activeElement : (_aIsText(_aTextFocused) ? _aTextFocused : null);
             if (_panTgt && !_aInPhone(_panTgt)) return;
+            // v8.43：焦点在「气泡 CSS / 全局字体」这类 .tc-mask 面板里时同样把平移权交还内核——
+            //   该遮罩已按 visualViewport 钉死（ta-ask.js tcPinMask），这里再归零只会与内核
+            //   「为露出焦点输入框」的平移互相拉扯，表现为面板随打字上下飞。
+            if (_panTgt && _panTgt.closest && _panTgt.closest('.tc-mask:not([hidden])')) return;
             // 1) 先尝试把视觉视口平移 / 文档滚动归零（能归零的内核 offsetTop 会归 0）
             var offT = _aVV.offsetTop || 0;
             var winY = _aWinY();
