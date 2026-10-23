@@ -2245,6 +2245,13 @@
         }
         function _aPinPan() {
           try {
+            // FIX 2026-10-23：「边看边调」抽屉的 CSS 输入框等 body 级浮层聚焦时，浏览器会把
+            //   可视视口【平移】到浮层输入框露出键盘上方（_aVV.offsetTop > 0）。下面的归零
+            //   会把这次平移动当场抹掉 → 输入框又沉回键盘下 → 内核再平移 → 每 250ms 一拍
+            //   来回推，表现为「改 CSS 时整页/底栏飞出去」。焦距在 .phone 外＝这段归零对聊天
+            //   输入栏毫无意义，直接退出，把平移权交还内核。
+            var _panTgt = _aIsText(document.activeElement) ? document.activeElement : (_aIsText(_aTextFocused) ? _aTextFocused : null);
+            if (_panTgt && !_aInPhone(_panTgt)) return;
             // 1) 先尝试把视觉视口平移 / 文档滚动归零（能归零的内核 offsetTop 会归 0）
             var offT = _aVV.offsetTop || 0;
             var winY = _aWinY();
