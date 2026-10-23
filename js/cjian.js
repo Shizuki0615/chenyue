@@ -39,7 +39,7 @@ const box = document.createElement('div');
 box.style.cssText = 'width:100%;max-width:330px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:18px 16px 14px;box-shadow:0 12px 40px var(--shadow-strong);';
 const h = document.createElement('div');
 h.style.cssText = 'font-weight:700;font-size:15px;margin-bottom:4px;text-align:center;color:var(--ink);';
-h.textContent = 'TA 常在哪些时辰出现？';
+h.textContent = '他 常在哪些时辰出现？';
 const sub = document.createElement('div');
 sub.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;';
 sub.textContent = '可多选 · 至少选一个 · 世界时间只在这些时辰里随机';
@@ -193,18 +193,18 @@ window.cjianWorldNowFor = worldNowFor;
 window.cjianShichenAt = shichenAt;
 const PRESENCE = {
 near:   { label: '很近',     desc: '感觉就在身边' },
-nearby: { label: '附近',     desc: 'TA可能就在附近' },
+nearby: { label: '附近',     desc: '他可能就在附近' },
 far:    { label: '遥远',     desc: '能感觉到，但距离很远' },
-unfelt: { label: '感觉不到', desc: '暂时无法感知TA' },
-gone:   { label: '离开',     desc: 'TA暂时不在附近' }
+unfelt: { label: '感觉不到', desc: '暂时无法感知他' },
+gone:   { label: '离开',     desc: '他暂时不在附近' }
 };
 const ACTIVITY = {
 free:    { label: '有空', desc: '现在比较适合交流' },
-busy:    { label: '有事', desc: 'TA正在做自己的事情' },
+busy:    { label: '有事', desc: '他正在做自己的事情' },
 rushed:  { label: '忙着', desc: '暂时不太方便' },
-rest:    { label: '休息', desc: 'TA正在休息' },
-sleep:   { label: '睡着', desc: 'TA那边已经入睡' },
-unknown: { label: '未知', desc: '暂时不知道TA在做什么' }
+rest:    { label: '休息', desc: '他正在休息' },
+sleep:   { label: '睡着', desc: '他那边已经入睡' },
+unknown: { label: '未知', desc: '暂时不知道他在做什么' }
 };
 function loadRoster(cid) {
 try {
@@ -433,7 +433,7 @@ if (!s || s.get(SEED_KEY)) return;
 const list = loadRoster(cid);
 if (list.length) { s.set(SEED_KEY, '1'); return; }
 const name = effNick(cid);
-list.push({ id: makeId(), name: name || 'TA', offsetMin: 0, cid: cid, own: 1 });
+list.push({ id: makeId(), name: name || '他', offsetMin: 0, cid: cid, own: 1 });
 saveRoster(list, cid);
 s.set(SEED_KEY, '1');
 } catch (e) {}
@@ -897,13 +897,13 @@ listEl.parentNode.insertBefore(card, listEl);
 }
 card.innerHTML = '';
 card.appendChild(el('div', 'cj-ta-time-title', '对方当前时间'));
-card.appendChild(el('div', 'cj-ta-time-hint', 'TA 自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
+card.appendChild(el('div', 'cj-ta-time-hint', '他 自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
 const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
 cidList.forEach(function (cid) {
 const t = taTimeOf(cid);
 const row = el('div', 'cj-ta-time-item');
 const left = el('div', 'cj-ta-time-left');
-left.appendChild(el('span', 'cj-ta-time-sh', 'TA'));
+left.appendChild(el('span', 'cj-ta-time-sh', '他'));
 const nameCol = el('span', 'cj-ta-time-namecol');
 nameCol.appendChild(el('span', 'cj-ta-time-name', contactName(cid)));
 nameCol.appendChild(el('span', 'cj-ta-time-slot', taSlotLabel(cid, t)));
@@ -976,7 +976,7 @@ const card = el('div', 'cj-card');
 card.setAttribute('data-id', c.id);
 const head = el('div', 'cj-card-head');
 head.appendChild(el('span', 'cj-card-name', c.name));
-head.appendChild(el('span', 'cj-card-hint', '查看TA的一天 ›'));
+head.appendChild(el('span', 'cj-card-hint', '查看他的一天 ›'));
 card.appendChild(head);
 const timeRow = el('div', 'cj-card-time');
 timeRow.appendChild(el('span', 'cj-card-half', t.half));
@@ -990,10 +990,10 @@ aTag.title = ACTIVITY[s.a].desc;
 tags.appendChild(pTag);
 tags.appendChild(aTag);
 card.appendChild(tags);
-if (s.a === 'sleep') card.appendChild(el('div', 'cj-card-note', 'TA那边似乎已经睡了。'));
-if (s.a === 'rest') card.appendChild(el('div', 'cj-card-note', 'TA正在休息。'));
+if (s.a === 'sleep') card.appendChild(el('div', 'cj-card-note', '他那边似乎已经睡了。'));
+if (s.a === 'rest') card.appendChild(el('div', 'cj-card-note', '他正在休息。'));
 if (Array.isArray(c.slots) && c.slots.length) card.appendChild(el('div', 'cj-card-note', '常在 ' + slotLabel(c.slots) + ' 出现'));
-const goBtn = el('button', 'cj-go', '去找TA');
+const goBtn = el('button', 'cj-go', '去找他');
 goBtn.type = 'button';
 goBtn.addEventListener('click', (e) => {
 e.stopPropagation();
@@ -1089,10 +1089,10 @@ aTag.title = ACTIVITY[s.a].desc;
 tags.appendChild(pTag);
 tags.appendChild(aTag);
 body.appendChild(tags);
-if (s.a === 'sleep') body.appendChild(el('div', 'cj-d-note', 'TA那边似乎已经睡了。'));
-if (s.a === 'rest') body.appendChild(el('div', 'cj-d-note', 'TA正在休息。'));
+if (s.a === 'sleep') body.appendChild(el('div', 'cj-d-note', '他那边似乎已经睡了。'));
+if (s.a === 'rest') body.appendChild(el('div', 'cj-d-note', '他正在休息。'));
 if (Array.isArray(c.slots) && c.slots.length) body.appendChild(el('div', 'cj-d-note', '常在 ' + slotLabel(c.slots) + ' 出现 · 世界时间只在这些时辰里随机'));
-body.appendChild(el('div', 'cj-d-today-title', 'TA的今日'));
+body.appendChild(el('div', 'cj-d-today-title', '他的今日'));
 const traj = el('div', 'cj-d-today');
 for (let k = 0; k < 12; k++) {
 const idx = (t.idx + k) % 12;
@@ -1112,7 +1112,7 @@ row.appendChild(el('span', 'cj-d-row-p', trajectoryPhrase(pr, ac)));
 traj.appendChild(row);
 }
 body.appendChild(traj);
-body.appendChild(el('div', 'cj-d-foot', '这不是TA的日程表，只是TA可能的样子。'));
+body.appendChild(el('div', 'cj-d-foot', '这不是他的日程表，只是他可能的样子。'));
 let entries = scopeEntries();
 if (!entries.some(en => en.c.id === detailId)) entries = flatEntries();
 const pos = entries.findIndex(en => en.c.id === detailId);
@@ -1136,7 +1136,7 @@ jump(entries[(pos + 1) % entries.length]);
 nav.appendChild(nextB);
 body.appendChild(nav);
 }
-const goBtn = el('button', 'cj-go', '去找TA');
+const goBtn = el('button', 'cj-go', '去找他');
 goBtn.type = 'button';
 goBtn.addEventListener('click', (e) => {
 e.stopPropagation();
@@ -1231,7 +1231,7 @@ if (v === 'slots') {
 phase = 'pickSlot';
 ctl.stay();
 ctl.title('给谁设时辰区间');
-ctl.hint('TA 的世界时间会只在这些时辰里随机');
+ctl.hint('他 的世界时间会只在这些时辰里随机');
 ctl.input(false);
 ctl.pills(list.map(c => ({ label: c.name + ((Array.isArray(c.slots) && c.slots.length) ? ' · ' + slotLabel(c.slots) : ''), value: c.id })));
 ctl.okText('设置');
@@ -1253,7 +1253,7 @@ pendingName = name;
 phase = 'offset';
 ctl.stay();
 ctl.title('设定「' + name + '」的世界时间');
-ctl.hint(arcMode ? '选一个时间偏移（想限定 TA 常在的时辰，去「此间」设）' : '先选时间偏移，下一步还能限定 TA 常在的时辰区间');
+ctl.hint(arcMode ? '选一个时间偏移（想限定 他 常在的时辰，去「此间」设）' : '先选时间偏移，下一步还能限定 他 常在的时辰区间');
 ctl.input(false);
 ctl.pills(OFFSET_PILLS);
 ctl.okText(arcMode ? '完成' : '下一步');

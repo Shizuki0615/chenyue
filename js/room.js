@@ -6,7 +6,7 @@ if (!page) return;
 const COLS = 6, ROWS = 4;
 function S() { try { return window.activeStore(); } catch (e) { return null; } }
 function pn() {
-try { const s = S(); return (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || 'TA'; } catch (e) { return 'TA'; }
+try { const s = S(); return (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || '他'; } catch (e) { return '他'; }
 }
 function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
 function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
@@ -26,12 +26,12 @@ clearTimeout(toastT); toastT = setTimeout(() => { el.className = 'cc-toast'; }, 
 }
 const FB = {
 enter: ['你来了。', '欢迎回来。', '……（好像有谁轻轻应了一声）', '回来啦。'],
-greet: ['嗯。', '来了。', '……嗯。（TA回应了一声）', '在呢。', '今天也一起待着吧。'],
-near: ['过来了？', '再近一点也可以。', '（TA没有躲开）', '嗯，这边。'],
+greet: ['嗯。', '来了。', '……嗯。（他回应了一声）', '在呢。', '今天也一起待着吧。'],
+near: ['过来了？', '再近一点也可以。', '（他没有躲开）', '嗯，这边。'],
 beside: ['坐吧。', '这里留给你了。', '（往旁边挪了一点）', '肩并肩坐着，不说话也很好。'],
-look: ['看什么？', '……被你看到了。', '（TA没有回头）', '我在看你。一直都在。'],
+look: ['看什么？', '……被你看到了。', '（他没有回头）', '我在看你。一直都在。'],
 occupied: ['这里有人了。', '……被占用了。', '等一下，马上好。', '这个位置，是留给你的。'],
-comeover: ['过来。', '一起吗？', '你也来。', '（TA轻轻拍了拍旁边）'],
+comeover: ['过来。', '一起吗？', '你也来。', '（他轻轻拍了拍旁边）'],
 furnuse: ['这个？偶尔用用。', '……还不错吧。', '（房间里多了一点声音）', '家正在一点点变成样子。'],
 windowl: ['外面没什么。', '天色还行。', '……在看云。', '下次一起出去走走吧。'],
 night: ['夜深了。', '还不睡吗？', '灯留着也行。', '晚安之前，再多待一会儿。'],
@@ -40,13 +40,13 @@ water: ['它今天精神不错。', '刚浇过水了。', '……谢谢。'],
 wish: ['许完了。', '……愿望不能告诉你。', '（星光闪了一下，像是回应）'],
 music: ['这首？可以。', '声音调小了一点。', '（跟着节奏轻轻晃）'],
 tea: ['给你倒了一杯。', '小心烫。', '……趁热喝。'],
-senseNear: [pn() + ' 在。', '就在这附近。', '很近。近得能听见呼吸。', '「TA似乎在这里。」'],
+senseNear: [pn() + ' 在。', '就在这附近。', '很近。近得能听见呼吸。', '「他似乎在这里。」'],
 senseFar: ['好像有一点熟悉的感觉。', '说不上来。……但在。', '很远。但没有离开。'],
 senseNone: ['没有人。', '感觉不到。', '……很安静。']
 };
 const GRP = {
-enter: '进门', greet: '打招呼', near: '靠近', beside: '坐到旁边', look: '看TA',
-occupied: 'TA的反应', comeover: 'TA的反应', lamp: '家具互动', furnuse: '家具互动',
+enter: '进门', greet: '打招呼', near: '靠近', beside: '坐到旁边', look: '看他',
+occupied: '他的反应', comeover: '他的反应', lamp: '家具互动', furnuse: '家具互动',
 windowl: '窗边', night: '夜晚', water: '浇水', wish: '许愿', music: '音乐', tea: '热茶',
 senseNear: '方位感知', senseFar: '方位感知', senseNone: '方位感知'
 };
@@ -180,7 +180,7 @@ return Math.min(5, k);
 function capOf() { return LV_CAP[Math.min(d.lv, LV_CAP.length - 1)]; }
 function itemAt(x, y) { return d.fx.find(f => f.x === x && f.y === y) || null; }
 function ownedCount(t) { return (d.inv[t] || 0) + d.fx.filter(x => x.t === t).length; }
-const EARN_CAP = { ta: { cap: 5, name: '陪 TA 互动' }, n: { cap: 10, name: '家具互动' } };
+const EARN_CAP = { ta: { cap: 5, name: '陪 他 互动' }, n: { cap: 10, name: '家具互动' } };
 function gainPts(n, kind) {
 const tk = todayKey();
 if (d.earn.day !== tk) d.earn = { day: tk, n: 0, ta: 0 };
@@ -544,7 +544,7 @@ function taMenu() {
 const pills = [
 { label: '靠近', value: 'near' },
 { label: '坐到旁边', value: 'beside' },
-{ label: '看看TA', value: 'look' },
+{ label: '看看他', value: 'look' },
 { label: '打招呼', value: 'greet' }
 ];
 window.openModal(d.ta.faint ? '……这里好像有人' : pn(), '', function (v) {
@@ -559,7 +559,7 @@ bubble(sayLine('靠近', 'near')); renderStatus(); gainPts(1, 'ta'); vib(18);
 } else if (v === 'beside') {
 bubble(sayLine('坐到旁边', 'beside')); gainPts(1, 'ta'); vib(15);
 } else if (v === 'look') {
-bubble(d.ta.faint ? '……' : sayLine('看TA', 'look')); gainPts(1, 'ta');
+bubble(d.ta.faint ? '……' : sayLine('看他', 'look')); gainPts(1, 'ta');
 } else if (v === 'greet') {
 ta.faint = false;
 bubble(sayLine('打招呼', 'greet')); renderStatus(); gainPts(1, 'ta'); vib(12);
@@ -587,7 +587,7 @@ else {
 const nameMap = { left: '左边', right: '右边', front: '前面（窗边）', back: '身后' };
 const other = ['left', 'right', 'front', 'back'].filter(k => k !== side);
 let txt = '你现在在房间中央。';
-txt += '\n' + nameMap[side] + '：' + (d.ta.faint ? sayLine('方位感知', 'senseNear', true) : (dist <= 2.2 ? 'TA在。' : sayLine('方位感知', 'senseFar', true)));
+txt += '\n' + nameMap[side] + '：' + (d.ta.faint ? sayLine('方位感知', 'senseNear', true) : (dist <= 2.2 ? '他在。' : sayLine('方位感知', 'senseFar', true)));
 other.forEach((k, ix) => { if (ix < 2) txt += '\n' + nameMap[k] + '：' + sayLine('方位感知', 'senseNone', true); });
 line = txt;
 }

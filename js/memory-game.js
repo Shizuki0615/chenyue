@@ -27,7 +27,7 @@ const chemEl = document.getElementById('memory-chem');
 const coinEl = document.getElementById('memory-coin');
 const hintEl = document.getElementById('memory-hint');
 function T(x) { return (window.taFit ? window.taFit(x) : x); }
-function partnerName() { return (typeof window.chatPartnerName === 'function') ? window.chatPartnerName() : 'TA'; }
+function partnerName() { return (typeof window.chatPartnerName === 'function') ? window.chatPartnerName() : '他'; }
 function shuffle(arr) {
 const a = arr.slice();
 for (let i = a.length - 1; i > 0; i--) {
@@ -258,7 +258,7 @@ if (!g) return;
 if (turnEl) {
 if (g.phase === 'ended') turnEl.textContent = '本局完成';
 else if (g.turn === 'player') turnEl.textContent = '轮到你了';
-else turnEl.textContent = T('TA') + ' 的回合';
+else turnEl.textContent = T('他') + ' 的回合';
 }
 if (chemEl) chemEl.textContent = '💕 默契 ' + Math.min(100, Math.round(g.chemistry));
 if (coinEl) coinEl.textContent = '心意币 +' + Math.round(g.coinFen / YUAN);
@@ -327,8 +327,8 @@ if (!first) return;
 flipCard(first); g.first = first;
 syncCard(first.id);
 sfxFlip();
-hint(T('TA') + '翻开了 ' + first.face);
-if (first.face === g.lastPlayerFace) hint(T('TA') + '记得你刚翻过的 ' + first.face + '…');
+hint(T('他') + '翻开了 ' + first.face);
+if (first.face === g.lastPlayerFace) hint(T('他') + '记得你刚翻过的 ' + first.face + '…');
 timers.push(setTimeout(() => {
 if (!game || game !== g || g.turn !== 'ta' || g.phase !== 'idle') return;
 const second = taPickSecond(g, first);
@@ -368,7 +368,7 @@ return;
 g.phase = 'idle';
 setTurn(me);
 if (me === 'player') hint('配对成功！再来一次');
-else { hint(T('TA') + '又找到一对'); scheduleTa(); }
+else { hint(T('他') + '又找到一对'); scheduleTa(); }
 } else {
 g.chemistry = Math.max(0, g.chemistry - 3);       // 翻错：不扣太多
 g.streak = 0; g.streakOwner = null;
@@ -383,7 +383,7 @@ g.phase = 'idle';
 g.lastPlayerFace = me === 'player' ? f.face : g.lastPlayerFace;
 const next = me === 'player' ? 'ta' : 'player';
 setTurn(next);
-if (next === 'ta') { hint(T('TA') + '的回合'); scheduleTa(); }
+if (next === 'ta') { hint(T('他') + '的回合'); scheduleTa(); }
 else hint('轮到你了');
 }, fastMode() ? 120 : 760));
 }
@@ -421,7 +421,7 @@ if (overlayBodyEl) {
 overlayBodyEl.innerHTML =
 '<div class="pong-end-score">找到 ' + g.params.pairs + ' / ' + g.params.pairs + ' 对</div>' +
 '<div class="pong-end-stat">你　配对 ' + g.myPairs + ' · 翻牌 ' + g.myFlips + ' 次</div>' +
-'<div class="pong-end-stat">' + T('TA') + '　配对 ' + g.taPairs + ' · 翻牌 ' + g.taFlips + ' 次</div>' +
+'<div class="pong-end-stat">' + T('他') + '　配对 ' + g.taPairs + ' · 翻牌 ' + g.taFlips + ' 次</div>' +
 '<div class="memory-res-chem">💕 默契 ' + g.chemistry + '</div>' +
 '<div class="memory-res-coin">获得心意币 +' + grantedYuan + (grantedYuan < totalYuan * memMult ? '（今日奖励已达上限 +' + COIN_DAILY_CAP + '）' : (firstClear ? '（首次通关' + g.params.label + '）' : '')) + '</div>' +
 '<div class="pong-end-stat">累计完成 ' + stats.clears + ' 局 · 历史最佳默契 ' + stats.bestChem + '</div>' +
@@ -432,7 +432,7 @@ if (overlayBtn2El) { overlayBtn2El.textContent = '返回小游戏'; overlayBtn2E
 if (overlayEl) overlayEl.hidden = false;
 try {
 if (window.chatAddSystem) {
-window.chatAddSystem('记忆翻牌 · 你 ' + g.myPairs + ' 对 · ' + T('TA') + ' ' + g.taPairs + ' 对 · 默契 ' + g.chemistry, { special: 'memory' });
+window.chatAddSystem('记忆翻牌 · 你 ' + g.myPairs + ' 对 · ' + T('他') + ' ' + g.taPairs + ' 对 · 默契 ' + g.chemistry, { special: 'memory' });
 }
 const pool = window.getInteractPool
 ? window.getInteractPool('游戏平局·回应', ['一起找完了。', '好默契呀。', '差不多嘛。', '再来一局？'])
@@ -448,7 +448,7 @@ const d = curDiff();
 if (overlayTitleEl) overlayTitleEl.textContent = '记忆翻牌';
 if (overlayBodyEl) {
 overlayBodyEl.innerHTML =
-'<div class="pong-start-tip">和 ' + T('TA') + ' 一起，把藏起来的牌全部找出来</div>' +
+'<div class="pong-start-tip">和 ' + T('他') + ' 一起，把藏起来的牌全部找出来</div>' +
 '<div class="pong-start-ctrl">' + d.label + ' · ' + d.cols + '×' + d.rows + ' · ' + d.pairs + ' 对 · 轮流翻两张</div>' +
 '<div class="pong-start-ctrl">配对成功再来一次 · 结束记默契与心意币</div>';
 }
@@ -463,7 +463,7 @@ buildBoard(game);
 renderInfo();
 if (overlayEl) overlayEl.hidden = true;
 if (game.turn === 'player') hint('轮到你了 · 翻开两张牌');
-else { hint(T('TA') + '先开始…'); scheduleTa(); }
+else { hint(T('他') + '先开始…'); scheduleTa(); }
 }
 function stopTimers() {
 timers.forEach(t => clearTimeout(t));
@@ -472,7 +472,7 @@ timers = [];
 function onCardClick(idx) {
 const g = game;
 if (!g || g.phase !== 'idle') return;
-if (g.turn !== 'player') { hint(T('TA') + '翻牌中 · 等它翻完'); return; }
+if (g.turn !== 'player') { hint(T('他') + '翻牌中 · 等它翻完'); return; }
 const card = g.cards[idx];
 if (!card || card.matched || card.flipped) return;
 flipCard(card);
@@ -493,7 +493,7 @@ if (!panel) return;
 if (partnerNameEl) {
 try {
 const s = window.activeStore && window.activeStore();
-partnerNameEl.textContent = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || (window.taWord ? window.taWord() : 'TA');
+partnerNameEl.textContent = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || (window.taWord ? window.taWord() : '他');
 } catch (e) { partnerNameEl.textContent = partnerName(); }
 }
 stopTimers();

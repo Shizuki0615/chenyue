@@ -1528,8 +1528,8 @@ interBody.appendChild(pills);
 const hint = document.createElement('div');
 hint.className = 'gc-inter-hint';
 hint.textContent = interMode === 'av'
-? '点一张头像＝立即换成 TA 的群聊头像；先选上方目标再点。'
-: '点一个昵称＝立即换成 TA 的群聊昵称；先选上方目标再点。';
+? '点一张头像＝立即换成 他 的群聊头像；先选上方目标再点。'
+: '点一个昵称＝立即换成 他 的群聊昵称；先选上方目标再点。';
 interBody.appendChild(hint);
 const map = interPoolLoad();
 const list = Array.isArray(map[interTarget]) ? map[interTarget] : [];
@@ -2037,7 +2037,7 @@ rStep('回复条数最少', 'gc-reply-min', 1, 10, 1);
 rStep('回复条数最多', 'gc-reply-max', 1, 20, 1);
 const cntNote = document.createElement('div');
 cntNote.className = 'gc-set-note';
-cntNote.textContent = '这两项＝你每发 1 条消息，群里每个回你的成员就各回你几条（在最少~最多之间随机，默认 1~2 条）。注意：这是「每条消息、每个成员」的条数，不是 TA 一天最多发几条，不建议调大——成员是各算各的（调到 5、3 个人同时回你＝一屏 15 条），你连着发的每句话还各触发一批。嫌刷屏就把这两项都调成 1；关掉下方「多字卡回复」总开关也能锁死一条（关闭后设几条都只回 1 条）。撤回后的补发不占本上限，所以实际收到的可能比这里设的条数多。';
+cntNote.textContent = '这两项＝你每发 1 条消息，群里每个回你的成员就各回你几条（在最少~最多之间随机，默认 1~2 条）。注意：这是「每条消息、每个成员」的条数，不是 他 一天最多发几条，不建议调大——成员是各算各的（调到 5、3 个人同时回你＝一屏 15 条），你连着发的每句话还各触发一批。嫌刷屏就把这两项都调成 1；关掉下方「多字卡回复」总开关也能锁死一条（关闭后设几条都只回 1 条）。撤回后的补发不占本上限，所以实际收到的可能比这里设的条数多。';
 (curSec||settingsBody).appendChild(cntNote);
 rTitle('内容概率');
 rStep('拍一拍概率', 'gc-touch-prob', 0, 100, 5);
@@ -2103,7 +2103,7 @@ return row;
 (curSec||settingsBody).appendChild(gcToggleRow('我可发送语音', '输入栏左侧显示「麦克风」按钮，可录音并发送语音', 'cs-voice-send',
 () => syncGcInputBtns()));
 (curSec||settingsBody).appendChild(gcToggleRow('隐藏联系人的表情包', '表情包面板只显示「我的表情包」', 'hide-ta-sticker',
-(en) => { try { document.dispatchEvent(new Event('hide-ta-sticker-changed')); } catch (e) {} toast(en ? '已隐藏：表情包面板只显示「我的表情包」' : '已恢复显示 TA 的和公用表情包'); }));
+(en) => { try { document.dispatchEvent(new Event('hide-ta-sticker-changed')); } catch (e) {} toast(en ? '已隐藏：表情包面板只显示「我的表情包」' : '已恢复显示 他 的和公用表情包'); }));
 (curSec||settingsBody).appendChild(gcToggleRow('允许删除成员消息', '点击成员消息气泡可在操作菜单里删除该条消息', 'cs-del-ta-msg',
 (en) => toast(en ? '已开启：点击成员消息可在操作菜单里删除该条消息' : '已关闭删除成员消息功能')));
 const ioRow = document.createElement('div');

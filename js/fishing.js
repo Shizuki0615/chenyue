@@ -22,8 +22,8 @@ clearTimeout(t._timer); t._timer = setTimeout(function () { t.className = 'cc-to
 }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function fit(s) { return window.taFit ? window.taFit(s) : s; }
-function partnerName() { try { return window.chatPartnerName ? window.chatPartnerName() : 'TA'; } catch (e) { return 'TA'; } }
-function taWord() { try { return window.taWord ? window.taWord() : 'TA'; } catch (e) { return 'TA'; } }
+function partnerName() { try { return window.chatPartnerName ? window.chatPartnerName() : '他'; } catch (e) { return '他'; } }
+function taWord() { try { return window.taWord ? window.taWord() : '他'; } catch (e) { return '他'; } }
 function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : ''; }
 function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -116,7 +116,7 @@ shell: ['捡到一个小贝壳，给你。', '这个贝壳挺好看的，留给�
 stone: ['捡到一块小石头，很光滑，给你。', '这块石头摸起来很舒服，送你。'],
 bottle: ['捞到一个漂流瓶，没舍得打开，给你。', '捡到一个漂流瓶，送你了。'],
 trinket: ['钓上来一个小饰品，是你的了。', '这个小东西，很想给你。'],
-flower: ['这朵花给你。', 'TA 把花递给你。', '捞起一朵花，觉得适合你。']
+flower: ['这朵花给你。', '他 把花递给你。', '捞起一朵花，觉得适合你。']
 };
 function giftNoteFor(item) {
 const builtin = GIFT_NOTES[item.giftNote || item.id] || ['这个给你。', '想把这份小惊喜留给你。'];
@@ -278,7 +278,7 @@ missStreak++;
 let msg = '鱼跑了…（' + (quality === 'perfect' ? '差一点点' : '时机不对') + '）';
 if (missStreak === 3 || missStreak === 4) msg += ' 别急，慢慢来';
 statusText(msg);
-if (Math.random() < 0.15) { setTimeout(function () { sendTaLine(fit('TA：') + pick(TA_COMFORT), false); }, 500); }
+if (Math.random() < 0.15) { setTimeout(function () { sendTaLine(fit('他：') + pick(TA_COMFORT), false); }, 500); }
 }
 mine.phase = 'idle'; mine.progress = null;
 render();
@@ -358,7 +358,7 @@ saveGifts(g);
 sfxGift();
 const note = giftNoteFor(item);
 statusText(taWord() + ' 钓到了 ' + item.icon + ' ' + item.name + '，并把它送给了你。');
-if (note) sendTaLine(fit('TA：') + note, true); // #1515 空寄语＝不发言（赠送照常）
+if (note) sendTaLine(fit('他：') + note, true); // #1515 空寄语＝不发言（赠送照常）
 } else {
 const t = loadToday();
 t.ta[item.id] = (t.ta[item.id] || 0) + 1; saveToday(t);
@@ -367,11 +367,11 @@ statusText(taWord() + ' 钓到了 ' + item.icon + ' ' + item.name);
 maybeTaCook(item.id);
 if (item.giftNote === 'flower' && Math.random() < 0.5) {
 const note = giftNoteFor(item);
-setTimeout(function () { if (note) sendTaLine(fit('TA：') + note, false); }, 700); // #1515 空寄语＝不发言
+setTimeout(function () { if (note) sendTaLine(fit('他：') + note, false); }, 700); // #1515 空寄语＝不发言
 } else if (item.r >= 4 && Math.random() < 0.5) {
-setTimeout(function () { sendTaLine(fit('TA：') + pick(TA_PROUD), false); }, 600);
+setTimeout(function () { sendTaLine(fit('他：') + pick(TA_PROUD), false); }, 600);
 } else if (Math.random() < 0.3) {
-setTimeout(function () { sendTaLine(fit('TA：') + pick(TA_HAPPY), false); }, 600);
+setTimeout(function () { sendTaLine(fit('他：') + pick(TA_HAPPY), false); }, 600);
 }
 }
 }
@@ -561,7 +561,7 @@ castBtn.textContent = waiting ? '等待鱼漂…' : '抛竿';
 if (reelBtn) reelBtn.hidden = !bitting;
 if (timingWrapEl) timingWrapEl.hidden = !bitting;
 if (statusEl && !statusEl.dataset.keep) {
-if (mine.phase === 'waiting') statusEl.textContent = '鱼漂已下水，等 TA 咬钩…';
+if (mine.phase === 'waiting') statusEl.textContent = '鱼漂已下水，等 他 咬钩…';
 else if (mine.phase === 'idle' && curTab === 'today') { if (statusEl.textContent !== lastNotice) statusEl.textContent = lastNotice; }
 }
 renderPage();
@@ -656,11 +656,11 @@ return html;
 function renderGifts() {
 const g = loadGifts();
 const html =
-'<div class="fish-sub">TA 送我的东西</div>' +
+'<div class="fish-sub">他 送我的东西</div>' +
 (g.length ? g.map(function (item, idx) {
 const it = ITEM_MAP[item.id]; if (!it) return '';
 return '<div class="fish-row"><span class="fish-ico">' + it.icon + '</span><span class="fish-name">' + esc(it.name) + '</span><span class="fish-gift-ts">' + esc(fmtTs(item.ts)) + '</span><button class="fish-exch" data-idx="' + idx + '">兑换 ¥5.20</button></div>';
-}).join('') : '<div class="fish-empty">TA 还没送你东西，继续一起钓鱼吧～</div>');
+}).join('') : '<div class="fish-empty">他 还没送你东西，继续一起钓鱼吧～</div>');
 return html;
 }
 function renderCook() {
@@ -673,7 +673,7 @@ const st = cookStatus(entry); if (!st) return;
 const it = ITEM_MAP[entry.fishId];
 if (st.done) {
 const price = dishPrice(entry.fishId, entry.quality);
-html += '<div class="fish-cook-row done"><span class="fish-ico">' + st.dish.emoji + '</span><span class="fish-name">' + esc(st.dish.name) + '<i class="fish-cook-tag">已出锅</i></span><span class="fish-price">¥' + fenToStr(price) + '</span><button class="fish-cook-sell" data-idx="' + idx + '">出售</button><button class="fish-cook-send" data-idx="' + idx + '">送TA</button></div>';
+html += '<div class="fish-cook-row done"><span class="fish-ico">' + st.dish.emoji + '</span><span class="fish-name">' + esc(st.dish.name) + '<i class="fish-cook-tag">已出锅</i></span><span class="fish-price">¥' + fenToStr(price) + '</span><button class="fish-cook-sell" data-idx="' + idx + '">出售</button><button class="fish-cook-send" data-idx="' + idx + '">送他</button></div>';
 } else {
 const pct = Math.round(st.progress * 100);
 html += '<div class="fish-cook-row"><span class="fish-ico">' + (it ? it.icon : '🐟') + '</span><span class="fish-name">烹饪 ' + esc(st.dish.name) + '</span><div class="fish-cook-bar"><div class="fish-cook-fill" style="width:' + pct + '%"></div></div><span class="fish-cnt">' + (st.remainSec >= 60 ? Math.ceil(st.remainSec / 60) + '分' : st.remainSec + '秒') + '</span></div>';

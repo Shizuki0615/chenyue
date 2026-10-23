@@ -29,21 +29,21 @@ const N = 11;                       // 11×11 迷你盘
 const THINK_MIN = 550, THINK_VAR = 700;
 const DIFFS = {
 casual: {
-label: '休闲', tip: 'TA 让着你，轻松玩',
+label: '休闲', tip: '他 让着你，轻松玩',
 w: { normal: 0.35, serious: 0.05, sandbag: 0.35, blunder: 0.25 },
 take: { serious: 0.7, normal: 0.4, sandbag: 0.2, blunder: 0.25 },
 block: { serious: 0.6, normal: 0.4, sandbag: 0.15, blunder: 0.12 },
 floor: 4
 },
 daily: {
-label: '日常', tip: 'TA 像普通人，时好时坏',
+label: '日常', tip: '他 像普通人，时好时坏',
 w: { normal: 0.5, serious: 0.2, sandbag: 0.15, blunder: 0.15 },
 take: { serious: 0.95, normal: 0.6, sandbag: 0.25, blunder: 0.3 },
 block: { serious: 0.9, normal: 0.62, sandbag: 0.22, blunder: 0.18 },
 floor: 3
 },
 serious: {
-label: '认真', tip: 'TA 想赢，有挑战',
+label: '认真', tip: '他 想赢，有挑战',
 w: { normal: 0.35, serious: 0.55, sandbag: 0.05, blunder: 0.05 },
 take: { serious: 0.98, normal: 0.8, sandbag: 0.4, blunder: 0.5 },
 block: { serious: 0.96, normal: 0.82, sandbag: 0.4, blunder: 0.45 },
@@ -52,7 +52,7 @@ floor: 2
 };
 const DIFF_ORDER = ['casual', 'daily', 'serious'];
 let selDiff = 'daily';
-const THINK_LINES = ['TA正在想……', 'TA盯着棋盘看了一会儿', 'TA托着下巴琢磨'];
+const THINK_LINES = ['他正在想……', '他盯着棋盘看了一会儿', '他托着下巴琢磨'];
 const T = window.taFit || function (x) { return x; };
 function prefix() { return (window.activePrefix && window.activePrefix()) || 'xy-home-v2'; }
 function fastMul() { return (window.__gkDebug && window.__gkDebug.fast) ? 0.05 : 1; }
@@ -122,7 +122,7 @@ return d;
 function saveStats(s) { try { localStorage.setItem(statsKey(), JSON.stringify(s)); } catch (e) {} }
 function statsLine() {
 const s = loadStats();
-return '累计战绩 你 ' + s.w + '胜 · ' + T('TA') + ' ' + s.l + '胜 · ' + s.d + '平';
+return '累计战绩 你 ' + s.w + '胜 · ' + T('他') + ' ' + s.l + '胜 · ' + s.d + '平';
 }
 const DIRS = [[0, 1], [1, 0], [1, 1], [1, -1]];
 function inBoard(r, c) { return r >= 0 && r < N && c >= 0 && c < N; }
@@ -322,7 +322,7 @@ bubbleT = setTimeout(() => { try { b.classList.remove('show'); } catch (e) {} },
 function dot(side) { return '<i class="c4-dot ' + (side === 1 ? 'c4-dot-you' : 'c4-dot-ta') + '"></i>'; }
 function showTurnStatus() {
 if (!statusEl || !st || st.over) return;
-setStatus(st.turn === 1 ? dot(1) + '你的回合' : T('TA') + '正在想……');
+setStatus(st.turn === 1 ? dot(1) + '你的回合' : T('他') + '正在想……');
 }
 function clearBoardDom() {
 boardEl.querySelectorAll('.gk-stone').forEach((s) => s.remove());
@@ -341,7 +341,7 @@ hideOverlay();
 if (undoBtn) undoBtn.classList.remove('gk-undo-used');
 const s = loadStats();
 st.turn = s.nextFirst === 'ta' ? 2 : 1;
-setStatus(st.turn === 1 ? dot(1) + '你的回合，点棋盘落子' : T('TA') + '先手');
+setStatus(st.turn === 1 ? dot(1) + '你的回合，点棋盘落子' : T('他') + '先手');
 if (st.turn === 2) scheduleTaMove(Math.max(THINK_MIN, 700));
 }
 function scheduleTaMove(delay) {
@@ -447,11 +447,11 @@ var dr = window.arcadeTryDrop('gomoku');
 if (dr) { dropLine = '<div class="pong-end-stat">🌠 掉落限定摆件「' + dr.ico + ' ' + dr.name + '」！游乐室图鉴 +1</div>'; dropStat = '🌠 掉落限定摆件「' + dr.ico + ' ' + dr.name + '」'; taSay('哇，掉了「' + dr.name + '」！'); }
 } catch (e) {}
 }
-const title = winner === 1 ? '🏆 你赢了！' : winner === 2 ? T('TA') + '赢了' : '平局';
+const title = winner === 1 ? '🏆 你赢了！' : winner === 2 ? T('他') + '赢了' : '平局';
 const body =
 '<div class="pong-end-stat">本局共 ' + st.moves + ' 手</div>' +
 '<div class="pong-end-stat">' + statsLine() + '</div>' +
-'<div class="pong-end-stat">下一局 ' + (s.nextFirst === 'you' ? '你' : T('TA')) + '先手</div>' +
+'<div class="pong-end-stat">下一局 ' + (s.nextFirst === 'you' ? '你' : T('他')) + '先手</div>' +
 (coinLine ? '<div class="pong-end-stat">' + coinLine + '</div>' : '') +
 dropLine +
 pillsHtml() +
@@ -464,9 +464,9 @@ if (endBtn) endBtn.hidden = false;
 clearTimeout(ovT);
 if (st.winCells && st.winCells.length) ovT = setTimeout(showResult, Math.round(1000 * fastMul()));
 else showResult();
-setStatus(winner === 1 ? '🎉 你赢了！' : winner === 2 ? T('TA') + '赢了这一局' : '棋盘下满了，平局');
+setStatus(winner === 1 ? '🎉 你赢了！' : winner === 2 ? T('他') + '赢了这一局' : '棋盘下满了，平局');
 try {
-const resTxt = winner === 1 ? '你赢' : winner === 2 ? T('TA') + '赢' : '平局';
+const resTxt = winner === 1 ? '你赢' : winner === 2 ? T('他') + '赢' : '平局';
 const gStats = ['本局共 ' + st.moves + ' 手', '累计战绩 你 ' + s.w + '胜 · {ta} ' + s.l + '胜 · ' + s.d + '平',
 '下一局 ' + (s.nextFirst === 'you' ? '你' : '{ta}') + '先手'].concat(coinLine ? [coinLine] : []).concat(dropStat ? [dropStat] : []);
 const gPayload = {
@@ -499,8 +499,8 @@ const s = loadStats();
 showOverlay('五子棋',
 pillsHtml() +
 '<div class="ms-cur" id="gk-cur">' + diffHint() + '</div>' +
-'<div class="c4-start-tip">你执 🔵黑 · ' + T('TA') + '执 ⚪白<br>轮流落子，先连成五子的一方获胜</div>' +
-'<div class="c4-start-note">🎲 ' + T('TA') + '每回合状态随机——认真/正常/放水/失误</div>' +
+'<div class="c4-start-tip">你执 🔵黑 · ' + T('他') + '执 ⚪白<br>轮流落子，先连成五子的一方获胜</div>' +
+'<div class="c4-start-note">🎲 ' + T('他') + '每回合状态随机——认真/正常/放水/失误</div>' +
 (s.w + s.l + s.d > 0 ? '<div class="pong-end-stat">' + statsLine() + '</div>' : ''),
 s.w + s.l + s.d > 0 ? '再来一局' : '开始对局');
 if (endBtn) endBtn.hidden = true;
@@ -556,7 +556,7 @@ const curEl = document.getElementById('gk-cur');
 if (curEl) curEl.textContent = diffHint();
 });
 function setNames() {
-let name = T('TA');
+let name = T('他');
 try {
 const s = window.activeStore && window.activeStore();
 name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

@@ -97,7 +97,7 @@ const lo = BALL_R, span = W - BALL_R * 2;
 let m = ((x - lo) % (2 * span) + 2 * span) % (2 * span);
 return m > span ? (2 * span - m) + lo : m + lo;
 }
-const taName = () => (window.taWord ? window.taWord() : 'TA');
+const taName = () => (window.taWord ? window.taWord() : '他');
 const T = (x) => (window.taFit ? window.taFit(x) : x);
 const ROW_COLORS = [['#ffb3c6', '#ff5f7a'], ['#cbb2ff', '#9d6bff'], ['#96c7ff', '#4a86e8'], ['#79e6cd', '#2fbf9d']];
 const STARS = [];
@@ -1112,7 +1112,7 @@ if (savedBalls >= 1 && savedBalls <= 3 && ballsSel) ballsSel.value = String(save
 } catch (e) {}
 const bn = targetBallCount();
 showOverlay(T('双人打砖块'),
-'<div class="pong-start-tip">你和' + T('TA') + '各守半场共接' + (bn > 1 ? bn + ' 颗球' : '同一颗球') + '<br>清光砖块进入下一层 · 共 3 次失误机会</div>' +
+'<div class="pong-start-tip">你和' + T('他') + '各守半场共接' + (bn > 1 ? bn + ' 颗球' : '同一颗球') + '<br>清光砖块进入下一层 · 共 3 次失误机会</div>' +
 '<div class="pong-start-ctrl">按住画面左右拖动</div>' +
 (best > 0 ? '<div class="pong-end-stat">历史最佳 ' + best + ' 分</div>' : ''),
 '开始');

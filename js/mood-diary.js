@@ -190,7 +190,7 @@ if (note) note.value = mine ? (mine.n || '') : '';
 const ta = document.getElementById('mood-ta-line');
 if (ta) {
 const tm = taMoodFor(k);
-const nm = store().get('lbl-partner') || 'TA';
+const nm = store().get('lbl-partner') || '他';
 ta.textContent = tm ? (nm + ' 今天的心情：' + tm.e + ' ' + tm.n)
 : (((window.mochiDataPending && window.mochiDataPending()) || interactionUnknown(k)) ? window.mochiLoadingText()
 : (nm + ' 今天还没有互动，还没有心情哦'));
@@ -246,7 +246,7 @@ for (let i = 1; i <= days; i += 5) marks += '<text x="' + cxf(i - 1).toFixed(1) 
 curve.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;display:block">' +
 '<line x1="' + L + '" y1="' + cyf(3) + '" x2="' + (W - R) + '" y2="' + cyf(3) + '" stroke="rgba(0,0,0,.08)" stroke-dasharray="3 4"/>' +
 poly('ta') + poly('me') + marks + '</svg>' +
-'<div class="mood-legend"><span class="ml-me">— 我</span><span class="ml-ta">— ' + esc(store().get('lbl-partner') || 'TA') + '</span></div>';
+'<div class="mood-legend"><span class="ml-me">— 我</span><span class="ml-ta">— ' + esc(store().get('lbl-partner') || '他') + '</span></div>';
 const firstDow = new Date(y, mo - 1, 1).getDay();
 let gh = '';
 ['日', '一', '二', '三', '四', '五', '六'].forEach(w => gh += '<span class="mood-cell mood-dow">' + w + '</span>');
@@ -257,7 +257,7 @@ const k = y + '-' + pad(mo) + '-' + pad(i);
 const rec = data[k];
 const tm = taMoodFor(k);
 const cls = 'mood-cell mood-day' + (k === todayK ? ' today' : '');
-gh += '<span class="' + cls + '" title="我 ' + (rec ? moodByEmoji(rec.m).n : '未记录') + '｜TA ' + (tm ? tm.n : '未互动') + '">' +
+gh += '<span class="' + cls + '" title="我 ' + (rec ? moodByEmoji(rec.m).n : '未记录') + '｜他 ' + (tm ? tm.n : '未互动') + '">' +
 '<span class="mood-dnum">' + i + '</span>' +
 '<span class="mood-dfaces"><i>' + (rec ? rec.m : '') + '</i><i>' + (tm ? tm.e : '') + '</i></span></span>';
 }

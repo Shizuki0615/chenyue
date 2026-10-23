@@ -84,7 +84,7 @@ if (v) return v;
 try { v = store.get(deskKey); } catch (e) {}
 return v || fb;
 }
-function cPartnerName() { return chatName('cs-lbl-partner', 'lbl-partner', 'TA'); }
+function cPartnerName() { return chatName('cs-lbl-partner', 'lbl-partner', '他'); }
 function cUserName() { return chatName('cs-lbl-user', 'lbl-user', '我'); }
 function strHash(s) {
 let h = 5381;
@@ -871,7 +871,7 @@ if (!avClaimCycle('avatar-me-lib-last', now)) return;
 if (invite) {
 showMeAvatarInvite(data);
 if (document.visibilityState === 'hidden' && window.bgNotifyCheck) {
-const iname = store.get('lbl-partner') || 'TA';
+const iname = store.get('lbl-partner') || '他';
 window.bgNotifyCheck(iname + ' 想给你换头像', Date.now(), { name: iname, img: data, kind: 'invite' });
 }
 } else {
@@ -922,7 +922,7 @@ noteApplied('partner', fit);
 chatSystem(cPartnerName() + ' 更换了头像', fit);
 try {
 if (window.bgNotifyCheck) {
-window.bgNotifyCheck((store.get('lbl-partner') || 'TA') + ' 更换了头像', Date.now(), { name: store.get('lbl-partner') || 'TA', av: fit, kind: 'other' });
+window.bgNotifyCheck((store.get('lbl-partner') || '他') + ' 更换了头像', Date.now(), { name: store.get('lbl-partner') || '他', av: fit, kind: 'other' });
 }
 } catch (e) {}
 });
@@ -933,9 +933,9 @@ checkAvatarLibRefresh();
 try { setInterval(checkMeAvatarRefresh, 60000); } catch (e) {}
 checkMeAvatarRefresh();
 function applyPartnerNick(name) {
-const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');
+const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
 if (name) store.set('cs-lbl-partner', name); else store.remove('cs-lbl-partner');
-const newEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');
+const newEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
 if (oldEff !== newEff) {
 try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {}
 }
@@ -952,23 +952,23 @@ try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff, 'me'); } 
 try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}
 syncVal();
 }
-function nickMsgPartner(to) { return 'TA 把聊天昵称换成了「' + to + '」'; }
-function nickMsgMeSet(to) { return '我把 TA 的聊天昵称换成了「' + to + '」'; }
+function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }
+function nickMsgMeSet(to) { return '我把 他 的聊天昵称换成了「' + to + '」'; }
 function nickMsgMeSelf(to) { return '我把自己的聊天昵称换成了「' + to + '」'; }
-function nickMsgTaSetMine(to) { return 'TA 把我的聊天昵称换成了「' + to + '」'; }
+function nickMsgTaSetMine(to) { return '他 把我的聊天昵称换成了「' + to + '」'; }
 function replyNickInvite(accepted, name) {
 const to = String(name || store.get('cs-lbl-partner') || '');
 const text = accepted
-? (to ? 'TA 同意了我的换昵称邀请，昵称换成了「' + to + '」' : 'TA 同意了我的换昵称邀请')
-: 'TA 拒绝了我的换昵称邀请，昵称保持不变';
+? (to ? '他 同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他 同意了我的换昵称邀请')
+: '他 拒绝了我的换昵称邀请，昵称保持不变';
 chatSystem(text, null, true);
 toast(text);
 }
 function replyMeNickInvite(accepted, name) {
 const to = String(name || store.get('cs-lbl-user') || '');
 const text = accepted
-? (to ? '我同意了 TA 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 TA 的换昵称邀请')
-: '我拒绝了 TA 的换昵称邀请，昵称保持不变';
+? (to ? '我同意了 他 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 他 的换昵称邀请')
+: '我拒绝了 他 的换昵称邀请，昵称保持不变';
 chatSystem(text, null, true);
 }
 function switchNickFromLib(name) {
@@ -1059,7 +1059,7 @@ if (!avClaimCycle('nick-me-lib-last', now)) return; // FIX #882：同头像池�
 if (invite) {
 showMeNickInvite(name);
 if (document.visibilityState === 'hidden' && window.bgNotifyCheck) {
-const iname = store.get('lbl-partner') || 'TA';
+const iname = store.get('lbl-partner') || '他';
 window.bgNotifyCheck(iname + ' 想给你换昵称', Date.now(), { name: iname, kind: 'invite' });
 }
 } else {

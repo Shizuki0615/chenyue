@@ -29,10 +29,10 @@ res: [/^chat-/, /^cs-(?!avatar-|lbl-)/, /^rp-cover-/, /* #1346: legacy rp-wallet
 desc: '群聊记录、群分组、群成员资料、群聊美化与设置',
 res: [/^gc-/, /^group-chat-msgs$/, /^group-chat-enabled$/] },
 { id: 'cards', name: '字卡库与回复设置', group: '聊天与社交', scope: 'both', page: 'page-custom-cards', btns: 'cc-export,cc-import-data,cc-clear-all',
-desc: '自定义/公用/默认字卡、词典、TA 回复字卡、各类概率与开关（回复设置）',
+desc: '自定义/公用/默认字卡、词典、他 回复字卡、各类概率与开关（回复设置）',
 res: [/^cc-/, /^quote-cards/, /^reply-/, /^dc-/, /^dcf-/, /^dict-/, /^rcard-/, /^tm-/, /^rps-/, /^mc-/, /^mh-/, /^rc-/] },
 { id: 'fav', name: '收藏', group: '聊天与社交', scope: 'desk', page: 'page-fav',
-desc: '我收藏的消息/字卡/图片与 TA 的收藏',
+desc: '我收藏的消息/字卡/图片与 他 的收藏',
 res: [/^fav-msgs$/, /^fav-img-/, /^fav-media-/, /^fav-settings/, /^fav-ta-/] },
 { id: 'identity', name: '昵称与头像', group: '聊天与社交', scope: 'desk',
 desc: '双方当前昵称、头像、聊天页昵称与头像（各功能显示处共用这份资料）',
@@ -46,8 +46,8 @@ res: [/^mail-/, /^ml-/] },
 { id: 'feed', name: '朋友圈', group: '聊天与社交', scope: 'both', page: 'page-feed', btns: 'feed-clear-all',
 desc: '全部动态、评论点赞、通知提醒、封面与昵称头像',
 res: [/^feed-/] },
-{ id: 'ask', name: 'TA 的提问与问卷', group: '聊天与社交', scope: 'desk', page: 'page-ta-ask',
-desc: 'TA 的提问/选择题/好奇/吐槽、问卷作答记录、询问提醒时间',
+{ id: 'ask', name: '他 的提问与问卷', group: '聊天与社交', scope: 'desk', page: 'page-ta-ask',
+desc: '他 的提问/选择题/好奇/吐槽、问卷作答记录、询问提醒时间',
 res: [/^ta-ask$/, /^ta-survey$/, /^ta-choose$/, /^ta-curious$/, /^ta-roast$/, /^ta-cc-state$/, /^ta-checkin$/, /^interact-card-last$/, /^ta-chime:/, /^ti-last-id$/] },
 { id: 'requests', name: '跨桌面查岗 / 来电开关', group: '聊天与社交', scope: 'both',
 desc: '跨桌面查岗开关与频率、跨桌面来电、夜间静默模式、待处理请求',
@@ -95,7 +95,7 @@ res: [/^loc-/, /^loc-auto/, /^loc-sense/] },
 desc: '此间状态与换家标记、成员名册、梦角档案（含时辰区间）',
 res: [/^cjian-/, /^narc-/] },
 { id: 'myarc', name: '我的档案', group: '桌面功能', scope: 'both', page: 'page-my-arc',
-desc: '我的档案资料与共享给 TA 的部分',
+desc: '我的档案资料与共享给 他 的部分',
 res: [/^myarc/] },
 { id: 'drift', name: '漂流瓶', group: '桌面功能', scope: 'desk', page: 'page-drift',
 desc: '我扔出/收到的漂流瓶与回复',
@@ -546,7 +546,7 @@ function deskName() {
 var cid = curCid();
 var nick = '';
 try { nick = window.activeStore().get('lbl-partner') || ''; } catch (e) {}
-return (nick ? nick : 'TA') + '（' + cid + '）';
+return (nick ? nick : '他') + '（' + cid + '）';
 }
 function render() {
 if (!bodyEl) return;

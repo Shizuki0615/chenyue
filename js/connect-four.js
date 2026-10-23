@@ -27,21 +27,21 @@ const COLS = 7, ROWS = 6;
 const THINK_MIN = 550, THINK_VAR = 600;
 const DIFFS = {
 casual: {
-label: '休闲', tip: 'TA 让着你，轻松玩',
+label: '休闲', tip: '他 让着你，轻松玩',
 w: { normal: 0.35, serious: 0.05, sandbag: 0.35, blunder: 0.25 },
 take: { serious: 0.7, normal: 0.4, sandbag: 0.2, blunder: 0.25 },
 block: { serious: 0.6, normal: 0.4, sandbag: 0.15, blunder: 0.12 },
 floor: 4
 },
 daily: {
-label: '日常', tip: 'TA 像普通人，时好时坏',
+label: '日常', tip: '他 像普通人，时好时坏',
 w: { normal: 0.5, serious: 0.2, sandbag: 0.15, blunder: 0.15 },
 take: { serious: 0.95, normal: 0.6, sandbag: 0.25, blunder: 0.3 },
 block: { serious: 0.9, normal: 0.62, sandbag: 0.22, blunder: 0.18 },
 floor: 3
 },
 serious: {
-label: '认真', tip: 'TA 想赢，有挑战',
+label: '认真', tip: '他 想赢，有挑战',
 w: { normal: 0.35, serious: 0.55, sandbag: 0.05, blunder: 0.05 },
 take: { serious: 0.98, normal: 0.8, sandbag: 0.4, blunder: 0.5 },
 block: { serious: 0.96, normal: 0.82, sandbag: 0.4, blunder: 0.45 },
@@ -84,7 +84,7 @@ const sfxDraw = () => beep(440, 0.12, 0.16);
 let st = null;
 let thinkT = null;
 let cellPx = 44;
-const THINK_LINES = ['TA正在想……', 'TA盯着棋盘看了一会儿', 'TA托着下巴琢磨'];
+const THINK_LINES = ['他正在想……', '他盯着棋盘看了一会儿', '他托着下巴琢磨'];
 function newState() {
 return {
 grid: [],                 // grid[r][c]：0 空 / 1 玩家 / 2 TA（r=0 顶行）
@@ -116,7 +116,7 @@ return d;
 function saveStats(s) { try { localStorage.setItem(statsKey(), JSON.stringify(s)); } catch (e) {} }
 function statsLine() {
 const s = loadStats();
-return '累计战绩 你 ' + s.w + '胜 · ' + T('TA') + ' ' + s.l + '胜 · ' + s.d + '平';
+return '累计战绩 你 ' + s.w + '胜 · ' + T('他') + ' ' + s.l + '胜 · ' + s.d + '平';
 }
 function dropRow(grid, c) {
 if (c < 0 || c >= COLS || grid[0][c] !== 0) return -1;
@@ -252,7 +252,7 @@ if (cb) cb();
 }, dur + Math.round(70 * fastMul()) + 20);
 }
 function setStatus(html) { if (statusEl) statusEl.innerHTML = html; }
-function escName() { const n = String(T('TA')); const d = document.createElement('div'); d.textContent = n; return d.innerHTML; }
+function escName() { const n = String(T('他')); const d = document.createElement('div'); d.textContent = n; return d.innerHTML; }
 function dot(side) { return '<i class="c4-dot ' + (side === 1 ? 'c4-dot-you' : 'c4-dot-ta') + '"></i>'; }
 function showTurnStatus() {
 if (!statusEl) return;
@@ -272,13 +272,13 @@ clearBoardDom();
 hideOverlay();
 const s = loadStats();
 st.turn = s.nextFirst === 'ta' ? 2 : 1;
-setStatus(st.turn === 1 ? dot(1) + '你的回合，点击一列落子' : T('TA') + '先手');
+setStatus(st.turn === 1 ? dot(1) + '你的回合，点击一列落子' : T('他') + '先手');
 if (st.turn === 2) scheduleTaMove(Math.max(THINK_MIN, 700));
 }
 function scheduleTaMove(delay) {
 clearTimeout(thinkT);
 const line = THINK_LINES[Math.floor(Math.random() * THINK_LINES.length)];
-setStatus(T(line).replace('TA', escName()));
+setStatus(T(line).replace('他', escName()));
 thinkT = setTimeout(taMove, Math.round(delay * fastMul()));
 }
 function taMove() {
@@ -364,11 +364,11 @@ try {
 if (window.arcadeMarkLuckyPlayed) window.arcadeMarkLuckyPlayed('c4');
 if (winner === 1 && window.arcadeTryDrop) c4Drop = window.arcadeTryDrop('c4');
 } catch (e) {}
-const title = winner === 1 ? '🏆 你赢了！' : winner === 2 ? T('TA') + '赢了' : '平局';
+const title = winner === 1 ? '🏆 你赢了！' : winner === 2 ? T('他') + '赢了' : '平局';
 const body =
 '<div class="pong-end-stat">本局共 ' + st.moves + ' 手</div>' +
 '<div class="pong-end-stat">' + statsLine() + '</div>' +
-'<div class="pong-end-stat">下一局 ' + (s.nextFirst === 'you' ? '你' : T('TA')) + '先手</div>' +
+'<div class="pong-end-stat">下一局 ' + (s.nextFirst === 'you' ? '你' : T('他')) + '先手</div>' +
 (coinLine4 ? '<div class="pong-end-stat">' + coinLine4 + '</div>' : '') +
 (c4Drop ? '<div class="pong-end-stat">🎁 掉落限定摆件「' + c4Drop.name + '」</div>' : '') +
 pillsHtml() +
@@ -378,7 +378,7 @@ if (startBtn) startBtn.textContent = '再来一局';
 if (endBtn) endBtn.hidden = false;
 setStatus(winner === 1 ? '🎉 你赢了！' : winner === 2 ? escName() + '赢了这一局' : '这局没有分出胜负');
 try {
-const resTxt = winner === 1 ? '你赢' : winner === 2 ? T('TA') + '赢' : '平局';
+const resTxt = winner === 1 ? '你赢' : winner === 2 ? T('他') + '赢' : '平局';
 const c4Stats = ['本局共 ' + st.moves + ' 手', '累计战绩 你 ' + s.w + '胜 · {ta} ' + s.l + '胜 · ' + s.d + '平',
 '下一局 ' + (s.nextFirst === 'you' ? '你' : '{ta}') + '先手'].concat(coinLine4 ? [coinLine4] : []).concat(c4Drop ? ['🎁 掉落限定摆件「' + c4Drop.name + '」'] : []);
 if (window.chatAddSystem) window.chatAddSystem(T('四子棋') + ' · ' + resTxt, { special: 'c4', game: {
@@ -408,8 +408,8 @@ const s = loadStats();
 showOverlay('四子棋',
 pillsHtml() +
 '<div class="ms-cur" id="c4-cur">' + diffHint() + '</div>' +
-'<div class="c4-start-tip">你执 🔵 · ' + T('TA') + '执 🟡<br>轮流点击一列落子，先连成四子的一方获胜</div>' +
-'<div class="c4-start-note">🎲 ' + T('TA') + '每回合状态随机——认真/正常/放水/失误</div>' +
+'<div class="c4-start-tip">你执 🔵 · ' + T('他') + '执 🟡<br>轮流点击一列落子，先连成四子的一方获胜</div>' +
+'<div class="c4-start-note">🎲 ' + T('他') + '每回合状态随机——认真/正常/放水/失误</div>' +
 (s.w + s.l + s.d > 0 ? '<div class="pong-end-stat">' + statsLine() + '</div>' : ''),
 s.w + s.l + s.d > 0 ? '再来一局' : '开始对局');
 if (endBtn) endBtn.hidden = true;
@@ -455,7 +455,7 @@ soundBtn.textContent = soundOn ? '🔊' : '🔇';
 soundBtn.classList.toggle('pong-sound-off', !soundOn);
 });
 function setNames() {
-let name = T('TA');
+let name = T('他');
 try {
 const s = window.activeStore && window.activeStore();
 name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

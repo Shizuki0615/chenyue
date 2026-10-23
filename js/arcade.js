@@ -129,7 +129,7 @@ const drops = loadDrops();
 const owned = drops.map((d) => d.name);
 let html = '';
 html += '<div class="arc-lucky' + (luckyPlayedToday() ? ' done' : '') + '">🍀 今日幸运游戏：<b>' + window.arcadeLuckyName() + '</b>（奖励 ×2' + (luckyPlayedToday() ? ' · 今天已打卡' : ' · 快去玩一局') + '）</div>';
-html += '<div class="arc-sec">📊 和' + T('TA') + '的战绩</div>';
+html += '<div class="arc-sec">📊 和' + T('他') + '的战绩</div>';
 html += rows.map((r) => '<div class="arc-row"><span class="arc-ico">' + r.ico + '</span><span class="arc-name">' + r.name + '</span><span class="arc-line">' + r.line + '</span></div>').join('');
 const got = bds.filter((b) => b.on).length;
 html += '<div class="arc-sec">🏅 徽章 ' + got + ' / ' + bds.length + '</div>';
@@ -148,7 +148,7 @@ elm.innerHTML = html;
 }
 function render() { renderAt(bodyEl); }
 function setNames() {
-let name = T('TA');
+let name = T('他');
 try {
 const s = window.activeStore && window.activeStore();
 name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

@@ -413,18 +413,18 @@ coinLine = '🪙 双方心意币各 +¥' + (real / 100).toFixed(2);
 }
 }
 } catch (e) {}
-const title = draw ? '平局' : (playerWin ? '🏆 你赢了' : fit('TA 赢了'));
+const title = draw ? '平局' : (playerWin ? '🏆 你赢了' : fit('他 赢了'));
 const body =
-'<div class="pong-end-score">' + fit('TA') + ' ' + s.opponentScore + ' : ' + s.playerScore + ' 你</div>' +
+'<div class="pong-end-score">' + fit('他') + ' ' + s.opponentScore + ' : ' + s.playerScore + ' 你</div>' +
 '<div class="pong-end-stat">总回合 ' + s.totalRounds + ' · 用时 ' + fmt(sec) + '</div>' +
-'<div class="pong-end-stat">你的最高连得 ' + s.maxPlayerStreak + ' · ' + fit('TA') + ' 最高连得 ' + s.maxOpponentStreak + '</div>' +
+'<div class="pong-end-stat">你的最高连得 ' + s.maxPlayerStreak + ' · ' + fit('他') + ' 最高连得 ' + s.maxOpponentStreak + '</div>' +
 '<div class="pong-end-stat">累计 ' + stats.win + '胜 ' + stats.lose + '负 ' + stats.draw + '平 · 历史最高连得 ' + stats.maxStreak + '</div>' +
 (coinLine ? '<div class="pong-end-stat">' + coinLine + '</div>' : '') +
 (drop ? '<div class="pong-end-stat">🎁 掉落限定摆件「' + drop.name + '」</div>' : '');
 showOverlay(title, body, '再玩一次');
 try {
 if (window.chatAddSystem) {
-window.chatAddSystem('Pong · 你 ' + s.playerScore + ' : ' + s.opponentScore + ' TA' + (draw ? ' · 平局' : playerWin ? ' · 你赢' : ' · TA赢'), { special: 'pong' });
+window.chatAddSystem('Pong · 你 ' + s.playerScore + ' : ' + s.opponentScore + ' 他' + (draw ? ' · 平局' : playerWin ? ' · 你赢' : ' · 他赢'), { special: 'pong' });
 }
 const dp = POOLS[s.diff] || POOLS.easy;
 const pool = draw ? dp.draw : (playerWin ? dp.player_win : dp.opponent_win);
@@ -507,7 +507,7 @@ if (!scoreEl) return;
 const key = s.opponentScore + ':' + s.playerScore;
 if (scoreCache.key !== key) {
 scoreCache.key = key;
-scoreEl.innerHTML = '<span class="pong-s-ta">' + s.opponentScore + ' ' + (window.taFit ? window.taFit('TA') : 'TA') + '</span><span class="pong-s-sep">:</span><span class="pong-s-you">你 ' + s.playerScore + '</span>';
+scoreEl.innerHTML = '<span class="pong-s-ta">' + s.opponentScore + ' ' + (window.taFit ? window.taFit('他') : '他') + '</span><span class="pong-s-sep">:</span><span class="pong-s-you">你 ' + s.playerScore + '</span>';
 }
 const flash = s.flashScore > 0 ? Math.round(s.flashScore * 20) / 20 : 0;
 if (scoreCache.flash !== flash) {
@@ -777,8 +777,8 @@ if (!panel) return;
 if (partnerNameEl) {
 try {
 const s = window.activeStore && window.activeStore();
-partnerNameEl.textContent = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || (window.taWord ? window.taWord() : 'TA');
-} catch (e) { partnerNameEl.textContent = window.taWord ? window.taWord() : 'TA'; }
+partnerNameEl.textContent = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || (window.taWord ? window.taWord() : '他');
+} catch (e) { partnerNameEl.textContent = window.taWord ? window.taWord() : '他'; }
 }
 if (isFs) toggleFs();   // 防上次全屏残留
 panel.hidden = false;
@@ -798,7 +798,7 @@ return;
 }
 const saved = loadSaved();
 if (saved) {
-showOverlay('双人 Pong', '<div class="pong-start-tip">有未完成的对局<br>你 ' + saved.playerScore + ' : ' + saved.opponentScore + ' TA</div><div class="pong-start-ctrl">手机：按住画面上下拖动<br>电脑：↑↓ 或 W S</div>', '重新开始');
+showOverlay('双人 Pong', '<div class="pong-start-tip">有未完成的对局<br>你 ' + saved.playerScore + ' : ' + saved.opponentScore + ' 他</div><div class="pong-start-ctrl">手机：按住画面上下拖动<br>电脑：↑↓ 或 W S</div>', '重新开始');
 if (overlayBtn2El) overlayBtn2El.hidden = false;
 } else {
 const curDiff = (diffSel && diffSel.value) || 'easy';

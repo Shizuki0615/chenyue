@@ -211,8 +211,8 @@ var DCF = [
 ['sync', '同频', 60, true], ['reach', '伸手', 55, true], ['cjian', '此间', 100, true],
 ['room', '房间', 100, true], ['piggy', '存钱罐', 100, true], ['drift', '漂流瓶', 100, true], ['interact', '互动回应', 100, true],
 ['music', '音乐', 100, true], ['deskcheck', '跨桌面查岗', 50, true],
-['checkin', '寻踪日常', 100, false], ['pomo', '番茄钟', 100, false], ['care', 'TA的关心（经期）', 100, false],
-['memo', '备忘提醒', 100, false], ['ask', 'TA主动提问', 100, false]
+['checkin', '寻踪日常', 100, false], ['pomo', '番茄钟', 100, false], ['care', '他的关心（经期）', 100, false],
+['memo', '备忘提醒', 100, false], ['ask', '他主动提问', 100, false]
 ];
 var JUMPS = {
 defaultCards: ['.tab[data-page="page-chatcard"]', '#li-default-cards'],
@@ -437,7 +437,7 @@ try { if (window.__ccAuditHealth) health = window.__ccAuditHealth() || health; }
 if (health.missing > 0) addIssue('bad', '检测到 ' + health.missing + ' 张图片/表情卡在媒体池里已丢失（聊天里会显示占位或发不出），多为导入的备份未含图片——需从有完整图片的源头设备重新导出「完整备份」再导入，或用「查看存储→媒体池重建」尝试自愈。');
 if (health.badVoice > 0) addIssue('warn', '检测到 ' + health.badVoice + ' 条语音卡数据格式异常（可能无法播放）。');
 if (health.bigMedia > 0) addIssue('warn', '检测到 ' + health.bigMedia + ' 张超大图片卡（>512KB），字卡库体积大、iOS/安卓容易卡顿，建议到「查看存储→字卡库瘦身」清理。');
-if (rnProb >= 100) addIssue('bad', '「已读不回概率」为 100%：TA 只显示回执、不再回复任何内容——所有字卡与互动都不会出现（回复设置→聊天 最上面的被动回复组）。');
+if (rnProb >= 100) addIssue('bad', '「已读不回概率」为 100%：他 只显示回执、不再回复任何内容——所有字卡与互动都不会出现（回复设置→聊天 最上面的被动回复组）。');
 else if (rnProb > 60) addIssue('warn', '「已读不回概率」为 ' + rnProb + '%：大多数消息只会显示回执、不再回复内容，字卡与互动基本看不到（这是可选偏好；若你正困惑「字卡用不到」，先看这一项）。');
 if (qsEn && qsProbEff === 0 && qsProbRaw > 0) addIssue('warn', '「词典拼字」存盘 ' + qsProbRaw + '% 但被「系统预设字卡·聊天触发概率」总档 ' + all + '% 缩到 0%——拼字实际不会触发（两行都在 回复设置→聊天 里）。');
 if (!qsEn) addIssue('warn', '「词典拼字」总开关关闭：词典语录字卡不会参与拼字出镜。');
@@ -450,7 +450,7 @@ if (!mjfEn) addIssue('warn', '「梦角自由造句」总开关关闭。');
 else if (mjfProb === 0) addIssue('warn', '「梦角自由造句」概率为 0%。');
 else if (!mjfSrcOn.length) addIssue('warn', '「梦角自由造句」开着，但三个语料来源（自定义字卡/默认聊天字卡/词典）全关或权重全为 0——不会触发。');
 if (!pyEn) addIssue('warn', '「多字卡回复」总开关关闭：每条消息只回一条、每条只用一张字卡；#1236 起它同时是词典拼字的总闸（关掉＝单气泡拼字与逐卡连发都不触发）。');
-if (cspCust === 0) addIssue('warn', '「自定义字卡占比」为 0%：TA 的纯文字回复会尽量让系统预设默认字卡覆盖，你自己建的字卡基本不出现（想反过来就把它调高）。');
+if (cspCust === 0) addIssue('warn', '「自定义字卡占比」为 0%：他 的纯文字回复会尽量让系统预设默认字卡覆盖，你自己建的字卡基本不出现（想反过来就把它调高）。');
 if (!attachOn.length) addIssue('warn', '拍一拍/表情包/emoji/图片/语音/颜文字/引用 七项附加概率全为 0：回复只剩纯文字（回复设置→聊天 的被动回复组）。');
 else if (mediaOff) addIssue('warn', '「表情包概率」「图片概率」都为 0：字卡库里的表情包与图片字卡不会在聊天里出现（这两项是命中后往同一条回复里加图，不是独立机制，所以平时不容易联想到它们卡住了媒体字卡）。');
 if (!issues.length) addIssue('ok', '未发现明显问题：字卡各链路按当前设置正常取用。');
@@ -609,8 +609,8 @@ replyFixables.push('inl-rs-attach');
 if (mediaOff && attachOn.length) attachTxt += ' · 表情包/图片字卡不会出现';
 chainInner += rowHtml('附加件（命中后往同一条回复里加内容）', attachTxt, (!attachOn.length || mediaOff) ? 'warn' : 'ok',
 { fix: attachNeedFix ? 'inl-rs-attach' : '', fixLabel: attachOn.length ? '恢复表情包/图片' : '全部恢复默认', edit: '@reply:chat' });
-chainInner += rowHtml('已读不回概率（rn-prob）', rnProb + '%' + (rnProb >= 100 ? ' · TA 不再回复任何内容' : (rnProb > 60 ? ' · 大多数消息只显示回执' : '')), rnProb >= 100 ? 'bad' : rnProb > 60 ? 'warn' : 'ok', { edit: '@reply:chat' });
-chainInner += rowHtml('主动发送（as-en · as-prob）', (asEn ? '开 · ' + clampPct(replyNum('as-prob', 30)) + '%' : '关（TA 不主动找你）') + (dndEn ? ' · 免打扰中' : ''), 'mute', { edit: '@reply:chat' });
+chainInner += rowHtml('已读不回概率（rn-prob）', rnProb + '%' + (rnProb >= 100 ? ' · 他 不再回复任何内容' : (rnProb > 60 ? ' · 大多数消息只显示回执' : '')), rnProb >= 100 ? 'bad' : rnProb > 60 ? 'warn' : 'ok', { edit: '@reply:chat' });
+chainInner += rowHtml('主动发送（as-en · as-prob）', (asEn ? '开 · ' + clampPct(replyNum('as-prob', 30)) + '%' : '关（他 不主动找你）') + (dndEn ? ' · 免打扰中' : ''), 'mute', { edit: '@reply:chat' });
 if (replyFixables.length) {
 addFix('__allfix-reply', function () {
 var n = 0;   // 同 __allfix：按实际落地数回报，全空转时不假报「已修复」
@@ -624,12 +624,12 @@ push('回复链路（回复设置 → 聊天）', chainInner,
 '字卡出镜＝「这条回复发生了」×「抽卡池有货」×「这条回复的内容名额被字卡类机制抢到」。本节的漏斗任一 ✕ 该机制就不出字卡。<br>' +
 '<b>总档</b>（reply-dcp-all）统一缩放系统预设侧概率（生效＝存盘×总档÷100）；<b>梦角自由造句</b>不过总档，<b>默认聊天字卡</b>只缩放整体概率、分类占比不缩放。<br>' +
 '<b>预设默认字卡覆盖</b>＝生效聊天概率 ×(1−自定义字卡占比)：先抽自定义字卡，最后按 csp-cust 掷签决定要不要让预设覆盖——所以「系统预设 X% / 自定义 (100−X)%」的说法不成立，两者不是二选一。<br>' +
-'点每行「调整」直达对应设置页（回复设置侧的行直达「回复设置 → 聊天」；「默认聊天字卡」那行去字卡库的默认字卡页）。情绪/心意/意图、TA 的心情等不受二级锁影响的池在下方「五」节。');
+'点每行「调整」直达对应设置页（回复设置侧的行直达「回复设置 → 聊天」；「默认聊天字卡」那行去字卡库的默认字卡页）。情绪/心意/意图、他 的心情等不受二级锁影响的池在下方「五」节。');
 var lockInner = '';
 lockInner += rowHtml('当前状态', lock ? '锁定中（系统预设字卡整体停用）' : '已解锁', lock ? 'bad' : 'ok');
 lockInner += rowHtml('存储键', GNS + ':cardlock-state（全局，不随桌面）', 'mute');
 push('一、二级密码锁（#319 防未成年人）', lockInner,
-'锁定时：默认聊天字卡、词典（含词典拼字）、其他互动功能字卡的系统预设内容全部取不到，各页开关看起来「开了却没效果」属正常。<br><b>不受此锁影响（#499 豁免）</b>：聊天情绪字卡、心意字卡、交流意图、聊天回应字卡、TA 的心情、今日情话、位置卡、查岗问题库、TA 主动提问——未解锁也照常使用。<br><b>「浏览受锁、回应不受锁」（#1422）</b>：贴贴的回应与婉拒、游戏邀请的婉拒、朋友圈 TA 的点评与回复、我发出的邀请预设——这六组已进【其他互动功能字卡→互动回应】，锁定时<b>在库里看不到也搜不到</b>（跟系统预设整体一个口径），但 TA <b>照样会按它们说话</b>：婉拒与回应是交互的必需回应，锁定的只是浏览入口，不能出现「拒绝了 TA 的贴贴邀请之后一句话都不回」。解锁后可见可关，关掉的句子即刻从回应里退场（整组停用同理）。<br>解锁：开屏公告区「防未成年人·内置字卡锁定」卡点「输入密码解锁」；重锁：同卡一键重新上锁。');
+'锁定时：默认聊天字卡、词典（含词典拼字）、其他互动功能字卡的系统预设内容全部取不到，各页开关看起来「开了却没效果」属正常。<br><b>不受此锁影响（#499 豁免）</b>：聊天情绪字卡、心意字卡、交流意图、聊天回应字卡、他 的心情、今日情话、位置卡、查岗问题库、他 主动提问——未解锁也照常使用。<br><b>「浏览受锁、回应不受锁」（#1422）</b>：贴贴的回应与婉拒、游戏邀请的婉拒、朋友圈 他 的点评与回复、我发出的邀请预设——这六组已进【其他互动功能字卡→互动回应】，锁定时<b>在库里看不到也搜不到</b>（跟系统预设整体一个口径），但 他 <b>照样会按它们说话</b>：婉拒与回应是交互的必需回应，锁定的只是浏览入口，不能出现「拒绝了 他 的贴贴邀请之后一句话都不回」。解锁后可见可关，关掉的句子即刻从回应里退场（整组停用同理）。<br>解锁：开屏公告区「防未成年人·内置字卡锁定」卡点「输入密码解锁」；重锁：同卡一键重新上锁。');
 var dcInner = '';
 var idDcEn = 'inl-dc-en';
 if (!dcEn && !lock) fixEnable(idDcEn, 'dc-enabled');
@@ -777,10 +777,10 @@ return true;
 var a = [];
 if (!boolOf(store('tm-enabled'), true)) a.push('tm-enabled：关闭 → 开启');
 if (num(store('tm-prob'), 15) === 0) a.push('tm-prob：0% → 15%');
-return a.length ? a : ['TA 的心情已是默认'];
+return a.length ? a : ['他 的心情已是默认'];
 });
-oInner += rowHtml('TA 的心情（tm-enabled / tm-prob）', (tmEn ? '开启' : '关闭') + ' · ' + tmProb + '%（' + humanProb(tmProb, 'reply') + '） · ' + dataCount((window.TA_MOOD_DATA || {}).groups) + ' 张', (tmEn && tmProb > 0) ? 'ok' : 'warn', { fix: (!tmEn || tmProb === 0) ? idTm : '', edit: 'taMood' });
-[['quote-cards-default', '桌面今日情话', 'quoteCards'], ['loc-lib-default', 'TA在身边位置卡', 'locCards'], ['checkin-cards-default', '寻踪日常字卡', 'checkinCards']].forEach(function (t) {
+oInner += rowHtml('他 的心情（tm-enabled / tm-prob）', (tmEn ? '开启' : '关闭') + ' · ' + tmProb + '%（' + humanProb(tmProb, 'reply') + '） · ' + dataCount((window.TA_MOOD_DATA || {}).groups) + ' 张', (tmEn && tmProb > 0) ? 'ok' : 'warn', { fix: (!tmEn || tmProb === 0) ? idTm : '', edit: 'taMood' });
+[['quote-cards-default', '桌面今日情话', 'quoteCards'], ['loc-lib-default', '他在身边位置卡', 'locCards'], ['checkin-cards-default', '寻踪日常字卡', 'checkinCards']].forEach(function (t) {
 var on = boolOf(store(t[0]), true), id = 'inl-' + t[0];
 if (!on) fixEnable(id, t[0]);
 oInner += rowHtml(t[1] + '（' + t[0] + '）', on ? '开启' : '关闭', on ? 'ok' : 'warn', { fix: !on ? id : '', jump: t[2] });
@@ -794,7 +794,7 @@ var key = pair.split(':')[0], label = pair.split(':')[1];
 var blob = null; try { blob = JSON.parse(store(key) || 'null'); } catch (e) {}
 var s = blob && blob.settings ? blob.settings : {};
 var en = s.enabled !== false, pr = s.prob === undefined ? 5 : s.prob;
-oInner += rowHtml('TA 主动·' + label + '（' + key + '.settings）', (en ? '开启' : '关闭') + ' · 概率 ' + pr + '%', (en && pr > 0) ? 'ok' : 'warn', { edit: TA_EDIT[key] });
+oInner += rowHtml('他 主动·' + label + '（' + key + '.settings）', (en ? '开启' : '关闭') + ' · 概率 ' + pr + '%', (en && pr > 0) ? 'ok' : 'warn', { edit: TA_EDIT[key] });
 });
 push('五、系统预设 · 其他字卡池（不受二级锁影响）', oInner,
 '这一组按 #499 明确豁免：未解锁二级密码也照常使用。各池开关存于各自数据块/键。<br><b>怎么调</b>：点每行「调整」进对应管理页；个别概率/开关可就地「修复」回默认。');

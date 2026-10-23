@@ -53,7 +53,7 @@ diffSel.appendChild(o);
 if (!DIFFS[want]) diffSel.value = 'normal';
 }
 syncDiffSel();
-const THINK_LINES = ['TA正在找能消的……', 'TA扫视着棋盘', 'TA歪头想了想'];
+const THINK_LINES = ['他正在找能消的……', '他扫视着棋盘', '他歪头想了想'];
 const TURN_MIN = 900, TURN_VAR = 800;
 const T = window.taFit || function (x) { return x; };
 function prefix() { return (window.activePrefix && window.activePrefix()) || 'xy-home-v2'; }
@@ -437,7 +437,7 @@ if (!st) return;
 if (infoEl) infoEl.innerHTML =
 '<span>🎯 ' + st.score + ' / ' + st.target + '</span>' +
 '<span>你 ' + st.myScore + '</span>' +
-'<span>' + T('TA') + ' ' + st.taScore + '</span>' +
+'<span>' + T('他') + ' ' + st.taScore + '</span>' +
 '<span>' + modeLabel(st.mode) + '</span>' +
 '<span>💡 提示×' + st.hints + '</span>' +
 '<span>💕 ' + chemNow() + '</span>' +
@@ -740,7 +740,7 @@ const g2 = st.grid.map((row) => row.slice());
 const t = g2[a[0]][a[1]]; g2[a[0]][a[1]] = g2[b[0]][b[1]]; g2[b[0]][b[1]] = t;
 if (!findMatches(g2)) {
 sfxBad();
-setStatus(T('TA') + '点错了，重新选……');
+setStatus(T('他') + '点错了，重新选……');
 taSay(pick(['哎呀手滑', '这格不对……']));
 const ea = tileAt(a[0], a[1]);
 if (ea) { ea.classList.add('m3-shake'); setTimeout(() => ea.classList.remove('m3-shake'), 300); }
@@ -803,7 +803,7 @@ if (dr) { dropLine = '<div class="pong-end-stat">🌠 掉落限定摆件「' + d
 }
 const body =
 '<div class="pong-end-stat">🎯 达成 ' + st.score + ' / ' + st.target + ' 分</div>' +
-'<div class="pong-end-stat">💕 默契 ' + chem + ' · 你 ' + st.myScore + ' · ' + T('TA') + ' ' + st.taScore + '</div>' +
+'<div class="pong-end-stat">💕 默契 ' + chem + ' · 你 ' + st.myScore + ' · ' + T('他') + ' ' + st.taScore + '</div>' +
 '<div class="pong-end-stat">累计通关 ' + s.clears + ' 局 · 历史最佳默契 ' + s.bestChem + '</div>' +
 (coinLine ? '<div class="pong-end-stat">' + coinLine + '</div>' : '') +
 dropLine;
@@ -841,12 +841,12 @@ function showStartOverlay() {
 const s = loadStats();
 const itemMode = !!(modeSel && modeSel.value === 'item');
 showOverlay('消消乐',
-'<div class="c4-start-tip">和 ' + T('TA') + ' 轮流交换相邻两格<br>凑成同款三连就消除，一起冲到目标分</div>' +
+'<div class="c4-start-tip">和 ' + T('他') + ' 轮流交换相邻两格<br>凑成同款三连就消除，一起冲到目标分</div>' +
 '<div class="c4-start-note">' + (itemMode
 ? '💣 道具模式：凑四连→↔️/↕️ · L/T 交叉→💥 · 五连→🌈；道具是消出来的，不是点一下就用——再把它交换进三连才自动引爆'
 : '🌿 简单模式：经典三消、无道具（想玩道具：上方下拉切「💣 道具」，再开一局才生效）') +
 '<br>🧰 道具 💡 提示：每局 3 次，点亮当前最赚的一步（点右上角 💡）' +
-'<br>🎲 ' + T('TA') + '每回合状态随机——最优步 / 前五挑一 / 放水 / 手滑</div>' +
+'<br>🎲 ' + T('他') + '每回合状态随机——最优步 / 前五挑一 / 放水 / 手滑</div>' +
 (s.clears > 0 ? '<div class="pong-end-stat">累计通关 ' + s.clears + ' 局 · 历史最佳默契 ' + s.bestChem + '</div>' : ''),
 s.clears > 0 ? '再来一局' : '开始对局');
 if (endBtn) endBtn.hidden = true;
@@ -951,7 +951,7 @@ soundBtn.textContent = soundOn ? '🔊' : '🔇';
 soundBtn.classList.toggle('pong-sound-off', !soundOn);
 });
 function setNames() {
-let name = T('TA');
+let name = T('他');
 try {
 const s = window.activeStore && window.activeStore();
 name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

@@ -677,7 +677,7 @@ try { fire(); } finally { if (_openSeq === _s) close(); }
 function deskNameText(key) {
 const v = store.get(key);
 if (v) return v;
-return key === 'lbl-partner' ? (window.taWord ? window.taWord() : 'TA') : '我';
+return key === 'lbl-partner' ? (window.taWord ? window.taWord() : '他') : '我';
 }
 function paintDeskNames() {
 const lu = document.getElementById('lbl-user');
@@ -696,13 +696,13 @@ window.openModal('修改昵称', el.textContent, (v) => {
 const val = (v || '').trim();
 if (val) {
 let oldEff = '';
-if (key === 'lbl-partner') oldEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || 'TA';
+if (key === 'lbl-partner') oldEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || '他';
 el.textContent = val;
 store.set(key, val);
 if (key === 'lbl-partner') {
 if (window.renderChatHeader) { try { window.renderChatHeader(); } catch (e) {} }
 else { const pname = document.getElementById('chat-partner-name'); if (pname) pname.textContent = val; }
-const newEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || 'TA';
+const newEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || '他';
 if (newEff !== oldEff) { try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {} }
 }
 }
@@ -3829,7 +3829,7 @@ const b64 = decodeURIComponent(location.hash.slice(8)).replace(/-/g, '+').replac
 data = JSON.parse(decodeURIComponent(escape(atob(b64))));
 } catch (e) {
 cleanHash();
-const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 TA 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
 if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
 else toast(msg);
 return;
@@ -8083,7 +8083,7 @@ recent = [];
 comboRun = 0; runMax = 0; comboShow(0);
 addWork(1, 0); // 被抓包：这次算打工，不进摸鱼
 syncFishUI();
-const taName = store.get('lbl-partner') || 'TA';
+const taName = store.get('lbl-partner') || '他';
 const tease = [
 '点这么快，老板就在身后吧？这次给你记成工作值啦。',
 '被抓包了！摸鱼太频繁会被发现的——这条先算打工。',
@@ -8115,7 +8115,7 @@ if (window.logFish) window.logFish();
 const weTaEl = document.getElementById('weekend-ta');
 const weTaName = document.getElementById('weekend-ta-name');
 if (weTaName) {
-const name = store.get('lbl-partner') || 'TA';
+const name = store.get('lbl-partner') || '他';
 const lab = weTaName.querySelectorAll('.pair i');
 if (lab.length >= 2) { lab[0].textContent = name + ' 摸鱼值'; lab[1].textContent = name + ' 工作值'; }
 }
@@ -8132,7 +8132,7 @@ const weWorkTa = document.getElementById('weekend-work-ta');
 if (weWorkMine) weWorkMine.textContent = wMine;
 if (weWorkTa) weWorkTa.textContent = wTa;
 const myName = store.get('lbl-user') || '我';
-const taName = store.get('lbl-partner') || 'TA';
+const taName = store.get('lbl-partner') || '他';
 if (weMineName) {
 const lm = weMineName.querySelectorAll('.pair i');
 if (lm.length >= 2) { lm[0].textContent = myName + ' 摸鱼值'; lm[1].textContent = myName + ' 工作值'; }
@@ -8340,14 +8340,14 @@ if (tail.indexOf('psync-') >= 0) return '后台同步缓存';
 if (tail.indexOf('__big-idx') >= 0 || tail.indexOf('__ls-dirty') >= 0) return '数据索引';
 if (/^(__layout-pref|ver-update-ack-ts|__edge-backup-hint-done|__quota_probe__)$/.test(tail)) return '系统设置';
 if (/^(contacts|active-contact|migrated-v1)$/.test(tail)) return '联系人/桌面';
-if (/^incoming-last:/.test(tail)) return '查岗/TA互动';
+if (/^incoming-last:/.test(tail)) return '查岗/他互动';
 const m = /^(?:[^:]+:)?(.*)$/.exec(tail);
 const base = m ? m[1] : tail;
 if (base === 'chat-msgs') return '聊天记录';
 if (base === 'group-chat-msgs') return '群聊记录';
 if (/^memo-app-/.test(base)) return '备忘录';
 if (base === 'reply-settings' || base === 'chat-settings') return '聊天设置';
-if (/^(ta-checkin|checkin-|ckq-|incoming-|desk-checkin-en|desk-call-en|desk-freq-mode|ta-ask|ta-invite|ti-last-id|ta-cc-state|interact-card-last|invite-ask-history|reply-gc-)/.test(base)) return '查岗/TA互动';
+if (/^(ta-checkin|checkin-|ckq-|incoming-|desk-checkin-en|desk-call-en|desk-freq-mode|ta-ask|ta-invite|ti-last-id|ta-cc-state|interact-card-last|invite-ask-history|reply-gc-)/.test(base)) return '查岗/他互动';
 if (/^(loc-|loc-lib-|loc-sense)/.test(base)) return '定位/轨迹';
 if (/^(cal-|first-use-date|quote-history|memo-|today-mood-|mood-history|memo-history|day-fish-|day-work-)/.test(base)) return '日历/每日留言';
 if (/^(cc-groups|cc-groups-public|default-cards|quote-cards|reply-|fav-|ta-mood|poke-|emoji-|my-emoji-groups|rps-score|mh-|rc-enabled|mc-enabled|chat-count)/.test(base)) return '字卡/回复/收藏';

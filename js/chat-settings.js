@@ -922,7 +922,7 @@ else _fb();
 function applyProfile() {
 const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 const lp = store.get('cs-lbl-partner');
-set('cs-lbl-partner-val', lp || ('未设置（当前显示「' + (window.chatPartnerName ? window.chatPartnerName() : 'TA') + '」）'));
+set('cs-lbl-partner-val', lp || ('未设置（当前显示「' + (window.chatPartnerName ? window.chatPartnerName() : '他') + '」）'));
 const lu = store.get('cs-lbl-user');
 set('cs-lbl-user-val', lu || '未设置（默认 我）');
 const ap = store.get('cs-avatar-partner');
@@ -942,9 +942,9 @@ if (!window.openModal) return;
 const cur = store.get('cs-lbl-partner') || '';
 window.openModal('联系人昵称', cur, (v) => {
 const val = (v || '').trim();
-const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');
+const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
 if (val) store.set('cs-lbl-partner', val); else store.remove('cs-lbl-partner');
-if (oldEff !== (window.chatPartnerName ? window.chatPartnerName() : (val || 'TA'))) {
+if (oldEff !== (window.chatPartnerName ? window.chatPartnerName() : (val || '他'))) {
 try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {}
 }
 applyProfile();
@@ -2595,14 +2595,14 @@ const rpProbSync = () => { const el = document.getElementById('cs-rp-auto-prob-v
 rpProbSync();
 csRpProb.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('TA 自动发红包概率（0-100%·每联系人独立）', String(rpProbGet()), (v) => {
+window.openModal('他 自动发红包概率（0-100%·每联系人独立）', String(rpProbGet()), (v) => {
 const t = String(v || '').trim();
 let n = parseFloat(t);
 if (!isFinite(n)) n = 4;
 n = Math.max(0, Math.min(100, Math.round(n)));
 store.set('cs-rp-auto-prob', String(n));
 rpProbSync();
-toast('已设置：TA 自动发红包概率为 ' + n + '%');
+toast('已设置：他 自动发红包概率为 ' + n + '%');
 }, { maxlength: 3 });
 });
 document.addEventListener('contact-switched', rpProbSync);
@@ -2618,13 +2618,13 @@ const rpMaxSync = () => { const el = document.getElementById('cs-rp-daily-max-va
 rpMaxSync();
 csRpDailyMax.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('TA 每日发红包上限（0-99 次·0=不限）', String(rpMaxGet()), (v) => {
+window.openModal('他 每日发红包上限（0-99 次·0=不限）', String(rpMaxGet()), (v) => {
 let n = parseInt(String(v || '').trim(), 10);
 if (!isFinite(n)) n = 5;
 n = Math.max(0, Math.min(99, n));
 store.set('cs-rp-daily-max', String(n));
 rpMaxSync();
-toast(n === 0 ? '已设置：TA 每日发红包不限次数' : '已设置：TA 每天最多发 ' + n + ' 个红包');
+toast(n === 0 ? '已设置：他 每日发红包不限次数' : '已设置：他 每天最多发 ' + n + ' 个红包');
 }, { maxlength: 2 });
 });
 document.addEventListener('contact-switched', rpMaxSync);
@@ -2640,13 +2640,13 @@ const rpAskProbSync = () => { const el = document.getElementById('cs-rp-ask-prob
 rpAskProbSync();
 csRpAskProb.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('TA 申请心意币概率（0-100%·每联系人独立）', String(rpAskProbGet()), (v) => {
+window.openModal('他 申请心意币概率（0-100%·每联系人独立）', String(rpAskProbGet()), (v) => {
 let n = parseFloat(String(v || '').trim());
 if (!isFinite(n)) n = 4;
 n = Math.max(0, Math.min(100, Math.round(n)));
 store.set('cs-rp-ask-prob', String(n));
 rpAskProbSync();
-toast('已设置：TA 申请心意币概率为 ' + n + '%');
+toast('已设置：他 申请心意币概率为 ' + n + '%');
 }, { maxlength: 3 });
 });
 document.addEventListener('contact-switched', rpAskProbSync);
@@ -2662,13 +2662,13 @@ const rpAskMaxSync = () => { const el = document.getElementById('cs-rp-ask-daily
 rpAskMaxSync();
 csRpAskMax.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('TA 每日申请心意币上限（0-99 次·0=不限）', String(rpAskMaxGet()), (v) => {
+window.openModal('他 每日申请心意币上限（0-99 次·0=不限）', String(rpAskMaxGet()), (v) => {
 let n = parseInt(String(v || '').trim(), 10);
 if (!isFinite(n)) n = 0;
 n = Math.max(0, Math.min(99, n));
 store.set('cs-rp-ask-daily-max', String(n));
 rpAskMaxSync();
-toast(n === 0 ? '已设置：TA 申请心意币不限次数' : '已设置：TA 每天最多申请 ' + n + ' 次');
+toast(n === 0 ? '已设置：他 申请心意币不限次数' : '已设置：他 每天最多申请 ' + n + ' 次');
 }, { maxlength: 2 });
 });
 document.addEventListener('contact-switched', rpAskMaxSync);
@@ -2681,7 +2681,7 @@ if (rpSetBox && rpDoneBtn) {
 const rpThxBox = document.createElement('div');
 rpThxBox.id = 'cs-rp-thx-box';
 rpThxBox.innerHTML = '<div class="rp-settings-title">红包领后捎一句话</div>' +
-'<div class="set-row" id="cs-rp-thx-en"><div class="txt">领后捎一句话<span class="sub">红包被领取后（我领 TA 的 / TA 领我的）TA 有概率主动捎一句，固定一条、不受「回复条数」限制；每个联系人单独设置</span></div><div class="val" id="cs-rp-thx-en-val">开</div></div>' +
+'<div class="set-row" id="cs-rp-thx-en"><div class="txt">领后捎一句话<span class="sub">红包被领取后（我领 他 的 / 他 领我的）他 有概率主动捎一句，固定一条、不受「回复条数」限制；每个联系人单独设置</span></div><div class="val" id="cs-rp-thx-en-val">开</div></div>' +
 '<div class="set-row" id="cs-rp-thx-prob"><div class="txt">捎话概率<span class="sub">开关命中后再按这个概率决定这次说不说</span></div><div class="val" id="cs-rp-thx-prob-val">60%</div></div>' +
 '<div class="set-row" id="cs-rp-thx-mode"><div class="txt">捎话内容<span class="sub">系统预设话术随机一句 / 和正常聊天一样回复 / 混合</span></div><div class="val" id="cs-rp-thx-mode-val">混合</div></div>';
 rpSetBox.insertBefore(rpThxBox, rpDoneBtn);
@@ -2727,7 +2727,7 @@ rpThxAsk('cs-rp-thx-en', '红包领后捎一句话', null, (v) => {
 const on = v === 'on' ? 1 : 0;
 window.saveReplyCfg('rp-thx-en', on);
 rpThxSync();
-toast(on === 1 ? '已开启：红包被领取后 TA 有概率捎一句话' : '已关闭：领红包后不再捎话');
+toast(on === 1 ? '已开启：红包被领取后 他 有概率捎一句话' : '已关闭：领红包后不再捎话');
 }, () => ({ noInput: true, pill: rpThxGet().en ? 'on' : 'off', pills: [{ label: '开', value: 'on' }, { label: '关', value: 'off' }] }));
 rpThxAsk('cs-rp-thx-prob', '捎话概率（0-100%·每联系人独立）', () => rpThxGet().prob, (v) => {
 let n = parseFloat(String(v || '').trim());
@@ -2771,7 +2771,7 @@ csHts.addEventListener('change', () => {
 if (csHts.checked === htsGet()) return;
 htsSet(csHts.checked);
 try { document.dispatchEvent(new Event('hide-ta-sticker-changed')); } catch (e) {}
-toast(csHts.checked ? '已隐藏：聊天和朋友圈的表情包面板只显示「我的表情包」' : '已恢复显示 TA 的和公用表情包');
+toast(csHts.checked ? '已隐藏：聊天和朋友圈的表情包面板只显示「我的表情包」' : '已恢复显示 他 的和公用表情包');
 });
 csAddSync(syncHts);
 document.addEventListener('contact-switched', syncHts);

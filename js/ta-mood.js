@@ -84,7 +84,7 @@ list.classList.add('preset-list'); // #1315 分组开关样式锚（与 #926 那
 enabledEl.checked = enabled();
 enabledEl.addEventListener('change', () => {
 ls.set('tm-enabled', enabledEl.checked ? '1' : '0');
-toast(enabledEl.checked ? '已开启：TA 会偶尔分享自己的心情' : '已关闭：TA 不再主动分享心情');
+toast(enabledEl.checked ? '已开启：他 会偶尔分享自己的心情' : '已关闭：他 不再主动分享心情');
 });
 const probRow = document.getElementById('tm-prob-val');
 if (probRow) {
@@ -98,13 +98,13 @@ stepEl.querySelector('.stp-min').addEventListener('click', () => {
 const v = Math.max(min, getProb() - stp);
 ls.set('tm-prob', String(v));
 probRow.value = String(v);
-toast('TA 的心情分享概率：' + v + '%');
+toast('他 的心情分享概率：' + v + '%');
 });
 stepEl.querySelector('.stp-max').addEventListener('click', () => {
 const v = Math.min(max, getProb() + stp);
 ls.set('tm-prob', String(v));
 probRow.value = String(v);
-toast('TA 的心情分享概率：' + v + '%');
+toast('他 的心情分享概率：' + v + '%');
 });
 }
 }
@@ -200,7 +200,7 @@ if (home) home.hidden = false;
 });
 }
 window.__cardSearchFns = window.__cardSearchFns || [];
-window.__cardSearchFns.push({ name: 'TA的心情', fn: function (kw) {
+window.__cardSearchFns.push({ name: '他的心情', fn: function (kw) {
 const out = [];
 try {
 (DATA.cards || []).forEach(function (c) {

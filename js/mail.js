@@ -8,7 +8,7 @@ const HOLD_KEY = 'mail-letters-hold';
 const TITLES = ['好久不见', '最近还好吗', '想你了', '给你写了封信', '深夜随想', '一些想说的话'];
 let mtab = 'in';
 let viewLetter = null;
-function partnerName() { return store.get('lbl-partner') || 'TA'; }
+function partnerName() { return store.get('lbl-partner') || '他'; }
 function fmtDT(ts) {
 const d = new Date(ts);
 const p = (n) => (n < 10 ? '0' + n : '' + n);
@@ -219,7 +219,7 @@ function mailRescueClick() {
 if (mailRescueFlight) { toast('正在从本地库读取…'); return; }
 toast('正在从本地库找回…');
 mailRescueRun(undefined, function (r) {
-if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带 TA 回信 ' + r.rp + ' 封）' : ''));
+if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带 他 回信 ' + r.rp + ' 封）' : ''));
 else if (r && r.why === 'absent') toast('本地库里没有这一格（可能从未落地）');
 else if (r && r.why === 'noidb') toast('这台设备没有可用的本地库');
 else toast('本地库这次没读出来（存储正忙）：过几秒再点一次');
@@ -531,7 +531,7 @@ if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 回了一封
 toast('回信已寄出');
 if (Math.random() * 100 < (window.favCfg ? window.favCfg().taMail : 30) && window.addTaFavItem) {
 window.addTaFavItem({ kind: 'mail', title: l.tt || '', text: val, ts: Date.now() });
-setTimeout(() => toast(window.taFit ? window.taFit('TA 收藏了你的回信') : 'TA 收藏了你的回信'), 1200);
+setTimeout(() => toast(window.taFit ? window.taFit('他 收藏了你的回信') : '他 收藏了你的回信'), 1200);
 }
 }
 }
@@ -558,7 +558,7 @@ const c = window.getContacts().find(x => x.id === cid);
 if (c && c.name) return c.name;
 }
 } catch (e) {}
-return 'TA';
+return '他';
 }
 function checkPendingReplyFor(cid) {
 try {
@@ -666,7 +666,7 @@ if (inEl) {
 const inHtml = mailGroupedHtml(inList, 'in', name);
 inEl.innerHTML = mailRescueStrip() + (inHtml || (mailEmptyIsLie() && window.mochiLoadingHtml
 ? window.mochiLoadingHtml('收到的信')
-: '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等 TA 吧') : '还没有收到信，等等 TA 吧') + '</div>'));
+: '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等 他 吧') : '还没有收到信，等等 他 吧') + '</div>'));
 if (inList.length && inEl.querySelectorAll('.mail-item').length < inList.length) inEl.innerHTML = mailRescueStrip() + inHtml;
 }
 const outList = list.filter(l => l.type === 'sent');

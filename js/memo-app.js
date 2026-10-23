@@ -263,7 +263,7 @@ pills: [
 });
 });
 const shr = document.createElement('button');
-shr.className = 'mm-act mm-share'; shr.title = window.taFit ? window.taFit('发给TA') : '发给TA';
+shr.className = 'mm-act mm-share'; shr.title = window.taFit ? window.taFit('发给他') : '发给他';
 shr.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 3.5L10 13.5"/><path d="M21.5 3.5L15 21l-5-7.5-7.5-4z"/></svg>';
 shr.addEventListener('click', () => {
 if (editingNow()) return;
@@ -308,7 +308,7 @@ if (undone.length >= 2 && Math.random() < 0.12) {
 const target = undone.slice().sort((x, y) => (x.ts || 0) - (y.ts || 0))[0];
 target.done = true; memoSave(a); vibrate([40, 30, 40]); memoRender();
 memoShowMsg('帮你把「' + memoClip(target.t, 12) + '」打勾啦，剩下的加油');
-if (memoSendOn() && window.chatAddIn) { try { window.chatAddIn('✓ TA 帮你完成：「' + target.t + '」'); } catch (e) {} }
+if (memoSendOn() && window.chatAddIn) { try { window.chatAddIn('✓ 他 帮你完成：「' + target.t + '」'); } catch (e) {} }
 return;
 }
 const urgent = undone.filter(x => memoUrgent(x));
@@ -375,7 +375,7 @@ let old = document.getElementById('memo-contact-mask'); if (old) old.remove();
 const mask = document.createElement('div'); mask.id = 'memo-contact-mask'; mask.className = 'memo-contact-mask';
 const card = document.createElement('div'); card.className = 'memo-contact-card';
 let s = null; try { s = window.activeStore && window.activeStore(); } catch (e) {}
-const name = (s && s.get('lbl-partner')) || (window.taFit ? window.taFit('TA') : 'TA');
+const name = (s && s.get('lbl-partner')) || (window.taFit ? window.taFit('他') : '他');
 const av = (s && s.get('avatar-partner')) || '';
 const head = document.createElement('div'); head.className = 'mc-head';
 const avEl = document.createElement('div'); avEl.className = 'mc-av' + (av ? '' : ' ph');
@@ -437,7 +437,7 @@ if (memoRemindBtn) memoRemindBtn.addEventListener('click', () => {
 if (editingNow()) return;
 const on = !memoRemindCfg().en;
 memoRemindSetCfg({ en: on ? 1 : 0 }); memoRenderRemind();
-toast(on ? '已开启：TA 会偶尔在聊天里提醒你的备忘' : '已关闭：TA 不再提醒备忘');
+toast(on ? '已开启：他 会偶尔在聊天里提醒你的备忘' : '已关闭：他 不再提醒备忘');
 });
 if (memoRemindProbBtn) memoRemindProbBtn.addEventListener('click', () => {
 if (editingNow()) return;

@@ -18,17 +18,17 @@ function strim(v) { return String(v == null ? '' : v).trim(); }
 function mdstr(ts) { const d = new Date(ts); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
 const WHO_FIELDS = [
 ['name', '名字', '你的名字或常用昵称', 0],
-['call', '我希望TA怎么叫我', '例如：小满、笨蛋、或者连名带姓', 0],
+['call', '我希望他怎么叫我', '例如：小满、笨蛋、或者连名带姓', 0],
 ['bday', '生日', '例如：5月20日', 0],
 ['identity', '身份 / 现在的样子', '例如：学生 / 上班族', 0],
 ['nature', '性格', '例如：慢热，熟了以后话很多', 0],
 ['looks', '外貌', '发型、眼镜、常穿的衣服……', 1],
-['intro', '自我介绍', '如果向TA正式介绍自己，你会说什么？', 1],
+['intro', '自我介绍', '如果向他正式介绍自己，你会说什么？', 1],
 ['hope', '我希望被怎样理解', '例如：嘴硬心软——别只听我说的，看我做的', 1]
 ];
 const RELATE_FIELDS = [
-['accompany', '我希望TA陪我的方式', '例如：不用一直说话，在就行', 0],
-['comfort', '我难过的时候，希望TA', '例如：别讲道理，先抱我', 0],
+['accompany', '我希望他陪我的方式', '例如：不用一直说话，在就行', 0],
+['comfort', '我难过的时候，希望他', '例如：别讲道理，先抱我', 0],
 ['space', '我需要独处的时候', '例如：我会说「没事」，其实想静一静', 0],
 ['quarrel', '我们闹别扭的时候', '例如：可以凶我，但要先低头', 0],
 ['taboo', '我不喜欢的相处方式', '例如：忽冷忽热、已读不回', 0],
@@ -44,24 +44,24 @@ const IFW_FIELDS = [
 ['world', '当前世界', '例如：海边小镇', 0],
 ['setting', '世界设定', '这个世界的规则与背景……', 1],
 ['mine', '我的身份', '例如：花店老板', 0],
-['tarole', 'TA的身份（母档）', '例如：咖啡店老板——梦角档案会镜像这一侧', 0],
+['tarole', '他的身份（母档）', '例如：咖啡店老板——梦角档案会镜像这一侧', 0],
 ['rel', '我们的关系', '例如：恋人 / 初识', 0]
 ];
 const TASTE_TABS = [['like', '喜欢'], ['dislike', '不喜欢'], ['pref', '偏好']];
 const LIKE_CATS = ['食物', '饮料', '颜色', '动物', '植物', '天气', '季节', '地方', '活动', '音乐', '游戏', '其他'];
-const HABIT_TABS = [['daily', '日常生活'], ['micro', '小动作'], ['expr', '表达习惯'], ['ta', '和TA在一起时']];
+const HABIT_TABS = [['daily', '日常生活'], ['micro', '小动作'], ['expr', '表达习惯'], ['ta', '和他在一起时']];
 const HABIT_PH = {
 daily: '例如：几点睡、周末一般干嘛',
 micro: '例如：紧张的时候会转笔',
 expr: '例如：不开心的时候会说「随便」',
-ta: '例如：喜欢和TA分享没用的日常废话'
+ta: '例如：喜欢和他分享没用的日常废话'
 };
-const THING_TABS = [['use', '常用'], ['fav', '喜欢'], ['dear', '珍视的纪念'], ['gift', '想送给TA的']];
+const THING_TABS = [['use', '常用'], ['fav', '喜欢'], ['dear', '珍视的纪念'], ['gift', '想送给他的']];
 const THING_PH = {
 use: '例如：每天背的帆布包',
 fav: '例如：那台旧相机',
 dear: '例如：第一次收到的那封信',
-gift: '例如：一直想送TA的一条围巾'
+gift: '例如：一直想送他的一条围巾'
 };
 function contactsList() {
 try { const cs = window.getContacts ? window.getContacts() : null; if (cs && cs.length) return cs; } catch (e) {}
@@ -73,7 +73,7 @@ function partnerNameOf(cid) {
 let n = '';
 try { n = String(storeOf(cid).get('lbl-partner') || '').trim(); } catch (e) {}
 if (!n) { const c = contactsList().find(x => x.id === cid); if (c && c.name) n = c.name; }
-return n || 'TA';
+return n || '他';
 }
 function loadRaw(cid) {
 const s = storeOf(cid); if (!s) return null;
@@ -239,7 +239,7 @@ const relFilled = RELATE_FIELDS.filter(f => String((arc.relate.f[f[0]] || {}).v 
 const ifwFilled = IFW_FIELDS.filter(f => String((arc.ifw[f[0]] || {}).v || '').trim()).length + arc.ifchanges.length;
 let h = '<div class="narc-hero">';
 h += '<div class="narc-hero-top"><span class="narc-name">我的档案</span><span class="narc-days">写下自己 · ' + days + ' 天</span></div>';
-h += '<div class="narc-hero-sub">写给「' + esc(partnerNameOf(viewCid)) + '」的那一份——每条都可选「全部联系人可见」或「仅TA可见」。</div>';
+h += '<div class="narc-hero-sub">写给「' + esc(partnerNameOf(viewCid)) + '」的那一份——每条都可选「全部联系人可见」或「仅他可见」。</div>';
 h += '<div class="narc-stats">';
 h += '<div class="narc-stat"><b>' + arc.selfs.length + '</b><span>描述</span></div>';
 h += '<div class="narc-stat"><b>' + arc.tastes.length + '</b><span>喜好</span></div>';
@@ -254,12 +254,12 @@ function menuHTML(arc, whoFilled, relFilled, ifwFilled) {
 const rows = [
 ['who', '关于我', '我是谁，以及我希望怎样被理解', whoFilled],
 ['tastes', '我的喜好', '喜欢 / 不喜欢 / 偏好', arc.tastes.length],
-['habits', '我的习惯', '日常 · 小动作 · 表达 · 和TA在一起时', arc.habits.length],
-['things', '我的物品', '常用 · 喜欢 · 纪念 · 想送TA的', arc.things.length],
-['relate', '我和TA', '不是TA实际怎么做——是我希望的相处方式', relFilled],
-['self', '我对自己的描述', '我对自己的定义，写给TA看的那种', arc.selfs.length],
+['habits', '我的习惯', '日常 · 小动作 · 表达 · 和他在一起时', arc.habits.length],
+['things', '我的物品', '常用 · 喜欢 · 纪念 · 想送他的', arc.things.length],
+['relate', '我和他', '不是他实际怎么做——是我希望的相处方式', relFilled],
+['self', '我对自己的描述', '我对自己的定义，写给他看的那种', arc.selfs.length],
 ['dream', '我的梦境', '想留下、或不敢忘记的梦', arc.dreams.length],
-['ifw', '我的IF世界', '世界母档案：设定在这里维护，梦角档案只记TA那一侧', ifwFilled],
+['ifw', '我的IF世界', '世界母档案：设定在这里维护，梦角档案只记他那一侧', ifwFilled],
 ['shared', '我们的共同记录', '记录我们 → 在梦角档案里维护', -1]
 ];
 let h = '<div class="narc-menu">';
@@ -309,11 +309,11 @@ return '<button class="nk-op' + (warn ? ' warn' : '') + '" data-op="' + op + '"'
 }
 function sectionHTML(arc) {
 const SECS = {
-who: ['关于我', '对应「TA是谁」——这里写的是你自己。'], tastes: ['我的喜好', '让TA慢慢知道：你喜欢什么。'],
-habits: ['我的习惯', '相处久了，TA自然会观察到这些。'], things: ['我的物品', '和「TA的物品」互为对照——互赠的都在两边有回声。'],
-relate: ['我和TA', '不是记录TA实际怎么做，是我希望的相处方式。'], self: ['我对自己的描述', '不是别人眼里的你——是你想被理解的样子。'],
+who: ['关于我', '对应「他是谁」——这里写的是你自己。'], tastes: ['我的喜好', '让他慢慢知道：你喜欢什么。'],
+habits: ['我的习惯', '相处久了，他自然会观察到这些。'], things: ['我的物品', '和「他的物品」互为对照——互赠的都在两边有回声。'],
+relate: ['我和他', '不是记录他实际怎么做，是我希望的相处方式。'], self: ['我对自己的描述', '不是别人眼里的你——是你想被理解的样子。'],
 dream: ['我的梦境', '做过的一些梦，想留下或不敢忘记的那种。'],
-ifw: ['我的IF世界', '世界母档案：设定在这里维护；梦角档案只记TA在这一侧的样子。']
+ifw: ['我的IF世界', '世界母档案：设定在这里维护；梦角档案只记他在这一侧的样子。']
 };
 const meta = SECS[view] || SECS.who;
 let h = backHomeRow();
@@ -334,7 +334,7 @@ const curLabel = (TASTE_TABS.find(t => t[0] === tab.tastes) || [])[1] || '';
 h += sectHead(curLabel, '', '<button class="narc-add" data-op="add-li" data-kind="taste">＋ 记一条</button>');
 const items = arc.tastes.filter(x => x.g === tab.tastes).slice().sort((a, b) => b.created - a.created);
 if (!items.length) {
-const tip = tab.tastes === 'like' ? '你喜欢什么呢？<br>TA会拿小本子记下来的那种。' : (tab.tastes === 'dislike' ? '你不喜欢什么呢？' : '例如：比起惊喜，更喜欢提前说好的安排。');
+const tip = tab.tastes === 'like' ? '你喜欢什么呢？<br>他会拿小本子记下来的那种。' : (tab.tastes === 'dislike' ? '你不喜欢什么呢？' : '例如：比起惊喜，更喜欢提前说好的安排。');
 return h + '<div class="narc-empty">' + tip + '</div>';
 }
 items.forEach(it => {
@@ -349,7 +349,7 @@ const curLabel = (HABIT_TABS.find(t => t[0] === tab.habits) || [])[1] || '';
 h += sectHead(curLabel, '', '<button class="narc-add" data-op="add-li" data-kind="habit">＋ 记一条</button>');
 const items = arc.habits.filter(x => x.g === tab.habits).slice().sort((a, b) => b.created - a.created);
 if (!items.length) {
-const tips = { daily: '几点睡？周末一般干嘛？<br>这些日常就是你的形状。', micro: '紧张时会转笔、开心时会哼歌……<br>这种小动作最像你。', expr: '不开心的时候会怎么说？<br>TA需要知道怎么读你。', ta: '和TA在一起时，你有什么习惯？' };
+const tips = { daily: '几点睡？周末一般干嘛？<br>这些日常就是你的形状。', micro: '紧张时会转笔、开心时会哼歌……<br>这种小动作最像你。', expr: '不开心的时候会怎么说？<br>他需要知道怎么读你。', ta: '和他在一起时，你有什么习惯？' };
 return h + '<div class="narc-empty">' + (tips[tab.habits] || '') + '</div>';
 }
 items.forEach(it => {
@@ -364,7 +364,7 @@ const curLabel = (THING_TABS.find(t => t[0] === tab.things) || [])[1] || '';
 h += sectHead(curLabel, '', '<button class="narc-add" data-op="add-li" data-kind="thing">＋ 记一件</button>');
 const items = arc.things.filter(x => x.g === tab.things).slice().sort((a, b) => b.created - a.created);
 if (!items.length) {
-return h + '<div class="narc-empty">常用的东西、珍视的纪念、<br>还有一直想送给TA的那一件。</div>';
+return h + '<div class="narc-empty">常用的东西、珍视的纪念、<br>还有一直想送给他的那一件。</div>';
 }
 items.forEach(it => {
 const inner = '<div class="ni-top">' + shFlag(it) + '</div><div class="ni-text">' + esc(it.t) + '</div>';
@@ -376,7 +376,7 @@ function relateHTML(arc) {
 let h = fieldRowsHTML(arc.relate.f, RELATE_FIELDS, 'relate');
 h += '<div class="narc-ghead">还想补充的<span class="narc-gsub">没说出口的期望也可以写在这里</span></div>';
 h += '<div style="margin:0 2px 10px;text-align:right"><button class="narc-add" data-op="add-li" data-kind="rnote">＋ 补一条</button></div>';
-if (!arc.relate.notes.length) h += '<div class="narc-empty">例如：希望TA在忙之前先跟我说一声。</div>';
+if (!arc.relate.notes.length) h += '<div class="narc-empty">例如：希望他在忙之前先跟我说一声。</div>';
 arc.relate.notes.slice().sort((a, b) => b.created - a.created).forEach(it => {
 const inner = '<div class="ni-top">' + shFlag(it) + '</div><div class="ni-text">' + esc(it.t) + '</div>';
 h += itemShell(inner, '<span class="nk-ops">' + opBtn('edit-li', '编辑', ' data-kind="rnote" data-id="' + it.id + '"') + opBtn('del-li', '删除', ' data-kind="rnote" data-id="' + it.id + '"', 1) + '</span>');
@@ -384,7 +384,7 @@ h += itemShell(inner, '<span class="nk-ops">' + opBtn('edit-li', '编辑', ' dat
 return h;
 }
 function selfHTML(arc) {
-let h = sectHead('我的描述卡', '每一条都是你对自己的定义——TA读到时会更懂你一点。', '<button class="narc-add" data-op="add-self">＋ 写一张描述卡</button>');
+let h = sectHead('我的描述卡', '每一条都是你对自己的定义——他读到时会更懂你一点。', '<button class="narc-add" data-op="add-self">＋ 写一张描述卡</button>');
 const items = arc.selfs.slice().sort((a, b) => b.created - a.created);
 if (!items.length) {
 return h + '<div class="narc-empty">例如：【别人以为，其实】<br>「别人以为我大大咧咧，其实我什么都记得。」</div>';
@@ -403,7 +403,7 @@ function dreamHTML(arc) {
 let h = sectHead('我的梦境', '做过的一些梦，想留下或不敢忘记的那种。', '<button class="narc-add" data-op="add-dream">＋ 记一个梦</button>');
 const items = arc.dreams.slice().sort((a, b) => b.created - a.created);
 if (!items.length) {
-return h + '<div class="narc-empty">梦见TA了？梦见自己去远行了？<br>那些醒来还记得的梦，都可以记在这里。</div>';
+return h + '<div class="narc-empty">梦见他了？梦见自己去远行了？<br>那些醒来还记得的梦，都可以记在这里。</div>';
 }
 items.forEach(it => {
 const inner = '<div class="ni-top">' + shFlag(it) + '</div><div class="ni-text">' + esc(it.text) + '</div>';
@@ -469,7 +469,7 @@ function liPh(kind) {
 if (kind === 'taste') return tab.tastes === 'like' ? '例如：布丁 / 雨天' : (tab.tastes === 'dislike' ? '例如：香菜 / 被放鸽子' : '例如：比起惊喜，更喜欢提前说好的安排。');
 if (kind === 'habit') return HABIT_PH[tab.habits];
 if (kind === 'thing') return THING_PH[tab.things];
-if (kind === 'rnote') return '例如：希望TA在忙之前先跟我说一声。';
+if (kind === 'rnote') return '例如：希望他在忙之前先跟我说一声。';
 return '例如：在这个世界我们住在同一街区。';
 }
 function liTitle(kind) {

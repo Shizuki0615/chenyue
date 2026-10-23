@@ -18,7 +18,7 @@ t.className = 'cc-toast'; void t.offsetWidth; t.className = 'cc-toast show';
 clearTimeout(t._timer);
 t._timer = setTimeout(() => { t.className = 'cc-toast'; }, 2000);
 }
-function partnerName() { try { const s = window.activeStore(); return s.get('lbl-partner') || s.get('cs-lbl-partner') || 'TA'; } catch (e) { return 'TA'; } }
+function partnerName() { try { const s = window.activeStore(); return s.get('lbl-partner') || s.get('cs-lbl-partner') || '他'; } catch (e) { return '他'; } }
 function fmtDT(ts) {
 const d = new Date(ts);
 const p = (n) => (n < 10 ? '0' + n : '' + n);

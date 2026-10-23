@@ -570,7 +570,7 @@ toast('已导入 ' + lines.length + ' 条' + kindLabel(kind));
 }
 const nowBtn = document.getElementById('ti-now');
 if (nowBtn) nowBtn.addEventListener('click', () => {
-if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('TA 在聊天里向你发起了邀请');
+if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('他 在聊天里向你发起了邀请');
 });
 const page = document.getElementById('page-ta-invite');
 if (page) {
@@ -608,7 +608,7 @@ mo.observe(ccPageEl, { attributes: true, attributeFilter: ['hidden'] });
 }
 window.refreshTiCardCounts();
 window.__cardSearchFns = window.__cardSearchFns || [];
-window.__cardSearchFns.push({ name: 'TA的邀请', fn: function (kw) {
+window.__cardSearchFns.push({ name: '他的邀请', fn: function (kw) {
 const out = [];
 try { (tiLoad().questions || []).forEach(function (q) { const txt = q && q.text ? q.text : ''; if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: q.isPreset === true ? '系统预设' : '我的添加' }); }); } catch (e) {}
 return out;

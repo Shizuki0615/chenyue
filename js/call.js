@@ -346,7 +346,7 @@ miniPos = null;
 function partnerName() {
 const nick = store.get('lbl-partner') || store.get('cs-lbl-partner')
 || (window.contactNameFor ? window.contactNameFor(window.__activeCid || 'default') : '');
-return nick || (window.taWord ? window.taWord() : 'TA');
+return nick || (window.taWord ? window.taWord() : '他');
 }
 function partnerAv() { return store.get('cs-avatar-partner') || store.get('avatar-partner') || ''; }
 function bindCall(callObj) {
@@ -417,7 +417,7 @@ try {
 const s = (window.storeFor && window.storeFor(currentCall.cid)) || store;
 name = s.get('lbl-partner') || s.get('cs-lbl-partner')
 || (window.contactNameFor ? window.contactNameFor(currentCall.cid) : '')
-|| (window.taWordFor ? window.taWordFor(currentCall.cid) : (window.taWord ? window.taWord() : 'TA'));
+|| (window.taWordFor ? window.taWordFor(currentCall.cid) : (window.taWord ? window.taWord() : '他'));
 } catch (e) { name = currentCall.name || partnerName(); }
 if (name === shownName) return;
 shownName = name;
@@ -948,7 +948,7 @@ return;
 }
 const cid = info.cid || 'default';
 const dir = info.direction || 'out';
-const name = info.name || 'TA';
+const name = info.name || '他';
 if (callCfg().resume !== 0) {
 try {
 currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
@@ -983,7 +983,7 @@ writeInterruptRecord(info);
 function writeInterruptRecord(info) {
 const cid = info.cid || 'default';
 const dir = info.direction || 'out';
-const name = info.name || 'TA';
+const name = info.name || '他';
 const dur = Math.max(0, Math.floor((info.ts - info.connectedTime) / 1000));
 const durTxt = dur > 0 ? ' · 时长 ' + fmtDur(dur) : '';
 const recText = '通话中断（页面刷新或异常退出）' + durTxt;
@@ -1417,7 +1417,7 @@ const cell = document.createElement('div');
 cell.className = 'avlib-cell';
 const img = document.createElement('img');
 img.src = src;
-img.alt = 'TA 的画面';
+img.alt = '他 的画面';
 const del = document.createElement('button');
 del.className = 'avlib-del';
 del.type = 'button';
