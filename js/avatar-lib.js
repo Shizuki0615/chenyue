@@ -268,6 +268,7 @@ renderGridSmart();
 renderMeGridSmart();
 renderNickGridSmart();
 renderMeNickGridSmart();
+syncNickDelVisibility();
 }
 function renderGrid() {
 if (!avGrid) return;
@@ -416,6 +417,7 @@ const d = buildNickCell(name, getNickLib, saveNickLib, renderNickGrid, switchNic
 if (name === current) d.classList.add('avlib-now');
 avNickList.appendChild(d);
 });
+avNickList.classList.toggle('no-edit', !nickEditOn());
 }
 function renderMeNickGrid() {
 if (!avMeNickList) return;
@@ -429,6 +431,12 @@ const d = buildNickCell(name, getMeNickLib, saveMeNickLib, renderMeNickGrid, swi
 if (name === current) d.classList.add('avlib-now');
 avMeNickList.appendChild(d);
 });
+avMeNickList.classList.toggle('no-edit', !nickEditOn());
+}
+function syncNickDelVisibility() {
+const off = !nickEditOn();
+if (avNickList) avNickList.classList.toggle('no-edit', off);
+if (avMeNickList) avMeNickList.classList.toggle('no-edit', off);
 }
 function openAvlib() {
 if (!avPage) return;
@@ -441,6 +449,7 @@ renderGridSmart();   // FIX #509：打开时不整格重建——库没变只同
 renderMeGridSmart(); // FIX #509 同上
 renderNickGridSmart();
 renderMeNickGridSmart();
+syncNickDelVisibility();
 syncAvPane(); // 两个大类 + 四个 pane 的显隐/文案/计数一次性同步（内含 syncVal）
 const myToken = ++avShowToken;
 avShowWhenDecoded(function () { avPage.hidden = false; }, myToken);

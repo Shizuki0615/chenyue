@@ -1992,6 +1992,9 @@
   display:flex; align-items:center; justify-content:center; cursor:pointer;
 }
 .avlib-name-del:active { background:rgba(224,85,85,.8); color:#fff; }
+/* v8.47：编辑闸关闭＝整列隐藏删除键。挂在容器类上，压过 .avlib-name-del 自己的 display:flex
+   （hidden 属性对这一行无效，同 .set-row 那次）；开关打开时类移除，✕ 才恢复。 */
+.avlib-names.no-edit .avlib-name-del { display:none; }
 
 /* 管理分组面板 */
 .mg-mask {

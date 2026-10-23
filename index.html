@@ -4897,6 +4897,7 @@ background:rgba(0,0,0,.12); color:#666; font-size:10px; line-height:1;
 display:flex; align-items:center; justify-content:center; cursor:pointer;
 }
 .avlib-name-del:active { background:rgba(224,85,85,.8); color:#fff; }
+.avlib-names.no-edit .avlib-name-del { display:none; }
 .mg-mask {
 position:fixed; inset:0; z-index:85;
 background:rgba(0,0,0,.35);
@@ -10460,7 +10461,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792766588687" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792767710373" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -16220,7 +16221,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-nick-edit"><span class="tk"></span></label>
           </div>
-          <div class="avlib-names" id="avlib-nick-list"></div>
+          <div class="avlib-names no-edit" id="avlib-nick-list"></div>
           <div class="div-result-empty" id="avlib-nick-empty" hidden>还没有昵称，点击下方按钮添加</div>
           <button class="div-draw" id="avlib-nick-add">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -16247,7 +16248,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-me-nick-edit"><span class="tk"></span></label>
           </div>
-          <div class="avlib-names" id="avlib-me-nick-list"></div>
+          <div class="avlib-names no-edit" id="avlib-me-nick-list"></div>
           <div class="div-result-empty" id="avlib-me-nick-empty" hidden>还没有昵称，点击下方按钮添加</div>
           <button class="div-draw" id="avlib-me-nick-add">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -22235,4 +22236,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvl2xszz -->
+<!-- __MOCHI_EOF__ mvl3luhx -->

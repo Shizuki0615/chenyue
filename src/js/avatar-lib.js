@@ -403,6 +403,7 @@
     renderMeGridSmart();
     renderNickGridSmart();
     renderMeNickGridSmart();
+    syncNickDelVisibility();
   }
   function renderGrid() {
     if (!avGrid) return;
@@ -574,6 +575,9 @@
       if (name === current) d.classList.add('avlib-now');
       avNickList.appendChild(d);
     });
+    // v8.47：编辑闸状态落在容器上——类选择器优先级高于 .avlib-name-del 的 display:flex，
+    // 即使列表走的快速路径没重建、或旧节点还在，关闭时 ✕ 也一定不显示。
+    avNickList.classList.toggle('no-edit', !nickEditOn());
   }
   function renderMeNickGrid() {
     if (!avMeNickList) return;
@@ -587,6 +591,14 @@
       if (name === current) d.classList.add('avlib-now');
       avMeNickList.appendChild(d);
     });
+    avMeNickList.classList.toggle('no-edit', !nickEditOn());
+  }
+  // v8.47：打开半框时按当前编辑状态校正两个列表的容器类。快速路径（文本/数量没变就不重建）
+  // 不会经过上面的 toggle——升级前留在 DOM 里的旧节点仍带着 ✕，这正是「没开编辑也有 ✕」的形态。
+  function syncNickDelVisibility() {
+    const off = !nickEditOn();
+    if (avNickList) avNickList.classList.toggle('no-edit', off);
+    if (avMeNickList) avMeNickList.classList.toggle('no-edit', off);
   }
 
   // 打开/关闭半框
@@ -604,6 +616,7 @@
     renderMeGridSmart(); // FIX #509 同上
     renderNickGridSmart();
     renderMeNickGridSmart();
+    syncNickDelVisibility();
     syncAvPane(); // 两个大类 + 四个 pane 的显隐/文案/计数一次性同步（内含 syncVal）
     // FIX 2026-09-17 #662 头像互动「图片闪一下重新加载」（红米 K80 Chrome 等多机型，用户明说其他
     //   设备型号也有）：与聊天表情包面板同族、同一条机制——半框平时是 display:none 挂着的，
