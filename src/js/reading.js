@@ -133,7 +133,7 @@
   }
 
   // ===== 导入：解码与探测 =====
-  const RD_IMP = { buf: null, name: '', text: '', source: '', chapters: null, bad: 0 };
+  const rdImp = { buf: null, name: '', text: '', source: '', chapters: null, bad: 0 };
 
   function rdUtf8Size(s) {
     const str = String(s || '');
@@ -232,12 +232,9 @@
   function rdRangesFromMarks(src, marks) {
     const n = src.length;
     const out = [];
-    let first = 0;
-    for (let i = 0; i < marks.length; i++) {
-      if (marks[i].s > first) {
-        out.push({ t: out.length === 0 ? '前言' : '第 ' + out.length + ' 节', s: first, e: marks[i].s });
-      }
-      first = marks[i].s;
+    // 第一个标题之前的内容单独算「前言」，不能把后面每段标题前的内容也当前言（会与正章重复）
+    if (marks[0].s > 0 && src.slice(0, marks[0].s).trim()) {
+      out.push({ t: '前言', s: 0, e: marks[0].s });
     }
     // 每个标题行管到下一个标题起点
     for (let i = 0; i < marks.length; i++) {

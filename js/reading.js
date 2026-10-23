@@ -112,7 +112,7 @@ if (!ok) allOk = false;
 }
 return allOk;
 }
-const RD_IMP = { buf: null, name: '', text: '', source: '', chapters: null, bad: 0 };
+const rdImp = { buf: null, name: '', text: '', source: '', chapters: null, bad: 0 };
 function rdUtf8Size(s) {
 const str = String(s || '');
 if (typeof TextEncoder === 'function') {
@@ -200,12 +200,8 @@ return out;
 function rdRangesFromMarks(src, marks) {
 const n = src.length;
 const out = [];
-let first = 0;
-for (let i = 0; i < marks.length; i++) {
-if (marks[i].s > first) {
-out.push({ t: out.length === 0 ? '前言' : '第 ' + out.length + ' 节', s: first, e: marks[i].s });
-}
-first = marks[i].s;
+if (marks[0].s > 0 && src.slice(0, marks[0].s).trim()) {
+out.push({ t: '前言', s: 0, e: marks[0].s });
 }
 for (let i = 0; i < marks.length; i++) {
 const s = marks[i].s;
