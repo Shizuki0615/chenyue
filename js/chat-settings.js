@@ -178,8 +178,8 @@ const TIME_STYLES = [
 function themeDefaults() {
 const dark = document.documentElement.getAttribute('data-theme') === 'dark';
 return dark
-? { inBg: '#2a2a2a', inInk: '#f0f0f0', outBg: '#3a3a3a', outInk: '#ffffff', timeInk: '#8a8a8a', sendBg: '#f0f0f0', sendInk: '#111111' }
-: { inBg: '#ffffff', inInk: '#111111', outBg: '#111111', outInk: '#ffffff', timeInk: '#111111', sendBg: '#111111', sendInk: '#ffffff' };
+? { inBg: '#2a2a2a', inInk: '#f0f0f0', outBg: '#3a3a3a', outInk: '#ffffff', timeInk: '#8a8a8a', sendBg: '#f0f0f0', sendInk: '#111111', eventInk: '#f0f0f0', nameInk: '#f0f0f0' }
+: { inBg: '#ffffff', inInk: '#111111', outBg: '#111111', outInk: '#ffffff', timeInk: '#111111', sendBg: '#111111', sendInk: '#ffffff', eventInk: '#111111', nameInk: '#111111' };
 }
 function _csHexRgb(h) {
 if (!h || typeof h !== 'string') return null;
@@ -347,6 +347,10 @@ const rad = store.get('cs-bubble-radius') || BUBBLE_RADIUS_DEFAULT;
 setVar(root, '--chat-bubble-radius', rad);
 const timeInk = store.get('cs-time-ink') || DEF.timeInk;
 setVar(root, '--msg-time-ink', timeInk);
+const eventInk = store.get('cs-event-ink') || DEF.eventInk;
+setVar(root, '--msg-event-ink', eventInk);
+const nameInk = store.get('cs-name-ink') || DEF.nameInk;
+setVar(root, '--chat-name-ink', nameInk);
 const markDX = clampOffset(store.get('cs-mark-x'));
 const markDY = clampOffset(store.get('cs-mark-y'));
 setVar(root, '--msg-mark-x', markDX + 'px');
@@ -371,6 +375,8 @@ const sendBtn = document.getElementById('chat-send');
 if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
 set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
 set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
+set('cs-event-ink-val', eventInk === DEF.eventInk ? '默认 ' + DEF.eventInk : eventInk);
+set('cs-name-ink-val', nameInk === DEF.nameInk ? '默认 ' + DEF.nameInk : nameInk);
 set('cs-out-bg-val', outBg === DEF.outBg ? '默认 ' + DEF.outBg : outBg);
 set('cs-out-ink-val', outInk === DEF.outInk ? '默认 ' + DEF.outInk : outInk);
 set('cs-in-bg-val', inBg === DEF.inBg ? '默认 ' + DEF.inBg : inBg);
@@ -1100,6 +1106,8 @@ const bubbleOpacityRow = row('cs-bubble-op');
 if (bubbleOpacityRow) bubbleOpacityRow.addEventListener('click', () => editChatSurface(2));
 bindBubbleColorRow('cs-typing-ink', 'cs-typing-ink', '#8a8a8a', '对方正在输入文字颜色', [{ color: '#8a8a8a', label: '默认灰' }].concat(BUBBLE_INK_COLORS));
 bindBubbleColorRow('cs-ph-ink', 'cs-ph-ink', '#b5b5b5', '输入框提示文字颜色', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS));
+bindBubbleColorRow('cs-event-ink', 'cs-event-ink', '#111111', '系统事件文字颜色', BUBBLE_INK_COLORS);
+bindBubbleColorRow('cs-name-ink', 'cs-name-ink', '#111111', '顶部昵称颜色', BUBBLE_INK_COLORS);
 bindBubbleColorRow('cs-out-bg', 'cs-out-bg', '#111111', '我的气泡颜色', BUBBLE_BG_COLORS);
 bindBubbleColorRow('cs-out-ink', 'cs-out-ink', '#ffffff', '我的消息文字颜色', BUBBLE_INK_COLORS);
 bindBubbleColorRow('cs-in-bg', 'cs-in-bg', '#ffffff', '联系人气泡颜色', BUBBLE_BG_COLORS);
@@ -1544,6 +1552,7 @@ const CHAT_BEAUTY_KEYS = [
 'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
 'cs-send-bg', 'cs-send-ink', 'cs-send-show',
 'cs-ph-ink', 'cs-ph-show',
+'cs-event-ink', 'cs-name-ink',
 'cs-head-opacity', 'cs-input-opacity', 'cs-bubble-opacity', 'cs-head-inset', 'cs-input-inset',
 'cs-bg-fit', 'cs-bg-fullbars', 'cs-bg-pos-x', 'cs-bg-pos-y', 'cs-bg-size'
 ];
@@ -3219,7 +3228,9 @@ wrap.appendChild(mkGrid([
 mkColorItem('发送按钮色', 'cs-send-bg', DEF.sendBg, SEND_BG_COLORS),
 mkColorItem('发送文字色', 'cs-send-ink', DEF.sendInk, BUBBLE_INK_COLORS),
 mkColorItem('正在输入颜色', 'cs-typing-ink', '#8a8a8a', BUBBLE_INK_COLORS),
-mkColorItem('提示文字色', 'cs-ph-ink', '#b5b5b5', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS))
+mkColorItem('提示文字色', 'cs-ph-ink', '#b5b5b5', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS)),
+mkColorItem('系统事件色', 'cs-event-ink', DEF.eventInk, BUBBLE_INK_COLORS),
+mkColorItem('顶部昵称色', 'cs-name-ink', DEF.nameInk, BUBBLE_INK_COLORS)
 ]));
 paletteHost = document.createElement('div');
 wrap.appendChild(paletteHost);

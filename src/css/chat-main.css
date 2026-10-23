@@ -20,7 +20,8 @@
 .ch-back svg { width:18px; height:18px; }
 .ch-name {
   flex:1; min-width:0;
-  font-size:17px; font-weight:700; letter-spacing:.5px;
+  font-size:17px; letter-spacing:.5px;
+  color:var(--chat-name-ink, inherit);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .ch-settings {
@@ -241,7 +242,7 @@ body.cs-time-divider #chat-body .msg-time { display:none; }
 body.cs-time-divider .msg-time-divider { display:flex; }
 .msg-time-divider span {
   padding:3px 10px; border-radius:999px; background:rgba(0,0,0,.05);
-  font-size:10px; line-height:1; color:var(--msg-time-ink, #111111);
+  font-size:10px; line-height:1; color:var(--msg-event-ink, var(--msg-time-ink, #111111));
   letter-spacing:.3px; opacity:.6; white-space:nowrap;
 }
 /* 鑱旂郴浜烘鍦ㄨ緭鍏ワ細姝ｅ父娴佸崰浣嶏紝鏃犻渶棰濆鐣欑櫧琛ュ伩锛堟鍓嶆诞灞傛柟妗堝凡绉婚櫎锛?*/
@@ -660,7 +661,7 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 /* 鎷嶄竴鎷?/ 鎹㈠ご鍍忥細灞呬腑鐏板瓧灏忓崱鐗囷紙鍙€夐檮甯︿竴寮犲ご鍍忓浘锛?*/
 .msg-poke {
   align-self:center; text-align:center;
-  font-size:12px; color:var(--msg-time-ink, #8a8a8a);
+  font-size:12px; color:var(--msg-event-ink, var(--msg-time-ink, #8a8a8a));
   padding:6px 16px; max-width:80%;
   background:rgba(0,0,0,.03);
   border:1px solid rgba(0,0,0,.045);
@@ -806,7 +807,7 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-rps-ico svg { width:24px; height:24px; color:#555; }
 .msg-rps-name { font-size:11px; color:var(--muted); }
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
-.msg-rps-result { font-size:13px; font-weight:700; color:var(--ink); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
+.msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
 
 /* 鎷嶄竴鎷嶆诞灞傚崱鐗囷紙搴曢儴鍗婃锛岄湶鍑洪《閮ㄨ亰澶╂秷鎭紝鏂逛究杈圭湅杈圭帺锛?   搴曢儴 96px锛氭偓鍋滃湪杈撳叆鏍忎笂鏂癸紝涓嶅帇浣?涓嶈鐩栬緭鍏ユ爮锛堣緭鍏ユ爮椤堕儴绾?82px锛?   v3.5.110锛歜ottom 鍔?safe-area锛屽叏闈㈠睆鍏ㄥ睆妯″紡涓嬩笌杈撳叆鏍忓悓姝ヤ笂绉伙紝涓嶉敊浣?   v3.10.x锛歠ixed 鈫?absolute鈥斺€旈敭鐩樺脊鍑烘椂闅忔敹缂╁悗鐨?.phone/#page-chat 鍋滈潬锛?   涓嶅啀閿氬畾鍏ㄩ珮 layout viewport 鎺夊埌杈撳叆鏍忎笅鏂癸紙璇﹁ .more-panel 澶勬敞閲婏級 */
 .poke-card {
@@ -1345,7 +1346,7 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-center { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-center-card {
   max-width:80%; text-align:center;
-  font-size:12px; color:var(--ink);
+  font-size:12px; color:var(--msg-event-ink, var(--ink));
   background:rgba(255,255,255,.92);
   border:1px solid rgba(0,0,0,.1);
   border-radius:14px; padding:9px 18px;
@@ -1880,19 +1881,19 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-rp-top { display:flex; align-items:center; justify-content:center; gap:6px; color:var(--muted); }
 .msg-rp-ico { display:inline-flex; }
 .msg-rp-ico svg { width:18px; height:18px; color:#888; }
-.msg-rp-label { font-size:12px; font-weight:600; color:#888; }
-.msg-rp-amt { font-size:24px; font-weight:800; color:var(--ink); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
-.msg-rp-wish { font-size:13px; color:var(--ink); margin-bottom:10px; }
+.msg-rp-label { font-size:12px; font-weight:600; color:var(--msg-event-ink, #888); }
+.msg-rp-amt { font-size:24px; font-weight:800; color:var(--msg-event-ink, var(--ink)); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
+.msg-rp-wish { font-size:13px; color:var(--msg-event-ink, var(--ink)); margin-bottom:10px; }
 .msg-rp-foot {
   display:flex; justify-content:space-between; align-items:center;
-  font-size:11px; color:var(--muted);
+  font-size:11px; color:var(--msg-event-ink, var(--muted));
   padding-top:8px; border-top:1px dashed rgba(0,0,0,.1);
 }
 .msg-rp-status { font-weight:600; }
-.msg-rp-card.opened .msg-rp-status { color:var(--ink); }
+.msg-rp-card.opened .msg-rp-status { color:var(--msg-event-ink, var(--ink)); }
 .msg-rp-card.opened { border-color:rgba(0,0,0,.18); }
 .msg-rp-card.expired { opacity:.6; }
-.msg-rp-card.expired .msg-rp-status { color:var(--muted); }
+.msg-rp-card.expired .msg-rp-status { color:var(--msg-event-ink, var(--muted)); }
 /* 鑺辨湹鍗＄墖 */
 .msg-flower { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-flower-card {

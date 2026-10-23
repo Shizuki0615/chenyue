@@ -294,8 +294,8 @@
   function themeDefaults() {
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
     return dark
-      ? { inBg: '#2a2a2a', inInk: '#f0f0f0', outBg: '#3a3a3a', outInk: '#ffffff', timeInk: '#8a8a8a', sendBg: '#f0f0f0', sendInk: '#111111' }
-      : { inBg: '#ffffff', inInk: '#111111', outBg: '#111111', outInk: '#ffffff', timeInk: '#111111', sendBg: '#111111', sendInk: '#ffffff' };
+      ? { inBg: '#2a2a2a', inInk: '#f0f0f0', outBg: '#3a3a3a', outInk: '#ffffff', timeInk: '#8a8a8a', sendBg: '#f0f0f0', sendInk: '#111111', eventInk: '#f0f0f0', nameInk: '#f0f0f0' }
+      : { inBg: '#ffffff', inInk: '#111111', outBg: '#111111', outInk: '#ffffff', timeInk: '#111111', sendBg: '#111111', sendInk: '#ffffff', eventInk: '#111111', nameInk: '#111111' };
   }
   // v3.26.x：单聊气泡对比度自愈——出站/入站文字色与背景色同色或极低对比（用户误设/导入美化方案）
   // 时注入高优先级覆盖样式强制文字可见。
@@ -521,6 +521,12 @@
     // 时间轴颜色（默认黑/深色模式灰）
     const timeInk = store.get('cs-time-ink') || DEF.timeInk;
     setVar(root, '--msg-time-ink', timeInk);
+    // 系统事件文字颜色（居中提示卡片 / 拍一拍 / 红包 / 时间分隔线等）
+    const eventInk = store.get('cs-event-ink') || DEF.eventInk;
+    setVar(root, '--msg-event-ink', eventInk);
+    // 顶部昵称颜色（顶栏「老公」那部分）
+    const nameInk = store.get('cs-name-ink') || DEF.nameInk;
+    setVar(root, '--chat-name-ink', nameInk);
     // #728：标识 / 时间轴位置微调（自定义气泡 CSS 改了 padding 后硬编码偏移会失真）。
     // 存 raw 数字串，未设置＝写 0px（与「未设置」视觉同值，且 calc 里能直接相加）。
     const markDX = clampOffset(store.get('cs-mark-x'));
@@ -555,6 +561,8 @@
     if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
     set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
     set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
+    set('cs-event-ink-val', eventInk === DEF.eventInk ? '默认 ' + DEF.eventInk : eventInk);
+    set('cs-name-ink-val', nameInk === DEF.nameInk ? '默认 ' + DEF.nameInk : nameInk);
     // 双方气泡颜色/文字颜色当前值回显（默认值显示「默认 #色值」，让用户知道默认颜色）
     set('cs-out-bg-val', outBg === DEF.outBg ? '默认 ' + DEF.outBg : outBg);
     set('cs-out-ink-val', outInk === DEF.outInk ? '默认 ' + DEF.outInk : outInk);
@@ -1486,6 +1494,10 @@
   bindBubbleColorRow('cs-typing-ink', 'cs-typing-ink', '#8a8a8a', '对方正在输入文字颜色', [{ color: '#8a8a8a', label: '默认灰' }].concat(BUBBLE_INK_COLORS));
   // #1026：输入框提示文字颜色（「说点什么…」那几个灰字）。色板首项＝主题默认灰，选它等价于不覆盖。
   bindBubbleColorRow('cs-ph-ink', 'cs-ph-ink', '#b5b5b5', '输入框提示文字颜色', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS));
+  // 系统事件文字颜色（居中提示卡片 / 拍一拍 / 红包 / 时间分隔线等）
+  bindBubbleColorRow('cs-event-ink', 'cs-event-ink', '#111111', '系统事件文字颜色', BUBBLE_INK_COLORS);
+  // 顶部昵称颜色（顶栏「老公」那部分）
+  bindBubbleColorRow('cs-name-ink', 'cs-name-ink', '#111111', '顶部昵称颜色', BUBBLE_INK_COLORS);
   // 我的气泡（out 深色系）/ 联系人气泡（in 浅色系）与各自文字色
   bindBubbleColorRow('cs-out-bg', 'cs-out-bg', '#111111', '我的气泡颜色', BUBBLE_BG_COLORS);
   bindBubbleColorRow('cs-out-ink', 'cs-out-ink', '#ffffff', '我的消息文字颜色', BUBBLE_INK_COLORS);
@@ -2032,6 +2044,8 @@
     'cs-send-bg', 'cs-send-ink', 'cs-send-show',
     // #1026：输入框提示文字（颜色 + 显隐）——观感项，方案切换时要一起走
     'cs-ph-ink', 'cs-ph-show',
+    // 系统事件文字颜色 + 顶部昵称颜色
+    'cs-event-ink', 'cs-name-ink',
     'cs-head-opacity', 'cs-input-opacity', 'cs-bubble-opacity', 'cs-head-inset', 'cs-input-inset',
     // #731：壁纸铺满方式 + 壁纸延伸到栏位（同一份美化方案应记住这两个观感开关）
     // #782：壁纸位置与缩放三键（方案/备份/导入必须一起走，否则换桌面图就跳位）
@@ -4042,7 +4056,9 @@
           mkColorItem('发送文字色', 'cs-send-ink', DEF.sendInk, BUBBLE_INK_COLORS),
           mkColorItem('正在输入颜色', 'cs-typing-ink', '#8a8a8a', BUBBLE_INK_COLORS),
           // #1026：输入框提示文字色（调色盘里的「恢复默认」＝回到主题灰）
-          mkColorItem('提示文字色', 'cs-ph-ink', '#b5b5b5', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS))
+          mkColorItem('提示文字色', 'cs-ph-ink', '#b5b5b5', [{ color: '#b5b5b5', label: '默认灰' }].concat(BUBBLE_INK_COLORS)),
+          mkColorItem('系统事件色', 'cs-event-ink', DEF.eventInk, BUBBLE_INK_COLORS),
+          mkColorItem('顶部昵称色', 'cs-name-ink', DEF.nameInk, BUBBLE_INK_COLORS)
         ]));
         paletteHost = document.createElement('div');
         wrap.appendChild(paletteHost);
