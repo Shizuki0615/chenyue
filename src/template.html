@@ -6138,6 +6138,15 @@
             <label class="toggle"><input type="checkbox" id="avlib-nick-enabled"><span class="tk"></span></label>
           </div>
           <div class="avlib-note">只改<b>聊天里</b>显示的联系人名字。通话、游戏、占卜等<b>其他功能</b>显示的都是桌面昵称——在 设置 → 通用 → 联系人 / 桌面（或点桌面顶部的头像 / 昵称）里改。</div>
+          <!-- v8.46：昵称池编辑闸——默认关闭，胶囊上不出现删除键（点昵称只切换，防误删）；
+               打开才显示每条右侧的 ✕。两个池共用一个开关状态。 -->
+          <div class="avlib-toggle">
+            <div class="avlib-toggle-txt">
+              <div class="avlib-toggle-name">编辑昵称</div>
+              <div class="avlib-toggle-sub">打开才显示每条昵称旁的删除键；关闭时点昵称只切换，不会误删</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="avlib-nick-edit"><span class="tk"></span></label>
+          </div>
           <div class="avlib-names" id="avlib-nick-list"></div>
           <div class="div-result-empty" id="avlib-nick-empty" hidden>还没有昵称，点击下方按钮添加</div>
           <button class="div-draw" id="avlib-nick-add">
@@ -6158,11 +6167,23 @@
             <label class="toggle"><input type="checkbox" id="avlib-me-nick-enabled"><span class="tk"></span></label>
           </div>
           <div class="avlib-note">只改<b>聊天里</b>显示的我的名字。通话、游戏、占卜等<b>其他功能</b>显示的都是桌面昵称——在 设置 → 通用 → 联系人 / 桌面（或点桌面顶部的头像 / 昵称）里改。</div>
+          <div class="avlib-toggle">
+            <div class="avlib-toggle-txt">
+              <div class="avlib-toggle-name">编辑我的昵称</div>
+              <div class="avlib-toggle-sub">打开才显示每条昵称旁的删除键；关闭时点昵称只切换，不会误删</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="avlib-me-nick-edit"><span class="tk"></span></label>
+          </div>
           <div class="avlib-names" id="avlib-me-nick-list"></div>
           <div class="div-result-empty" id="avlib-me-nick-empty" hidden>还没有昵称，点击下方按钮添加</div>
           <button class="div-draw" id="avlib-me-nick-add">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
             添加我的昵称（一行一个，可批量）
+          </button>
+          <!-- v8.46：把聊天昵称恢复成默认「我」（清 cs-lbl-user，不动桌面昵称与昵称库条目） -->
+          <button class="div-draw" id="avlib-me-nick-reset" style="background:rgba(0,0,0,.06);color:var(--ink)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            恢复默认昵称（我）
           </button>
           <button class="div-draw" id="avlib-me-nick-clear" style="background:rgba(0,0,0,.06);color:var(--ink)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>

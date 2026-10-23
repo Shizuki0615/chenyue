@@ -166,6 +166,9 @@ const avMeNickEmpty = document.getElementById('avlib-me-nick-empty');
 const avMeNickEnabled = document.getElementById('avlib-me-nick-enabled');
 const avMeNickAdd = document.getElementById('avlib-me-nick-add');
 const avMeNickClear = document.getElementById('avlib-me-nick-clear');
+const avNickEdit = document.getElementById('avlib-nick-edit');
+const avMeNickEdit = document.getElementById('avlib-me-nick-edit');
+const avMeNickReset = document.getElementById('avlib-me-nick-reset');
 let avKind = 'avatar', avOwner = 0;
 function kindIsName() { return avKind === 'name'; }
 function syncCounts() {
@@ -177,6 +180,9 @@ if (avEnabled) avEnabled.checked = getEnabled();
 if (avMeEnabled) avMeEnabled.checked = getMeEnabled();
 if (avNickEnabled) avNickEnabled.checked = getNickEnabled();
 if (avMeNickEnabled) avMeNickEnabled.checked = getMeNickEnabled();
+const editOn = nickEditOn();
+if (avNickEdit) avNickEdit.checked = editOn;
+if (avMeNickEdit) avMeNickEdit.checked = editOn;
 const myName = cUserName();
 if (avName) avName.textContent = cPartnerName();
 if (avPoolName) avPoolName.textContent = cPartnerName() + (kindIsName() ? ' 的昵称库' : ' 的头像库');
@@ -361,6 +367,18 @@ return true;
 }
 function renderNickGridSmart() { if (!updateNickGridNow()) renderNickGrid(); }
 function renderMeNickGridSmart() { if (!updateMeNickGridNow()) renderMeNickGrid(); }
+const avPref = window.xyStore('xy-home-v2');
+function nickEditOn() { try { return avPref.get('nick-edit-mode') === '1'; } catch (e) { return false; } }
+function setNickEdit(on) {
+try { avPref.set('nick-edit-mode', on ? '1' : '0'); } catch (e) {}
+if (avNickEdit) avNickEdit.checked = !!on;
+if (avMeNickEdit) avMeNickEdit.checked = !!on;
+renderNickGrid();
+renderMeNickGrid();
+toast(on ? '编辑已开启：点昵称右侧的 ✕ 可删除' : '编辑已关闭：点昵称只会切换，不会误删');
+}
+if (avNickEdit) avNickEdit.addEventListener('change', () => setNickEdit(avNickEdit.checked));
+if (avMeNickEdit) avMeNickEdit.addEventListener('change', () => setNickEdit(avMeNickEdit.checked));
 function buildNickCell(name, libFn, saveFn, rerender, onPick) {
 const d = document.createElement('div');
 d.className = 'avlib-name-cell';
@@ -371,6 +389,7 @@ txt.title = name;
 const delBtn = document.createElement('button');
 delBtn.className = 'avlib-name-del';
 delBtn.textContent = '✕';
+if (!nickEditOn()) { delBtn.style.display = 'none'; delBtn.tabIndex = -1; }
 d.appendChild(txt);
 d.appendChild(delBtn);
 txt.addEventListener('click', () => onPick(name));
@@ -673,6 +692,18 @@ bindPoolClear(avClear, saveLib, () => { renderGrid(); syncVal(); }, '清空头�
 bindPoolClear(avMeClear, saveMeLib, () => { renderMeGrid(); syncVal(); }, '清空我的头像池？', '已清空我的头像池');
 bindPoolClear(avNickClear, saveNickLib, () => { renderNickGrid(); syncVal(); }, '清空昵称池？', '已清空昵称池');
 bindPoolClear(avMeNickClear, saveMeNickLib, () => { renderMeNickGrid(); syncVal(); }, '清空我的昵称池？', '已清空我的昵称池');
+if (avMeNickReset) {
+avMeNickReset.addEventListener('click', () => {
+const oldEff = store.get('cs-lbl-user') || '我';
+if (oldEff === '我') { toast('我的聊天昵称已经是默认的「我」'); return; }
+try { store.remove('cs-lbl-user'); } catch (e) {}
+try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff, 'me'); } catch (e) {}
+try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}
+renderMeNickGrid();
+syncVal();
+toast('我的聊天昵称已恢复为「我」（桌面昵称不变）');
+});
+}
 let avApplyGen = 0; // #1314 屏外气泡头像分片补写的轮次号（见下面写入面那段注释）
 function applyAvatarImg(data, out, chatOnly) {
 if (data) {

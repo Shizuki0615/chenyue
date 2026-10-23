@@ -261,6 +261,10 @@
   const avMeNickEnabled = document.getElementById('avlib-me-nick-enabled');
   const avMeNickAdd = document.getElementById('avlib-me-nick-add');
   const avMeNickClear = document.getElementById('avlib-me-nick-clear');
+  // v8.46：昵称池编辑闸 + 「恢复默认昵称（我）」
+  const avNickEdit = document.getElementById('avlib-nick-edit');
+  const avMeNickEdit = document.getElementById('avlib-me-nick-edit');
+  const avMeNickReset = document.getElementById('avlib-me-nick-reset');
 
   // 半框两级状态：avKind=换什么（头像/昵称），avOwner=换谁的（0=TA，1=我的）
   let avKind = 'avatar', avOwner = 0;
@@ -275,6 +279,10 @@
     if (avMeEnabled) avMeEnabled.checked = getMeEnabled();
     if (avNickEnabled) avNickEnabled.checked = getNickEnabled();
     if (avMeNickEnabled) avMeNickEnabled.checked = getMeNickEnabled();
+    // v8.46：编辑闸两个开关始终同步同一状态（全桌面共用，不按联系人存）
+    const editOn = nickEditOn();
+    if (avNickEdit) avNickEdit.checked = editOn;
+    if (avMeNickEdit) avMeNickEdit.checked = editOn;
     const myName = cUserName();
     if (avName) avName.textContent = cPartnerName();
     // 页签文案跟随大类与当前昵称（改了昵称后「XX 的昵称库」要跟着变）
@@ -509,6 +517,21 @@
   }
   function renderNickGridSmart() { if (!updateNickGridNow()) renderNickGrid(); }
   function renderMeNickGridSmart() { if (!updateMeNickGridNow()) renderMeNickGrid(); }
+  // ===== v8.46：昵称池编辑闸（默认关闭） =====
+  // 用户诉求：想点昵称换名字时，✕ 紧贴文字很容易误删——只有明确要编辑时才露出删除键。
+  // 状态存全局根键（界面偏好，不按联系人分）：切到哪个桌面、哪个池都一致。
+  const avPref = window.xyStore('xy-home-v2');
+  function nickEditOn() { try { return avPref.get('nick-edit-mode') === '1'; } catch (e) { return false; } }
+  function setNickEdit(on) {
+    try { avPref.set('nick-edit-mode', on ? '1' : '0'); } catch (e) {}
+    if (avNickEdit) avNickEdit.checked = !!on;
+    if (avMeNickEdit) avMeNickEdit.checked = !!on;
+    renderNickGrid();
+    renderMeNickGrid();
+    toast(on ? '编辑已开启：点昵称右侧的 ✕ 可删除' : '编辑已关闭：点昵称只会切换，不会误删');
+  }
+  if (avNickEdit) avNickEdit.addEventListener('change', () => setNickEdit(avNickEdit.checked));
+  if (avMeNickEdit) avMeNickEdit.addEventListener('change', () => setNickEdit(avMeNickEdit.checked));
   // 一条昵称 = 一个胶囊：点文字换昵称，点右侧 ✕ 删除这一条。
   // 删除按值定位（不是按下标）——昵称池允许重复值被上层的查重挡掉，但历史数据/导入可能带重复，
   // 按下标删会删错那一条。
@@ -522,6 +545,9 @@
     const delBtn = document.createElement('button');
     delBtn.className = 'avlib-name-del';
     delBtn.textContent = '✕';
+    // v8.46：编辑闸关闭时不显示删除键。.avlib-name-del 是 display:flex，hidden 属性压不过
+    // 作者样式（与 .set-row 那次同一处坑），必须写内联 display。
+    if (!nickEditOn()) { delBtn.style.display = 'none'; delBtn.tabIndex = -1; }
     d.appendChild(txt);
     d.appendChild(delBtn);
     txt.addEventListener('click', () => onPick(name));
@@ -904,6 +930,20 @@
   bindPoolClear(avMeClear, saveMeLib, () => { renderMeGrid(); syncVal(); }, '清空我的头像池？', '已清空我的头像池');
   bindPoolClear(avNickClear, saveNickLib, () => { renderNickGrid(); syncVal(); }, '清空昵称池？', '已清空昵称池');
   bindPoolClear(avMeNickClear, saveMeNickLib, () => { renderMeNickGrid(); syncVal(); }, '清空我的昵称池？', '已清空我的昵称池');
+  // v8.46：把「我的聊天昵称」恢复为默认「我」——只清 cs-lbl-user（聊天域），
+  // 桌面昵称（lbl-user）与昵称池条目都不动（用户口径「其他的不变」）。
+  if (avMeNickReset) {
+    avMeNickReset.addEventListener('click', () => {
+      const oldEff = store.get('cs-lbl-user') || '我';
+      if (oldEff === '我') { toast('我的聊天昵称已经是默认的「我」'); return; }
+      try { store.remove('cs-lbl-user'); } catch (e) {}
+      try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff, 'me'); } catch (e) {}
+      try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}
+      renderMeNickGrid();
+      syncVal();
+      toast('我的聊天昵称已恢复为「我」（桌面昵称不变）');
+    });
+  }
 
   // v3.12.x：联系人头像换头像不再写桌面键——setAvatarBoth/removeAvatarBoth 已随「桌面与聊天
   // 头像解耦」移除，所有路径只写聊天专用键 cs-avatar-partner（与我的头像 cs-avatar-user 同规则）。
