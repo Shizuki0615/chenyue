@@ -975,17 +975,17 @@ font-size:11px; color:var(--muted); letter-spacing:.5px;
 white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
 }
 .mini-row { display:flex; gap:12px; margin-bottom:14px; flex-shrink:0; }
-.mini-card { flex:1; height:92px; overflow:hidden; box-sizing:border-box; border-radius:20px; padding:14px; box-shadow:0 6px 16px rgba(0,0,0,.06); background:var(--widget-bg); opacity:var(--widget-opacity); border:1px solid var(--widget-border); display:flex; flex-direction:column; justify-content:center; }
+.mini-card { flex:1; height:92px; overflow:hidden; box-sizing:border-box; border-radius:20px; padding:14px 14px 8px; box-shadow:0 6px 16px rgba(0,0,0,.06); background:var(--widget-bg); opacity:var(--widget-opacity); border:1px solid var(--widget-border); display:flex; flex-direction:column; justify-content:center; }
 .mc-top { font-size:11px; color:var(--muted); letter-spacing:1px; }
 .mc-b { font-size:13px; font-weight:600; color:var(--ink); margin-top:6px; line-height:1.45; }
 .mc-b b { font-size:16px; }
 .mini-card .mc-b { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; height:18.85px; line-height:18.85px; }
 .mini-card #love-quote {
 white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
-overflow:hidden; text-overflow:clip; height:45px; line-height:15px; margin-top:2px;
+overflow:hidden; text-overflow:clip; height:45px; line-height:15px; margin-top:8px;
 }
 .mini-card[data-card-bg="fish"] .mc-b {
-height:45px; line-height:15px; margin-top:2px; overflow:hidden;
+height:45px; line-height:15px; margin-top:8px; overflow:hidden;
 }
 .mini-card[data-card-bg="fish"] .mc-b b { line-height:inherit; }
 .checkin {
@@ -10460,7 +10460,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792757231602" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792759096851" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -10552,7 +10552,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 
           <div class="checkin glass" data-desk-widget="checkin" data-card-bg="checkin">
             <span class="ck-heart">♥</span>
-            <span class="ck-txt">和 他 一起摸鱼 · 今天也要甜甜的</span>
+            <span class="ck-txt">和他一起摸鱼 · 今天也要甜甜的</span>
             <span class="ck-btn">打卡</span>
           </div>
 
@@ -12677,7 +12677,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">时钟、日历、备忘录、今日心情、离周末还有几天</div>
           <div class="lic-li">桌面组件【今日情话】为联系人每日随机刷新想对你说的话（可在字卡库自定义添加）</div>
           <div class="lic-li">桌面组件【今日备忘】【今天的心情】可简单输入记录</div>
-          <div class="lic-li">和 他 一起摸鱼打卡：摸鱼值 / 工作值双方随机增长，打卡横幅统计摸鱼天数，摸鱼抓包彩蛋涨值翻倍</div>
+          <div class="lic-li">和他一起摸鱼打卡：摸鱼值 / 工作值双方随机增长，打卡横幅统计摸鱼天数，摸鱼抓包彩蛋涨值翻倍</div>
           <div class="lic-li">第一页图标：聊天、群聊（开启群聊模式后显示）、主页、信箱、朋友圈、日历、纪念、占卜（开启群聊模式期间收起，改用 设置 → 工具 → 占卜 打开）、收藏</div>
           <div class="lic-li">第二页：音乐播放器卡、本周日常、周末倒计时；图标——音乐、聊天统计、提问记录、寻踪、此间、同频、伸手</div>
           <div class="lic-li">装修库组件：经期倒计时大卡、今日备忘 / 今天的心情、第三页功能图标组（经期记录、记账、梦角档案、我的档案、房间、备忘录、喝水、吃什么、存钱罐、番茄钟）；第三页图标同样动态注入</div>
@@ -22207,4 +22207,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvkxd90y -->
+<!-- __MOCHI_EOF__ mvkyh89f -->

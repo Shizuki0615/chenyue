@@ -172,9 +172,12 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    v3.25.x：第二档 77→92px——用户反馈长情话两行仍省略显示不全，放开 3 行
    （mc-top 16 + margin 2 + 3×15=45 + padding 28 = 91）。三页 band 同步加高
    （week-card / memo+mood 同改），页内容整体下移 15px 但页可竖滚、跨页对齐不变；
-   固定 height 的缩放一致性约束（v3.16.x）保持。 */
+   固定 height 的缩放一致性约束（v3.16.x）保持。
+   v8.42（用户微调）：标题与正文挨得太近——正文上间距 2→8px，腾出空间的来源是
+   卡片下内边距 14→8px（卡片总高仍是 92px，三页 band 对齐不受影响）：
+   mc-top 16 + margin 8 + 3×15=45 + padding 14+8=22 = 91。 */
 .mini-row { display:flex; gap:12px; margin-bottom:14px; flex-shrink:0; }
-.mini-card { flex:1; height:92px; overflow:hidden; box-sizing:border-box; border-radius:20px; padding:14px; box-shadow:0 6px 16px rgba(0,0,0,.06); background:var(--widget-bg); opacity:var(--widget-opacity); border:1px solid var(--widget-border); display:flex; flex-direction:column; justify-content:center; }
+.mini-card { flex:1; height:92px; overflow:hidden; box-sizing:border-box; border-radius:20px; padding:14px 14px 8px; box-shadow:0 6px 16px rgba(0,0,0,.06); background:var(--widget-bg); opacity:var(--widget-opacity); border:1px solid var(--widget-border); display:flex; flex-direction:column; justify-content:center; }
 .mc-top { font-size:11px; color:var(--muted); letter-spacing:1px; }
 .mc-b { font-size:13px; font-weight:600; color:var(--ink); margin-top:6px; line-height:1.45; }
 .mc-b b { font-size:16px; }
@@ -191,14 +194,14 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    的自动缩字号兜底（10px 下限），绝大多数长句可卡内显示全文。 */
 .mini-card #love-quote {
   white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
-  overflow:hidden; text-overflow:clip; height:45px; line-height:15px; margin-top:2px;
+  overflow:hidden; text-overflow:clip; height:45px; line-height:15px; margin-top:8px;
 }
 /* v3.26.x：「已摸鱼」卡与「今日情话」卡内容对齐——两卡都是 justify-content:center
    垂直居中，但情话正文高 45px、已摸鱼正文仅单行，内容总高不一致导致各自居中后
    两卡的「标题行 / 正文行」水平错位。给已摸鱼正文区同 45px 固定高 + 顶对齐，
    与情话卡结构一致，标题与正文首行即完全对齐。 */
 .mini-card[data-card-bg="fish"] .mc-b {
-  height:45px; line-height:15px; margin-top:2px; overflow:hidden;
+  height:45px; line-height:15px; margin-top:8px; overflow:hidden;
 }
 .mini-card[data-card-bg="fish"] .mc-b b { line-height:inherit; }
 
