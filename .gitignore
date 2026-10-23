@@ -64,3 +64,6 @@ diag-*.html
 tools/tmp-triage-cache/
 tools/tmp-triage-report.txt
 REAL-DEVICE-CHECK.md
+
+# 会话上传目录（截图等临时文件，不入库）
+.uploads/
