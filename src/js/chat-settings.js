@@ -602,7 +602,7 @@
     const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
     set('cs-mark-pos-val', fmtOff(markDX, markDY));
     set('cs-time-pos-val', fmtOff(timeDX, timeDY));
-    set('cs-mark-ink-val', markInk || '默认 #ff4d6a');
+    set('cs-mark-ink-val', markInk && markInk !== '#ff4d6a' ? markInk : '默认 #ff4d6a');
     // 聊天壁纸：铺满整个聊天页
     // v3.6.x：值没变时不重写 style——applySettings 在每次进入聊天页时调用，
     // 反复重设 background-image（大图 dataURL）会让浏览器重新解码、触发重绘

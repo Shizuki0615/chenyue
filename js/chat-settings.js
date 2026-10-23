@@ -402,7 +402,7 @@ set('cs-time-style-val', tsLabel);
 const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
 set('cs-mark-pos-val', fmtOff(markDX, markDY));
 set('cs-time-pos-val', fmtOff(timeDX, timeDY));
-set('cs-mark-ink-val', markInk || '默认 #ff4d6a');
+set('cs-mark-ink-val', markInk && markInk !== '#ff4d6a' ? markInk : '默认 #ff4d6a');
 let bg = store.get('cs-bg');
 if (bg && typeof bg === 'string' && bg.length > 6 * 1024 * 1024) {
 if (bg.length > 12 * 1024 * 1024) { try { store.remove('cs-bg'); } catch (e) {} }
