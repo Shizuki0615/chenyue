@@ -1345,6 +1345,13 @@ showPage('page-reply-settings');
 });
 }
 const rpTab = (k) => {
+if (k === 'group') {
+try {
+const v = window.xyStore ? window.xyStore('xy-home-v2').get('group-chat-enabled') : null;
+const on = v !== null && v !== undefined ? v === '1' : false;
+if (!on) { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp]').forEach(x => x.classList.toggle('sel', x.dataset.rp === 'chat')); document.querySelectorAll('#page-reply-settings .gs-panel').forEach(p => { p.hidden = p.dataset.rpanel !== 'chat'; }); return; }
+} catch (e) {}
+}
 document.querySelectorAll('#page-reply-settings .fav-tab[data-rp]').forEach(x => x.classList.toggle('sel', x.dataset.rp === k));
 document.querySelectorAll('#page-reply-settings .gs-panel').forEach(p => { p.hidden = p.dataset.rpanel !== k; });
 };

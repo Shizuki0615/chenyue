@@ -2216,6 +2216,27 @@ toast(csCmh.checked ? '通话小框已隐藏：接通后保持通话面板，不
 csAddSync(syncCsCmh);
 document.addEventListener('contact-switched', syncCsCmh);
 }
+(function gcSoftDisable() {
+const GNS = 'xy-home-v2';
+try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
+try { store.set('group-chat-enabled', '0'); } catch (e) {}
+try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
+try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
+try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
+try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+const _apply = () => {
+try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
+try { store.set('group-chat-enabled', '0'); } catch (e) {}
+try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+};
+if (window.__mochiDataReady) _apply();
+else document.addEventListener('mochi-restore-done', _apply, { once: true });
+document.addEventListener('DOMContentLoaded', () => {
+try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
+try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+}, { once: true });
+})();
 const sfGc = document.getElementById('sf-group-chat');
 if (sfGc) {
 const GNS = 'xy-home-v2';

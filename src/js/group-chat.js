@@ -6,6 +6,15 @@
 (function () {
   const body = document.getElementById('gc-body');
   if (!body) return;
+  // ==== A 方案软禁用闸门 ====
+  // 全站已按用户裁决把群聊入口与功能整体软禁用；这里加一道硬闸，
+  // 即便开关被别处意外写成 '1' 或图标被装修显式加回，群聊也不会真正启动任何接线/渲染。
+  const GNS = 'xy-home-v2';
+  function gcEnabled() {
+    try { const v = window.xyStore ? window.xyStore(GNS).get('group-chat-enabled') : null; if (v !== null && v !== undefined) return v === '1'; } catch (e) {}
+    try { return window.xyStore ? window.xyStore('xy-home-v2').get('group-chat-enabled') === '1' : false; } catch (e) { return false; }
+  }
+  if (!gcEnabled()) return;
   const G = 'xy-home-v2';
   const MSG_KEY = G + ':group-chat-msgs';
   const page = document.getElementById('page-group-chat');

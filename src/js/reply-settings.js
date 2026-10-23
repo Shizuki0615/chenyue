@@ -1799,7 +1799,16 @@
     });
   }
   // 单页内三分类 tab 切换
+  // v8.40 A 方案软禁用群聊：硬闸门——k === 'group' 时不允许切到群聊 panel，强制回 'chat'
+  // （哪怕 tab 按钮被意外点击或代码硬调 rpTab('group') 也能兜住）
   const rpTab = (k) => {
+    if (k === 'group') {
+      try {
+        const v = window.xyStore ? window.xyStore('xy-home-v2').get('group-chat-enabled') : null;
+        const on = v !== null && v !== undefined ? v === '1' : false;
+        if (!on) { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp]').forEach(x => x.classList.toggle('sel', x.dataset.rp === 'chat')); document.querySelectorAll('#page-reply-settings .gs-panel').forEach(p => { p.hidden = p.dataset.rpanel !== 'chat'; }); return; }
+      } catch (e) {}
+    }
     document.querySelectorAll('#page-reply-settings .fav-tab[data-rp]').forEach(x => x.classList.toggle('sel', x.dataset.rp === k));
     document.querySelectorAll('#page-reply-settings .gs-panel').forEach(p => { p.hidden = p.dataset.rpanel !== k; });
   };

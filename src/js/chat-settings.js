@@ -2829,9 +2829,43 @@
     document.addEventListener('contact-switched', syncCsCmh);
   }
 
+  // ==== A 方案软禁用群聊（v8.40）====
+  // 全站已按用户裁决软禁用群聊：强制把 group-chat-enabled 关掉、隐藏主设置里的开关行、
+  // 群聊回复参数块（#3472 data-rpanel="group"）在切换到时也加 hidden——任何入口都打不开，
+  // 但 DOM / JS / 数据全部保留，日后想回滚只需删掉这一段。
+  (function gcSoftDisable() {
+    const GNS = 'xy-home-v2';
+    try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
+    try { store.set('group-chat-enabled', '0'); } catch (e) {}
+    // 隐藏设置里的「开启群聊」开关行（保留 DOM，想回滚时删掉此行 hidden 即可）
+    try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
+    // 隐藏回复设置里的「群聊」tab 按钮 + 群聊参数块
+    try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
+    try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+    // 群聊页本身强制 hidden（哪怕被显式点进也不显示）
+    try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
+    // 强制应用一次桌面图标布局（确保群聊图标进隐藏池、占卜回位）
+    try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+    // 以后每次启动都再关一次（防装修/其他脚本又写回 '1'）
+    const _apply = () => {
+      try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
+      try { store.set('group-chat-enabled', '0'); } catch (e) {}
+      try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+    };
+    if (window.__mochiDataReady) _apply();
+    else document.addEventListener('mochi-restore-done', _apply, { once: true });
+    // #1141 启动后有延迟渲染的面板（回复设置）——等 DOM 就绪再补 hidden 一次
+    document.addEventListener('DOMContentLoaded', () => {
+      try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
+      try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
+    }, { once: true });
+  })();
+
   // v3.8.x：主设置页「开启群聊」开关——每桌面独立（group-chat-enabled，默认关闭）。
   // 开启后桌面聊天按钮右侧显示「群聊」按钮、占卜按钮隐藏（移到隐藏池，可在装修模式添加到其他页）；
   // 关闭恢复原样。写回后广播 group-chat-mode-changed 事件，personalize.js 响应调整桌面图标。
+  // v8.40 A 方案软禁用：本段接线保留（未来回滚时直接能用），但上面 gcSoftDisable 已强制关掉开关、
+  // 并把 #sf-group-chat-row 设置 hidden，用户不会再看到。
   const sfGc = document.getElementById('sf-group-chat');
   if (sfGc) {
     // v3.10.x：群聊是全局功能（消息/形象/回复设置均全局存根命名空间），开关也改为
