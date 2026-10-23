@@ -4269,6 +4269,13 @@
         bdRow.appendChild(bdAdd);
         bdWrap.appendChild(bdLb); bdWrap.appendChild(bdRow);
         wrap.appendChild(bdWrap);
+        // v8.48：主动发送标识颜色也进「微调」——改图案、校位置时顺手调色，当场看效果；
+        // 与设置页「主动发送标识颜色」是同一个键 cs-mark-ink / 同一套色板。
+        // paletteHost 必须在本分区重建：mkColorItem 展开调色盘是往它里面插节点，
+        // 沿用上一个分区的宿主会挂到已被换掉的 DOM 上（点了没反应）。
+        wrap.appendChild(mkColorItem('主动发送标识色', 'cs-mark-ink', '#ff4d6a', MARK_COLORS));
+        paletteHost = document.createElement('div');
+        wrap.appendChild(paletteHost);
         wrap.appendChild(mkPills('显示标识', [{ label: '显示', value: 1 }, { label: '不显示', value: 0 }], () => {
           try { return (window.replyCfg ? window.replyCfg() : {})['as-badge'] === 0 ? 0 : 1; } catch (e) { return 1; }
         }, (v) => {

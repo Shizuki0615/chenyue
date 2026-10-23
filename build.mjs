@@ -3043,6 +3043,7 @@ const FIX_SENTINELS = [
   { name: '#v846a 昵称池编辑闸（删掉＝✕ 又常显，想点昵称换名时误删复发）', file: 'js/avatar-lib.js', needle: "if (!nickEditOn()) { delBtn.style.display = 'none'; delBtn.tabIndex = -1; }" },
   { name: '#v847a 编辑闸容器类兜底（删掉＝快速路径/升级前旧节点上 ✕ 残留，用户报「没开编辑也有 ✕」复发）', file: 'js/avatar-lib.js', needle: "avMeNickList.classList.toggle('no-edit', !nickEditOn());" },
   { name: '#v847b 编辑闸 CSS 兜底（删掉＝容器类不生效，✕ 仍被 .avlib-name-del 的 display:flex 显示）', file: 'css/chat-pages.css', needle: '.avlib-names.no-edit .avlib-name-del { display:none; }' },
+  { name: '#v848 边看边调「微调」分区的标识颜色入口（删掉＝改标识图案/位置时不能就地改色，只能退回聊天设置）', file: 'js/chat-settings.js', needle: "mkColorItem('主动发送标识色', 'cs-mark-ink', '#ff4d6a', MARK_COLORS)" },
   { name: '#v846b 昵称编辑开关入口（删掉＝删除键永远出不来，昵称只能加不能删）', file: 'template.html', needle: 'id="avlib-nick-edit"' },
   { name: '#v846c 恢复默认昵称入口（删掉＝被昵称池换掉后，聊天里的「我」无法一键恢复）', file: 'js/avatar-lib.js', needle: "avMeNickReset.addEventListener('click'" },
   { name: '#616h 昵称事件消息渲染原样呈现（回退成无条件 pokePersonMap＝「我把 TA 的昵称换成了「小满」」被回填成「我把 小满 的昵称换成了「小满」」自指句）', file: 'js/chat.js', needle: "m.innerHTML = '<span>' + (rec.nickKeep ? escTxt(rec.text) : pokeIconHtml(pokePersonMap(rec.text, __taNm, __meNm))) + '</span>' +" },

@@ -3402,6 +3402,9 @@ bdTouch();
 bdRow.appendChild(bdAdd);
 bdWrap.appendChild(bdLb); bdWrap.appendChild(bdRow);
 wrap.appendChild(bdWrap);
+wrap.appendChild(mkColorItem('主动发送标识色', 'cs-mark-ink', '#ff4d6a', MARK_COLORS));
+paletteHost = document.createElement('div');
+wrap.appendChild(paletteHost);
 wrap.appendChild(mkPills('显示标识', [{ label: '显示', value: 1 }, { label: '不显示', value: 0 }], () => {
 try { return (window.replyCfg ? window.replyCfg() : {})['as-badge'] === 0 ? 0 : 1; } catch (e) { return 1; }
 }, (v) => {
