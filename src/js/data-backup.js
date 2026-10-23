@@ -1066,7 +1066,7 @@
       const io = plus.io;
       if (!io) return Promise.reject(new Error('无 plus.io'));
       // FIX 2026-10-23 Android 16 (SDK 35+)：plus.io.PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS
-      //   被系统彻底废掉（WRITE_EXTERNAL_STORAGE 完全删除），PRIVATE_DOCUMENTS 也被废弃。
+      //   被系统彻底废掉（WRITE_EXTERNAL_STORAGE 完全删除），PRIVATE_DOCUMENTS 也不稳定。
       //   新增 _doc 字符串路径（HBuilderX 应用私有目录，全版本通用）作为终极兜底——
       //   io.requestFileSystem('_doc', ...) 不依赖任何系统常量，是 HBuilderX 硬编码路径。
       const dirs = [];
@@ -1080,21 +1080,37 @@
         const d = dirs[idx];
         return new Promise(function (resolve, reject) {
           let done = false;
-          const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+          // 大文件分块写入：117MB 一次性跨 Native.js 桥会被截断/卡死，按 256KB/块顺序写
+          const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 120000);
           const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
           try {
             io.requestFileSystem(d.v, function (fs) {
               fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
                 fe.createWriter(function (w) {
-                  w.onwriteend = function () {
+                  let written = 0, lastLen = 0, state = 'truncating';
+                  const CHUNK = 256 * 1024;
+                  const finish = function () {
                     if (done) return;
                     done = true; clearTimeout(timer);
                     let p = '';
                     try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
                     resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
                   };
+                  const writeNext = function () {
+                    const chunk = str.slice(written, written + CHUNK);
+                    lastLen = chunk.length;
+                    if (!lastLen) { finish(); return; }
+                    try { w.write(chunk); } catch (e) { fail(e); }
+                  };
+                  w.onwriteend = function () {
+                    if (done) return;
+                    if (state === 'truncating') { state = 'writing'; writeNext(); return; }
+                    written += lastLen;
+                    if (written >= str.length) { finish(); return; }
+                    writeNext();
+                  };
                   w.onerror = fail;
-                  try { w.write(str); } catch (e) { fail(e); }
+                  try { w.truncate(0); } catch (e) { state = 'writing'; writeNext(); }
                 }, fail);
               }, fail);
             }, fail);
@@ -1227,7 +1243,19 @@
           // 1. truncate 清掉同名旧文件残留
           await evt(() => writer.truncate(0), label + ':truncate');
           // 2. write（String 入参——plus.io 全版本最稳，原样落盘）
-          await evt(() => writer.write(writeStr), label + ':write');
+          // FIX 2026-10-23 Android 16：117MB 大字符串一次性跨 Native.js 桥会被截断/超时，
+          //   按 256KB/块顺序写入，写完后统一触发 onwriteend。
+          const CHUNK = 256 * 1024;
+          if (writeStr.length <= CHUNK) {
+            await evt(() => writer.write(writeStr), label + ':write');
+          } else {
+            let written = 0;
+            while (written < writeStr.length) {
+              const chunk = writeStr.slice(written, written + CHUNK);
+              await evt(() => writer.write(chunk), label + ':write-chunk-' + written);
+              written += chunk.length;
+            }
+          }
           let p = '';
           try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
           innerResolve({ ok: true, path: p, dir: label });
@@ -1263,29 +1291,13 @@
   async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
     // FIX 2026-10-23 Android 16 (SDK 35+)：系统彻底删除 WRITE_EXTERNAL_STORAGE，
     //   plus.io.PUBLIC_* 常量全抛 Java exception；MediaStore.insert 也可能因权限模型变更失效。
-    //   直接跳过所有原生路径，走 App 壳 WebView 的 navigator.share / showSaveFilePicker ——
-    //   这俩走浏览器沙盒+系统文件选择器，不依赖任何存储权限，在 Android 16 上必定可用。
-    //   Android 13+ 其实 PUBLIC_* 就已经不稳定，保险起见 Android 13+ 一律跳过原生链路。
-    let androidVer = 0;
-    try {
-      // ① 最稳：直接从 UA 读 Android 版本号（不依赖 plus.android 能不能 import 类）
-      const m = (navigator.userAgent || '').match(/Android\s+(\d+(?:\.\d+)?)/i);
-      if (m) androidVer = parseFloat(m[1]);
-    } catch (e) {}
-    if (!androidVer && window.plus && window.plus.android) {
-      // ② 次稳：plus.android.importClass 同步阻塞路径（失败被 try/catch 吞掉时 android16Plus 保持 false）
-      try {
-        const Build = window.plus.android.importClass('android.os.Build');
-        const SDK_INT = Build && Build.VERSION && Build.VERSION.SDK_INT ? Build.VERSION.SDK_INT : 0;
-        if (SDK_INT >= 33) androidVer = 13;
-        else if (SDK_INT >= 35) androidVer = 16;
-      } catch (e) {}
-    }
-    // Android 13+（SDK 33+）plus.io PUBLIC_* 常量已不稳定；Android 16 彻底废掉 → 一律走网页兜底
-    const skipNative = androidVer >= 13;
+    //   但用户实测在 App 壳里走网页下载（<a download>）会弹框且最终失败——App WebView 的
+    //   下载管理器不接受 blob URL。因此不再按版本号 preemptive 跳过原生链路，而是：
+    //   ① 所有 Android 版本都先尝试 MediaStore / plus.io 原生存储；
+    //   ② 原生链路彻底失败后再走网页兜底；
+    //   ③ 修复 Android 16 上临时文件大字符串写入被 Native.js 桥截断/超时的问题（分块写入）。
     // 套壳 App（HBuilderX 5+）：MediaStore 优先 → plus.io 回退 → 网页下载兜底
-    //   Android 13+ 直接跳过原生链路，走网页兜底
-    if (window.plus && window.plus.io && !skipNative) {
+    if (window.plus && window.plus.io) {
       impShow('正在导出…', '正在保存到下载目录…', 95);
       // ① MediaStore（Android 10+）——唯一能写到**系统真正 Download 目录**的路径，卸载不丢
       const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');

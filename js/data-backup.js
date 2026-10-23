@@ -759,21 +759,36 @@ if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均�
 const d = dirs[idx];
 return new Promise(function (resolve, reject) {
 let done = false;
-const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 20000);
+const timer = setTimeout(function () { if (!done) { done = true; reject(new Error(d.label + ' 写入超时')); } }, 120000);
 const fail = function (e) { if (!done) { done = true; clearTimeout(timer); reject(e || new Error(d.label + ' 写入失败')); } };
 try {
 io.requestFileSystem(d.v, function (fs) {
 fs.root.getFile(name, { create: true, exclusive: false }, function (fe) {
 fe.createWriter(function (w) {
-w.onwriteend = function () {
+let written = 0, lastLen = 0, state = 'truncating';
+const CHUNK = 256 * 1024;
+const finish = function () {
 if (done) return;
 done = true; clearTimeout(timer);
 let p = '';
 try { p = String(fe.toLocalURL ? fe.toLocalURL() : (fe.fullPath || '')); } catch (e) {}
 resolve({ path: p.replace(/^file:\/\//, ''), dir: d.label });
 };
+const writeNext = function () {
+const chunk = str.slice(written, written + CHUNK);
+lastLen = chunk.length;
+if (!lastLen) { finish(); return; }
+try { w.write(chunk); } catch (e) { fail(e); }
+};
+w.onwriteend = function () {
+if (done) return;
+if (state === 'truncating') { state = 'writing'; writeNext(); return; }
+written += lastLen;
+if (written >= str.length) { finish(); return; }
+writeNext();
+};
 w.onerror = fail;
-try { w.write(str); } catch (e) { fail(e); }
+try { w.truncate(0); } catch (e) { state = 'writing'; writeNext(); }
 }, fail);
 }, fail);
 }, fail);
@@ -870,7 +885,17 @@ writer.onerror = function (e) { if (!done) { done = true; clearTimeout(t); j(e |
 try { act(); } catch (e) { if (!done) { done = true; clearTimeout(t); j(e); } }
 });
 await evt(() => writer.truncate(0), label + ':truncate');
+const CHUNK = 256 * 1024;
+if (writeStr.length <= CHUNK) {
 await evt(() => writer.write(writeStr), label + ':write');
+} else {
+let written = 0;
+while (written < writeStr.length) {
+const chunk = writeStr.slice(written, written + CHUNK);
+await evt(() => writer.write(chunk), label + ':write-chunk-' + written);
+written += chunk.length;
+}
+}
 let p = '';
 try { p = (fe.toLocalURL ? fe.toLocalURL() : fe.fullPath) || ''; } catch (e) {}
 innerResolve({ ok: true, path: p, dir: label });
@@ -894,21 +919,7 @@ if (r.ok) return r;
 return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-let androidVer = 0;
-try {
-const m = (navigator.userAgent || '').match(/Android\s+(\d+(?:\.\d+)?)/i);
-if (m) androidVer = parseFloat(m[1]);
-} catch (e) {}
-if (!androidVer && window.plus && window.plus.android) {
-try {
-const Build = window.plus.android.importClass('android.os.Build');
-const SDK_INT = Build && Build.VERSION && Build.VERSION.SDK_INT ? Build.VERSION.SDK_INT : 0;
-if (SDK_INT >= 33) androidVer = 13;
-else if (SDK_INT >= 35) androidVer = 16;
-} catch (e) {}
-}
-const skipNative = androidVer >= 13;
-if (window.plus && window.plus.io && !skipNative) {
+if (window.plus && window.plus.io) {
 impShow('正在导出…', '正在保存到下载目录…', 95);
 const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
 try {
