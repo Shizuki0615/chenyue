@@ -2835,30 +2835,31 @@
   // 但 DOM / JS / 数据全部保留，日后想回滚只需删掉这一段。
   (function gcSoftDisable() {
     const GNS = 'xy-home-v2';
-    try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
-    try { store.set('group-chat-enabled', '0'); } catch (e) {}
-    // 隐藏设置里的「开启群聊」开关行（保留 DOM，想回滚时删掉此行 hidden 即可）
-    try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
-    // 隐藏回复设置里的「群聊」tab 按钮 + 群聊参数块
-    try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
-    try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
-    // 群聊页本身强制 hidden（哪怕被显式点进也不显示）
-    try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
-    // 强制应用一次桌面图标布局（确保群聊图标进隐藏池、占卜回位）
-    try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
-    // 以后每次启动都再关一次（防装修/其他脚本又写回 '1'）
-    const _apply = () => {
+    const closeIt = () => {
       try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
       try { store.set('group-chat-enabled', '0'); } catch (e) {}
-      try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
     };
-    if (window.__mochiDataReady) _apply();
-    else document.addEventListener('mochi-restore-done', _apply, { once: true });
-    // #1141 启动后有延迟渲染的面板（回复设置）——等 DOM 就绪再补 hidden 一次
-    document.addEventListener('DOMContentLoaded', () => {
+    closeIt();
+    const hideDOM = () => {
+      try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
       try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
       try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
-    }, { once: true });
+      try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
+    };
+    // 双保险：DOM 可能已 ready（sync inline）或还没 ready（defer）
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => { hideDOM(); try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {} }, { once: true });
+    } else {
+      hideDOM();
+      try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+    }
+    // 以后每次启动都再关一次（防装修/其他脚本又写回 '1'）
+    if (window.__mochiDataReady) {
+      closeIt();
+      try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+    } else {
+      document.addEventListener('mochi-restore-done', () => { closeIt(); try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {} }, { once: true });
+    }
   })();
 
   // v3.8.x：主设置页「开启群聊」开关——每桌面独立（group-chat-enabled，默认关闭）。

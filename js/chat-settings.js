@@ -2218,24 +2218,29 @@ document.addEventListener('contact-switched', syncCsCmh);
 }
 (function gcSoftDisable() {
 const GNS = 'xy-home-v2';
+const closeIt = () => {
 try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
 try { store.set('group-chat-enabled', '0'); } catch (e) {}
+};
+closeIt();
+const hideDOM = () => {
 try { const row = document.getElementById('sf-group-chat-row'); if (row) row.hidden = true; } catch (e) {}
 try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
 try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
 try { const gp = document.getElementById('page-group-chat'); if (gp) gp.hidden = true; } catch (e) {}
-try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
-const _apply = () => {
-try { if (window.xyStore) window.xyStore(GNS).set('group-chat-enabled', '0'); } catch (e) {}
-try { store.set('group-chat-enabled', '0'); } catch (e) {}
-try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
 };
-if (window.__mochiDataReady) _apply();
-else document.addEventListener('mochi-restore-done', _apply, { once: true });
-document.addEventListener('DOMContentLoaded', () => {
-try { document.querySelectorAll('#page-reply-settings .fav-tab[data-rp="group"]').forEach(el => el.hidden = true); } catch (e) {}
-try { const gpanel = document.querySelector('#page-reply-settings [data-rpanel="group"]'); if (gpanel) gpanel.hidden = true; } catch (e) {}
-}, { once: true });
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', () => { hideDOM(); try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {} }, { once: true });
+} else {
+hideDOM();
+try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+}
+if (window.__mochiDataReady) {
+closeIt();
+try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {}
+} else {
+document.addEventListener('mochi-restore-done', () => { closeIt(); try { document.dispatchEvent(new Event('group-chat-mode-changed')); } catch (e) {} }, { once: true });
+}
 })();
 const sfGc = document.getElementById('sf-group-chat');
 if (sfGc) {
