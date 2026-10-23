@@ -1065,12 +1065,18 @@
     const writeTempFile = function (str, name) {
       const io = plus.io;
       if (!io) return Promise.reject(new Error('无 plus.io'));
+      // FIX 2026-10-23 Android 16 (SDK 35+)：plus.io.PUBLIC_DOWNLOADS / PUBLIC_DOCUMENTS
+      //   被系统彻底废掉（WRITE_EXTERNAL_STORAGE 完全删除），PRIVATE_DOCUMENTS 也被废弃。
+      //   新增 _doc 字符串路径（HBuilderX 应用私有目录，全版本通用）作为终极兜底——
+      //   io.requestFileSystem('_doc', ...) 不依赖任何系统常量，是 HBuilderX 硬编码路径。
       const dirs = [];
       if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
       if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
       try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+      // 新：字符串 '_doc' 路径兜底——任何常量都可能被废弃，但 HBuilderX 内部 _doc 永远可写
+      dirs.push({ v: '_doc', label: '_doc' });
       const tryOne = function (idx) {
-        if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+        if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败（含 _doc 兜底）'));
         const d = dirs[idx];
         return new Promise(function (resolve, reject) {
           let done = false;
@@ -1232,14 +1238,16 @@
       })();
     });
 
-    // 三级目录回退：公共下载 → 公共文档 → 应用私有文档（总能写，但卸载会丢）
+    // 三级目录回退：公共下载 → 公共文档 → 应用私有文档 → _doc 字符串兜底
+    // FIX 2026-10-23 Android 16 (SDK 35+)：PUBLIC_* 常量全废、PRIVATE_DOCUMENTS 也不稳定，
+    //   HBuilderX 字符串 '_doc' 是内部硬编码路径，不依赖任何系统常量，全版本可写
     const dirs = [];
     if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
     if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
-    // PRIVATE_DOCUMENTS = 应用私有 _doc/，HBuilderX 全版本可用
     try {
       if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' });
     } catch (e) {}
+    dirs.push({ v: '_doc', label: '_doc' });
     for (const d of dirs) {
       const r = await tryDir(d.v, d.label);
       if (r.ok) return r;
@@ -1253,8 +1261,20 @@
   // FIX 2026-09-11 #333：参数化分享标题/文件 MIME/保存框类型——诊断 docx 导出复用本链路
   // （设备.js buildDocxBlob 产物），不再只能分享「JSON 备份」。默认值保持原行为零变化。
   async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
+    // FIX 2026-10-23 Android 16 (SDK 35+)：系统彻底删除 WRITE_EXTERNAL_STORAGE，
+    //   plus.io.PUBLIC_* 常量全抛 Java exception；MediaStore.insert 也可能因权限模型变更失效。
+    //   直接跳过所有原生路径，走 App 壳 WebView 的 navigator.share / showSaveFilePicker ——
+    //   这俩走浏览器沙盒+系统文件选择器，不依赖任何存储权限，在 Android 16 上必定可用。
+    let android16Plus = false;
+    try {
+      if (window.plus && window.plus.android) {
+        const Build = window.plus.android.importClass('android.os.Build');
+        android16Plus = (Build.VERSION && Build.VERSION.SDK_INT) >= 35;
+      }
+    } catch (e) {}
     // 套壳 App（HBuilderX 5+）：MediaStore 优先 → plus.io 回退 → 网页下载兜底
-    if (window.plus && window.plus.io) {
+    //   Android 16+ 直接跳过原生链路，走网页兜底
+    if (window.plus && window.plus.io && !android16Plus) {
       impShow('正在导出…', '正在保存到下载目录…', 95);
       // ① MediaStore（Android 10+）——唯一能写到**系统真正 Download 目录**的路径，卸载不丢
       const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');

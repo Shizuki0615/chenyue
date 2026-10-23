@@ -753,8 +753,9 @@ const dirs = [];
 if (io.PUBLIC_DOWNLOADS !== undefined) dirs.push({ v: io.PUBLIC_DOWNLOADS, label: 'PUBLIC_DOWNLOADS' });
 if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNLOADS) dirs.push({ v: io.PUBLIC_DOCUMENTS, label: 'PUBLIC_DOCUMENTS' });
 try { if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' }); } catch (e) {}
+dirs.push({ v: '_doc', label: '_doc' });
 const tryOne = function (idx) {
-if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败'));
+if (idx >= dirs.length) return Promise.reject(new Error('所有临时目录均失败（含 _doc 兜底）'));
 const d = dirs[idx];
 return new Promise(function (resolve, reject) {
 let done = false;
@@ -885,6 +886,7 @@ if (io.PUBLIC_DOCUMENTS !== undefined && io.PUBLIC_DOCUMENTS !== io.PUBLIC_DOWNL
 try {
 if (io.PRIVATE_DOCUMENTS !== undefined) dirs.push({ v: io.PRIVATE_DOCUMENTS, label: 'PRIVATE_DOCUMENTS' });
 } catch (e) {}
+dirs.push({ v: '_doc', label: '_doc' });
 for (const d of dirs) {
 const r = await tryDir(d.v, d.label);
 if (r.ok) return r;
@@ -892,7 +894,14 @@ if (r.ok) return r;
 return { ok: false };
 }
 async function saveBackupFile(blob, fname, shareTitle, saveTypes) {
-if (window.plus && window.plus.io) {
+let android16Plus = false;
+try {
+if (window.plus && window.plus.android) {
+const Build = window.plus.android.importClass('android.os.Build');
+android16Plus = (Build.VERSION && Build.VERSION.SDK_INT) >= 35;
+}
+} catch (e) {}
+if (window.plus && window.plus.io && !android16Plus) {
 impShow('正在导出…', '正在保存到下载目录…', 95);
 const mime = blob.type || (/\.json$/i.test(fname) ? 'application/json' : 'application/octet-stream');
 try {
