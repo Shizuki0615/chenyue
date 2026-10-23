@@ -533,6 +533,10 @@
     const markDY = clampOffset(store.get('cs-mark-y'));
     setVar(root, '--msg-mark-x', markDX + 'px');
     setVar(root, '--msg-mark-y', markDY + 'px');
+    // v8.44：主动发送标识颜色。有值才写变量；未设置就移除，让 chat-main.css 回落默认粉
+    //（不写死值＝将来主题若另有默认色不会被这一格盖掉）。
+    const markInk = store.get('cs-mark-ink') || '';
+    if (markInk) setVar(root, '--msg-mark-ink', markInk); else delVar(root, '--msg-mark-ink');
     const timeDX = clampOffset(store.get('cs-time-x'));
     const timeDY = clampOffset(store.get('cs-time-y'));
     setVar(root, '--msg-time-dx', timeDX + 'px');
@@ -598,6 +602,7 @@
     const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
     set('cs-mark-pos-val', fmtOff(markDX, markDY));
     set('cs-time-pos-val', fmtOff(timeDX, timeDY));
+    set('cs-mark-ink-val', markInk || '默认 #ff4d6a');
     // 聊天壁纸：铺满整个聊天页
     // v3.6.x：值没变时不重写 style——applySettings 在每次进入聊天页时调用，
     // 反复重设 background-image（大图 dataURL）会让浏览器重新解码、触发重绘
@@ -1437,6 +1442,18 @@
     { color: '#ffffff', label: '白色' },
     { color: '#3a3a3a', label: '炭灰' }
   ];
+  // 主动发送标识色板：首项＝CSS 默认粉（选它即回默认），其余取辨识度高的常见色
+  const MARK_COLORS = [
+    { color: '#ff4d6a', label: '默认粉' },
+    { color: '#fa5151', label: '红包红' },
+    { color: '#ff9500', label: '活力橙' },
+    { color: '#07c160', label: '微信绿' },
+    { color: '#3a8ee6', label: '天空蓝' },
+    { color: '#9254de', label: '优雅紫' },
+    { color: '#111111', label: '默认黑' },
+    { color: '#8a8a8a', label: '灰' },
+    { color: '#ffffff', label: '白色' }
+  ];
   // 气泡颜色行统一处理：openModal 色板 → 存 cs-* 键 → applySettings 生效
   function bindBubbleColorRow(rowId, key, def, title, swatches) {
     const el = row(rowId);
@@ -1503,6 +1520,8 @@
   bindBubbleColorRow('cs-out-ink', 'cs-out-ink', '#ffffff', '我的消息文字颜色', BUBBLE_INK_COLORS);
   bindBubbleColorRow('cs-in-bg', 'cs-in-bg', '#ffffff', '联系人气泡颜色', BUBBLE_BG_COLORS);
   bindBubbleColorRow('cs-in-ink', 'cs-in-ink', '#111111', '联系人消息文字颜色', BUBBLE_INK_COLORS);
+  // v8.44：主动发送标识颜色（气泡左上那枚爱心/文本标识）。爱心走 currentColor，与文本标识一起变色
+  bindBubbleColorRow('cs-mark-ink', 'cs-mark-ink', '#ff4d6a', '主动发送标识颜色', MARK_COLORS);
   // 发送按钮颜色 / 发送文字颜色
   bindBubbleColorRow('cs-send-bg', 'cs-send-bg', '#111111', '发送按钮颜色', SEND_BG_COLORS);
   bindBubbleColorRow('cs-send-ink', 'cs-send-ink', '#ffffff', '发送文字颜色', BUBBLE_INK_COLORS);
@@ -2041,6 +2060,8 @@
     'cs-bg', 'cs-bubble-css', 'cs-font', 'cs-font-size', 'cs-bubble-size',
     'cs-bubble-radius', 'cs-av-shape', 'cs-time-style', 'cs-time-ink', 'cs-typing-ink',
     'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
+    // v8.44：主动发送标识颜色（观感项，方案/备份/恢复初始美化一起走）
+    'cs-mark-ink',
     'cs-send-bg', 'cs-send-ink', 'cs-send-show',
     // #1026：输入框提示文字（颜色 + 显隐）——观感项，方案切换时要一起走
     'cs-ph-ink', 'cs-ph-show',

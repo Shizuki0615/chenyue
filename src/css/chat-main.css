@@ -170,7 +170,8 @@
      基线 2px/4px 原样保留＝未设置（--msg-mark-x/y 未定义时 calc 回退 0）零变化。 */
   top:calc(2px + var(--msg-mark-y, 0px)); left:calc(4px + var(--msg-mark-x, 0px));
   width:10px; height:10px;
-  color:#ff4d6a;
+  /* v8.44：标识配色可由「聊天美化→气泡样式→主动发送标识颜色」覆盖；未设置回落到原默认粉 */
+  color:var(--msg-mark-ink, #ff4d6a);
   pointer-events:none;
   z-index:5;
   display:block;
@@ -184,7 +185,7 @@
   position:absolute;
   top:calc(2px + var(--msg-mark-y, 0px)); left:calc(4px + var(--msg-mark-x, 0px));
   font-size:9px; line-height:1;
-  color:#ff4d6a;
+  color:var(--msg-mark-ink, #ff4d6a);
   pointer-events:none;
   z-index:5;
   display:block;

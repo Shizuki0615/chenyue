@@ -1691,7 +1691,7 @@ to { opacity: 1; transform: none; }
 position:absolute;
 top:calc(2px + var(--msg-mark-y, 0px)); left:calc(4px + var(--msg-mark-x, 0px));
 width:10px; height:10px;
-color:#ff4d6a;
+color:var(--msg-mark-ink, #ff4d6a);
 pointer-events:none;
 z-index:5;
 display:block;
@@ -1700,7 +1700,7 @@ display:block;
 position:absolute;
 top:calc(2px + var(--msg-mark-y, 0px)); left:calc(4px + var(--msg-mark-x, 0px));
 font-size:9px; line-height:1;
-color:#ff4d6a;
+color:var(--msg-mark-ink, #ff4d6a);
 pointer-events:none;
 z-index:5;
 display:block;
@@ -10460,7 +10460,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792760779020" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792762251516" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -16947,6 +16947,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
              变了，标识（气泡左上角）与时间轴的默认位置会跟着偏，甚至被气泡边缘裁掉或压住文字。
              两行各自点开是「左右 / 上下」两个方向的偏移（±40px，0=默认）；也可在
              聊天设置→美化→「边看边调」抽屉的「微调」分区里拖着调、即时看效果。 -->
+        <!-- v8.44：主动发送标识配色——爱心（SVG）与星星/月亮/自定义等文本标识同走 --msg-mark-ink，
+             默认 #ff4d6a 零变化；与下方「标识位置」同组，改完颜色就地看效果 -->
+        <div class="set-row" id="cs-mark-ink">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 110-18c4.97 0 9 3.58 9 8 0 2.5-2 4-4 4h-1.6a1.8 1.8 0 00-1.4 3l.1.2a1.6 1.6 0 01-1.3 2.6z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg></div>
+          <div class="txt">主动发送标识颜色<span class="sub">联系人主动找你时气泡左上那枚标识的配色；爱心与其他标识一起生效</span></div>
+          <div class="val" id="cs-mark-ink-val">默认 #ff4d6a</div>
+        </div>
         <div class="set-row" id="cs-mark-pos">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
           <div class="txt">主动发送标识位置<span class="sub">气泡 CSS 改了气泡大小后标识偏移时，在这里校准</span></div>
@@ -22207,4 +22214,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvkzha8c -->
+<!-- __MOCHI_EOF__ mvl0cuf0 -->

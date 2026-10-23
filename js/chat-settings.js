@@ -355,6 +355,8 @@ const markDX = clampOffset(store.get('cs-mark-x'));
 const markDY = clampOffset(store.get('cs-mark-y'));
 setVar(root, '--msg-mark-x', markDX + 'px');
 setVar(root, '--msg-mark-y', markDY + 'px');
+const markInk = store.get('cs-mark-ink') || '';
+if (markInk) setVar(root, '--msg-mark-ink', markInk); else delVar(root, '--msg-mark-ink');
 const timeDX = clampOffset(store.get('cs-time-x'));
 const timeDY = clampOffset(store.get('cs-time-y'));
 setVar(root, '--msg-time-dx', timeDX + 'px');
@@ -400,6 +402,7 @@ set('cs-time-style-val', tsLabel);
 const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
 set('cs-mark-pos-val', fmtOff(markDX, markDY));
 set('cs-time-pos-val', fmtOff(timeDX, timeDY));
+set('cs-mark-ink-val', markInk || '默认 #ff4d6a');
 let bg = store.get('cs-bg');
 if (bg && typeof bg === 'string' && bg.length > 6 * 1024 * 1024) {
 if (bg.length > 12 * 1024 * 1024) { try { store.remove('cs-bg'); } catch (e) {} }
@@ -1052,6 +1055,17 @@ const SEND_BG_COLORS = [
 { color: '#ffffff', label: '白色' },
 { color: '#3a3a3a', label: '炭灰' }
 ];
+const MARK_COLORS = [
+{ color: '#ff4d6a', label: '默认粉' },
+{ color: '#fa5151', label: '红包红' },
+{ color: '#ff9500', label: '活力橙' },
+{ color: '#07c160', label: '微信绿' },
+{ color: '#3a8ee6', label: '天空蓝' },
+{ color: '#9254de', label: '优雅紫' },
+{ color: '#111111', label: '默认黑' },
+{ color: '#8a8a8a', label: '灰' },
+{ color: '#ffffff', label: '白色' }
+];
 function bindBubbleColorRow(rowId, key, def, title, swatches) {
 const el = row(rowId);
 if (!el) return;
@@ -1112,6 +1126,7 @@ bindBubbleColorRow('cs-out-bg', 'cs-out-bg', '#111111', '我的气泡颜色', BU
 bindBubbleColorRow('cs-out-ink', 'cs-out-ink', '#ffffff', '我的消息文字颜色', BUBBLE_INK_COLORS);
 bindBubbleColorRow('cs-in-bg', 'cs-in-bg', '#ffffff', '联系人气泡颜色', BUBBLE_BG_COLORS);
 bindBubbleColorRow('cs-in-ink', 'cs-in-ink', '#111111', '联系人消息文字颜色', BUBBLE_INK_COLORS);
+bindBubbleColorRow('cs-mark-ink', 'cs-mark-ink', '#ff4d6a', '主动发送标识颜色', MARK_COLORS);
 bindBubbleColorRow('cs-send-bg', 'cs-send-bg', '#111111', '发送按钮颜色', SEND_BG_COLORS);
 bindBubbleColorRow('cs-send-ink', 'cs-send-ink', '#ffffff', '发送文字颜色', BUBBLE_INK_COLORS);
 const csSendShow = document.getElementById('cs-send-show');
@@ -1550,6 +1565,7 @@ const CHAT_BEAUTY_KEYS = [
 'cs-bg', 'cs-bubble-css', 'cs-font', 'cs-font-size', 'cs-bubble-size',
 'cs-bubble-radius', 'cs-av-shape', 'cs-time-style', 'cs-time-ink', 'cs-typing-ink',
 'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
+'cs-mark-ink',
 'cs-send-bg', 'cs-send-ink', 'cs-send-show',
 'cs-ph-ink', 'cs-ph-show',
 'cs-event-ink', 'cs-name-ink',
