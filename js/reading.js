@@ -283,6 +283,32 @@ page.innerHTML =
 '<button class="rd-back" id="rd-toc-close" type="button">关闭</button></div>' +
 '<div class="rd-toc-list" id="rd-toc-list"></div>' +
 '</div>' +
+'<div class="rd-selbar" id="rd-selbar" hidden>' +
+'<button class="rd-selbar-btn" data-act="anno" type="button">批注</button>' +
+'<button class="rd-selbar-btn" data-act="copy" type="button">复制</button>' +
+'</div>' +
+'<div class="rd-anno-sheet" id="rd-anno-sheet" hidden>' +
+'<div class="rd-import-head"><div class="rd-import-title">选一张字卡</div>' +
+'<button class="rd-back" id="rd-anno-close" type="button">关闭</button></div>' +
+'<input class="rd-anno-search" id="rd-anno-search" type="text" placeholder="搜索字卡">' +
+'<div class="rd-card-list" id="rd-card-list"></div>' +
+'<div class="rd-write-box">' +
+'<textarea id="rd-anno-write" placeholder="也可以自己写一条"></textarea>' +
+'<button class="rd-btn" id="rd-anno-write-go" type="button">用这段文字</button>' +
+'</div>' +
+'</div>' +
+'<div class="rd-anno-preview" id="rd-anno-preview" hidden>' +
+'<div class="rd-import-head"><button class="rd-back" id="rd-anno-back" type="button">返回</button>' +
+'<div class="rd-import-title">预览批注</div><span class="rd-back"></span></div>' +
+'<div class="rd-prev-quote" id="rd-prev-quote"></div>' +
+'<div class="rd-prev-text" id="rd-prev-text"></div>' +
+'<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-anno-commit" type="button">贴上</button></div>' +
+'</div>' +
+'<div class="rd-anno-pop" id="rd-anno-pop" hidden>' +
+'<div class="rd-import-head"><div class="rd-import-title">这句旁边的批注</div>' +
+'<button class="rd-back" id="rd-anno-pop-close" type="button">关闭</button></div>' +
+'<div class="rd-pop-list" id="rd-pop-list"></div>' +
+'</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(page);
@@ -316,6 +342,10 @@ function rdShowShelf() {
 if (!page) return;
 rdWriteProgress();
 closeToc();
+rdClearSel(false);
+rdCloseSheet();
+rdClosePreview();
+rdClosePop();
 const prefs = document.getElementById('rd-prefs');
 if (prefs) prefs.hidden = true;
 const shelf = document.getElementById('rd-shelf');
@@ -356,7 +386,7 @@ let ch = (book.progress && book.progress.ch) || 0;
 if (ch < 0 || ch >= toc.length) ch = 0;
 rdBook = {
 id: id, toc: toc, ch: ch, off: (book.progress && book.progress.off) || 0,
-cache: {}, text: '', pages: [], pageIdx: 0
+cache: {}, text: '', pages: [], pageIdx: 0, anno: []
 };
 rdEnsureChapter('offset');
 }
@@ -390,6 +420,8 @@ body.innerHTML = '<button class="rd-retry" id="rd-retry" type="button">这一章
 return;
 }
 b.text = text;
+b.anno = await getAnnos(b.id, b.ch);
+if (!rdBook || rdBook !== b) return;
 b.pages = rdPaginateChapter(b);
 rdCheckPagination(b.pages, b.text.length);
 if (mode === 'last') b.pageIdx = Math.max(0, b.pages.length - 1);
@@ -488,7 +520,8 @@ if (b.pageIdx < 0) b.pageIdx = 0;
 if (b.pageIdx > b.pages.length - 1) b.pageIdx = b.pages.length - 1;
 const body = document.getElementById('rd-body');
 const p = b.pages[b.pageIdx];
-if (body) body.textContent = b.text.slice(p.s, p.e);
+rdPaintPage();
+if (!body) return;
 const no = document.getElementById('rd-page-no');
 if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
 rdUpdateBar();
@@ -529,6 +562,294 @@ book.progress = { ch: chIdx, off: start };
 book.lastOpenAt = Date.now();
 saveIndex(list);
 }
+let rdSel = null;
+let rdDraft = null;
+let rdAnnoPool = [];
+let rdSuppressTap = false;
+function rdDeviceId() {
+let id = '';
+try { id = store.get('reading-device-id') || ''; } catch (e) {}
+if (!id) {
+id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+try { store.set('reading-device-id', id); } catch (e) {}
+}
+return id;
+}
+function rdPaintPage() {
+const b = rdBook;
+const body = document.getElementById('rd-body');
+if (!b || !body || !b.pages.length) return;
+const p = b.pages[b.pageIdx] || { s: 0, e: b.text.length };
+const start = p.s;
+const end = p.e;
+const marks = {};
+(b.anno || []).forEach(function (a) {
+if (a && a.e > start && a.e <= end) marks[a.e] = (marks[a.e] || 0) + 1;
+});
+const cuts = Object.keys(marks).map(Number).sort(function (x, y) { return x - y; });
+const sel = rdSel && rdSel.e > start && rdSel.s < end
+? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
+function emit(a, z) {
+if (z <= a) return '';
+if (!sel || z <= sel.s || a >= sel.e) return rdEsc(b.text.slice(a, z));
+const s1 = Math.max(a, sel.s);
+const e1 = Math.min(z, sel.e);
+return rdEsc(b.text.slice(a, s1)) +
+'<span class="rd-sel">' + rdEsc(b.text.slice(s1, e1)) + '</span>' +
+rdEsc(b.text.slice(e1, z));
+}
+let html = '';
+let i = start;
+for (let k = 0; k < cuts.length; k++) {
+const m = cuts[k];
+html += emit(i, m);
+const n = marks[m];
+html += '<span class="rd-mark" data-pos="' + m + '" role="button">' + (n > 1 ? '<b>' + n + '</b>' : '') + '</span>';
+i = m;
+}
+html += emit(i, end);
+body.innerHTML = html;
+let off = start;
+const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null);
+let node;
+while ((node = walker.nextNode())) {
+if (node.parentNode && node.parentNode.closest && node.parentNode.closest('.rd-mark')) continue;
+node.__rdStart = off;
+off += node.nodeValue.length;
+}
+}
+function rdCaretAt(x, y) {
+let node = null;
+let off = 0;
+try {
+if (document.caretRangeFromPoint) {
+const r = document.caretRangeFromPoint(x, y);
+if (r) { node = r.startContainer; off = r.startOffset; }
+} else if (document.caretPositionFromPoint) {
+const p = document.caretPositionFromPoint(x, y);
+if (p) { node = p.offsetNode; off = p.offset; }
+}
+} catch (e) { return -1; }
+if (!node) return -1;
+if (node.nodeType === 3) {
+return typeof node.__rdStart === 'number' ? node.__rdStart + off : -1;
+}
+if (node.nodeType === 1) {
+const kids = node.childNodes;
+for (let i = Math.min(off, kids.length - 1); i >= 0; i--) {
+const k = kids[i];
+if (k && k.nodeType === 3 && typeof k.__rdStart === 'number') return k.__rdStart;
+}
+}
+return -1;
+}
+const RD_SENT_END = '。！？!?…\n；;';
+const RD_SENT_TAIL = '”’」』）】';
+function rdSentenceAt(text, idx) {
+const n = text.length;
+if (idx < 0 || idx >= n) return null;
+let s = idx;
+while (s > 0 && RD_SENT_END.indexOf(text[s - 1]) < 0) s--;
+let e = idx;
+while (e < n && RD_SENT_END.indexOf(text[e]) < 0) e++;
+if (e < n) {
+e++;
+while (e < n && RD_SENT_TAIL.indexOf(text[e]) >= 0) e++;
+}
+while (s < e && /\s/.test(text[s])) s++;
+while (e > s && /\s/.test(text[e - 1])) e--;
+if (e <= s) return null;
+return { s: s, e: e, quote: text.slice(s, e) };
+}
+function rdClearSel(repaint) {
+rdSel = null;
+const bar = document.getElementById('rd-selbar');
+if (bar) bar.hidden = true;
+if (repaint) rdPaintPage();
+}
+function rdSelectAt(x, y) {
+const b = rdBook;
+if (!b) return;
+const idx = rdCaretAt(x, y);
+if (idx < 0) return;
+const sent = rdSentenceAt(b.text, idx);
+if (!sent) return;
+rdSel = sent;
+rdCloseSheet();
+rdClosePreview();
+rdClosePop();
+rdPaintPage();
+rdPlaceSelBar();
+try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+}
+function rdPlaceSelBar() {
+const selEl = document.querySelector('#rd-body .rd-sel');
+const bar = document.getElementById('rd-selbar');
+const pageEl = document.getElementById('page-reading');
+if (!selEl || !bar || !pageEl) return;
+const r = selEl.getBoundingClientRect();
+const pr = pageEl.getBoundingClientRect();
+let left = r.left - pr.left + r.width / 2;
+left = Math.max(72, Math.min(pr.width - 72, left));
+let top = r.top - pr.top - 46;
+if (top < 6) top = r.bottom - pr.top + 10;
+bar.style.left = left + 'px';
+bar.style.top = top + 'px';
+bar.hidden = false;
+}
+function rdShowSelBar() {
+if (!rdSel) return;
+rdPaintPage();
+rdPlaceSelBar();
+}
+function rdCopy(text) {
+const s = String(text == null ? '' : text);
+function fallback() {
+try {
+const ta = document.createElement('textarea');
+ta.value = s;
+ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+document.body.appendChild(ta);
+ta.select();
+document.execCommand('copy');
+document.body.removeChild(ta);
+rdToast('已复制');
+} catch (e) { rdToast('复制没有成功'); }
+}
+try {
+if (navigator.clipboard && navigator.clipboard.writeText) {
+navigator.clipboard.writeText(s).then(function () { rdToast('已复制'); }, fallback);
+return;
+}
+} catch (e) {}
+fallback();
+}
+function rdCardKey(text) {
+const s = String(text || '');
+let h = 5381;
+for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+return 'c_' + (h >>> 0).toString(36);
+}
+function rdCardPool() {
+let all = [];
+try { all = (window.getCustomCards && window.getCustomCards()) || []; } catch (e) { all = []; }
+return all.filter(function (c) {
+if (typeof c !== 'string') return false;
+const t = c.trim();
+if (!t || t.length > 200) return false;
+if (t.indexOf('data:') === 0 || t.indexOf('@@m:') === 0) return false;
+if (/^https?:\/\//i.test(t) || t.indexOf('|||') >= 0) return false;
+return true;
+});
+}
+function rdRenderCards(q) {
+const list = document.getElementById('rd-card-list');
+if (!list) return;
+const all = rdCardPool();
+let pool;
+if (q) {
+const k = String(q).toLowerCase();
+pool = all.filter(function (c) { return c.toLowerCase().indexOf(k) >= 0; }).slice(0, 30);
+} else {
+pool = all.slice(-8).reverse();
+}
+rdAnnoPool = pool;
+if (!pool.length) {
+list.innerHTML = '<div class="rd-empty">' +
+(q ? '没有找到这样的字卡' : '字卡库还是空的，可以在下面自己写一条') + '</div>';
+return;
+}
+list.innerHTML = pool.map(function (c, i) {
+return '<button class="rd-card" type="button" data-i="' + i + '">' + rdEsc(c) + '</button>';
+}).join('');
+}
+function rdOpenSheet() {
+const sheet = document.getElementById('rd-anno-sheet');
+if (!sheet || !rdSel) return;
+const bar = document.getElementById('rd-selbar');
+if (bar) bar.hidden = true;
+const s = document.getElementById('rd-anno-search');
+if (s) s.value = '';
+const w = document.getElementById('rd-anno-write');
+if (w) w.value = '';
+rdRenderCards('');
+sheet.hidden = false;
+}
+function rdCloseSheet() {
+const el = document.getElementById('rd-anno-sheet');
+if (el) el.hidden = true;
+}
+function rdClosePreview() {
+const el = document.getElementById('rd-anno-preview');
+if (el) el.hidden = true;
+}
+function rdClosePop() {
+const el = document.getElementById('rd-anno-pop');
+if (el) el.hidden = true;
+}
+function rdOpenPreview(text, cardId) {
+if (!rdSel) return;
+const body = String(text == null ? '' : text).trim();
+if (!body) { rdToast('这条批注还是空的'); return; }
+rdDraft = { text: body.slice(0, 500), cardId: cardId || '' };
+const q = document.getElementById('rd-prev-quote');
+const t = document.getElementById('rd-prev-text');
+if (q) q.textContent = rdSel.quote;
+if (t) t.textContent = rdDraft.text;
+rdCloseSheet();
+const pv = document.getElementById('rd-anno-preview');
+if (pv) pv.hidden = false;
+}
+async function rdCommitAnno() {
+const b = rdBook;
+if (!b || !rdSel || !rdDraft) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) { rdToast('这本书不在书架里'); return; }
+const used = Number(book.annoCount) || 0;
+if (used >= 500) { rdToast('这本书的批注到 500 条上限了'); return; }
+const item = {
+id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'me',
+s: rdSel.s,
+e: rdSel.e,
+quote: rdSel.quote,
+text: rdDraft.text,
+cardId: rdDraft.cardId || '',
+at: Date.now(),
+rev: 1,
+deviceId: rdDeviceId()
+};
+const arr = (b.anno || []).slice();
+arr.push(item);
+try { await putAnnos(b.id, b.ch, arr); }
+catch (e) { rdToast((e && e.message) || '批注没写上：磁盘写入没有完成，请重试'); return; }
+b.anno = arr;
+const fresh = readIndex();
+const freshBook = rdFindBook(b.id, fresh);
+if (freshBook) { freshBook.annoCount = used + 1; saveIndex(fresh); }
+rdDraft = null;
+rdClosePreview();
+rdClearSel(false);
+rdPaintPage();
+rdToast('已贴上');
+}
+function rdOpenPop(pos) {
+const b = rdBook;
+const list = document.getElementById('rd-pop-list');
+const pop = document.getElementById('rd-anno-pop');
+if (!b || !list || !pop) return;
+const items = (b.anno || []).filter(function (a) { return a && a.e === pos; })
+.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
+if (!items.length) return;
+rdClearSel(true);
+list.innerHTML = items.map(function (a) {
+const who = a.by === 'me' ? '我' : '他';
+return '<div class="rd-pop-item"><div class="rd-pop-who">' + who + '</div>' +
+'<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div></div>';
+}).join('');
+pop.hidden = false;
+}
 function rdBounce(dir) {
 const body = document.getElementById('rd-body');
 if (!body || body._rdBounce) return;
@@ -554,7 +875,7 @@ let rdTouch = null;
 document.addEventListener('pointerdown', function (e) {
 const el = e.target;
 if (!el || !el.closest) return;
-if (!rdBook || !el.closest('#rd-body')) return;
+if (!rdBook || !el.closest('#rd-body') || el.closest('.rd-mark')) return;
 const body = document.getElementById('rd-body');
 if (!body) return;
 rdTouch = { x: e.clientX, y: e.clientY, r: body.getBoundingClientRect() };
@@ -564,6 +885,9 @@ if (!rdTouch) return;
 const t = rdTouch;
 rdTouch = null;
 if (!rdBook) return;
+if (rdSuppressTap) { rdSuppressTap = false; return; }
+if (e.target && e.target.closest && e.target.closest('.rd-mark')) return;
+if (rdSel) { rdClearSel(true); return; }
 const dx = e.clientX - t.x;
 const dy = e.clientY - t.y;
 if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) { rdTurn(dx < 0 ? 1 : -1); return; }
@@ -574,6 +898,26 @@ else if (rel > 0.68) rdTurn(1);
 }
 }, true);
 document.addEventListener('pointercancel', function () { rdTouch = null; }, true);
+let rdSelTimer = 0, rdSelX = 0, rdSelY = 0;
+function rdCancelSelPress() { if (rdSelTimer) { clearTimeout(rdSelTimer); rdSelTimer = 0; } }
+document.addEventListener('pointerdown', function (e) {
+if (!rdBook) return;
+const el = e.target;
+if (!el || !el.closest || !el.closest('#rd-body') || el.closest('.rd-mark')) return;
+rdCancelSelPress();
+rdSelX = e.clientX; rdSelY = e.clientY;
+rdSelTimer = setTimeout(function () {
+rdSelTimer = 0;
+rdSuppressTap = true;
+rdSelectAt(rdSelX, rdSelY);
+}, 520);
+}, true);
+document.addEventListener('pointermove', function (e) {
+if (!rdSelTimer) return;
+if (Math.abs(e.clientX - rdSelX) > 10 || Math.abs(e.clientY - rdSelY) > 10) rdCancelSelPress();
+}, true);
+document.addEventListener('pointerup', rdCancelSelPress, true);
+document.addEventListener('pointercancel', rdCancelSelPress, true);
 function rdReadPrefs() {
 try {
 let raw = store.get(RD_PREFS_KEY);
@@ -1005,7 +1349,7 @@ document.addEventListener('pointerup', rdCancelPress, true);
 document.addEventListener('pointercancel', rdCancelPress, true);
 document.addEventListener('contextmenu', function (e) {
 const el = e.target;
-if (el && el.closest && el.closest('#rd-grid .rd-book')) e.preventDefault();
+if (el && el.closest && (el.closest('#rd-grid .rd-book') || el.closest('#rd-body'))) e.preventDefault();
 }, true);
 document.addEventListener('click', function (e) {
 const el = e.target;
@@ -1026,6 +1370,34 @@ e.preventDefault();
 rdCloseBookMenu();
 return;
 }
+const mk = el.closest('.rd-mark');
+if (mk) { e.preventDefault(); rdOpenPop(Number(mk.getAttribute('data-pos'))); return; }
+const selBtn = el.closest('#rd-selbar [data-act]');
+if (selBtn) {
+e.preventDefault();
+const act = selBtn.getAttribute('data-act');
+if (act === 'anno') rdOpenSheet();
+else if (act === 'copy' && rdSel) rdCopy(rdSel.quote);
+return;
+}
+if (el.closest('#rd-anno-close')) { e.preventDefault(); rdCloseSheet(); rdClosePreview(); rdShowSelBar(); return; }
+if (el.closest('#rd-anno-pop-close')) { e.preventDefault(); rdClosePop(); return; }
+const cardBtn = el.closest('#rd-card-list .rd-card');
+if (cardBtn) {
+e.preventDefault();
+const ci = Number(cardBtn.getAttribute('data-i'));
+const text = rdAnnoPool[ci] || '';
+rdOpenPreview(text, text ? rdCardKey(text) : '');
+return;
+}
+if (el.closest('#rd-anno-write-go')) {
+e.preventDefault();
+const w = document.getElementById('rd-anno-write');
+rdOpenPreview(w ? w.value : '', '');
+return;
+}
+if (el.closest('#rd-anno-back')) { e.preventDefault(); rdClosePreview(); rdOpenSheet(); return; }
+if (el.closest('#rd-anno-commit')) { e.preventDefault(); rdCommitAnno(); return; }
 const app = el.closest('.app[data-app="reading"]');
 if (app) {
 const grid = app.closest('.app-grid');
@@ -1109,6 +1481,10 @@ rdImp.chapters = null;
 const gbk = document.getElementById('rd-gbk-row');
 if (gbk) gbk.hidden = true;
 rdSetFileInfo(rdImp.text.trim() ? '粘贴内容 · ' + rdImp.text.length + ' 字' : '');
+});
+document.addEventListener('input', function (e) {
+const el = e.target;
+if (el && el.id === 'rd-anno-search') rdRenderCards(el.value || '');
 });
 window.__readingProbe = {
 version: 2,

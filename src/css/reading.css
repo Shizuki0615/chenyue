@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 16px 24px}
@@ -74,3 +74,26 @@
 .rd-toc-row.on{color:#d9534f}
 .rd-toc-n{opacity:.5;min-width:22px}
 .rd-toc-t{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+/* ---------- 选句与批注 ---------- */
+/* 正文的选中由我们自己的长按接管，关掉系统选择才不会同时冒出系统菜单 */
+.rd-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.rd-sel{background:rgba(244,182,194,.45);border-radius:3px}
+.rd-mark{display:inline-block;width:8px;height:8px;margin-left:1px;border-radius:50%;background:#f4b6c2;vertical-align:super;position:relative;cursor:pointer}
+.rd-mark b{position:absolute;left:9px;top:-5px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
+.rd-selbar{position:absolute;z-index:6;display:flex;transform:translateX(-50%);border-radius:12px;background:#2b2b2b;box-shadow:0 6px 22px rgba(0,0,0,.25);overflow:hidden}
+.rd-selbar-btn{border:0;background:transparent;color:#fff;font-size:14px;padding:9px 18px}
+.rd-anno-sheet,.rd-anno-preview,.rd-anno-pop{position:absolute;left:0;right:0;bottom:0;z-index:7;display:flex;flex-direction:column;gap:10px;max-height:72%;padding:14px 16px 20px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.rd-anno-preview{z-index:8}
+.rd-anno-pop{z-index:6;max-height:56%}
+.rd-anno-search{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:8px 10px;font-size:13px;background:transparent;color:inherit}
+.rd-card-list{min-height:52px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.rd-card{border:0;border-radius:10px;background:rgba(244,182,194,.14);color:inherit;font-size:13px;line-height:1.5;text-align:left;padding:9px 11px}
+.rd-write-box{display:flex;flex-direction:column;gap:8px}
+#rd-anno-write{width:100%;min-height:64px;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:8px 10px;font-size:13px;line-height:1.5;resize:none;background:transparent;color:inherit}
+.rd-prev-quote{padding:10px;border-radius:10px;background:rgba(244,182,194,.16);font-size:13px;line-height:1.6;max-height:30%;overflow-y:auto;white-space:pre-wrap}
+.rd-prev-text{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-y:auto}
+.rd-pop-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-pop-who{font-size:11px;opacity:.55;margin-bottom:4px}
+.rd-pop-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
