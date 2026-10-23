@@ -3039,7 +3039,7 @@ const FIX_SENTINELS = [
   { name: '#616f 昵称事件消息豁免改名清扫（删掉＝第二次改名把旧记录改写成 {ta}，两条记录看起来一模一样＝用户报的「看不出换了什么昵称」复发）', file: 'js/chat.js', needle: 'if (r.nickKeep) return false;' },
   { name: '#616g 昵称系统消息文案写明「换成了「XXX」」（删掉＝退回「XX 更换了昵称」，看不出换成哪个昵称，与 #616f 配套）', file: 'js/avatar-lib.js', needle: "function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }" },
   { name: '#775v 手动改联系人聊天昵称也落系统记录（删掉＝在聊天设置→形象改名后，聊天里没有「我的昵称 把聊天昵称换成了「X」」这条，与联系人自己改名不对称）', file: 'js/chat-settings.js', needle: 'if (window.chatAddSystem && window.chatNickMsgMeSet) {' },
-  { name: '#775w 该记录主语取本人聊天昵称（改回写死「我」＝我的昵称换了以后历史记录不跟随；两处入口共用同一条文案）', file: 'js/avatar-lib.js', needle: "const me = store.get('cs-lbl-user') || '我';" },
+  { name: '#775w 该记录主语取本人聊天昵称（改回写死「我」＝我的昵称换了以后历史记录不跟随；两处入口共用同一条文案）', file: 'js/avatar-lib.js', needle: "return '我 把聊天昵称换成了「' + to + '」';" },
   { name: '#v846a 昵称池编辑闸（删掉＝✕ 又常显，想点昵称换名时误删复发）', file: 'js/avatar-lib.js', needle: "if (!nickEditOn()) { delBtn.style.display = 'none'; delBtn.tabIndex = -1; }" },
   { name: '#v846b 昵称编辑开关入口（删掉＝删除键永远出不来，昵称只能加不能删）', file: 'template.html', needle: 'id="avlib-nick-edit"' },
   { name: '#v846c 恢复默认昵称入口（删掉＝被昵称池换掉后，聊天里的「我」无法一键恢复）', file: 'js/avatar-lib.js', needle: "avMeNickReset.addEventListener('click'" },

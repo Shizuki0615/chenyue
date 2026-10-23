@@ -985,8 +985,7 @@ syncVal();
 }
 function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }
 function nickMsgMeSet(to) {
-const me = store.get('cs-lbl-user') || '我';
-return me + ' 把聊天昵称换成了「' + to + '」';
+return '我 把聊天昵称换成了「' + to + '」';
 }
 window.chatNickMsgMeSet = nickMsgMeSet;
 function nickMsgMeSelf(to) { return '我把自己的聊天昵称换成了「' + to + '」'; }
