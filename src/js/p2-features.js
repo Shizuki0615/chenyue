@@ -261,7 +261,7 @@
     }
     const cardSet = ccCardSet();
     const mineCount = {}, taCount = {};
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     const myName = store.get('lbl-user') || '我';
     const EXPR_CORE_RE = /[^0-9A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]/g;
     msgs2.forEach(m => {
@@ -352,7 +352,7 @@
         const totalDays = Math.max(1, Math.floor((Date.now() - firstTs) / 864e5));
         let maxSingle = 0;
         for (const d in dateCount) maxSingle = Math.max(maxSingle, dateCount[d]);
-        const name = store.get('lbl-partner') || 'TA';
+        const name = store.get('lbl-partner') || '他';
         chatEl.innerHTML =
           '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">消息比例</div>' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="font-size:12px;color:var(--muted);width:28px">我</div>' +
@@ -414,7 +414,7 @@
             const seen = new Set();
             const uniq = rows.filter(r => { const k = r.main + '|' + r.sub; if (seen.has(k)) return false; seen.add(k); return true; });
             uniq.sort((a, b) => (a.ts || 0) - (b.ts || 0));
-            return statsFoldSection('🎮', '小游戏记录', '条', uniq, '还没有小游戏记录（更多功能 → 小游戏，和 TA 玩一局试试）', 'games');
+            return statsFoldSection('🎮', '小游戏记录', '条', uniq, '还没有小游戏记录（更多功能 → 小游戏，和 他 玩一局试试）', 'games');
           })();
         }
     }
@@ -727,7 +727,7 @@ function renderCheckinHistory() {
         el.setAttribute('style', 'margin:0 0 10px;padding:8px 10px;border-radius:10px;font-size:12.5px;line-height:1.55;border:1px solid rgba(128,128,128,.34);opacity:.82');
         card.insertBefore(el, card.firstChild);
       }
-      el.textContent = '已禁用：联系人无法再触发更新日常。下面是关闭前的最后一次日常；「TA在身边 · 位置感知」不受影响，照常可用。重新开启：设置 → 工具 → 寻踪（TA 的日常）。';
+      el.textContent = '已禁用：联系人无法再触发更新日常。下面是关闭前的最后一次日常；「他在身边 · 位置感知」不受影响，照常可用。重新开启：设置 → 工具 → 寻踪（他 的日常）。';
     } else if (el) el.remove();
   }
   function syncCkSwitchUI() {
@@ -737,12 +737,12 @@ function renderCheckinHistory() {
     const b = document.getElementById('ck-fe-en');
     if (b && b.checked !== on) b.checked = on;
     const sub = document.getElementById('sf-checkin-sub');
-    if (sub) sub.textContent = on ? 'TA 的日常随机刷新，桌面/聊天里都能寻踪' : '已禁用：联系人无法再触发更新日常（桌面【寻踪】仍可进入，页内「TA在身边 · 位置感知」照常用）';
+    if (sub) sub.textContent = on ? '他 的日常随机刷新，桌面/聊天里都能寻踪' : '已禁用：联系人无法再触发更新日常（桌面【寻踪】仍可进入，页内「他在身边 · 位置感知」照常用）';
     ckDisabledBanner();
   }
   function ckToast(on) {
     if (typeof window.toast !== 'function') return;
-    window.toast(on ? '寻踪已开启：日常继续更新、聊天入口恢复' : '已禁用：联系人无法再触发更新日常（桌面【寻踪】仍可进入，「TA在身边 · 位置感知」照常用）');
+    window.toast(on ? '寻踪已开启：日常继续更新、聊天入口恢复' : '已禁用：联系人无法再触发更新日常（桌面【寻踪】仍可进入，「他在身边 · 位置感知」照常用）');
   }
   window.setCheckinEnabled = function (on) {
     try { store.set(CK_EN_KEY, on ? '1' : '0'); } catch (e) {}
@@ -767,7 +767,7 @@ function renderCheckinHistory() {
     row.id = 'sf-checkin-row';
     row.innerHTML =
       '<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M11 8v3.4l2.4 1.4"/></svg></div>' +
-      '<div class="txt">寻踪（TA 的日常）<span class="sub" id="sf-checkin-sub"></span></div>' +
+      '<div class="txt">寻踪（他 的日常）<span class="sub" id="sf-checkin-sub"></span></div>' +
       '<label class="toggle"><input type="checkbox" id="sf-checkin-en"><span class="tk"></span></label>';
     anchor.parentNode.insertBefore(row, anchor);
     bindCkSwitch(row.querySelector('#sf-checkin-en'));
@@ -782,8 +782,8 @@ function renderCheckinHistory() {
     grp.className = 'set-group glass';
     grp.setAttribute('style', 'margin:10px 12px 0');
     grp.innerHTML =
-      '<div class="gs-row"><span>启用寻踪（TA 的日常）</span><label class="toggle"><input type="checkbox" id="ck-fe-en"><span class="tk"></span></label></div>' +
-      '<div class="gs-sub">关闭后日常不再自动更新、不再推送到聊天、不再写新记录，聊天「更多功能」里的寻踪与点 TA 头像的寻踪半框一并收起。桌面【寻踪】图标仍在（点进去看得到「已禁用」说明，页里的「TA在身边 · 位置感知」是独立功能、照常可用）。下面那个「发送到聊天」概率与已有寻踪记录都不受影响，重新开启即恢复。设置 → 工具 里有同一个开关。</div>';
+      '<div class="gs-row"><span>启用寻踪（他 的日常）</span><label class="toggle"><input type="checkbox" id="ck-fe-en"><span class="tk"></span></label></div>' +
+      '<div class="gs-sub">关闭后日常不再自动更新、不再推送到聊天、不再写新记录，聊天「更多功能」里的寻踪与点 他 头像的寻踪半框一并收起。桌面【寻踪】图标仍在（点进去看得到「已禁用」说明，页里的「他在身边 · 位置感知」是独立功能、照常可用）。下面那个「发送到聊天」概率与已有寻踪记录都不受影响，重新开启即恢复。设置 → 工具 里有同一个开关。</div>';
     box.parentNode.insertBefore(grp, box);
     bindCkSwitch(document.getElementById('ck-fe-en'));
   })();
@@ -805,7 +805,7 @@ function renderCheckinHistory() {
     const action = document.getElementById('ck-action');
     const msg = document.getElementById('ck-msg');
     const status = document.getElementById('ck-status');
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     // v3.6.x：关闭系统预设且某分类无自定义字卡时该字段为空——显示空串而非字面量 "undefined"
     if (place) place.textContent = ck.place || '';
     if (action) action.textContent = ck.action || '';
@@ -876,7 +876,7 @@ function renderCheckinHistory() {
     const ck = genCheckin();
     store.set('checkin-current', JSON.stringify(ck));
     renderCheckinUI(ck);
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     // v3.42.x #422：寻踪「日常」是否推到聊天统一走「其他互动功能字卡」里的寻踪日常概率
     // （dcf-checkin，默认 100%＝每次都推，0%＝彻底不进聊天；随联系人桌面隔离）。关闭后
     // 寻踪页与记录照常生成，只是不再在聊天里推「更新了一条日常 / 日常内容 / 提醒你来寻踪」
@@ -922,7 +922,7 @@ function renderCheckinHistory() {
     if (window.closeAvlib) window.closeAvlib();
     const panel = document.getElementById('ck-panel');
     const nameEl = document.getElementById('ck-panel-name');
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     if (nameEl) nameEl.textContent = name;
     // 显示当前日常；从未生成过则立即生成一条
     let cur = null;
@@ -1761,22 +1761,22 @@ if (ckRefresh) {
   function saveCustom(list) { if (window.locLibSaveCustom) window.locLibSaveCustom(list); }
   // ---- 感知描述（基于最近位置卡 · 体现"偶尔能感觉到"） ----
   function senseDesc(cur) {
-    if (!cur) return '还没感觉到 TA…';
+    if (!cur) return '还没感觉到 他…';
     const t = cur.text;
-    if (t.indexOf('看不到') >= 0 && t.indexOf('偷看') < 0) return 'TA 在你看不到的地方，但没走远';
-    if (t.indexOf('隔着世界') >= 0) return 'TA 隔着世界，隐约在你身旁';
-    if (t.indexOf('感觉到') >= 0) return '你感觉到了 TA，就在附近';
-    if (t.indexOf('能摸到') >= 0) return '你能摸到 TA，很近很安心';
-    if (t.indexOf('没走远') >= 0) return 'TA 一直没走远，就在身边';
-    if (t.indexOf('隐约') >= 0) return 'TA 隐约在你身旁，感觉到了吗';
-    if (t.indexOf('心里') >= 0) return 'TA 在你心里，最近的距离';
-    if (t.indexOf('身后') >= 0) return '你感觉到 TA 在你身后，很近';
-    if (t.indexOf('左边') >= 0) return '你感觉到 TA 在你左边';
-    if (t.indexOf('右边') >= 0) return '你感觉到 TA 在你右边';
-    if (t.indexOf('前面') >= 0) return '你感觉到 TA 在你前面';
-    if (t.indexOf('身边') >= 0) return 'TA 就在你身边，很安心';
-    if (t.indexOf('跟着') >= 0 || t.indexOf('陪你') >= 0) return 'TA 在陪你，感觉到了吗';
-    return '你感觉到 TA 在附近：' + t;
+    if (t.indexOf('看不到') >= 0 && t.indexOf('偷看') < 0) return '他 在你看不到的地方，但没走远';
+    if (t.indexOf('隔着世界') >= 0) return '他 隔着世界，隐约在你身旁';
+    if (t.indexOf('感觉到') >= 0) return '你感觉到了 他，就在附近';
+    if (t.indexOf('能摸到') >= 0) return '你能摸到 他，很近很安心';
+    if (t.indexOf('没走远') >= 0) return '他 一直没走远，就在身边';
+    if (t.indexOf('隐约') >= 0) return '他 隐约在你身旁，感觉到了吗';
+    if (t.indexOf('心里') >= 0) return '他 在你心里，最近的距离';
+    if (t.indexOf('身后') >= 0) return '你感觉到 他 在你身后，很近';
+    if (t.indexOf('左边') >= 0) return '你感觉到 他 在你左边';
+    if (t.indexOf('右边') >= 0) return '你感觉到 他 在你右边';
+    if (t.indexOf('前面') >= 0) return '你感觉到 他 在你前面';
+    if (t.indexOf('身边') >= 0) return '他 就在你身边，很安心';
+    if (t.indexOf('跟着') >= 0 || t.indexOf('陪你') >= 0) return '他 在陪你，感觉到了吗';
+    return '你感觉到 他 在附近：' + t;
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
@@ -1885,7 +1885,7 @@ if (ckRefresh) {
     if (asking) return;
     asking = true;
     if (window.chatSendMsg) window.chatSendMsg('你在哪？');
-    toast(window.taFit ? window.taFit('已问 TA 一声，等 TA 回位置…') : '已问 TA 一声，等 TA 回位置…');
+    toast(window.taFit ? window.taFit('已问 他 一声，等 他 回位置…') : '已问 他 一声，等 他 回位置…');
     // FIX 2026-09-16 #620：发完立刻回聊天页（面板收起也在这里面做）
     backToChatAfterAsk();
     setTimeout(() => {
@@ -1910,7 +1910,7 @@ if (ckRefresh) {
       bub.className = 'loc-change-bubble';
       document.body.appendChild(bub);
     }
-    bub.textContent = window.taFit ? window.taFit('你感觉到 TA 换了位置：' + text) : ('你感觉到 TA 换了位置：' + text);
+    bub.textContent = window.taFit ? window.taFit('你感觉到 他 换了位置：' + text) : ('你感觉到 他 换了位置：' + text);
     bub.classList.add('loc-bubble-show');
     clearTimeout(bub._t);
     bub._t = setTimeout(() => { bub.classList.remove('loc-bubble-show'); }, 3000);
@@ -1954,7 +1954,7 @@ if (ckRefresh) {
     if (dayHist.length) {
       html += '<div class="loc-timeline">' + dayHist.map(h => {
         const tag = LOC_LABEL[h.type] || '';
-        const auto = h.auto ? '<span class="loc-tl-auto">TA</span>' : '';
+        const auto = h.auto ? '<span class="loc-tl-auto">他</span>' : '';
         return '<div class="loc-tl-item"><span class="loc-tl-time">' + fmtT(h.ts) + '</span><span class="loc-tl-text">' + esc(h.text) + '</span><span class="loc-tl-tag">' + esc(tag) + '</span>' + auto + window.mochiHistDel('k|' + (Number(h.ts) || 0) + '|' + esc(h.text), (LOC_LABEL[h.type] || '位置卡') + ' · ' + esc(h.text)) + '</div>'; // #1493 单条删除
       }).join('') + '</div>';
       html += '<div class="loc-day-count">共 ' + dayHist.length + ' 条</div>';
@@ -1963,19 +1963,19 @@ if (ckRefresh) {
     }
     html += '</div>';
     // #558 功能说明补全：光点落点规则原先只在代码注释里（用户问「再远一点会不会跑到屏幕右侧」）
-    html += '<div class="loc-sec-sub" style="padding:10px 2px 0;line-height:1.7">光点落在哪儿，就是 TA 在哪儿：方位卡落在画面对应方向；距离卡、状态卡跟着最近一张方位卡的方位走——「再近一点」朝屏幕中心靠、「再远一点」朝屏幕边缘退开（上一张说的是「在你右边」时，光点贴屏幕右侧属正常）。</div>';
+    html += '<div class="loc-sec-sub" style="padding:10px 2px 0;line-height:1.7">光点落在哪儿，就是 他 在哪儿：方位卡落在画面对应方向；距离卡、状态卡跟着最近一张方位卡的方位走——「再近一点」朝屏幕中心靠、「再远一点」朝屏幕边缘退开（上一张说的是「在你右边」时，光点贴屏幕右侧属正常）。</div>';
     // 换位提醒设置组：TA 自动换位总开关 / 换位提醒弹窗 / 换位发到聊天（只管「TA 自动」这条路，手动发的位置卡不受限）
     // ＋ #1436 续（作者 2026-09-29 复核直派「我是要我自己主动点击【感知一下】才变」＝按钮即开关）：方位感知的
     //   【感知一下】点了就先让 TA 当场换一次位置、再按新位置报方位，不另设开关（多一枚默认关的开关＝作者说的「乱加设置」）。
     html += '<div class="set-group glass" style="margin:14px 2px 0">'
-      + '<div class="gs-row"><span>TA 自动换位</span><label class="toggle"><input type="checkbox" id="loc-auto-tg"' + (store.get('loc-auto') === '0' ? '' : ' checked') + '><span class="tk"></span></label></div>'
+      + '<div class="gs-row"><span>他 自动换位</span><label class="toggle"><input type="checkbox" id="loc-auto-tg"' + (store.get('loc-auto') === '0' ? '' : ' checked') + '><span class="tk"></span></label></div>'
       + '<div class="gs-row"><span>换位提醒弹窗</span><label class="toggle"><input type="checkbox" id="loc-bubble-tg"' + (store.get('loc-bubble') === '0' ? '' : ' checked') + '><span class="tk"></span></label></div>'
       + '<div class="gs-row"><span>换位发到聊天</span><label class="toggle"><input type="checkbox" id="loc-chat-tg"' + (store.get('loc-chat') === '0' ? '' : ' checked') + '><span class="tk"></span></label></div>'
       + '</div>'
       // #902：换位机制的触发间隔与概率写进设置说明（用户反馈「概率和触发时间要写清楚」）
-      + '<div class="gs-sub" style="padding:0 2px 10px">TA 自动换位：开启后每 2～6 小时随机换一次位置（关掉后到点也不换；「问 TA 一声」不受影响）。换位内容 70% 是陪伴卡（在你身边／一直没走远等），30% 从字卡库启用的位置卡里随机；每次换位都会记进「位置时间线」，换位内容与上一次不同时才算「换了位置」才弹提醒。<br>换位提醒弹窗：TA 自动换位置时顶部弹的黑色轻提示。<br>换位发到聊天：关掉后 TA 自动换位只记进「位置时间线」，不再发进聊天记录。<br>方位感知的【感知一下】：点了就先让 TA 当场换一次位置、再按新位置报方位，不用等那发 2～6 小时（不用打开任何开关，点了就是换）；它不受「TA 自动换位」总开关与夜间静默管（那两枚管的是 TA 自己到点来打扰），发进聊天与弹提醒仍照上面两枚开关。</div>';
+      + '<div class="gs-sub" style="padding:0 2px 10px">他 自动换位：开启后每 2～6 小时随机换一次位置（关掉后到点也不换；「问 他 一声」不受影响）。换位内容 70% 是陪伴卡（在你身边／一直没走远等），30% 从字卡库启用的位置卡里随机；每次换位都会记进「位置时间线」，换位内容与上一次不同时才算「换了位置」才弹提醒。<br>换位提醒弹窗：他 自动换位置时顶部弹的黑色轻提示。<br>换位发到聊天：关掉后 他 自动换位只记进「位置时间线」，不再发进聊天记录。<br>方位感知的【感知一下】：点了就先让 他 当场换一次位置、再按新位置报方位，不用等那发 2～6 小时（不用打开任何开关，点了就是换）；它不受「他 自动换位」总开关与夜间静默管（那两枚管的是 他 自己到点来打扰），发进聊天与弹提醒仍照上面两枚开关。</div>';
     // 问 TA 一声
-    html += '<button class="loc-ask-btn" id="loc-ask-btn">问 TA 一声「你在哪？」</button>';
+    html += '<button class="loc-ask-btn" id="loc-ask-btn">问 他 一声「你在哪？」</button>';
 
     body.innerHTML = html;
     // #1493：时间线单条删除（身份＝ts+原文，写回按值认；认不到就如实说没删，宁可不删不删错）
@@ -2023,7 +2023,7 @@ if (ckRefresh) {
   function openLocPanel() {
     const panel = document.getElementById('loc-panel');
     const nameEl = document.getElementById('loc-name');
-    if (nameEl) nameEl.textContent = store.get('lbl-partner') || 'TA';
+    if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
     if (panel) panel.classList.add('loc-full');
     // v3.13.x：刷新方位感知（含漂移检查）+ 渲染感知圆
     if (window.refreshSense) window.refreshSense();
@@ -2283,7 +2283,7 @@ if (ckRefresh) {
   }
   // 感知结果卡文案
   function resultText(s, touched) {
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     if (isUndirected(s.dir)) {
       return '方位感知 · ' + name + '\n？ 暂时无法判断方向。\n但你似乎感觉到，有谁在附近。';
     }
@@ -2386,7 +2386,7 @@ if (ckRefresh) {
     const gs = getSense(false);
     if (isUndirected(gs.dir)) return;
     const arrows = DIRS.find(d => d.k === gs.dir);
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     if (window.toast) window.toast('……好像' + (arrows ? arrows.arrow + ' ' : '') + '有人在你' + gs.dir + '。');
     s.hintAt = now;
     save(s);
@@ -2439,17 +2439,17 @@ if (ckRefresh) {
     return /能摸到|没走远|身边|心里|感觉到|隐约|陪你|跟着|马上到/.test(t);
   };
   window.taSenseDesc = function () {
-    const s = store(); if (!s) return '还没感觉到 TA…';
+    const s = store(); if (!s) return '还没感觉到 他…';
     let cur = null; try { cur = JSON.parse(s.get('loc-current') || 'null'); } catch (e) {}
-    if (!cur) return '还没感觉到 TA…';
+    if (!cur) return '还没感觉到 他…';
     const t = cur.text || '';
-    if (t.indexOf('隔着世界') >= 0) return window.taFit ? window.taFit('TA 隔着世界，隐约在你身旁') : 'TA 隔着世界，隐约在你身旁';
-    if (t.indexOf('感觉到') >= 0) return window.taFit ? window.taFit('你感觉到了 TA，就在附近') : '你感觉到了 TA，就在附近';
-    if (t.indexOf('能摸到') >= 0) return window.taFit ? window.taFit('你能摸到 TA，很近很安心') : '你能摸到 TA，很近很安心';
-    if (t.indexOf('没走远') >= 0) return window.taFit ? window.taFit('TA 一直没走远，就在身边') : 'TA 一直没走远，就在身边';
-    if (t.indexOf('隐约') >= 0) return window.taFit ? window.taFit('TA 隐约在你身旁，感觉到了吗') : 'TA 隐约在你身旁，感觉到了吗';
-    if (t.indexOf('身边') >= 0) return window.taFit ? window.taFit('TA 就在你身边，很安心') : 'TA 就在你身边，很安心';
-    return window.taFit ? window.taFit('你感觉到 TA 在附近') : '你感觉到 TA 在附近';
+    if (t.indexOf('隔着世界') >= 0) return window.taFit ? window.taFit('他 隔着世界，隐约在你身旁') : '他 隔着世界，隐约在你身旁';
+    if (t.indexOf('感觉到') >= 0) return window.taFit ? window.taFit('你感觉到了 他，就在附近') : '你感觉到了 他，就在附近';
+    if (t.indexOf('能摸到') >= 0) return window.taFit ? window.taFit('你能摸到 他，很近很安心') : '你能摸到 他，很近很安心';
+    if (t.indexOf('没走远') >= 0) return window.taFit ? window.taFit('他 一直没走远，就在身边') : '他 一直没走远，就在身边';
+    if (t.indexOf('隐约') >= 0) return window.taFit ? window.taFit('他 隐约在你身旁，感觉到了吗') : '他 隐约在你身旁，感觉到了吗';
+    if (t.indexOf('身边') >= 0) return window.taFit ? window.taFit('他 就在你身边，很安心') : '他 就在你身边，很安心';
+    return window.taFit ? window.taFit('你感觉到 他 在附近') : '你感觉到 他 在附近';
   };
 
   // 统一频率：冷却 + 每日上限（localStorage 记录）
@@ -2611,7 +2611,7 @@ if (ckRefresh) {
   tpPage.innerHTML =
     '<div class="chat-head"><span class="ch-back" id="tp-back"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span><span class="ch-name">同频</span></div>' +
     '<div class="tp-body">' +
-      '<div class="tp-card glass"><div class="tp-label">TA 此刻</div><div class="tp-status" id="tp-status">…</div><button class="tp-refresh" id="tp-refresh">换一个</button></div>' +
+      '<div class="tp-card glass"><div class="tp-label">他 此刻</div><div class="tp-status" id="tp-status">…</div><button class="tp-refresh" id="tp-refresh">换一个</button></div>' +
       '<div class="tp-card glass"><div class="tp-label">' + (window.taFit ? window.taFit('敲三下 · 看他回不回') : '敲三下 · 看他回不回') + '</div><div class="tp-knock" id="tp-knock"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div><div class="tp-hint" id="tp-hint">长按下方 · 凑三下敲桌面</div><div class="tp-knock-area" id="tp-knock-area">长按这里</div></div>' +
       '<div class="tp-manage"><button class="tp-add" id="tp-add">+ 添加状态字卡</button><button class="tp-send-btn" id="tp-send">发到聊天：开</button></div>' +
     '</div>';
@@ -2621,7 +2621,7 @@ if (ckRefresh) {
   function tpSave(a) { const s = curStore(); if (s) try { s.set('tongpin-status', JSON.stringify(a)); } catch (e) {} }
   // 状态池：用户自定义 + TA 日常 action 字卡（在做什么）合并去重，接入字卡库
   function tpPool() {
-    const s = curStore(); let pool = libPool('sync', 'TA 此刻', DEF_STATUS);
+    const s = curStore(); let pool = libPool('sync', '他 此刻', DEF_STATUS);
     try { const a = JSON.parse((s && s.get('tongpin-status')) || '[]'); if (Array.isArray(a) && a.length) pool = a.slice(); } catch (e) {}
     try { const a = JSON.parse((s && s.get('checkin-cards-action')) || '[]'); if (Array.isArray(a)) a.forEach(x => { const t = typeof x === 'string' ? x : (x && x.t); if (t && pool.indexOf(t) < 0) pool.push(t); }); } catch (e) {}
     return pool.length ? pool : (window.gateCardFallback ? window.gateCardFallback('sync', DEF_STATUS) : DEF_STATUS.slice()); // #1515 尾行裸兜底同收口
@@ -2750,7 +2750,7 @@ if (ckRefresh) {
   const DEF_WATER_MSGS = ['该喝水了', '别忘了喝水', '喝口水吧', '你今天水喝够了吗'];
   const DEF_WATER_PRAISE = ['今天喝够啦', '真棒', '完成了', '好乖'];
   const DEF_WATER_ENCOURAGE = ['再来一杯', '继续', '嗯', '快了'];
-  const DEF_WATER_TA = ['TA 说：{m}', 'TA 让我提醒你：{m}', 'TA 念着：{m}', 'TA 托我带句话：{m}'];
+  const DEF_WATER_TA = ['他 说：{m}', '他 让我提醒你：{m}', '他 念着：{m}', '他 托我带句话：{m}'];
   // 世界观：他视角提醒（灵体在身边，字卡语态）；偶尔出得不准配温柔解读
   const DEF_WATER_TA_GENTLE = ['水凉了，喝一口？', '你忘了吧，喝一口', '我在呢，先喝口水', '嗯，去喝一口好不好', '别忙忘了喝水'];
   // v3.14.x：梦角催喝水兜底池（同 default-cards-data.js「梦角催喝水」分组，
@@ -2773,7 +2773,7 @@ if (ckRefresh) {
       '<div class="water-msg glass" id="water-msg">点 +1 记一杯</div>' +
       '<div class="water-actions">' +
         '<button class="water-send" id="water-send">发到聊天</button>' +
-        '<button class="water-ta" id="water-ta">' + (window.taFit ? window.taFit('TA 提醒') : 'TA 提醒') + '</button>' +
+        '<button class="water-ta" id="water-ta">' + (window.taFit ? window.taFit('他 提醒') : '他 提醒') + '</button>' +
       '</div>' +
       '<div class="water-manage"><button class="water-set-goal" id="water-set-goal">设目标</button><button class="water-set-size" id="water-set-size">单次量</button><button class="water-add-msg" id="water-add-msg">+ 提醒字卡</button></div>' +
     '</div>';
@@ -2976,7 +2976,7 @@ if (ckRefresh) {
     if (editingNow()) return;
     const t = waterToday(); const g = waterGoal();
     const m = waterMsgs()[Math.floor(Math.random() * waterMsgs().length)];
-    const taFmt = libPool('water', 'TA 提醒句式', DEF_WATER_TA);
+    const taFmt = libPool('water', '他 提醒句式', DEF_WATER_TA);
     if (!taFmt.length || !m) return; // #1515 全关＝不出声（不再回落同文兜底）
     const fmt = taFmt[Math.floor(Math.random() * taFmt.length)].replace('{m}', m);
     const tail = t.count < g ? '（还差 ' + (g - t.count) + ' 杯）' : '（今天喝够啦）';
@@ -3002,10 +3002,10 @@ if (ckRefresh) {
       '<div class="eat-wheel-wrap"><canvas class="eat-wheel" id="eat-wheel"></canvas><div class="eat-pointer" id="eat-pointer"><svg viewBox="0 0 20 20" width="20" height="20"><polygon points="10,18 3,2 17,2" fill="#e8533d"/></svg></div></div>' +
       '<div class="eat-card glass"><div class="eat-label">今天吃</div><div class="eat-dish" id="eat-dish">…</div><div class="eat-comment" id="eat-comment">…</div></div>' +
       '<div class="eat-btns"><button class="eat-change" id="eat-change">换一个</button><button class="eat-send" id="eat-send">发到聊天</button></div>' +
-      '<div class="eat-btns"><button class="eat-spin" id="eat-spin">转盘抽取</button><button class="eat-askta" id="eat-askta">问 TA</button></div>' +
+      '<div class="eat-btns"><button class="eat-spin" id="eat-spin">转盘抽取</button><button class="eat-askta" id="eat-askta">问 他</button></div>' +
       '<div class="eat-history" id="eat-history"></div>' +
       '<div class="eat-mgr"><button class="eat-add" id="eat-add">+ 添加菜名</button><button class="eat-menu-btn" id="eat-menu-btn">编辑菜单</button></div>' +
-      '<div class="eat-mgr"><button class="eat-menu-btn" id="eat-remind-toggle">TA 提醒：开</button><button class="eat-menu-btn" id="eat-remind-prob">触发概率 2%</button></div>' +
+      '<div class="eat-mgr"><button class="eat-menu-btn" id="eat-remind-toggle">他 提醒：开</button><button class="eat-menu-btn" id="eat-remind-prob">触发概率 2%</button></div>' +
       '<div class="eat-menu-panel" id="eat-menu-panel" hidden>' +
         '<div class="eat-menu-chips" id="eat-menu-chips"></div>' +
         '<div class="eat-menu-ops"><button class="eat-menu-op" id="eat-menu-new">+ 新建</button><button class="eat-menu-op" id="eat-menu-rename">重命名</button><button class="eat-menu-op" id="eat-menu-del">删除</button></div>' +
@@ -3340,7 +3340,7 @@ if (ckRefresh) {
   function eatRemindProb() { const s = curStore(); try { const n = parseInt(s && s.get('eat-remind-prob'), 10); if (!isNaN(n)) return Math.max(0, Math.min(100, n)); } catch (e) {} return 2; }
   function eatRenderRemind() {
     const t = document.getElementById('eat-remind-toggle');
-    if (t) t.textContent = 'TA 提醒：' + (eatRemindEn() ? '开' : '关');
+    if (t) t.textContent = '他 提醒：' + (eatRemindEn() ? '开' : '关');
     const p = document.getElementById('eat-remind-prob');
     if (p) p.textContent = '触发概率 ' + eatRemindProb() + '%';
   }
@@ -3409,7 +3409,7 @@ if (ckRefresh) {
     if (editingNow()) return;
     const on = !eatRemindEn();
     eatRemindSetEn(on); eatRenderRemind();
-    toast(on ? '已开启：TA 会偶尔在饭点发字卡提醒你吃饭' : '已关闭：TA 不再饭点提醒');
+    toast(on ? '已开启：他 会偶尔在饭点发字卡提醒你吃饭' : '已关闭：他 不再饭点提醒');
   });
   document.getElementById('eat-remind-prob').addEventListener('click', () => {
     if (!window.openModal) return;
@@ -3681,14 +3681,14 @@ if (ckRefresh) {
         '<div class="piggy-hero glass"><div class="piggy-goal-name" id="piggy-goal-name">先设个小目标吧</div><div class="piggy-bal" id="piggy-bal"><i>¥</i>0.00</div><div class="piggy-bar"><div class="piggy-fill" id="piggy-fill"></div></div><div class="piggy-sub" id="piggy-sub">每一笔都算数</div></div>' +
         '<div class="piggy-btns"><button class="piggy-out" id="piggy-out">取一笔</button><button class="piggy-in" id="piggy-in">存一笔</button></div>' +
         '<div class="piggy-msg glass" id="piggy-msg">小猪替你保管着呢</div>' +
-        '<div class="piggy-reply glass" id="piggy-reply" hidden><div class="piggy-reply-q" id="piggy-reply-q"></div><div class="piggy-reply-row"><input class="piggy-reply-in" id="piggy-reply-in" type="text" maxlength="40" placeholder="回一句给TA（可不填）"><button class="piggy-reply-send" id="piggy-reply-send">发送</button><button class="piggy-reply-skip" id="piggy-reply-skip">不用啦</button></div></div>' +
+        '<div class="piggy-reply glass" id="piggy-reply" hidden><div class="piggy-reply-q" id="piggy-reply-q"></div><div class="piggy-reply-row"><input class="piggy-reply-in" id="piggy-reply-in" type="text" maxlength="40" placeholder="回一句给他（可不填）"><button class="piggy-reply-send" id="piggy-reply-send">发送</button><button class="piggy-reply-skip" id="piggy-reply-skip">不用啦</button></div></div>' +
         '<div class="piggy-goals glass" id="piggy-goals"></div>' +
         '<div class="piggy-hist glass" id="piggy-hist"></div>' +
-        '<div class="piggy-manage"><button class="piggy-set-goal" id="piggy-set-goal">＋ 新小心愿</button><button class="piggy-add-msg" id="piggy-add-msg">+ TA的碎碎念</button></div>' +
+        '<div class="piggy-manage"><button class="piggy-set-goal" id="piggy-set-goal">＋ 新小心愿</button><button class="piggy-add-msg" id="piggy-add-msg">+ 他的碎碎念</button></div>' +
       '</div>' +
       // 心意币存钱：per-cid 独立罐（我和当前联系人的共用存钱罐），余额从全局心意币账本转入
       '<div class="piggy-coin" hidden>' +
-        '<div class="coin-contact-bar glass"><span class="coin-contact-label" id="coin-contact-label">我和 TA 的存钱罐</span><button class="coin-contact-switch" id="coin-contact-switch">切换联系人</button></div>' +
+        '<div class="coin-contact-bar glass"><span class="coin-contact-label" id="coin-contact-label">我和 他 的存钱罐</span><button class="coin-contact-switch" id="coin-contact-switch">切换联系人</button></div>' +
         '<div class="coin-hero glass">' +
           '<div class="coin-bal-single" id="coin-bal-total"><i>¥</i>0.00</div>' +
           '<div class="piggy-bar"><div class="piggy-fill" id="coin-fill"></div></div>' +
@@ -3884,7 +3884,7 @@ if (ckRefresh) {
     const box = document.getElementById('piggy-reply');
     if (!box) return;
     const q = document.getElementById('piggy-reply-q');
-    if (q) { var care = libPool('piggy', '取款关心', PIGGY_CARE); if (care.length) { var careTxt = 'TA：' + care[Math.floor(Math.random() * care.length)]; q.textContent = window.taFit ? window.taFit(careTxt) : careTxt; } } // #1515 空池不追问
+    if (q) { var care = libPool('piggy', '取款关心', PIGGY_CARE); if (care.length) { var careTxt = '他：' + care[Math.floor(Math.random() * care.length)]; q.textContent = window.taFit ? window.taFit(careTxt) : careTxt; } } // #1515 空池不追问
     const inp = document.getElementById('piggy-reply-in'); if (inp) inp.value = '';
     box.hidden = false;
   }
@@ -3903,7 +3903,7 @@ if (ckRefresh) {
     const note = notes[Math.floor(Math.random() * notes.length)];
     if (!note) return; // #1515 全关＝彩蛋静默
     vibrate([20, 60, 20]);
-    setTimeout(() => { piggyShowMsg(window.taFit ? window.taFit(note + ' ¥' + piggyFmt(amt) + ' · 替TA存进去？') : (note + ' ¥' + piggyFmt(amt) + ' · 替TA存进去？')); }, 400);
+    setTimeout(() => { piggyShowMsg(window.taFit ? window.taFit(note + ' ¥' + piggyFmt(amt) + ' · 替他存进去？') : (note + ' ¥' + piggyFmt(amt) + ' · 替他存进去？')); }, 400);
   }
   // FIX 2026-09-18 #770：心意币页签若停在上次位置，重进 app 不再经过页签 click，TA 塞币/取回
   // 两条彩蛋就永远没机会跑——app 入口按页签当前状态补触发一次（页签 click 路径保持原样）。
@@ -3922,7 +3922,7 @@ if (ckRefresh) {
     const p = piggyCoinProbGet();
     const ks = ['deposit', 'withdraw'];
     const def = [Math.round(p.deposit * 100), Math.round(p.withdraw * 100)];
-    const titles = ['设置 · 存钱概率（TA 随机塞心意币）', '设置 · 取钱概率（TA 余额快没时取回）'];
+    const titles = ['设置 · 存钱概率（他 随机塞心意币）', '设置 · 取钱概率（他 余额快没时取回）'];
     const hints = ['0-100 %，默认 ' + def[0], '0-100 %，默认 ' + def[1]];
     let phase = 0;
     function clampU(x) { const n = parseInt(String(x == null ? '' : x).trim(), 10); return isNaN(n) ? def[phase] : Math.max(0, Math.min(100, n)); }
@@ -3937,7 +3937,7 @@ if (ckRefresh) {
       const cur = clampU(v); const nv = { deposit: p.deposit, withdraw: p.withdraw, ask: p.ask };
       nv[ks[phase]] = cur / 100; piggyCoinProbSave(nv);
       toast('已保存 ' + cur + '%');
-    }, { maxlength: 3, inputmode: 'decimal', placeholder: hints[0], staticText: '「TA 申请心意币」的概率与每日上限已移到聊天页红包的「设置」里，可按每个联系人单独设置。' + (function () { let g = 100; try { g = window.dcfGet ? window.dcfGet('piggy') : 100; } catch (e) {} return g < 100 ? ' ⚠ 已被「其他互动功能字卡 → 存钱罐」总闸压到 ' + g + '%，低于 100% 时 TA 塞币会被按比例拦截。' : ''; })() });
+    }, { maxlength: 3, inputmode: 'decimal', placeholder: hints[0], staticText: '「他 申请心意币」的概率与每日上限已移到聊天页红包的「设置」里，可按每个联系人单独设置。' + (function () { let g = 100; try { g = window.dcfGet ? window.dcfGet('piggy') : 100; } catch (e) {} return g < 100 ? ' ⚠ 已被「其他互动功能字卡 → 存钱罐」总闸压到 ' + g + '%，低于 100% 时 他 塞币会被按比例拦截。' : ''; })() });
     ctl.okText('下一步');
   });
   // 存入/取出/小心愿：单弹窗两阶段（ctl.stay 就地切阶段）——取代旧「60ms 再开
@@ -3951,7 +3951,7 @@ if (ckRefresh) {
         if (!amt) { if (String(v || '').trim()) toast('金额没看懂，再试试'); return; }
         phase = 2;
         ctl.stay();
-        ctl.title(window.taFit ? window.taFit('跟TA说一句（可不填）') : '跟TA说一句（可不填）');
+        ctl.title(window.taFit ? window.taFit('跟他说一句（可不填）') : '跟他说一句（可不填）');
         ctl.maxLen(40); ctl.ph('留言可不填，直接点【存入】'); ctl.text('');
         ctl.okText('存入');
         return;
@@ -4064,7 +4064,7 @@ if (ckRefresh) {
   });
   document.getElementById('piggy-add-msg').addEventListener('click', () => {
     if (editingNow() || !window.openModal) return;
-    window.openModal(window.taFit ? window.taFit('添加TA的碎碎念（存钱时说）') : '添加TA的碎碎念（存钱时说）', '', (v) => {
+    window.openModal(window.taFit ? window.taFit('添加他的碎碎念（存钱时说）') : '添加他的碎碎念（存钱时说）', '', (v) => {
       const t = String(v || '').trim(); if (!t) return;
       const a = piggyUserCards(); a.push(t); piggySaveUserCards(a); toast('已添加');
     }, { maxlength: 30 });
@@ -4139,7 +4139,7 @@ if (ckRefresh) {
       const oldLog = JSON.parse(g.get('piggy-coin-log') || '[]');
       if (Array.isArray(oldLog) && oldLog.length) {
         const newLog = oldLog.filter(function (x) { return x && typeof x.amt === 'number'; }).map(function (x) {
-          return { t: x.t || Date.now(), type: x.type === 'out' ? 'out' : 'in', amt: x.amt, note: x.note || (x.side === 'ta' ? 'TA 存入' : '存入') };
+          return { t: x.t || Date.now(), type: x.type === 'out' ? 'out' : 'in', amt: x.amt, note: x.note || (x.side === 'ta' ? '他 存入' : '存入') };
         });
         ds.set('piggy-coin2-log', JSON.stringify(newLog));
       }
@@ -4305,11 +4305,11 @@ if (ckRefresh) {
     try { s.set('piggy-coin2-last-visit', '' + Date.now()); } catch (e) {}
     const amt = COIN_TA_COINS[Math.floor(Math.random() * COIN_TA_COINS.length)];
     const note = COIN_TA_NOTES[Math.floor(Math.random() * COIN_TA_NOTES.length)];
-    const log = piggyCoinLog(); log.push({ t: Date.now(), type: 'in', amt: amt, note: 'TA 塞进来的' });
+    const log = piggyCoinLog(); log.push({ t: Date.now(), type: 'in', amt: amt, note: '他 塞进来的' });
     piggySaveCoinLog(log); piggyCoinRender();
     vibrate([20, 40, 20]);
     try {
-      const who = (window.chatPartnerName ? window.chatPartnerName() : '') || 'TA';
+      const who = (window.chatPartnerName ? window.chatPartnerName() : '') || '他';
       if (window.chatAddSystem) window.chatAddSystem(who + ' 往存钱罐存了 ¥' + piggyFmt(amt), { nightAllow: true, rateAllow: true });
     } catch (e) {}
     setTimeout(function () { piggyCoinShowMsg((window.taFit ? window.taFit(note) : note) + ' ¥' + piggyFmt(amt)); }, 300);
@@ -4329,10 +4329,10 @@ if (ckRefresh) {
     if (Math.random() >= prob) return;
     const fen = Math.round(bal * 100);
     try { if (window.giftWalletChange) window.giftWalletChange(0, fen); } catch (e) {}
-    const log = piggyCoinLog(); log.push({ t: Date.now(), type: 'out', amt: bal, note: '心意币快花完了，TA 取回' });
+    const log = piggyCoinLog(); log.push({ t: Date.now(), type: 'out', amt: bal, note: '心意币快花完了，他 取回' });
     piggySaveCoinLog(log); piggyCoinRender();
     vibrate([20, 40, 20]);
-    setTimeout(function () { piggyCoinShowMsg('心意币快没了，TA 取回 ¥' + piggyFmt(bal)); }, 300);
+    setTimeout(function () { piggyCoinShowMsg('心意币快没了，他 取回 ¥' + piggyFmt(bal)); }, 300);
   }
   // 双 Tab 切换：现实存钱 / 心意币存钱
   const piggyTabs = document.querySelector('.piggy-tabs');
@@ -4471,7 +4471,7 @@ if (ckRefresh) {
     '<div class="chat-head"><span class="ch-back" id="pmpc-back"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span><span class="ch-name">陪伴专注</span></div>' +
     '<div class="pmp-cd" id="pmp-cd">' +
       '<div class="pmp-cd-time" id="pmp-cd-time">25:00</div>' +
-      '<div class="pmp-cd-label" id="pmp-cd-label">专注中 · TA 陪着你</div>' +
+      '<div class="pmp-cd-label" id="pmp-cd-label">专注中 · 他 陪着你</div>' +
       '<div class="pmp-cd-ctrls"><button class="pmp-bar-toggle" id="pmp-cd-toggle">暂停</button><button class="pmp-bar-more" id="pmp-cd-more">⋯</button></div>' +
       '<div class="pmp-cd-progress"><div class="pmp-progress-fill" id="pmp-cd-fill"></div></div>' +
     '</div>' +
@@ -4479,7 +4479,7 @@ if (ckRefresh) {
     '<div class="pmp-c-chat">' +
       '<div class="pmp-c-chat-title">悄悄话 · 陪着聊（辅助功能）</div>' +
       '<div class="pmp-c-list" id="pmp-c-list"></div>' +
-      '<div class="pmp-c-inputbar"><input class="pmp-c-in" id="pmp-c-in" type="text" maxlength="120" placeholder="想说点什么…（TA 安静陪着）"><button class="pmp-c-send" id="pmp-c-send">发送</button></div>' +
+      '<div class="pmp-c-inputbar"><input class="pmp-c-in" id="pmp-c-in" type="text" maxlength="120" placeholder="想说点什么…（他 安静陪着）"><button class="pmp-c-send" id="pmp-c-send">发送</button></div>' +
     '</div>';
   host.appendChild(pmpCPage);
 
@@ -4517,11 +4517,11 @@ if (ckRefresh) {
     window.openModal('陪伴设置', '', (v) => {
       if (v !== '0' && v !== '1') return;
       pmpSetUseChatCards(v === '1');
-      toast(v === '1' ? '已开启：TA 会用【聊天】字卡回复你' : '已关闭：TA 不再用【聊天】字卡回复');
+      toast(v === '1' ? '已开启：他 会用【聊天】字卡回复你' : '已关闭：他 不再用【聊天】字卡回复');
     }, {
       noInput: true, lock: true, pill: on ? '1' : '0',
       pills: [{ label: '用【聊天】字卡回复（开）', value: '1' }, { label: '不用（关）', value: '0' }],
-      staticText: '开启后，陪伴中的 TA 会优先用你在【聊天】里设置的字卡回复你；关闭则只用陪伴自带的常回话。'
+      staticText: '开启后，陪伴中的 他 会优先用你在【聊天】里设置的字卡回复你；关闭则只用陪伴自带的常回话。'
     });
   }
   function pmpChatCardText() {
@@ -4580,7 +4580,7 @@ if (ckRefresh) {
     const remainMs = Math.max(0, pomoRunning ? pomoEndAt - Date.now() : (pmpRec.remainMs || pmpRec.totalMs));
     const sec = Math.ceil(remainMs / 1000);
     const tmTxt = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
-    const lbTxt = pomoRunning ? '专注中 · TA 陪着你' : '已暂停';
+    const lbTxt = pomoRunning ? '专注中 · 他 陪着你' : '已暂停';
     const tgTxt = pomoRunning ? '暂停' : '继续';
     [['pmp-bar-time', 'pmp-bar-label', 'pmp-bar-toggle', 'pmp-fill'], ['pmp-cd-time', 'pmp-cd-label', 'pmp-cd-toggle', 'pmp-cd-fill']].forEach((ids) => {
       const tm = document.getElementById(ids[0]);

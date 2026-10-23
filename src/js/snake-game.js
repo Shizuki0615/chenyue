@@ -31,7 +31,7 @@
     hard:   { ticks: [105, 90, 80, 70] }
   };
   const MODES = {
-    duo:  { label: '我 vs TA' },
+    duo:  { label: '我 vs 他' },
     pvp:  { label: '双人对战' },
     coop: { label: '双人组队' }
   };
@@ -92,7 +92,7 @@
   function snakeLabel(s) {
     if (s === state.player) return 'P1';
     if (s.ctrl === 'p2') return 'P2';
-    return (window.taFit ? window.taFit('TA') : 'TA');
+    return (window.taFit ? window.taFit('他') : '他');
   }
   function themeDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -327,7 +327,7 @@
   function modeHint() {
     const m = curMode();
     if (m === 'pvp') return '点开始 · P1 左半屏/方向键 · P2 右半屏/WASD';
-    if (m === 'coop') return '点开始 · 组队对抗 TA · P2 用 WASD/右半屏';
+    if (m === 'coop') return '点开始 · 组队对抗 他 · P2 用 WASD/右半屏';
     return '点开始 · 滑动控制方向';
   }
 
@@ -975,7 +975,7 @@
   function showResult(d) {
     if (!resultEl) return;
     const icon = d.result === 'win' ? '🏆' : d.result === 'lose' ? '💔' : '🤝';
-    const taName = window.taFit ? window.taFit('TA') : 'TA';
+    const taName = window.taFit ? window.taFit('他') : '他';
     let resTxt, rows;
     if (d.mode === 'pvp') {
       resTxt = d.result === 'win' ? 'P1 赢了' : d.result === 'lose' ? 'P2 赢了' : '平局';
@@ -986,7 +986,7 @@
       rows = '<div class="snake-res-row"><span>👥 队伍 (P1+P2)</span><span>' + psOf(d) + ' 分</span></div>' +
         '<div class="snake-res-row"><span>🤖 ' + taName + '</span><span>长度 ' + d.oLen + ' · 食物 ' + d.oFood + ' · ' + d.oScore + '分</span></div>';
     } else {
-      resTxt = d.result === 'win' ? '你赢了' : d.result === 'lose' ? (window.taFit ? window.taFit('TA 赢了') : 'TA 赢了') : '平局';
+      resTxt = d.result === 'win' ? '你赢了' : d.result === 'lose' ? (window.taFit ? window.taFit('他 赢了') : '他 赢了') : '平局';
       rows = '<div class="snake-res-row"><span>🐍 你</span><span>长度 ' + d.pLen + ' · 食物 ' + d.pFood + ' · ' + psOf(d) + '分</span></div>' +
         '<div class="snake-res-row"><span>🤖 ' + taName + '</span><span>长度 ' + d.oLen + ' · 食物 ' + d.oFood + ' · ' + d.oScore + '分</span></div>';
     }
@@ -1312,7 +1312,7 @@
     // FIX 2026-09-12 #349 标题名与全部其他游戏面板同链：activeStore 动态命名空间
     // （cs-lbl-partner || lbl-partner）——曾裸读加载时冻结的 PARTNER_KEY，切桌面后串名
     if (nameEl) {
-      let pname = 'TA';
+      let pname = '他';
       try {
         const nst = window.activeStore && window.activeStore();
         pname = (nst && (nst.get('lbl-partner') || nst.get('cs-lbl-partner'))) || pname;

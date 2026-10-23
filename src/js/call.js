@@ -462,7 +462,7 @@
   function partnerName() {
     const nick = store.get('lbl-partner') || store.get('cs-lbl-partner')
       || (window.contactNameFor ? window.contactNameFor(window.__activeCid || 'default') : '');
-    return nick || (window.taWord ? window.taWord() : 'TA');
+    return nick || (window.taWord ? window.taWord() : '他');
   }
   // v3.12.x：通话头像跟随聊天域——优先读聊天专用键 cs-avatar-partner（头像互动半框/换头像写的就是它），
   // 未设置时回退桌面键 avatar-partner；此前只读桌面键，导致通话面板不跟随换头像
@@ -592,7 +592,7 @@
       // 名片名，最后默认 TA；性别称呼按归属桌面读（跨桌面通话仍显示正确的 TA）
       name = s.get('lbl-partner') || s.get('cs-lbl-partner')
         || (window.contactNameFor ? window.contactNameFor(currentCall.cid) : '')
-        || (window.taWordFor ? window.taWordFor(currentCall.cid) : (window.taWord ? window.taWord() : 'TA'));
+        || (window.taWordFor ? window.taWordFor(currentCall.cid) : (window.taWord ? window.taWord() : '他'));
     } catch (e) { name = currentCall.name || partnerName(); }
     if (name === shownName) return;
     shownName = name;
@@ -1384,7 +1384,7 @@
     }
     const cid = info.cid || 'default';
     const dir = info.direction || 'out';
-    const name = info.name || 'TA';
+    const name = info.name || '他';
     // v3.26.x：开启「刷新后恢复通话」→ 重建通话 UI + 从接通时刻继续计时（TA 本地模拟，无需重连）
     if (callCfg().resume !== 0) {
       try {
@@ -1428,7 +1428,7 @@
   function writeInterruptRecord(info) {
     const cid = info.cid || 'default';
     const dir = info.direction || 'out';
-    const name = info.name || 'TA';
+    const name = info.name || '他';
     const dur = Math.max(0, Math.floor((info.ts - info.connectedTime) / 1000));
     const durTxt = dur > 0 ? ' · 时长 ' + fmtDur(dur) : '';
     const recText = '通话中断（页面刷新或异常退出）' + durTxt;
@@ -1901,7 +1901,7 @@
       cell.className = 'avlib-cell';
       const img = document.createElement('img');
       img.src = src;
-      img.alt = 'TA 的画面';
+      img.alt = '他 的画面';
       const del = document.createElement('button');
       del.className = 'avlib-del';
       del.type = 'button';

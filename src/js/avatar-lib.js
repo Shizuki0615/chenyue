@@ -140,7 +140,7 @@
     try { v = store.get(deskKey); } catch (e) {}
     return v || fb;
   }
-  function cPartnerName() { return chatName('cs-lbl-partner', 'lbl-partner', 'TA'); }
+  function cPartnerName() { return chatName('cs-lbl-partner', 'lbl-partner', '他'); }
   function cUserName() { return chatName('cs-lbl-user', 'lbl-user', '我'); }
 
   // v3.14.x：字符串哈希（djb2）——压缩落盘后聊天键与池内原图字节不同，
@@ -1195,7 +1195,7 @@
         showMeAvatarInvite(data);
         // v3.6.x：后台时弹窗不可见，发系统通知让用户知道有换头像邀请
         if (document.visibilityState === 'hidden' && window.bgNotifyCheck) {
-          const iname = store.get('lbl-partner') || 'TA';
+          const iname = store.get('lbl-partner') || '他';
           window.bgNotifyCheck(iname + ' 想给你换头像', Date.now(), { name: iname, img: data, kind: 'invite' });
         }
       } else {
@@ -1281,7 +1281,7 @@
         //  这里显式触发一条，避免只有聊天系统消息、后台用户没感知到换头像）
         try {
           if (window.bgNotifyCheck) {
-            window.bgNotifyCheck((store.get('lbl-partner') || 'TA') + ' 更换了头像', Date.now(), { name: store.get('lbl-partner') || 'TA', av: fit, kind: 'other' });
+            window.bgNotifyCheck((store.get('lbl-partner') || '他') + ' 更换了头像', Date.now(), { name: store.get('lbl-partner') || '他', av: fit, kind: 'other' });
           }
         } catch (e) {}
       });
@@ -1304,9 +1304,9 @@
   function applyPartnerNick(name) {
     // FIX 2026-09-18 #775e：旧名取「聊天里实际显示的值」（chatPartnerName 现含名片名回退），
     // 只看 cs-lbl-partner 会拿 'TA' 去扫、屏上旧名片名扫不掉
-    const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');
+    const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
     if (name) store.set('cs-lbl-partner', name); else store.remove('cs-lbl-partner');
-    const newEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');
+    const newEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
     if (oldEff !== newEff) {
       try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {}
     }
@@ -1334,10 +1334,10 @@
   // pokePersonMap 回填成当前昵称（所以写"TA 把…"读起来就是"{当前名} 把…"）；被引号包住的
   // 昵称若恰好含 TA/ta/他/她 这几个 token 仍会被该回填改写——与全站其它系统消息同一口径
   // （现有通话/红包/寻踪等消息都如此），本次不收窄，避免为病态昵称扩大 chat.js 改动面。
-  function nickMsgPartner(to) { return 'TA 把聊天昵称换成了「' + to + '」'; }
-  function nickMsgMeSet(to) { return '我把 TA 的聊天昵称换成了「' + to + '」'; }
+  function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }
+  function nickMsgMeSet(to) { return '我把 他 的聊天昵称换成了「' + to + '」'; }
   function nickMsgMeSelf(to) { return '我把自己的聊天昵称换成了「' + to + '」'; }
-  function nickMsgTaSetMine(to) { return 'TA 把我的聊天昵称换成了「' + to + '」'; }
+  function nickMsgTaSetMine(to) { return '他 把我的聊天昵称换成了「' + to + '」'; }
 
   // 换昵称的回应文案（对齐头像池 replyInvite：聊天消息 + 黑色小字 toast）
   // 「换成了「X」」里的 X 取**实际生效值**（先参数、参数无效则回落到键里已写入的值），
@@ -1345,8 +1345,8 @@
   function replyNickInvite(accepted, name) {
     const to = String(name || store.get('cs-lbl-partner') || '');
     const text = accepted
-      ? (to ? 'TA 同意了我的换昵称邀请，昵称换成了「' + to + '」' : 'TA 同意了我的换昵称邀请')
-      : 'TA 拒绝了我的换昵称邀请，昵称保持不变';
+      ? (to ? '他 同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他 同意了我的换昵称邀请')
+      : '他 拒绝了我的换昵称邀请，昵称保持不变';
     chatSystem(text, null, true);
     toast(text);
   }
@@ -1356,8 +1356,8 @@
   function replyMeNickInvite(accepted, name) {
     const to = String(name || store.get('cs-lbl-user') || '');
     const text = accepted
-      ? (to ? '我同意了 TA 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 TA 的换昵称邀请')
-      : '我拒绝了 TA 的换昵称邀请，昵称保持不变';
+      ? (to ? '我同意了 他 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 他 的换昵称邀请')
+      : '我拒绝了 他 的换昵称邀请，昵称保持不变';
     chatSystem(text, null, true);
   }
   // 手动点击 TA 的昵称池：立即换聊天昵称（cs-lbl-partner）
@@ -1469,7 +1469,7 @@
         showMeNickInvite(name);
         // 后台时弹窗不可见，发系统通知让用户知道有换昵称邀请
         if (document.visibilityState === 'hidden' && window.bgNotifyCheck) {
-          const iname = store.get('lbl-partner') || 'TA';
+          const iname = store.get('lbl-partner') || '他';
           window.bgNotifyCheck(iname + ' 想给你换昵称', Date.now(), { name: iname, kind: 'invite' });
         }
       } else {

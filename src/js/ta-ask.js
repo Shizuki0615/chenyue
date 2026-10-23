@@ -44,7 +44,7 @@
   function interactPoolInlineHtml(poolName) {
     const arr = window.getInteractPool ? window.getInteractPool(poolName, []) : [];
     if (!arr.length) return '';
-    return '<div class="tc-qopts">TA 回应：<span class="tc-known">系统</span> ' + arr.map(escG).join(' / ') + '</div>';
+    return '<div class="tc-qopts">他 回应：<span class="tc-known">系统</span> ' + arr.map(escG).join(' / ') + '</div>';
   }
   // #1315：系统预设字卡「整类停用」（共用件＝default-cards.js 的 window.presetGroup，键 pg-groups-off）。
   //   本文件四类（询问/小问题/好奇/吐槽）的分类就是它们的「分组」，页顶分类条上挂整类开关；
@@ -728,7 +728,7 @@
     // 「纯预设＋本次改动」整包写回＝库里自定义题被清空（作者报障同型：保存后自己的题没了）。
     // 判据用数据层那把唯一的尺 xyBigWriteBlocked（#1342d awaitingBigKey 五格证据，含回填未落定），
     // 拦下时照实 toast、绝不落笔；等库回填后再点一次即可（#1342「不把闸变成新的存不进去」）。
-    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, 'TA 的提问题库')) return false;
+    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '他 的提问题库')) return false;
     try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
     return true;
   }
@@ -925,7 +925,7 @@
     }
     // v3.5.146：提示语标记 ask-msg（渲染同 poke 但不算 notable）——否则提示语
     // 单独触发一条弹窗/通知，与下方卡片通知重复成 2 条
-    window.chatAddSystem('TA想问你一个问题。', { special: 'ask-msg' });
+    window.chatAddSystem('他想问你一个问题。', { special: 'ask-msg' });
     // v3.26.x：askTs 作为提问记录的稳定关联键（透传进 chat-msgs 记录，回答时据此更新 history）
     const askTs = Date.now();
     // #1480：题自带「最多N」（multiMax）随卡透传——手动作答那侧同受这道闸；没带＝0＝不限
@@ -941,7 +941,7 @@
     const idx = el ? Number(el.dataset.idx) : -1;
     // v3.5.141：后台收到互动卡片 → 系统通知提示
     // v3.5.146：通知文本合并提示语 + 具体问题（一条通知显示完整内容，不再两条）
-    if (window.bgNotifyCheck) window.bgNotifyCheck('TA想问你一个问题：' + q.text, Date.now(), { name: 'TA的询问', late: _lateNotify(), kind: 'ask' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck('他想问你一个问题：' + q.text, Date.now(), { name: '他的询问', late: _lateNotify(), kind: 'ask' });
     // v3.5.141：页面弹窗在后台不弹（不可见弹了也没用），只发系统通知
     // v3.6.x：用户正在聊天输入栏打字时不弹（弹窗会抢焦点打断输入法，见 chatInputFocused）
     // v3.12.x：冻结定时器回前台补跑（autoPopupStale 迟到）时同样不弹旧卡
@@ -1021,7 +1021,7 @@
       const msgs = (window.getChatMsgs ? window.getChatMsgs() : JSON.parse(store.get('chat-msgs') || '[]'));
       if (Array.isArray(msgs) && msgs[msgIdx]) question = msgs[msgIdx].askQuestion || msgs[msgIdx].text || '';
     } catch (e) {}
-    window.openModal('回答TA的询问', '', (v) => {
+    window.openModal('回答他的询问', '', (v) => {
       const answer = (v || '').trim();
       if (!answer) { toast('请输入回答'); return; }
       // 提交时再校验：索引仍指向本卡片则直接用，错位则重定位（防连点重定位到别的卡片）
@@ -1045,9 +1045,9 @@
         // v3.26.x：history 由 chatAskReply 包装层统一写（覆盖文字题 + 单选题点选项两条路径）
         window.chatAskReply(msgIdx, answer, pool[Math.floor(Math.random() * pool.length)]);
         }
-        toast('已回复TA的提问');
+        toast('已回复他的提问');
       }
-    }, { staticText: 'TA 问你：' + question, textareaPlaceholder: '输入你的回答…' });
+    }, { staticText: '他 问你：' + question, textareaPlaceholder: '输入你的回答…' });
   };
 
   // v3.26.x：包装 chatAskReply，把回答统一写进 ta-ask.history（关联键 askTs）。
@@ -1105,7 +1105,7 @@
     d.lastAskAt = Date.now();
     taAskSave(d);
     pushAsk(q, { popupProb: askPopupProb(s) });
-    toast('TA 在聊天里向你提问了');
+    toast('他 在聊天里向你提问了');
   };
   const nowBtn = document.getElementById('ta-ask-now');
   if (nowBtn) nowBtn.addEventListener('click', () => window.triggerTaAskNow());
@@ -1139,7 +1139,7 @@
     const d = taAskLoad();
     d.settings.enabled = askEn.checked;
     taAskSave(d);
-    toast(askEn.checked ? 'TA的询问已开启' : 'TA的询问已关闭');
+    toast(askEn.checked ? '他的询问已开启' : '他的询问已关闭');
   });
   const askDefault = document.getElementById('ta-ask-default');
   if (askDefault) askDefault.addEventListener('change', () => {
@@ -1394,7 +1394,7 @@
       '</select>' +
       '<div class="dec-inp-wrap ta-inp-flex"><input id="ta-new-' + blockKey + '" type="text" placeholder="添加问题…"><button type="button" class="dec-inp-clear" data-clear="ta-new-' + blockKey + '" aria-label="清空" title="清空">✕</button></div>' +
       '<button class="ta-add-btn" data-key="' + blockKey + '" data-cat="' + (cat || 'daily') + '" data-grp="' + (grp || '') + '">添加</button>' +
-      '<div class="dec-inp-wrap ta-opts-flex"><textarea id="ta-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~TA回应；多条回应用 ; 分隔，如 听我说说话~好，我在听。;嗯，你慢慢说。" hidden></textarea><button type="button" class="dec-inp-clear" data-clear="ta-opts-' + blockKey + '" aria-label="清空" title="清空">✕</button></div>' +
+      '<div class="dec-inp-wrap ta-opts-flex"><textarea id="ta-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~他回应；多条回应用 ; 分隔，如 听我说说话~好，我在听。;嗯，你慢慢说。" hidden></textarea><button type="button" class="dec-inp-clear" data-clear="ta-opts-' + blockKey + '" aria-label="清空" title="清空">✕</button></div>' +
       '</div>';
   }
   function renderAskMineWithForms(search) {
@@ -1648,13 +1648,13 @@ const TC_DEFAULT = [
     { id: "ch3", cat: "hypo", text: "如果可以拥有一个只属于两个人的地方，你会选哪？", pref: 1, options: [
       { t: "海边小屋", reply: ["听着潮声醒来","海边小屋？那天天吃海鲜","听着潮声醒来，身边是你","那窗户朝哪？我想朝海"], liked: false }, { t: "山顶小木屋", reply: ["看星星很方便","山顶木屋，数星星数到睡着","山顶看星星，只有我们两个","那有壁炉吗？我想要"], liked: false }, { t: "城市里的小公寓", reply: ["想和你过寻常日子","小公寓？那谁做饭谁洗碗？","寻常日子最难得，想和你过","那阳台种什么？我选绿萝"], liked: true }, { t: "心里", reply: ["最好的地方，是心里","心里？那我已经住进去了，不交房租","心里最好，我住得最安稳","那心里还有别人没？我查房"], liked: false }] },
     { id: "cs1", cat: "star", text: "如果两个世界可以短暂重叠，你最想做什么？", pref: 1, options: [
-      { t: "看见TA", reply: ["那就好好看看你","好好看？那我不化妆你等着","想好好看看你，记进心里","那看哪先？我准备好"], liked: false }, { t: "抱抱TA", reply: ["想确认你是真的","抱抱？那我不放手哦","想抱你，确认你是真的","那抱多久？我赖着"], liked: true }, { t: "一起出去走走", reply: ["一起走一段路也好","走走？那牵手走还是各走各的？","一起走一段，哪怕很短","那走哪条路？我挑"], liked: false }, { t: "什么都不做，只待在一起", reply: ["这样就够了","什么都不做？那大眼瞪小眼","待着就够，什么都不用","那待多久？我尽量"], liked: false }] },
+      { t: "看见他", reply: ["那就好好看看你","好好看？那我不化妆你等着","想好好看看你，记进心里","那看哪先？我准备好"], liked: false }, { t: "抱抱他", reply: ["想确认你是真的","抱抱？那我不放手哦","想抱你，确认你是真的","那抱多久？我赖着"], liked: true }, { t: "一起出去走走", reply: ["一起走一段路也好","走走？那牵手走还是各走各的？","一起走一段，哪怕很短","那走哪条路？我挑"], liked: false }, { t: "什么都不做，只待在一起", reply: ["这样就够了","什么都不做？那大眼瞪小眼","待着就够，什么都不用","那待多久？我尽量"], liked: false }] },
     { id: "cs2", cat: "star", text: "如果今晚能梦到你，你想梦见什么？", pref: 2, options: [
       { t: "一起去旅行", reply: ["醒来会遗憾的","梦里旅行？那梦里的机票我报销","梦到一起旅行，醒来会怅然","那去梦里哪？我先想好"], liked: false }, { t: "一起吃好吃的", reply: ["梦里也要想着你","梦里吃好吃的？那别吃我那份","梦里也和你一起，挺好","那梦里吃什么？我馋了"], liked: false }, { t: "只是静静聊天", reply: ["很温柔的一个梦","静静聊天？那梦里别吵我","温柔的梦，和你静静聊","那聊什么？梦里的话题"], liked: true }] },
     { id: "cs3", cat: "star", text: "如果可以给平行世界的我们留一句话，你会留什么？", pref: 2, options: [
       { t: "要好好在一起", reply: ["希望每个世界的我们都幸福","每个世界都幸福？那别的世界我嫉妒","希望每个我们都不错过","那别的世界我们在一起了吗？"], liked: true }, { t: "别吵架", reply: ["吵架了也要和好","别吵架？那对方惹你怎么办？","吵了也要和好，别冷战","那那边我们吵过没？"], liked: false }, { t: "相信彼此", reply: ["信任是最重要的","相信彼此？那别偷看我手机","信任是根，相信彼此","那那边我们信任度高吗？"], liked: false }, { t: "想见你", reply: ["……我也是","想见你？那穿越过去见啊","想见你，我也是","那那边能见到吗？"], liked: false }] },
     { id: "cs4", cat: "star", text: "如果你能听懂星星说的话，你最想问它什么？", pref: 2, options: [
-      { t: "我们会不会一直在一起", reply: ["星星会告诉我们答案","问星星？那星星可能含糊其辞","星星会答，我也想答，会一直在一起","那星星怎么说的？你转告"], liked: true }, { t: "下次流星什么时候来", reply: ["一起许愿吧","流星什么时候来？那得查星历","一起等流星，一起许愿","那许什么愿？先对暗号"], liked: false }, { t: "TA有没有想我", reply: ["……它说，想","星星说想？那星星嘴真甜","它说想，我就信了","那想多少？星星量化一下"], liked: false }, { t: "什么都不问", reply: ["安静地看，也很好","什么都不问？那看星星发呆","安静看也好，有些事不用问","那看哪颗？我指给你"], liked: false }] },
+      { t: "我们会不会一直在一起", reply: ["星星会告诉我们答案","问星星？那星星可能含糊其辞","星星会答，我也想答，会一直在一起","那星星怎么说的？你转告"], liked: true }, { t: "下次流星什么时候来", reply: ["一起许愿吧","流星什么时候来？那得查星历","一起等流星，一起许愿","那许什么愿？先对暗号"], liked: false }, { t: "他有没有想我", reply: ["……它说，想","星星说想？那星星嘴真甜","它说想，我就信了","那想多少？星星量化一下"], liked: false }, { t: "什么都不问", reply: ["安静地看，也很好","什么都不问？那看星星发呆","安静看也好，有些事不用问","那看哪颗？我指给你"], liked: false }] },
     { id: "cw1", cat: "world", text: "我有时候能感觉到你在我身边，你呢，能感觉到我吗？", pref: 0, options: [
       { t: "能感觉到", reply: ["那就好，我其实一直在","能感觉到？那你第六感挺准","我一直在，你能感觉到，我就安心","那什么时候感觉最强烈？"], liked: true }, { t: "偶尔能", reply: ["偶尔也很好，慢慢就会更清楚","偶尔能？那偶尔是多久一次？","偶尔也好，慢慢会更近","那偶尔是什么时候？我多出现"], liked: false }, { t: "不太确定", reply: ["没关系，我会想办法让你更容易感觉到我","不确定？那我再靠近一点","没关系，我多靠近，让你确定","那怎样你才能确定？我改"], liked: false }] },
     { id: "cw2", cat: "world", text: "你更喜欢我用字卡跟你说话，还是直接感觉到我？", pref: 1, options: [
@@ -1905,7 +1905,7 @@ const TC_DEFAULT = [
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function tcSave(d) {
-    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, 'TA 的小问题库')) return false;
+    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, '他 的小问题库')) return false;
     try { store.set(KEY2, JSON.stringify(d)); } catch (e) {}
     return true;
   }
@@ -1934,14 +1934,14 @@ const TC_DEFAULT = [
     if (opts && typeof opts.popupProb === 'number') popup = Math.random() * 100 < opts.popupProb;
     else if (opts && opts.popup === false) popup = false;
     // v3.5.146：提示语标记 ask-msg（不算 notable，避免与卡片通知重复成两条）
-    window.chatAddSystem('TA想让你选一个答案。', { special: 'ask-msg' });
+    window.chatAddSystem('他想让你选一个答案。', { special: 'ask-msg' });
     const el = window.chatAddSystem(q.text, {
       special: 'ask-choose', choiceQuestion: q.text, choiceOptions: q.options, choicePref: q.pref, choiceCat: q.cat || ''
     });
     const idx = el ? Number(el.dataset.idx) : -1;
     // v3.5.141：后台收到互动卡片 → 系统通知提示
     // v3.5.146：通知文本合并提示语 + 具体问题
-    if (window.bgNotifyCheck) window.bgNotifyCheck('TA想让你选一个答案：' + q.text, Date.now(), { name: 'TA的小问题', late: _lateNotify(), kind: 'ask' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck('他想让你选一个答案：' + q.text, Date.now(), { name: '他的小问题', late: _lateNotify(), kind: 'ask' });
     // v3.12.x：迟到弹窗守卫（冻结定时器回前台补跑不再弹旧卡，见 autoPopupStale）
     if (popup) {
       if (document.hidden) { _enqueuePop(idx, 'openTC'); }
@@ -2052,11 +2052,11 @@ window.openTCPanel = openTCPanel;
     if (!rec || rec.special !== 'ask-choose') return;
     if (rec.choiceStatus === 'answered') { renderTCResult(msgIdx); return; }
     const opts = rec.choiceOptions || [];
-    let html = '<div class="tc-hint">TA想问你</div><div class="tc-q">' + ((rec.choiceQuestion || rec.text || '')) + '</div>';
+    let html = '<div class="tc-hint">他想问你</div><div class="tc-q">' + ((rec.choiceQuestion || rec.text || '')) + '</div>';
     opts.forEach((o, i) => {
       html += '<div class="tc-opt" data-i="' + i + '">' + String(o.t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     });
-    openTCPanel('TA的小问题', html);
+    openTCPanel('他的小问题', html);
     document.querySelectorAll('#tc-body .tc-opt').forEach(el => {
       el.addEventListener('click', () => {
         const i = Number(el.dataset.i);
@@ -2082,8 +2082,8 @@ window.openTCPanel = openTCPanel;
     const isPref = optIdx === prefIdx;
     const isLiked = opt.liked === true || opt.liked === 'true';
     const matchTxt = isPref ? '✦ 刚好想到了一起'
-      : isLiked ? '你们想得不一样，不过TA似乎很喜欢你的答案'
-      : '这次没有选到一起。TA心里想的是：「' + prefTxt + '」';
+      : isLiked ? '你们想得不一样，不过他似乎很喜欢你的答案'
+      : '这次没有选到一起。他心里想的是：「' + prefTxt + '」';
     // v3.5.128：不再预写 rec 字段——getChatMsgs 返回的是 chat.js 内存对象引用，
     // 预写会让 chatChooseReply 的 answered 守卫早退（回答消息丢失）。
     // 持久化 + 写回 + 推消息统一由 chatChooseReply 完成（v3.7.x：传选项对象，内部做混合随机回应）
@@ -2120,17 +2120,17 @@ window.openTCPanel = openTCPanel;
     html += '<div class="tc-res-head"><span>你的选择</span><button class="tc-fav-btn" id="tc-fav">' + (existed ? '★' : '☆') + '</button></div>';
     html += '<div class="tc-res-mine">' + String(rec.choiceAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     if (!isPref) {
-      html += '<div class="tc-res-label">TA心里的答案</div><div class="tc-res-pref">' + String(prefTxt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
+      html += '<div class="tc-res-label">他心里的答案</div><div class="tc-res-pref">' + String(prefTxt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     }
     html += '<div class="tc-res-line"></div>';
     const _chShow = (window.askCardReplyClean ? window.askCardReplyClean(rec.choiceReply || '') : (rec.choiceReply || '')); // FIX 2026-09-17 #648 存量媒体卡回应清洗后展示
-    html += '<div class="tc-res-reply"><b>' + (window.taFit ? window.taFit('TA：') : 'TA：') + '</b>“' + String(window.taFit ? window.taFit(_chShow) : _chShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>';
+    html += '<div class="tc-res-reply"><b>' + (window.taFit ? window.taFit('他：') : '他：') + '</b>“' + String(window.taFit ? window.taFit(_chShow) : _chShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>';
     html += '<div class="tc-res-match ' + (isPref ? 'pref' : '') + '">' + String(rec.choiceMatch || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     if (Math.random() < 0.4 && _tcChain < 2) {
-      html += '<div class="tc-res-cont" id="tc-cont">TA还想问一个 ▸</div>';
+      html += '<div class="tc-res-cont" id="tc-cont">他还想问一个 ▸</div>';
     }
     html += '<div class="tc-res-close" id="tc-close2">收起来</div>';
-    openTCPanel('TA的小问题', html);
+    openTCPanel('他的小问题', html);
     const favBtn = document.getElementById('tc-fav');
     if (favBtn) {
       favBtn.addEventListener('click', () => {
@@ -2144,7 +2144,7 @@ window.openTCPanel = openTCPanel;
     const cont = document.getElementById('tc-cont');
     if (cont) {
       cont.addEventListener('click', () => {
-        if (_tcChain >= 2) { toast('今天TA问得够多啦'); document.getElementById('tc-mask').hidden = true; return; }
+        if (_tcChain >= 2) { toast('今天他问得够多啦'); document.getElementById('tc-mask').hidden = true; return; }
         const d2 = tcLoad();
         const q = tcPick(d2);
         if (!q) return;
@@ -2422,7 +2422,7 @@ window.openTCPanel = openTCPanel;
       const d = tcLoad();
       d.settings.enabled = tcEn.checked;
       tcSave(d);
-      toast(tcEn.checked ? 'TA的小问题已开启' : 'TA的小问题已关闭');
+      toast(tcEn.checked ? '他的小问题已开启' : '他的小问题已关闭');
     });
   }
   const tcDefault = document.getElementById('tc-default');
@@ -2530,7 +2530,7 @@ window.openTCPanel = openTCPanel;
     if (!q) { toast('题库没有可用的问题'); return; }
     const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
     tcPush(q, { popupProb: askPopupProb(s) });
-    toast('TA 在聊天里向你提问了');
+    toast('他 在聊天里向你提问了');
   };
   const tcNow = document.getElementById('tc-now');
   if (tcNow) tcNow.addEventListener('click', () => window.triggerTaChooseNow());
@@ -2546,7 +2546,7 @@ window.openTCPanel = openTCPanel;
         html += '<div class="tc-listitem"><div class="tc-li-top"><span class="tc-li-q">[' + (TC_CAT_LABEL[f.cat] || '') + '] ' + f.q + '</span>' +
           '<button class="tc-li-del" data-i="' + i + '" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg></button></div>' +
           (f.my ? '<div class="tc-li-line">你当时选了：' + f.my + '</div>' : '') +
-          (f.reply ? '<div class="tc-li-line">TA回应：' + taReplyShow(f.reply) + '</div>' : '') +
+          (f.reply ? '<div class="tc-li-line">他回应：' + taReplyShow(f.reply) + '</div>' : '') +
           '<div class="tc-li-time">收藏于 ' + time + '</div></div>';
       });
       openTCPanel('收藏', html);
@@ -2564,7 +2564,7 @@ window.openTCPanel = openTCPanel;
   // ================= TA的好奇（复刻星言 ta的好奇 完整版） =================
   // 定位：TA 偶尔对你产生一个具体、带有兴趣的开放式问题，只想了解你
   const KEY3 = 'ta-curious';
-  const TCU_CAT_LABEL = { you: '关于你', mood: '情绪', daily: '日常', past: '过去', like: '喜好', think: '想法', us: '你和TA', world: '两个世界' };
+  const TCU_CAT_LABEL = { you: '关于你', mood: '情绪', daily: '日常', past: '过去', like: '喜好', think: '想法', us: '你和他', world: '两个世界' };
   const TCU_CAT_ORDER = ['you', 'mood', 'daily', 'past', 'like', 'think', 'us', 'world'];
   const TCU_FALLBACK = ['原来是这样', '这个我还真不知道', '突然有点想听你多说一点', '嗯，我记住了', '没想到你是这样的', '和你聊这些，感觉又懂了你一点', '这样啊，挺好的', '好，我记住你说的了'];
   const TCU_DEFAULT = [
@@ -2789,7 +2789,7 @@ window.openTCPanel = openTCPanel;
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function tcuSave(d) {
-    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, 'TA 的好奇题库')) return false;
+    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, '他 的好奇题库')) return false;
     try { store.set(KEY3, JSON.stringify(d)); } catch (e) {}
     return true;
   }
@@ -2821,7 +2821,7 @@ window.openTCPanel = openTCPanel;
     if (opts && typeof opts.popupProb === 'number') popup = Math.random() * 100 < opts.popupProb;
     else if (opts && opts.popup === false) popup = false;
     // v3.5.146：提示语标记 ask-msg（不算 notable，避免与卡片通知重复成两条）
-    window.chatAddSystem('TA对你有点好奇。', { special: 'ask-msg' });
+    window.chatAddSystem('他对你有点好奇。', { special: 'ask-msg' });
     const el = window.chatAddSystem(q.text, {
       special: 'ask-curious', curiousQuestion: q.text, curiousQuick: q.quick || [], curiousReplies: q.replies || [],
       curiousFollowup: q.followup || '', curiousQid: q.id || '', curiousCat: q.cat || ''
@@ -2829,7 +2829,7 @@ window.openTCPanel = openTCPanel;
     const idx = el ? Number(el.dataset.idx) : -1;
     // v3.5.141：后台收到互动卡片 → 系统通知提示
     // v3.5.146：通知文本合并提示语 + 具体问题
-    if (window.bgNotifyCheck) window.bgNotifyCheck('TA对你有点好奇：' + q.text, Date.now(), { name: 'TA的好奇', late: _lateNotify(), kind: 'ask' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck('他对你有点好奇：' + q.text, Date.now(), { name: '他的好奇', late: _lateNotify(), kind: 'ask' });
     // v3.6.x：用户正在聊天输入栏打字时不弹（弹窗会抢焦点打断输入法，见 chatInputFocused）
     // v3.12.x：迟到弹窗守卫（冻结定时器回前台补跑不再弹旧卡，见 autoPopupStale）
     if (popup) {
@@ -2880,14 +2880,14 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('TA的好奇') : 'TA的好奇';
-    let html = '<div class="qa-hint">TA有点好奇</div><div class="qa-q">' + String(rec.curiousQuestion || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
+    if (title) title.textContent = window.taFit ? window.taFit('他的好奇') : '他的好奇';
+    let html = '<div class="qa-hint">他有点好奇</div><div class="qa-q">' + String(rec.curiousQuestion || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     const quicks = rec.curiousQuick || [];
     if (quicks.length) {
       html += '<div class="qa-quicks">' + quicks.map(x => '<span class="qa-chip" data-v="' + String(x).replace(/"/g, '&quot;') + '">' + String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</span>').join('') + '</div>';
     }
     html += '<input id="qa-input" class="qa-input" type="text" placeholder="输入你的回答…">';
-    html += '<button class="qa-send" id="qa-send">告诉TA</button>';
+    html += '<button class="qa-send" id="qa-send">告诉他</button>';
     body.innerHTML = html;
     mask.hidden = false;
     body.querySelectorAll('.qa-chip').forEach(c => {
@@ -2899,7 +2899,7 @@ window.openTCPanel = openTCPanel;
     const send = () => {
       const inp = document.getElementById('qa-input');
       const answer = inp ? inp.value.trim() : '';
-      if (!answer) { toast('告诉TA点什么吧'); return; }
+      if (!answer) { toast('告诉他点什么吧'); return; }
       submitCurious(msgIdx, answer);
     };
     document.getElementById('qa-send').addEventListener('click', send);
@@ -2947,11 +2947,11 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('TA的好奇') : 'TA的好奇';
+    if (title) title.textContent = window.taFit ? window.taFit('他的好奇') : '他的好奇';
     const _crShow = (window.askCardReplyClean ? window.askCardReplyClean(rec.curiousReply || '') : (rec.curiousReply || '')); // FIX 2026-09-17 #648 存量媒体卡回应清洗后展示
     body.innerHTML = '<div class="qa-q">' + String(rec.curiousQuestion || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
       '<div class="qa-mine">你说：' + String(rec.curiousAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
-      '<div class="qa-reply"><b>' + (window.taFit ? window.taFit('TA：') : 'TA：') + '</b>“' + String(window.taFit ? window.taFit(_crShow) : _crShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+      '<div class="qa-reply"><b>' + (window.taFit ? window.taFit('他：') : '他：') + '</b>“' + String(window.taFit ? window.taFit(_crShow) : _crShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
       '<div class="qa-close" id="qa-close2">收起来</div>';
     mask.hidden = false;
     document.getElementById('qa-close2').addEventListener('click', () => { mask.hidden = true; });
@@ -3007,7 +3007,7 @@ window.openTCPanel = openTCPanel;
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
           '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known">系统</span></div>' +
           (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
-          (q.replies && q.replies.length ? '<div class="tc-qopts">TA 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
+          (q.replies && q.replies.length ? '<div class="tc-qopts">他 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
           '</div></div>';
       });
       container.innerHTML = html;
@@ -3040,7 +3040,7 @@ window.openTCPanel = openTCPanel;
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
           '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + (preset ? ' <span class="tc-known">系统</span>' : '') + '</div>' +
           (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
-          (q.replies && q.replies.length ? '<div class="tc-qopts">TA 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
+          (q.replies && q.replies.length ? '<div class="tc-qopts">他 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
           '</div>' + delBtn + '</div>';
       });
     });
@@ -3133,7 +3133,7 @@ window.openTCPanel = openTCPanel;
     });
   }
   const tcuEn = document.getElementById('tcu-enable');
-  if (tcuEn) tcuEn.addEventListener('change', () => { const d = tcuLoad(); d.settings.enabled = tcuEn.checked; tcuSave(d); toast(tcuEn.checked ? 'TA的好奇已开启' : 'TA的好奇已关闭'); });
+  if (tcuEn) tcuEn.addEventListener('change', () => { const d = tcuLoad(); d.settings.enabled = tcuEn.checked; tcuSave(d); toast(tcuEn.checked ? '他的好奇已开启' : '他的好奇已关闭'); });
   const tcuDefault = document.getElementById('tcu-default');
   if (tcuDefault) tcuDefault.addEventListener('change', () => {
     const d = tcuLoad(); d.settings.useDefault = tcuDefault.checked; tcuSave(d);
@@ -3153,7 +3153,7 @@ window.openTCPanel = openTCPanel;
     toast('弹窗概率已设为 ' + tcuPopup.value + '%');
   });
   const tcuFu = document.getElementById('tcu-followup');
-  if (tcuFu) tcuFu.addEventListener('change', () => { const d = tcuLoad(); d.settings.followup = tcuFu.checked; tcuSave(d); toast(tcuFu.checked ? 'TA 偶尔会自然追问' : 'TA 不再追问'); });
+  if (tcuFu) tcuFu.addEventListener('change', () => { const d = tcuLoad(); d.settings.followup = tcuFu.checked; tcuSave(d); toast(tcuFu.checked ? '他 偶尔会自然追问' : '他 不再追问'); });
   const tcuAdd = document.getElementById('tcu-new-add');
   if (tcuAdd) {
     // v3.7.x：分类下拉注入「我的分组」+「＋ 新建分组…」
@@ -3215,7 +3215,7 @@ window.openTCPanel = openTCPanel;
     if (!q) { toast('题库没有可用的问题'); return; }
     const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
     tcuPush(q, { popupProb: askPopupProb(s) });
-    toast('TA 在聊天里向你好奇了');
+    toast('他 在聊天里向你好奇了');
   };
   const tcuNow = document.getElementById('tcu-now');
   if (tcuNow) tcuNow.addEventListener('click', () => window.triggerTaCuriousNow());
@@ -3397,7 +3397,7 @@ window.openTCPanel = openTCPanel;
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function trSave(d) {
-    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, 'TA 的吐槽题库')) return false;
+    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的吐槽题库')) return false;
     try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
     return true;
   }
@@ -3426,12 +3426,12 @@ window.openTCPanel = openTCPanel;
     if (opts && typeof opts.popupProb === 'number') popup = Math.random() * 100 < opts.popupProb;
     else if (opts && opts.popup === false) popup = false;
     // v3.5.146：提示语标记 ask-msg（不算 notable，避免与卡片通知重复成两条）
-    window.chatAddSystem('TA吐槽了你一句。', { special: 'ask-msg' });
+    window.chatAddSystem('他吐槽了你一句。', { special: 'ask-msg' });
     const el = window.chatAddSystem(q.text, { special: 'ask-roast', roastText: q.text, roastCat: q.cat || 'light' });
     const idx = el ? Number(el.dataset.idx) : -1;
     // v3.5.141：后台收到互动卡片 → 系统通知提示
     // v3.5.146：通知文本合并提示语 + 具体内容
-    if (window.bgNotifyCheck) window.bgNotifyCheck('TA吐槽了你一句：' + q.text, Date.now(), { name: 'TA的吐槽', late: _lateNotify(), kind: 'ask' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck('他吐槽了你一句：' + q.text, Date.now(), { name: '他的吐槽', late: _lateNotify(), kind: 'ask' });
     // v3.6.x：用户正在聊天输入栏打字时不弹（弹窗会抢焦点打断输入法，见 chatInputFocused）
     // v3.12.x：迟到弹窗守卫（冻结定时器回前台补跑不再弹旧卡，见 autoPopupStale）
     if (popup) {
@@ -3526,7 +3526,7 @@ window.openTCPanel = openTCPanel;
       ccStateSave(st);
       interactGateMark();
       if (window.chatAddIn) window.chatAddIn(text, { initiative: 1, tag: '用了你建的字卡' });
-      if (window.bgNotifyCheck) { try { window.bgNotifyCheck(text, Date.now(), { name: window.taFit ? window.taFit('TA') + '的字卡' : 'TA的字卡', kind: 'msg' }); } catch (e) {} }
+      if (window.bgNotifyCheck) { try { window.bgNotifyCheck(text, Date.now(), { name: window.taFit ? window.taFit('他') + '的字卡' : '他的字卡', kind: 'msg' }); } catch (e) {} }
     } catch (e) {}
   }
   window.maybeTriggerTACC = maybeTriggerTACC;
@@ -3548,15 +3548,15 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('TA的吐槽') : 'TA的吐槽';
-    body.innerHTML = '<div class="qa-hint">TA 吐槽你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
-      '<input id="qa-input" class="qa-input" type="text" placeholder="回 TA 一句…">' +
-      '<button class="qa-send" id="qa-send">回TA一句</button>';
+    if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
+    body.innerHTML = '<div class="qa-hint">他 吐槽你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+      '<input id="qa-input" class="qa-input" type="text" placeholder="回 他 一句…">' +
+      '<button class="qa-send" id="qa-send">回他一句</button>';
     mask.hidden = false;
     const send = () => {
       const inp = document.getElementById('qa-input');
       const answer = inp ? inp.value.trim() : '';
-      if (!answer) { toast('回TA一句吧'); return; }
+      if (!answer) { toast('回他一句吧'); return; }
       submitRoast(msgIdx, answer);
     };
     document.getElementById('qa-send').addEventListener('click', send);
@@ -3601,11 +3601,11 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('TA的吐槽') : 'TA的吐槽';
+    if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
     const _trShow = (window.askCardReplyClean ? window.askCardReplyClean(rec.roastReply || '') : (rec.roastReply || '')); // FIX 2026-09-17 #648 存量媒体卡回应清洗后展示
     body.innerHTML = '<div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
       '<div class="qa-mine">你说：' + String(rec.roastAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
-      '<div class="qa-reply"><b>' + (window.taFit ? window.taFit('TA：') : 'TA：') + '</b>“' + String(window.taFit ? window.taFit(_trShow) : _trShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+      '<div class="qa-reply"><b>' + (window.taFit ? window.taFit('他：') : '他：') + '</b>“' + String(window.taFit ? window.taFit(_trShow) : _trShow).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
       '<div class="qa-close" id="qa-close2">收起来</div>';
     mask.hidden = false;
     document.getElementById('qa-close2').addEventListener('click', () => { mask.hidden = true; });
@@ -3780,7 +3780,7 @@ window.openTCPanel = openTCPanel;
     });
   }
   const trEn = document.getElementById('tr-enable');
-  if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? 'TA的吐槽已开启' : 'TA的吐槽已关闭'); });
+  if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? '他的吐槽已开启' : '他的吐槽已关闭'); });
   const trDefault = document.getElementById('tr-default');
   if (trDefault) trDefault.addEventListener('change', () => {
     const d = trLoad(); d.settings.useDefault = trDefault.checked; trSave(d);
@@ -3856,7 +3856,7 @@ window.openTCPanel = openTCPanel;
     if (!q) { toast('题库没有可用吐槽'); return; }
     const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
     trPush(q, { popupProb: askPopupProb(s) });
-    toast('TA 在聊天里吐槽你了');
+    toast('他 在聊天里吐槽你了');
   };
   const trNow = document.getElementById('tr-now');
   if (trNow) trNow.addEventListener('click', () => window.triggerTaRoastNow());
@@ -3976,7 +3976,7 @@ window.openTCPanel = openTCPanel;
     if (askEl) {
       const h = allDeskHistories('ta-ask');
       askListRender(askEl, h, 'ta-ask', '询问', function (x) {
-        return '<div class="tc-li-q">问：' + escG(x.q) + '</div>' + (x.status === 'pending' ? '<div class="tc-li-pending">待回答</div>' : '<div class="tc-li-line">你：' + escG(x.a) + '</div>' + (x.reply ? '<div class="tc-li-line">' + (window.taFit ? window.taFit('TA：') : 'TA：') + taReplyShow(x.reply) + '</div>' : '')) + '<div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
+        return '<div class="tc-li-q">问：' + escG(x.q) + '</div>' + (x.status === 'pending' ? '<div class="tc-li-pending">待回答</div>' : '<div class="tc-li-line">你：' + escG(x.a) + '</div>' + (x.reply ? '<div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div>' : '')) + '<div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
     // TA的小问题
@@ -3984,7 +3984,7 @@ window.openTCPanel = openTCPanel;
     if (chEl) {
       const h = allDeskHistories(KEY2);
       askListRender(chEl, h, KEY2, '小问题', function (x) {
-        return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你的选择：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('TA：') : 'TA：') + taReplyShow(x.reply) + '</div><div class="tc-li-match">' + escG(x.match) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
+        return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你的选择：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-match">' + escG(x.match) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
     // TA的好奇
@@ -3992,7 +3992,7 @@ window.openTCPanel = openTCPanel;
     if (cuEl) {
       const h = allDeskHistories(KEY3);
       askListRender(cuEl, h, KEY3, '好奇', function (x) {
-        return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('TA：') : 'TA：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
+        return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
     // TA的吐槽
@@ -4000,7 +4000,7 @@ window.openTCPanel = openTCPanel;
     if (roEl) {
       const h = allDeskHistories(KEY4);
       askListRender(roEl, h, KEY4, '吐槽', function (x) {
-        return '<div class="tc-li-q">' + escG(x.roast) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('TA：') : 'TA：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
+        return '<div class="tc-li-q">' + escG(x.roast) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
     // 邀请（我发出的邀请）与 问问 TA（我向 TA 的提问）拆成两个独立 tab：数据源仍是同一键
@@ -4008,7 +4008,7 @@ window.openTCPanel = openTCPanel;
     const inviteRow = function (x) {
       return '<div class="tc-li-q">' +
         (x.type === 'invite' ? '邀请：' : '问：') + String(x.q || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
-        '<div class="tc-li-line">' + (window.taFit ? window.taFit('TA：') : 'TA：') + escG(window.taFit ? window.taFit(window.askCardReplyClean ? window.askCardReplyClean(x.a || '') : (x.a || '')) : (window.askCardReplyClean ? window.askCardReplyClean(x.a || '') : (x.a || ''))) + '</div>' +
+        '<div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + escG(window.taFit ? window.taFit(window.askCardReplyClean ? window.askCardReplyClean(x.a || '') : (x.a || '')) : (window.askCardReplyClean ? window.askCardReplyClean(x.a || '') : (x.a || ''))) + '</div>' +
         '<div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
     };
     // 邀请
@@ -4021,7 +4021,7 @@ window.openTCPanel = openTCPanel;
     const qaEl = document.getElementById('ar-askq');
     if (qaEl) {
       const h = allDeskHistories('invite-ask-history');
-      askListRender(qaEl, h.filter(function (x) { return !(x && x.type === 'invite'); }), 'invite-ask-history', '问问TA', inviteRow);
+      askListRender(qaEl, h.filter(function (x) { return !(x && x.type === 'invite'); }), 'invite-ask-history', '问问他', inviteRow);
     }
   };
   // 清空各桌面记录：读改写保留题库/设置/分组，只清 history（或裸数组本身）
@@ -4091,7 +4091,7 @@ window.openTCPanel = openTCPanel;
     });
   };
   clearByType('ar-invite-clear', function (x) { return x && x.type === 'invite'; }, '邀请');
-  clearByType('ar-askq-clear', function (x) { return !(x && x.type === 'invite'); }, '问问TA');
+  clearByType('ar-askq-clear', function (x) { return !(x && x.type === 'invite'); }, '问问他');
 
   // 提问记录：横排 6 个分类 tab 切换
   document.querySelectorAll('#page-interact .fav-tab').forEach(tab => {
@@ -4139,10 +4139,10 @@ window.openTCPanel = openTCPanel;
   // v3.9.x：注册 TA 询问/小问题/好奇/吐槽跨分类搜索
   window.__cardSearchFns = window.__cardSearchFns || [];
   [
-    { name: 'TA的询问', load: taAskLoad },
-    { name: 'TA的小问题', load: tcLoad },
-    { name: 'TA的好奇', load: tcuLoad },
-    { name: 'TA的吐槽', load: trLoad }
+    { name: '他的询问', load: taAskLoad },
+    { name: '他的小问题', load: tcLoad },
+    { name: '他的好奇', load: tcuLoad },
+    { name: '他的吐槽', load: trLoad }
   ].forEach(function (it) {
     window.__cardSearchFns.push({ name: it.name, fn: function (kw) {
       const out = [];
@@ -4361,7 +4361,7 @@ window.openTCPanel = openTCPanel;
       surveySave(d2);
       surveySyncCard(d2); // v3.33.x #521：交卷态回写聊天问卷卡片
       if (notify) {
-        try { window.chatAddSystem(early ? 'TA 提前交卷了（共 ' + d2.qs.length + ' 题）。' : 'TA 交卷了（共 ' + d2.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
+        try { window.chatAddSystem(early ? '他 提前交卷了（共 ' + d2.qs.length + ' 题）。' : '他 交卷了（共 ' + d2.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
       }
       surveyRender();
     };
@@ -4384,7 +4384,7 @@ window.openTCPanel = openTCPanel;
   setInterval(surveyTick, 30000);
   function surveySend() {
     const d = surveyLoad();
-    if (d.status === 'sent') { toast('问卷已发出，TA 正在作答'); return; }
+    if (d.status === 'sent') { toast('问卷已发出，他 正在作答'); return; }
     // v3.33.x #523：已交卷（done）允许直接再发一轮（用户要「重复提交给联系人作答」）——
     // 这里照常把 status 重置为 sent、answers 清空、插入新的问卷卡片，等于开启新一轮作答。
     const tEl = document.getElementById('ta-survey-text');
@@ -4393,7 +4393,7 @@ window.openTCPanel = openTCPanel;
     if (d.settings.deadline && d.settings.deadline <= Date.now()) { toast('交卷时间已过期，请重新设置'); return; }
     d.status = 'sent'; d.sentAt = Date.now(); d.answers = []; d.doneMsgAt = 0;
     surveySave(d);
-    try { window.chatAddSystem('你向TA发出了一份问卷（' + d.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
+    try { window.chatAddSystem('你向他发出了一份问卷（' + d.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
     // v3.33.x #521：问卷本体以长卡片插入聊天（ask-survey）——与单题 ask-card 同层级观感；
     // 题列表快照随消息持久化，作答进度由 surveySyncCard→chatSyncSurveyCard 回写
     try {
@@ -4406,7 +4406,7 @@ window.openTCPanel = openTCPanel;
       });
     } catch (e) {}
     surveyRender();
-    toast('问卷已发出，TA 开始作答');
+    toast('问卷已发出，他 开始作答');
     // v3.33.x #523：发出后自动关闭批量设置页、回聊天看问卷卡片（用户报「点了发出没返回聊天页」）
     surveyGoChat();
   }
@@ -4435,11 +4435,11 @@ window.openTCPanel = openTCPanel;
         const cap = (typeof window.askMultiMaxLoad === 'function' ? window.askMultiMaxLoad() : 3);
         // #1480：有题自带「最多N」时点名说明——杆上那格只是没单独限选的题的默认档
         const nCap = d.qs.filter(q => q.type === 'multi' && q.multiMax >= 2).length;
-        st.innerHTML = '当前状态：草稿 —— 已解析 <b>' + d.qs.length + '</b> 题' + brk + (nM ? '；多选题' + (nCap ? nCap + ' 题单独限选、其余' : '') + '每次最多选 ' + cap + ' 个。' : '。') + '填好后点「发出问卷给TA」。';
+        st.innerHTML = '当前状态：草稿 —— 已解析 <b>' + d.qs.length + '</b> 题' + brk + (nM ? '；多选题' + (nCap ? nCap + ' 题单独限选、其余' : '') + '每次最多选 ' + cap + ' 个。' : '。') + '填好后点「发出问卷给他」。';
       } else if (d.status === 'sent') {
-        st.innerHTML = '当前状态：TA 作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
+        st.innerHTML = '当前状态：他 作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
       } else {
-        st.innerHTML = '当前状态：已交卷 —— 共 ' + d.qs.length + ' 题。可直接再点「发出问卷给TA」重新提交一轮（清空上一轮作答、在聊天里插入新的问卷卡片）。';
+        st.innerHTML = '当前状态：已交卷 —— 共 ' + d.qs.length + ' 题。可直接再点「发出问卷给他」重新提交一轮（清空上一轮作答、在聊天里插入新的问卷卡片）。';
       }
     }
   }
@@ -4480,7 +4480,7 @@ window.openTCPanel = openTCPanel;
       const favStates = qs.map(q => !!bankSet[String((q && q.text) || '').trim()]);
       const actBtnCss = 'border:1px solid rgba(127,127,127,.3);background:rgba(127,127,127,.12);color:var(--ink);border-radius:99px;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer';
       let html = '';
-      html += '<div class="tc-hint">' + escT('你发出的问卷 · 共 ' + qs.length + ' 题 · ' + (done ? '已交卷' : 'TA 作答中（已答 ' + nDone + '/' + qs.length + '）')) + (rec && rec.surveyTs ? '<br>' + escT('发出时间：' + fmtDeadlineText(rec.surveyTs)) : '') + '</div>';
+      html += '<div class="tc-hint">' + escT('你发出的问卷 · 共 ' + qs.length + ' 题 · ' + (done ? '已交卷' : '他 作答中（已答 ' + nDone + '/' + qs.length + '）')) + (rec && rec.surveyTs ? '<br>' + escT('发出时间：' + fmtDeadlineText(rec.surveyTs)) : '') + '</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 2px">' +
         '<button id="sv-fav-card" style="' + actBtnCss + '">♡ 收藏整份问卷</button>' +
         '<button id="sv-fav-allbtn" style="' + actBtnCss + '">★ 全部收藏题目</button>' +
@@ -4501,7 +4501,7 @@ window.openTCPanel = openTCPanel;
           '<span class="sv-fav-state" data-i="' + i + '" style="font-size:11px;font-weight:600;color:#c2864b;flex-shrink:0;white-space:nowrap">' + (favStates[i] ? '★ 已收藏' : '') + '</span>' +
           '</div>' +
           (opts ? '<div class="tc-li-line">选项：' + escT(opts.join(' / ')) + '</div>' : '') +
-          (aTxt ? '<div class="tc-li-line" style="color:#3b7a4e;font-weight:600">TA：' + escT(aTxt) + '</div>' : '<div class="tc-li-line">（未作答）</div>') +
+          (aTxt ? '<div class="tc-li-line" style="color:#3b7a4e;font-weight:600">他：' + escT(aTxt) + '</div>' : '<div class="tc-li-line">（未作答）</div>') +
           '</div>';
       });
       html += '</div>';
@@ -4532,7 +4532,7 @@ window.openTCPanel = openTCPanel;
         bankSet = bankTexts();
         qs.forEach((q, i) => { favStates[i] = !!bankSet[String((q && q.text) || '').trim()]; });
         syncStates();
-        toast('已收藏 ' + added + ' 道题到问问TA题库' + (dup ? '（' + dup + ' 道已在题库）' : ''));
+        toast('已收藏 ' + added + ' 道题到问问他题库' + (dup ? '（' + dup + ' 道已在题库）' : ''));
       };
       const cardBtn = document.getElementById('sv-fav-card');
       if (cardBtn) cardBtn.addEventListener('click', () => {
@@ -4635,7 +4635,7 @@ window.openTCPanel = openTCPanel;
       const d = surveyLoad();
       d.settings.sendToChat = schat.checked;
       surveySave(d);
-      toast(schat.checked ? 'TA 的每条作答都会发送到聊天消息' : 'TA 的作答只写入问卷卡片，不再逐条发到聊天消息');
+      toast(schat.checked ? '他 的每条作答都会发送到聊天消息' : '他 的作答只写入问卷卡片，不再逐条发到聊天消息');
     });
     // #1415：多选题「最多选几个」。这一行与「问问TA」半框里那行读写同一个 per-cid 键
     // （ask-multi-max，定义与取数都在 chat.js）——两处一起调，不会各量一把尺。

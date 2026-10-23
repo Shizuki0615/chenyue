@@ -470,7 +470,7 @@ self.addEventListener('periodicsync', function (e) {
     arr.push({ t: text, cid: snap.cid || 'default', ts: Date.now(), k: pick.k || '' });
     while (arr.length > 20) arr.shift();
     await psyncIdbSet(PSYNC_QUEUE_KEY, arr);
-    await self.registration.showNotification(snap.name || 'TA', {
+    await self.registration.showNotification(snap.name || '他', {
       body: text,
       tag: PSYNC_TAG,
       renotify: true,

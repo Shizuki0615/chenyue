@@ -440,7 +440,7 @@
           return p[0] + '-' + String(+p[1]).padStart(2, '0') + '-' + String(+p[2]).padStart(2, '0');
         };
         const myName = store.get('lbl-user') || '我';
-        const taName = store.get('lbl-partner') || 'TA';
+        const taName = store.get('lbl-partner') || '他';
         const isToday = selDate === todayStr();
         const dayKey = (d) => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
         const pickDay = (logKey) => {
@@ -479,7 +479,7 @@
     const taLabel = document.getElementById('mood-entry-ta-label');
     let md = null;
     try { md = window.moodDiaryToday ? window.moodDiaryToday() : null; } catch (e) { md = null; }
-    const nm = store.get('lbl-partner') || 'TA';
+    const nm = store.get('lbl-partner') || '他';
     if (taLabel) taLabel.textContent = nm + '（心情日记）';
     if (mineEl) mineEl.textContent = (md && md.mine) ? (md.mine.e + ' ' + md.mine.n) : calEmptyTxt('今天还没记心情');
     // FIX 2026-09-28 #1353h~i：用户实报「日历上也不显示TA的心情」——开页那一刻本机那份聊天还没读回来
@@ -616,7 +616,7 @@
       if (w) { wm = w.mine || 0; wt = w.ta || 0; }
     }
     const myName = store.get('lbl-user') || '我';
-    const taName = store.get('lbl-partner') || 'TA';
+    const taName = store.get('lbl-partner') || '他';
     if (!fm && !ft && !wm && !wt) {
       wrap.innerHTML = '<div class="fh-empty">这一天没有摸鱼 / 工作记录</div>';
       return;
@@ -778,7 +778,7 @@
               const tc = document.getElementById('tc-mask');
               if ((mm && !mm.hidden) || (tc && !tc.hidden)) return;
             } catch (e) {}
-            showGreetBanner(getToday(), store.get('lbl-partner') || 'TA');
+            showGreetBanner(getToday(), store.get('lbl-partner') || '他');
           }, 1000);
         }
       }, 500);

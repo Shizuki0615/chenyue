@@ -395,14 +395,18 @@
   // 存储键：<cid>:partner-gender = 'he' | 'she' | ''（未设置 → 默认「TA」），随联系人命名空间隔离。
   // 各模块在【显示层】调 window.taFit(text[, cid]) 把指代联系人的「他/TA/ta」替换为「他/她/TA/ta」；
   // 只改显示不改存储原文，历史消息重新渲染即自动跟随。
-  window.partnerGenderFor = function (cid) {
+  // v8.40 软禁用性别选择：用户裁决「选择性别的功能目前也不太需要」，
+  // 强制 partnerGenderFor 恒返回 'he'，全局覆盖所有联系人的存储值，运行期全链路上只走「他」。
+  // 想回滚：删掉下面这行 return 'he' 并恢复原来的存储读取即可。
+  window.partnerGenderFor = function (cid) { return 'he'; };
+  window.__partnerGenderForStored = function (cid) {
     try { return window.xyStore(G + ':' + (cid || 'default')).get('partner-gender') || ''; } catch (e) { return ''; }
   };
   window.taWordFor = function (cid) {
     const g = window.partnerGenderFor(cid);
     if (g === 'he') return '他';
     if (g === 'she') return '她';
-    return 'TA';
+    return '他';
   };
   window.taWord = function () { return window.taWordFor(window.__activeCid || 'default'); };
   // v3.26.x：联系人名片名查询（按 cid 读注册表，供通话等模块回退显示）——
@@ -487,7 +491,7 @@
         // lbl-partner：聊天里从来不看那个键（v3.26.x 解耦），掺进来会两头错位——用户只改
         // 名片名时聊天显示名跟着变，这里却按桌面旧名判定「没变」，既不记 hist 也不清扫，
         // 历史拍一拍里的旧名片名永远留在屏幕上。
-        const taWordId = window.taWordFor ? window.taWordFor(id) : 'TA';
+        const taWordId = window.taWordFor ? window.taWordFor(id) : '他';
         const oldEff = csLbl || oldName || taWordId;
         if (!cur || cur === oldName) s.set('lbl-partner', c.name);
         const newEff = csLbl || c.name || taWordId;
@@ -947,15 +951,15 @@
     const box = el('div');
     // v3.11.x：颜色改主题变量（内联硬编码浅色在深色模式下白底白字不可见）
     box.style.cssText = 'width:min(92vw,420px);max-height:80vh;display:flex;flex-direction:column;background:var(--card-bg,#fff);color:var(--ink,#111);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.2)';
-    box.appendChild(el('div', '', '<div style="font-size:16px;font-weight:600;margin-bottom:4px">联系人 / 桌面</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">每个联系人数据独立；除朋友圈外，还有部分功能数据在所有桌面共用。<b id="cm-fn-explain">【功能说明】</b><br>「称呼」可设置消息里 TA 的性别叫法（他 / 她 / 不设置）</div>'));
+    box.appendChild(el('div', '', '<div style="font-size:16px;font-weight:600;margin-bottom:4px">联系人 / 桌面</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">每个联系人数据独立；除朋友圈外，还有部分功能数据在所有桌面共用。<b id="cm-fn-explain">【功能说明】</b></div>'));
     const list = el('div', 'cm-list'); list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0';
     getContacts().forEach(c => {
       const row = el('div');
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--card-border,#eee);border-radius:10px';
       const dot = el('div');
       dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + (c.id === window.__activeCid ? 'var(--ink,#111)' : '#ccc');
-      const gw = window.taWordFor(c.id);
-      const gLabel = gw === 'TA' ? '' : (' · 称呼：' + gw);
+      // v8.40 软禁用性别选择：入口已 hidden，行内「· 称呼：他」也不再显示（否则每行都挂一条无用标签）
+      const gLabel = '';
       const nm = el('div', '', '<div style="font-size:14px;font-weight:500">' + (c.name || c.id) + '</div><div style="font-size:11px;color:var(--muted,#999)">' + (c.id === window.__activeCid ? '当前桌面' : '点击切换') + gLabel + '</div>');
       nm.style.flex = '1';
       row.appendChild(dot); row.appendChild(nm);
@@ -966,6 +970,9 @@
       const acts = el('div'); acts.style.cssText = 'display:flex;gap:6px';
       const gen = el('button', '', '称呼');
       gen.style.cssText = 'font-size:12px;padding:4px 8px;border:1px solid var(--pill-border,#ddd);border-radius:8px;background:var(--static-bg,#fafafa);color:var(--ink,#111)';
+      // v8.40 软禁用性别选择：按钮保留 DOM（openGenderModal / 存储键 / taFit 全链路不动），
+      // 仅 hidden 掉入口。想回滚：删掉下面这行。
+      gen.hidden = true;
       gen.addEventListener('click', (e) => {
         e.stopPropagation();
         openGenderModal(c, m);
@@ -1046,7 +1053,7 @@
       '<li>聊天记录与未读数</li>' +
       '<li>字卡库专属字卡 / 专属回复 / 收藏</li>' +
       '<li>桌面布局与美化（壁纸 / 气泡 / 字号等）</li>' +
-      '<li>称呼性别（TA / 他 / 她）</li>' +
+      '<li>称呼性别（他 / 他 / 她）</li>' +
       '<li>日历、信箱、备忘录</li>' +
       '<li>占卜、记录、收藏、统计、记账</li>' +
       '</ul>' +
@@ -1072,11 +1079,11 @@
     }, {
       noInput: true,
       pill: cur,
-      staticText: '小字说明：设置后，桌面浮字、聊天、朋友圈、信箱等消息里的「TA／他」会跟随显示为「他」或「她」；选「不设置」则保持默认「TA」。该设置为每个联系人独立保存，只改显示方式，不会改动已保存的消息原文。',
+      staticText: '小字说明：设置后，桌面浮字、聊天、朋友圈、信箱等消息里的「他／他」会跟随显示为「他」或「她」；选「不设置」则保持默认「他」。该设置为每个联系人独立保存，只改显示方式，不会改动已保存的消息原文。',
       pills: [
         { label: '他（男生）', value: 'he' },
         { label: '她（女生）', value: 'she' },
-        { label: '不设置（默认 TA）', value: '' }
+        { label: '不设置（默认 他）', value: '' }
       ]
     });
   }
@@ -1206,7 +1213,7 @@
     removeCjianHint();
     const page = document.getElementById('page-cjian');
     if (!page) return;
-    const hint = el('div', '', '点每位梦角的【去找TA】直接进入 TA 的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看 TA 此刻在哪、在做什么。');
+    const hint = el('div', '', '点每位梦角的【去找他】直接进入 他 的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看 他 此刻在哪、在做什么。');
     hint.id = 'entry-cjian-hint';
     hint.style.cssText = 'margin:8px 12px 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.6;color:var(--muted,#666);background:rgba(127,106,216,.08);border:1px solid rgba(127,106,216,.2)';
     const head = page.querySelector('.chat-head');

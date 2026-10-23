@@ -968,7 +968,7 @@ try {
   function deskNameText(key) {
     const v = store.get(key);
     if (v) return v;
-    return key === 'lbl-partner' ? (window.taWord ? window.taWord() : 'TA') : '我';
+    return key === 'lbl-partner' ? (window.taWord ? window.taWord() : '他') : '我';
   }
   function paintDeskNames() {
     const lu = document.getElementById('lbl-user');
@@ -989,7 +989,7 @@ try {
             // v3.26.x：改前先记有效昵称（聊天独立昵称 cs-lbl-partner 优先）——变化时接入
             // 系统消息昵称清扫，与 chat-settings / contacts 改名路径行为一致
             let oldEff = '';
-            if (key === 'lbl-partner') oldEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || 'TA';
+            if (key === 'lbl-partner') oldEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || '他';
             el.textContent = val;
             store.set(key, val);
             // 同步聊天页顶部标题——必须走 renderChatHeader（按 cs-lbl-partner 优先解析）：
@@ -997,7 +997,7 @@ try {
             if (key === 'lbl-partner') {
               if (window.renderChatHeader) { try { window.renderChatHeader(); } catch (e) {} }
               else { const pname = document.getElementById('chat-partner-name'); if (pname) pname.textContent = val; }
-              const newEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || 'TA';
+              const newEff = store.get('cs-lbl-partner') || store.get('lbl-partner') || '他';
               if (newEff !== oldEff) { try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {} }
             }
           }
@@ -4774,7 +4774,7 @@ try {
     } catch (e) {
       // #602：解不出来不再静默——最常见是链接被聊天软件/复制截断。明确告知并给出「导出文件」正路。
       cleanHash();
-      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 TA 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
       if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
       else toast(msg);
       return;
@@ -10012,7 +10012,7 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
         comboRun = 0; runMax = 0; comboShow(0);
         addWork(1, 0); // 被抓包：这次算打工，不进摸鱼
         syncFishUI();
-        const taName = store.get('lbl-partner') || 'TA';
+        const taName = store.get('lbl-partner') || '他';
         const tease = [
           '点这么快，老板就在身后吧？这次给你记成工作值啦。',
           '被抓包了！摸鱼太频繁会被发现的——这条先算打工。',
@@ -10048,7 +10048,7 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
   const weTaEl = document.getElementById('weekend-ta');
   const weTaName = document.getElementById('weekend-ta-name');
   if (weTaName) {
-    const name = store.get('lbl-partner') || 'TA';
+    const name = store.get('lbl-partner') || '他';
     // v3.5.75：新结构 grid 两列（.pair > i）——按列标签更新昵称，不覆盖 pair 结构
     const lab = weTaName.querySelectorAll('.pair i');
     if (lab.length >= 2) { lab[0].textContent = name + ' 摸鱼值'; lab[1].textContent = name + ' 工作值'; }
@@ -10068,7 +10068,7 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
     if (weWorkTa) weWorkTa.textContent = wTa;
     // v3.5.74：昵称标签同步（摸鱼值 + 工作值标签一起更新昵称）
     const myName = store.get('lbl-user') || '我';
-    const taName = store.get('lbl-partner') || 'TA';
+    const taName = store.get('lbl-partner') || '他';
     if (weMineName) {
       const lm = weMineName.querySelectorAll('.pair i');
       if (lm.length >= 2) { lm[0].textContent = myName + ' 摸鱼值'; lm[1].textContent = myName + ' 工作值'; }
@@ -10320,7 +10320,7 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
       if (/^(__layout-pref|ver-update-ack-ts|__edge-backup-hint-done|__quota_probe__)$/.test(tail)) return '系统设置';
       if (/^(contacts|active-contact|migrated-v1)$/.test(tail)) return '联系人/桌面';
       // 根键里的「功能:子键」多段名（无 cid 前缀），先于 cid 剥离判断
-      if (/^incoming-last:/.test(tail)) return '查岗/TA互动';
+      if (/^incoming-last:/.test(tail)) return '查岗/他互动';
       // 剥离第一段 cid 命名空间（如 default:xxx、<cid>:xxx）
       const m = /^(?:[^:]+:)?(.*)$/.exec(tail);
       const base = m ? m[1] : tail;
@@ -10332,7 +10332,7 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
       // —— 聊天设置全局键 ——
       if (base === 'reply-settings' || base === 'chat-settings') return '聊天设置';
       // —— 查岗 / TA 互动 ——
-      if (/^(ta-checkin|checkin-|ckq-|incoming-|desk-checkin-en|desk-call-en|desk-freq-mode|ta-ask|ta-invite|ti-last-id|ta-cc-state|interact-card-last|invite-ask-history|reply-gc-)/.test(base)) return '查岗/TA互动';
+      if (/^(ta-checkin|checkin-|ckq-|incoming-|desk-checkin-en|desk-call-en|desk-freq-mode|ta-ask|ta-invite|ti-last-id|ta-cc-state|interact-card-last|invite-ask-history|reply-gc-)/.test(base)) return '查岗/他互动';
       // —— 定位 / 轨迹 ——
       if (/^(loc-|loc-lib-|loc-sense)/.test(base)) return '定位/轨迹';
       // —— 日历 / 每日留言 / 心情 ——

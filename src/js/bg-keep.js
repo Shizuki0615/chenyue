@@ -2367,7 +2367,7 @@
         push('重置浏览器通知权限：浏览器设置 → 网站设置 → 通知 → 把本站「关闭」再「允许」，然后强杀浏览器重开（「权限明明开着、通知却消失好几天」多数被这一步救活——JS 读到的一直是 granted，坏的是浏览器内部那条通道）');
         push('系统通知设置：系统设置 → 通知管理 → 本浏览器 → 总开关打开、「允许横幅通知/在屏幕上方显示」打开、通知重要性选「提醒」；国产 ROM（vivo/OPPO/小米/华为）每项可能各自独立');
         push('省电限制：允许本浏览器后台运行/关闭对它的省电优化（否则挂后台时整页被冻结，消息与通知都无从产生）；Edge 的「睡眠标签页」/Chrome 的「内存节省程序」默认把挂后台约 30 分钟的页面丢弃重载（表现＝回来时页面自动刷新、保活/通知可能被重置）——浏览器设置里把本站加入「永不睡眠/始终保持活动」名单');
-        steps.push('每做完一步就按 Home 键把页面切到后台、让 TA 发一条消息验证；全部走完仍不弹 → 用「信息诊断」里的反馈入口一键上报');
+        steps.push('每做完一步就按 Home 键把页面切到后台、让 他 发一条消息验证；全部走完仍不弹 → 用「信息诊断」里的反馈入口一键上报');
         window.openModal('没弹出 → 按顺序排查（实效从高到低）', '', function () {}, {
           noInput: true, big: true,
           staticText: steps.join('\n')
@@ -2438,7 +2438,7 @@
           if (!bgT2.armed || bgT2.sent || document.visibilityState !== 'hidden') return;
           bgT2.sent = true;
           try {
-            const nm = store.get('lbl-partner') || (window.taWord ? window.taWord() : 'TA');
+            const nm = store.get('lbl-partner') || (window.taWord ? window.taWord() : '他');
             showSysNotification('后台通知测试（后台阶段）', { body: '这条是在页面切到后台之后发出的 · 来自 ' + nm }, function (ch) { bgT2.chan = ch; })
               .then(function (ok) { bgT2.ok = !!ok; bgT2.done = true; bgT2Report(); });
           } catch (e) { bgT2.ok = false; bgT2.done = true; bgT2Report(); }
@@ -2461,7 +2461,7 @@
         if (testChan === 'sw') offerPhase2();
       };
       try {
-        const name = store.get('lbl-partner') || (window.taWord ? window.taWord() : 'TA');
+        const name = store.get('lbl-partner') || (window.taWord ? window.taWord() : '他');
         showSysNotification('后台通知测试', { body: '来自 ' + name + ' · 如果能看到这条，后台通知就通了' }, function (ch) { testChan = ch; }).then(function (ok) {
           if (my !== testSeq) return;
           if (testChan === 'sw' && ok) {
@@ -2682,7 +2682,7 @@
       const chatPage = document.getElementById('page-chat');
       const inChat = chatPage && !chatPage.hidden;
       const n = hiddenSentCount;
-      const who = hiddenSentName || store.get('lbl-partner') || (window.taWord ? window.taWord() : 'TA');
+      const who = hiddenSentName || store.get('lbl-partner') || (window.taWord ? window.taWord() : '他');
       const summaryText = sentSummaryText(); // #1443d：先按类别拼好话，再清账（清早了就没得报）
       sentReset();
       if (!inChat && n > 0 && window.showDeskPopup) {
@@ -3007,8 +3007,8 @@
     // v3.19.x：累加「本次后台实际发送的通知数」——回前台汇总用它（见 visibilitychange
     // 处理器），发送者名取本次通知标题
     sentAdd(notifyKind(extra)); // #1443d：按类别记账，未登记的一律算「提醒」
-    hiddenSentName = extra.name || store.get('lbl-partner') || (window.taWord ? window.taWord() : 'TA');
-    const name = extra.name || store.get('lbl-partner') || (window.taWord ? window.taWord() : 'TA');
+    hiddenSentName = extra.name || store.get('lbl-partner') || (window.taWord ? window.taWord() : '他');
+    const name = extra.name || store.get('lbl-partner') || (window.taWord ? window.taWord() : '他');
     let t = '';
     if (ts) {
       const d = new Date(ts);
@@ -3206,7 +3206,7 @@
       v: 1,
       ts: Date.now(),
       cid: window.__activeCid || 'default',
-      name: (function () { try { return store.get('lbl-partner') || 'TA'; } catch (e) { return 'TA'; } })(),
+      name: (function () { try { return store.get('lbl-partner') || '他'; } catch (e) { return '他'; } })(),
       texts: psyncShuffle(picks).slice(0, 12)
     };
     window.__psyncSnapCount = snap.texts.length;
@@ -3275,7 +3275,7 @@
         : '此浏览器不支持离线提醒（需要 Chromium 内核：安卓或电脑上的 Chrome / Edge，并把应用添加到主屏幕后重开此开关）';
       return;
     }
-    if (!psyncEnabled()) { el.textContent = '已关闭 · 页面全关后不再收到 TA 的消息提醒'; return; }
+    if (!psyncEnabled()) { el.textContent = '已关闭 · 页面全关后不再收到 他 的消息提醒'; return; }
     if (!psyncStandalone()) { el.textContent = '需先添加到主屏生效：浏览器菜单「添加到主屏幕」，再从桌面图标打开本应用，然后重新打开此开关'; return; }
     if (state === 'denied') { el.textContent = '已开启 · 但后台调度被系统/浏览器拒绝：多半是通知权限被关了。请 ①在本应用网址栏左侧打开「网站设置」→通知→允许；②手机 系统设置→应用→Edge/Chrome→通知→允许；③该应用开启「不受限制/省电」；再回来关闭并重新打开此开关'; return; }
     if ('Notification' in window && Notification.permission !== 'granted') {
@@ -3293,9 +3293,9 @@
       const txt = [
         '离线消息提醒（零后端）\n',
         '🌟 有什么用',
-        '页面全部关闭后，TA 也会在后台「留话」提醒你，营造陪伴感。系统每隔几小时唤醒一次，随机抽一条你准备（或内置）的想念字卡，以 TA 的名义弹出系统通知；回来后这条消息也会补进聊天记录。\n',
+        '页面全部关闭后，他 也会在后台「留话」提醒你，营造陪伴感。系统每隔几小时唤醒一次，随机抽一条你准备（或内置）的想念字卡，以 他 的名义弹出系统通知；回来后这条消息也会补进聊天记录。\n',
         '🔗 它和「后台弹窗」无关',
-        '两者是完全独立的功能，互不影响。后台弹窗要的是「页面还在后台时」TA 发消息、靠后台保活+通知权限弹横幅。不开离线消息提醒，后台弹窗照常工作；反之亦然。想收到后台弹窗时，只需：后台保活+桌面消息弹窗开关开着+系统通知允许。\n',
+        '两者是完全独立的功能，互不影响。后台弹窗要的是「页面还在后台时」他 发消息、靠后台保活+通知权限弹横幅。不开离线消息提醒，后台弹窗照常工作；反之亦然。想收到后台弹窗时，只需：后台保活+桌面消息弹窗开关开着+系统通知允许。\n',
         '🔓 怎么开（安卓）',
         '1. 用 Chrome 或 Edge（安卓）打开本应用；',
         '2. 浏览器菜单 →「添加到主屏幕」，再从桌面图标打开；',

@@ -57,11 +57,11 @@
     hard:   { n: 8, mines: 12, label: '🔥 挑战', name: '挑战', tip: '8×8 · 12 雷' }
   };
   const NUM_COLORS = ['', '#3a7fd5', '#2e8b57', '#d9534f', '#7a4fd9', '#b7791f', '#2aa198', '#666', '#999'];
-  const THINK_LINES = ['TA正在观察雷区……', 'TA托着下巴想了想', 'TA盯着数字琢磨了一会儿'];
+  const THINK_LINES = ['他正在观察雷区……', '他托着下巴想了想', '他盯着数字琢磨了一会儿'];
 
   const T = window.taFit || function (x) { return x; };
   function prefix() { return (window.activePrefix && window.activePrefix()) || 'xy-home-v2'; }
-  function taName() { try { return window.taWord ? window.taWord() : T('TA'); } catch (e) { return T('TA'); } }
+  function taName() { try { return window.taWord ? window.taWord() : T('他'); } catch (e) { return T('他'); } }
   function fastMul() { return (window.__msDebug && window.__msDebug.fast) ? 0.05 : 1; }
   function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null; }
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -478,9 +478,9 @@
       // #349 掉心脉冲：❤️ 行缩放闪一下
       if (livesEl) { livesEl.classList.remove('ms-hurt'); void livesEl.offsetWidth; livesEl.classList.add('ms-hurt'); }
       sfxBoom();
-      const who = byYou ? '你' : T('TA');
+      const who = byYou ? '你' : T('他');
       let msg = '💥 ' + who + '踩到了雷！' + heartsStr();
-      if (wasTaFlagged && !s.judged[idx]) { msg += '（不过 ' + T('TA') + ' 的旗没错）'; s.judged[idx] = 1; }
+      if (wasTaFlagged && !s.judged[idx]) { msg += '（不过 ' + T('他') + ' 的旗没错）'; s.judged[idx] = 1; }
       if (hadPlayerFlag && byYou) msg += '（是你自己插的旗那格…）';
       if (s.lives <= 0) { setStatus(msg); finish(false, 640); return true; }
       setStatus(msg);
@@ -520,14 +520,14 @@
     sfxDig();
     let msg;
     if (gotIcons.length) {
-      msg = (byYou ? '你发现了 ' : T('TA') + '发现了 ') + gotIcons.join(' ');
+      msg = (byYou ? '你发现了 ' : T('他') + '发现了 ') + gotIcons.join(' ');
       if (gotIcons.indexOf('🪙') >= 0 && s.coinEarned > 0) msg += ' · 心意币 +¥1';
     } else if (byYou) {
       msg = '你挖开了一格';
     } else {
-      msg = T('TA') + '挖开了一格';
+      msg = T('他') + '挖开了一格';
     }
-    if (wasTaFlagged && !s.judged[idx]) { msg += ' —— 这里其实是安全的，' + T('TA') + '判断错了'; s.judged[idx] = 1; }
+    if (wasTaFlagged && !s.judged[idx]) { msg += ' —— 这里其实是安全的，' + T('他') + '判断错了'; s.judged[idx] = 1; }
     if (extraMsg) { msg += '（' + extraMsg + '）'; extraMsg = ''; }
     // #343 通关：等涟漪铺完再弹结算（单格小展开不延迟）
     if (allSafeOpened()) { setStatus(msg); finish(true, newly.length > 2 ? maxDelay + 260 : 0); return true; }
@@ -574,7 +574,7 @@
     taT = setTimeout(() => {
       taT = null;
       if (!st || st.over || st.turn !== 2) return;
-      setStatus(T(line).replace('TA', T('TA')) + ' ' + heartsStr());
+      setStatus(T(line).replace('他', T('他')) + ' ' + heartsStr());
       taTurn();
     }, Math.round(d * fastMul()));
   }
@@ -586,12 +586,12 @@
     if (act.type === 'flag') {
       placeTaFlag(act.idx);
       sfxFlag();
-      setStatus('🚩 ' + T('TA') + (act.guess ? '觉得这里有雷，先做了个记号' : '标记了一颗雷的位置'));
+      setStatus('🚩 ' + T('他') + (act.guess ? '觉得这里有雷，先做了个记号' : '标记了一颗雷的位置'));
       s.turn = 1; s.lock = false;
       setTimeout(showTurnStatus, Math.round(900 * fastMul()));
       return;
     }
-    if (s.flag[act.idx] === 1) extraMsg = T('TA') + '把你的旗轻轻挪开了——下面确实是安全的';
+    if (s.flag[act.idx] === 1) extraMsg = T('他') + '把你的旗轻轻挪开了——下面确实是安全的';
     s.flag[act.idx] = 0;
     renderCell(act.idx);
     s.lock = false;   // dig 入口会重新上锁；TA 的思考期锁在这里解除
@@ -631,7 +631,7 @@
     if (win) {
       body +=
         '<div class="pong-end-stat">💣 雷区清理完成！</div>' +
-        '<div class="pong-end-stat">你探索 ' + s.digs.you + ' 格 · ' + T('TA') + '探索 ' + s.digs.ta + ' 格</div>' +
+        '<div class="pong-end-stat">你探索 ' + s.digs.you + ' 格 · ' + T('他') + '探索 ' + s.digs.ta + ' 格</div>' +
         '<div class="pong-end-stat">💣 找到地雷 ' + s.minesFound + '/' + s.mineTotal +
         ' · 🎁 宝物 ' + (gifts + flowers) + '</div>';
       if (s.lives === MAX_LIVES && s.mineTotal > 0) body += '<div class="pong-end-stat">💕 一颗雷都没踩，完美合作</div>';
@@ -714,7 +714,7 @@
     let body = pillsHtml();
     body += '<div class="ms-cur" id="ms-cur">当前：' + curHint() + '</div>';
     body += '<div class="ms-tip">轮流挖掘 · 你们共用 ' + heartsStrStatic() + '<br>数字 = 周围雷数 · 长按格子插旗<br>🪙🎁🌸 藏在格子里，一起找找看</div>';
-    body += '<div class="ms-note">🎲 ' + T('TA') + '会推理也会失误——偶尔也需要你救场</div>';
+    body += '<div class="ms-note">🎲 ' + T('他') + '会推理也会失误——偶尔也需要你救场</div>';
     if (s.play > 0) body += '<div class="pong-end-stat">合作 ' + s.play + ' 局 · 完成 ' + s.win + ' 次</div>';
     showOverlay('合作扫雷', body, s.play > 0 ? '继续探索' : '开始探索');
     if (endBtn) endBtn.hidden = true;
@@ -755,7 +755,7 @@
     let giftN = 0, flowerN = 0;
     keeps.forEach((k) => { if (k.t === 'gift') giftN++; else if (k.t === 'flower') flowerN++; });
     const fmt = (ts) => { const d = new Date(ts); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; };
-    const recent = keeps.slice(-4).reverse().map((k) => (k.t === 'gift' ? '🎁' : '🌸') + ' ' + fmt(k.ts) + (k.by === 'ta' ? '（' + T('TA') + '送的）' : ''));
+    const recent = keeps.slice(-4).reverse().map((k) => (k.t === 'gift' ? '🎁' : '🌸') + ' ' + fmt(k.ts) + (k.by === 'ta' ? '（' + T('他') + '送的）' : ''));
     return '🎁 神秘礼物 ×' + giftN + '\n🌸 花朵 ×' + flowerN + '\n\n最近：\n' + recent.join('\n');
   }
 
@@ -836,7 +836,7 @@
 
   // ---- 打开 / 关闭 ----
   function setNames() {
-    let name = T('TA');
+    let name = T('他');
     try {
       const s = window.activeStore && window.activeStore();
       name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

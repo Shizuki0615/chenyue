@@ -123,7 +123,7 @@
     let m = ((x - lo) % (2 * span) + 2 * span) % (2 * span);
     return m > span ? (2 * span - m) + lo : m + lo;
   }
-  const taName = () => (window.taWord ? window.taWord() : 'TA');
+  const taName = () => (window.taWord ? window.taWord() : '他');
   const T = (x) => (window.taFit ? window.taFit(x) : x);
 
   // ---- 视觉资源：砖块行渐变色（情侣色阶 粉→紫→蓝→青，[亮顶,暗底]）+ 静态星点 ----
@@ -1295,7 +1295,7 @@
     } catch (e) {}
     const bn = targetBallCount();
     showOverlay(T('双人打砖块'),
-      '<div class="pong-start-tip">你和' + T('TA') + '各守半场共接' + (bn > 1 ? bn + ' 颗球' : '同一颗球') + '<br>清光砖块进入下一层 · 共 3 次失误机会</div>' +
+      '<div class="pong-start-tip">你和' + T('他') + '各守半场共接' + (bn > 1 ? bn + ' 颗球' : '同一颗球') + '<br>清光砖块进入下一层 · 共 3 次失误机会</div>' +
       '<div class="pong-start-ctrl">按住画面左右拖动</div>' +
       (best > 0 ? '<div class="pong-end-stat">历史最佳 ' + best + ' 分</div>' : ''),
       '开始');

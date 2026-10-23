@@ -412,7 +412,7 @@
   renderPage();
   // 字卡库跨分类搜索注册
   window.__cardSearchFns = window.__cardSearchFns || [];
-  window.__cardSearchFns.push({ name: 'TA在身边位置卡', fn: function (kw) {
+  window.__cardSearchFns.push({ name: '他在身边位置卡', fn: function (kw) {
     const out = [];
     try {
       CATS.forEach(function (c) {

@@ -473,8 +473,8 @@
         const s = window.storeFor(cid);
         v = s.get('lbl-partner') || s.get('cs-lbl-partner') || '';
       }
-      return v || (window.contactNameFor ? window.contactNameFor(cid) : '') || (window.taWordFor ? window.taWordFor(cid) : 'TA');
-    } catch (e) { return 'TA'; }
+      return v || (window.contactNameFor ? window.contactNameFor(cid) : '') || (window.taWordFor ? window.taWordFor(cid) : '他');
+    } catch (e) { return '他'; }
   }
   function loadDivineTarget() {
     try { divineTarget = curStore().get('divine-target') || ''; } catch (e) { divineTarget = ''; }
@@ -946,7 +946,7 @@
     html += '<div class="div-summary">' + (window.taFit ? window.taFit(summary) : summary) + '</div>';
     if (question) html += '<div class="div-question-q">问：' + String(question).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>';
     html += '<div class="div-result-actions">';
-    html += '<button class="div-send-btn" id="div-send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>发给 ' + (partnerName2() || (window.taWord ? window.taWord() : 'TA')) + '</button>';
+    html += '<button class="div-send-btn" id="div-send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>发给 ' + (partnerName2() || (window.taWord ? window.taWord() : '他')) + '</button>';
     html += '<button class="div-copy-btn" id="div-copy-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>点击复制文字</button>';
     html += '</div>';
     r.innerHTML = html;
@@ -983,7 +983,7 @@
   }
   function sendToChat(m, cards, summary, question) {
     const text = buildResultText(m, cards, summary, question);
-    if (window.chatSendMsg) { window.chatSendMsg(text); toast('已发送给 ' + (partnerName2() || 'TA')); }
+    if (window.chatSendMsg) { window.chatSendMsg(text); toast('已发送给 ' + (partnerName2() || '他')); }
     else toast('请先进入聊天页');
   }
   function sendToChat(m, cards, summary, question) {
@@ -998,7 +998,7 @@
     });
     // 防 summary 自带"综合："前缀时重复
     text += '综合：' + String(summary || '').replace(/^综合[:：]/, '');
-    if (window.chatSendMsg) { window.chatSendMsg(text); toast('已发送给 ' + (partnerName2() || 'TA')); }
+    if (window.chatSendMsg) { window.chatSendMsg(text); toast('已发送给 ' + (partnerName2() || '他')); }
     else toast('请先进入聊天页');
   }
   function toast(msg) {

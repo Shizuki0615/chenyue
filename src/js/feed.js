@@ -190,7 +190,7 @@
   }
   // v3.7.x：多桌面修正——昵称/头像一律读当前联系人桌面（activeStore），
   // 原实现读模块顶部缓存的顶层 store（xy-home-v2 旧键），迁移后旧键已清 → 全空/旧值
-  function partnerName() { return window.activeStore().get('lbl-partner') || 'TA'; }
+  function partnerName() { return window.activeStore().get('lbl-partner') || '他'; }
   function partnerAv() { return window.activeStore().get('avatar-partner') || ''; }
   function myName() { return window.activeStore().get('lbl-user') || '我'; }
   function myAv() { return window.activeStore().get('avatar-user') || ''; }
@@ -231,8 +231,8 @@
         const c = window.getContacts().find(x => x.id === o);
         if (c && c.name) return c.name;
       }
-      return 'TA';
-    } catch (e) { return 'TA'; }
+      return '他';
+    } catch (e) { return '他'; }
   }
   // ===== 多联系人：发布者身份快照（owner=联系人cid，role=me/ta） =====
   function activeMe() {
@@ -1030,7 +1030,7 @@
     return fallback.slice();
   }
   function feedFallbackPool() {
-    return uniqArr(feedPresetLines('朋友圈·TA的点评', TA_COMMENT_POOL).concat(feedPresetLines('朋友圈·TA的回复', TA_REPLY_POOL)));
+    return uniqArr(feedPresetLines('朋友圈·他的点评', TA_COMMENT_POOL).concat(feedPresetLines('朋友圈·他的回复', TA_REPLY_POOL)));
   }
   function genMixedCards(cfg, minN, maxN, opts, cid) {
     const o = opts || {};
@@ -1136,7 +1136,7 @@
     const list = Array.isArray(p.stickers) ? p.stickers : [];
     if (!list.length) return '';
     return list.map((s, i) => {
-      const who = s.authorName || ((s.role || s.owner) === 'me' ? feedUserName() : 'TA');
+      const who = s.authorName || ((s.role || s.owner) === 'me' ? feedUserName() : '他');
       const inner = s.src
         ? '<img src="' + attrEsc(s.src) + '" alt="贴纸">'
         : '<span class="feed-sticker-emoji">' + esc(s.emoji || '❤️') + '</span>';
@@ -1537,7 +1537,7 @@
         ? '<div class="ta-empty">' + esc(bucket.label) + '还没有动态<br><span style="font-size:12px">点上面那条胶囊翻更早的月份</span></div>'
         : ((feedSyncCold || (window.mochiDataPending && window.mochiDataPending()))
           ? window.mochiLoadingHtml('朋友圈内容')
-          : '<div class="ta-empty">还没有动态，TA 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
+          : '<div class="ta-empty">还没有动态，他 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
     feedRenderRangeBar(buckets);
     feedRenderSig = sig;
     const clearBtn = document.getElementById('feed-head-clear');
@@ -2491,7 +2491,7 @@ function openComStickerPanel() {
     comStickerPanel.innerHTML =
       '<div class="emoji-head">' +
         '<div class="emoji-tabs">' +
-          '<button class="emoji-tab sel" data-cs-tab="ta">TA \u7684\u8868\u60c5\u5305</button>' +
+          '<button class="emoji-tab sel" data-cs-tab="ta">他 \u7684\u8868\u60c5\u5305</button>' +
           '<button class="emoji-tab" data-cs-tab="mine">\u6211\u7684\u8868\u60c5\u5305</button>' +
           '<button class="emoji-tab" data-cs-tab="em">emoji \u8868\u60c5</button>' +
         '</div>' +
@@ -3139,7 +3139,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
     const id = 'f_' + Date.now();
     const me = activeMe();
     const cs = window.activeStore();
-    const taName = cs.get('lbl-partner') || 'TA';
+    const taName = cs.get('lbl-partner') || '他';
     const taAv = cs.get('avatar-partner') || '';
     // v3.7.x：不存 authorAv/taAv（头像 dataURL）——render 有 p.authorAv||实时读 兜底，
     //   实时读当前头像即可。原实现把头像 base64 塞进每条动态，哪怕正文纯文字，
@@ -3226,7 +3226,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
           fav.push(Object.assign({ by: 'ta' }, f));
           s.set('fav-msgs', JSON.stringify(fav));
           if (cid === (window.__activeCid || 'default')) {
-            toast(window.taFit ? window.taFit('TA 收藏了你的朋友圈动态') : 'TA 收藏了你的朋友圈动态');
+            toast(window.taFit ? window.taFit('他 收藏了你的朋友圈动态') : '他 收藏了你的朋友圈动态');
           }
         }, (ccfg.likeSpeedMin + Math.random() * Math.max(1, ccfg.likeSpeedMax - ccfg.likeSpeedMin)) * 1000);
       }
@@ -3241,7 +3241,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
       const id = 'f_' + Date.now();
       const me = activeMe();
       const cs = window.activeStore();
-      const taName = cs.get('lbl-partner') || 'TA';
+      const taName = cs.get('lbl-partner') || '他';
       const post = { id: id, role: 'me', owner: me.owner, authorName: me.authorName, authorAv: '', taName: taName, taAv: '', content: content, imgs: (imgs || []).slice(), ts: Date.now(), likes: [], comments: [] };
       list.unshift(post);
       save(list);
@@ -3347,7 +3347,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
       //   当成「没字卡」，TA 动态只剩默认卡/兜底句（详见 poolReadyFor 注释）。
       const buildPost = function () {
         const g = genPostContent(cfg, cid);
-        const taName = cs.get('lbl-partner') || 'TA';
+        const taName = cs.get('lbl-partner') || '他';
         const taAv = cs.get('avatar-partner') || '';
         const list = load();
         const post = { id: 'f_' + Date.now() + '_' + cid, role: 'ta', owner: cid, authorName: taName, authorAv: '', taName: taName, taAv: '', content: g.content, imgs: g.imgs, ts: Date.now(), likes: [], comments: [] };
@@ -3604,7 +3604,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
       const key = feedAllWho === 'me' ? 'feed-user-name' : 'feed-ta-name';
       const cur = feedAllStore().get(key) || store.get(key) || (feedAllWho === 'me'
         ? (feedAllStore().get('lbl-user') || '我')
-        : (feedAllStore().get('lbl-partner') || 'TA'));
+        : (feedAllStore().get('lbl-partner') || '他'));
       if (window.openModal) {
         window.openModal('修改昵称', cur, (v) => {
           const val = (v || '').trim();
@@ -3727,7 +3727,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
       if (pill.dataset.act === 'avatar') {
         pickAvatarAndSet(st, key);
       } else if (window.openModal) {
-        const def = isMe ? (st.get('lbl-user') || '我') : (st.get('lbl-partner') || 'TA');
+        const def = isMe ? (st.get('lbl-user') || '我') : (st.get('lbl-partner') || '他');
         const cur = st.get(key) || def;
         window.openModal('修改朋友圈昵称', cur, (v) => {
           const val = (v || '').trim();
@@ -3818,7 +3818,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
         const np = document.getElementById('feed-notice-panel');
         if (np && !np.hidden) renderNotices();
         toast('朋友圈数据已全部清除');
-      }, { noInput: true, staticText: '将删除全部动态（我的与 TA 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
+      }, { noInput: true, staticText: '将删除全部动态（我的与 他 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
     });
   }
   // v3.6.x：朋友圈页顶部「删除全部动态」——可只删我的动态 / 只删联系人的动态 / 全部删除

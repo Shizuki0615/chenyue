@@ -90,27 +90,27 @@
     // taToMe=TA 对我做（显示"TA 想摸摸你的头"），meToTa=TA 让我对 TA 做（显示"TA 想让你摸摸 TA 的头"）；
     // 触发时随机选一个方向，作答走 ask-card 单选链路（好呀/不要 → accept/reject 回应）
     { id: 'k_a1', cat: 'action', type: 'action', text: '摸摸头', enabled: true,
-      taToMe: 'TA 想摸摸你的头', meToTa: 'TA 想让你摸摸 TA 的头',
+      taToMe: '他 想摸摸你的头', meToTa: '他 想让你摸摸 他 的头',
       accept: ['乖，过来', '嗯，轻轻的', '闭上眼，我轻一点'],
       reject: ['哼，不要', '下次吧', '现在不行，等下'] },
     { id: 'k_a2', cat: 'action', type: 'action', text: '拍拍肩', enabled: true,
-      taToMe: 'TA 想拍拍你的肩', meToTa: 'TA 想让你拍拍 TA 的肩',
+      taToMe: '他 想拍拍你的肩', meToTa: '他 想让你拍拍 他 的肩',
       accept: ['嗯，辛苦了', '正好有点累', '被你拍到了'],
       reject: ['别拍，痒', '不要，自己来', '肩膀没空'] },
     { id: 'k_a3', cat: 'action', type: 'action', text: '揉揉头', enabled: true,
-      taToMe: 'TA 想揉揉你的头发', meToTa: 'TA 想让你揉揉 TA 的头发',
+      taToMe: '他 想揉揉你的头发', meToTa: '他 想让你揉揉 他 的头发',
       accept: ['嗯，舒服', '再来一下', '头发都被你揉乱了'],
       reject: ['发型会乱', '不要揉', '刚整理好的'] },
     { id: 'k_a4', cat: 'action', type: 'action', text: '抱抱', enabled: true,
-      taToMe: 'TA 想抱抱你', meToTa: 'TA 想让你抱抱 TA',
+      taToMe: '他 想抱抱你', meToTa: '他 想让你抱抱 他',
       accept: ['过来，抱紧', '嗯，再久一点', '被你抱住了'],
       reject: ['现在不方便', '等下再抱', '人多，不要'] },
     { id: 'k_a5', cat: 'action', type: 'action', text: '牵手', enabled: true,
-      taToMe: 'TA 想牵你的手', meToTa: 'TA 想让你牵 TA 的手',
+      taToMe: '他 想牵你的手', meToTa: '他 想让你牵 他 的手',
       accept: ['嗯，牵着', '手伸过来', '一直牵着好不好'],
       reject: ['手心出汗了', '不要，痒', '现在没空'] },
     { id: 'k_a6', cat: 'action', type: 'action', text: '贴贴', enabled: true,
-      taToMe: 'TA 想跟你贴贴', meToTa: 'TA 想让你跟 TA 贴贴',
+      taToMe: '他 想跟你贴贴', meToTa: '他 想让你跟 他 贴贴',
       accept: ['嗯，贴着', '脸凑过来', '贴着好暖'],
       reject: ['脸会红', '不要贴', '太近了'] }
   ];
@@ -290,7 +290,7 @@
       }
       if (window.chatAskReply) window.chatAskReply(msgIdx, answer, preset);
     }, {
-      staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('TA 想跟你互动：' + qText) : ('TA 问你：' + qText)),
+      staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('他 想跟你互动：' + qText) : ('他 问你：' + qText)),
       pills: isSingle ? optList.map(function (o) { return { label: o.t, value: o.t }; }) : null,
       // FIX 2026-09-16 #623：默认选中同意侧（选项里有才预设）＝打开就是选好的，点一下确定即可
       pill: isSingle ? affirmOptValue(optList) : undefined,
@@ -308,10 +308,10 @@
   window.buildDeskCkCard = function (q) {
     const dir = Math.random() < 0.5 ? 'toMe' : 'meToTa';
     if (dir === 'meToTa') {
-      return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗 TA。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
+      return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗 他。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
     }
     const isSingle = q && q.type === 'single' && Array.isArray(q.options) && q.options.length;
-    return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: 'TA 来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
+    return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: '他 来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
   };
 
   // 推一张查岗问题卡：提示语 + ask-card 互动卡 + 系统通知 + 概率自动弹窗
@@ -331,7 +331,7 @@
     const deskCkCard = isDeskCk ? window.buildDeskCkCard(q) : null;
     const deskCkDir = deskCkCard ? deskCkCard.deskCkDir : null;
     const isAction = !isDeskCk && q.type === 'action';
-    let actionOpts = null, actionText = q.text, actionHint = 'TA 来查岗了。', askOpts = null, askType;
+    let actionOpts = null, actionText = q.text, actionHint = '他 来查岗了。', askOpts = null, askType;
     if (isDeskCk) {
       actionText = deskCkCard.text;
       actionHint = deskCkCard.hint;
@@ -340,7 +340,7 @@
     } else if (isAction) {
       const dir = Math.random() < 0.5 ? 'ta-to-me' : 'me-to-ta';
       actionText = (dir === 'me-to-ta' ? (q.meToTa || q.text) : (q.taToMe || q.text));
-      actionHint = 'TA 想跟你互动。';
+      actionHint = '他 想跟你互动。';
       const acc = Array.isArray(q.accept) && q.accept.length ? q.accept : ['乖，过来。'];
       const rej = Array.isArray(q.reject) && q.reject.length ? q.reject : ['下次吧。'];
       actionOpts = [{ t: '好呀', reply: acc }, { t: '不要', reply: rej }];
@@ -355,7 +355,7 @@
     const el = window.chatAddSystem(actionText, { special: 'ask-card', askQuestion: actionText, askOptions: actionOpts ? actionOpts : askOpts, askType: askType, deskCk: isDeskCk, deskCkDir: deskCkDir });
     const msgIdx = el ? Number(el.dataset.idx) : -1;
     // #915：late＝刚从真后台回来的补触发（复用 ta-ask 同一判据），补弹「后台漏掉」的系统通知
-    if (window.bgNotifyCheck) window.bgNotifyCheck(actionHint + actionText, Date.now(), { name: 'TA查岗', late: !!(window.interactLateNotify && window.interactLateNotify()), kind: 'checkin' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck(actionHint + actionText, Date.now(), { name: '他查岗', late: !!(window.interactLateNotify && window.interactLateNotify()), kind: 'checkin' });
     // 自动弹窗：后台不弹 / 正在输入不弹 / 已有互动弹窗不弹（卡片仍在聊天里可点）
     // v3.12.x：迟到弹窗守卫——后台冻结的定时器回前台会被一次性补跑，补跑时页面已可见、
     // document.hidden 守卫失效 → 弹出几分钟前已在聊天里看过的旧查岗卡。
@@ -408,7 +408,7 @@
       if (d.questions[forceIdx]) q = d.questions[forceIdx];
     }
     if (!q) q = pickQ();
-    if (!q) { toast('TA的查岗题库没有可用的问题'); return false; }
+    if (!q) { toast('他的查岗题库没有可用的问题'); return false; }
     return pushCkQuestion(window.replyCfg ? window.replyCfg() : null, q);
   };
   // v3.17.x：跨桌面「来消息」用——按指定桌面抽一题（不推卡、不改当前桌面状态）。
@@ -489,7 +489,7 @@
       if (isSingle) {
         html += '<div class="tc-qopts">选项：' + q.options.map(o => esc(o.t)).join(' / ') + '</div>';
       } else if (isAction) {
-        html += '<div class="tc-qopts">TA对我：' + esc(q.taToMe || q.text) + ' / 我对TA：' + esc(q.meToTa || q.text) + '</div>';
+        html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + ' / 我对他：' + esc(q.meToTa || q.text) + '</div>';
       }
     });
     container.innerHTML = html;
@@ -518,7 +518,7 @@
       '<button class="ta-del" data-idx="' + idx + '">✕</button>' +
       '</div>';
     if (isAction) {
-      html += '<div class="tc-qopts">TA对我：' + esc(q.taToMe || q.text) + ' / 我对TA：' + esc(q.meToTa || q.text) + '</div>';
+      html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + ' / 我对他：' + esc(q.meToTa || q.text) + '</div>';
     }
     return html;
   }
@@ -531,8 +531,8 @@
       '<input id="ckq-new-' + blockKey + '" type="text" placeholder="' + (isActionCat ? '动作名，如 摸摸头' : '添加问题…') + '">' +
       '<button class="ta-add-btn" data-key="' + blockKey + '" data-cat="' + (cat || 'text') + '" data-grp="' + (grp || '') + '">添加</button>' +
       (isActionCat
-        ? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（TA对我 / 我对TA），如&#10;TA 想摸摸你的头&#10;TA 想让你摸摸 TA 的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
-        : '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~TA回应；多条回应用 ; 分隔，如 在想你~就知道。;嗯，这次信你。" hidden></textarea>') +
+        ? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（他对我 / 我对他），如&#10;他 想摸摸你的头&#10;他 想让你摸摸 他 的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
+        : '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~他回应；多条回应用 ; 分隔，如 在想你~就知道。;嗯，这次信你。" hidden></textarea>') +
       '</div>';
   }
   function renderCkMineInto(container, search) {
@@ -631,8 +631,8 @@
           // 互动动作：opts 文本域前两行=文案（TA对我 / 我对TA），之后 accept~回应;回应 / reject~回应;回应
           const optsEl = document.getElementById('ckq-opts-' + key);
           const lines = (optsEl ? optsEl.value : '').split(/\r?\n/).map(s => s.trim());
-          q.taToMe = lines[0] || ('TA 想' + v + '你');
-          q.meToTa = lines[1] || ('TA 想让你' + v + ' TA');
+          q.taToMe = lines[0] || ('他 想' + v + '你');
+          q.meToTa = lines[1] || ('他 想让你' + v + ' 他');
           const acc = [], rej = [];
           for (let i = 2; i < lines.length; i++) {
             const ln = lines[i]; if (!ln) continue;
@@ -768,7 +768,7 @@
   // 「让TA现在查岗一次」（遵循回复设置里的自动弹窗概率）
   const nowBtn = document.getElementById('ckq-now');
   if (nowBtn) nowBtn.addEventListener('click', () => {
-    if (window.triggerCkQuestion()) toast('TA 在聊天里来查岗了');
+    if (window.triggerCkQuestion()) toast('他 在聊天里来查岗了');
   });
 
   // ---- 入口：字卡库页双入口（与 TA的询问 同款：主入口看系统预设，「我的添加」入口只看自定义） ----
@@ -811,7 +811,7 @@
 
   // ---- 跨分类搜索注册（字卡库搜索框，模式同 ta-ask.js） ----
   window.__cardSearchFns = window.__cardSearchFns || [];
-  window.__cardSearchFns.push({ name: 'TA的查岗', fn: function (kw) {
+  window.__cardSearchFns.push({ name: '他的查岗', fn: function (kw) {
     const out = [];
     try { (ckLoad().questions || []).forEach(function (q) { const txt = q && q.text ? q.text : ''; if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: q.isPreset === true ? '系统预设' : '我的添加' }); }); } catch (e) {}
     return out;

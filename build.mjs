@@ -629,7 +629,7 @@ const FIX_SENTINELS = [
   { name: '#405 ensureDeskPeriodP3Order 有布局一律尊重不换序（删掉＝用户装修调换第三页经期/备忘卡顺序后每次启动被打回，#380 同族）', file: 'js/personalize.js', needle: 'if (deskLayout()) return;' },
   { name: '#405 p2apps 强制换到摸鱼卡下方改一次性迁移（删掉标记门＝用户把 p2apps 挪到摸鱼卡上方后每次启动/切桌面被改回）', file: 'js/personalize.js', needle: "get('p2apps-order-mig') === '1'" },
   { name: '#405 p3→p2 图标救回迁移改一次性（删掉标记门＝用户故意把花园/同频/伸手拖回第三页网格后每次启动被拽回）', file: 'js/personalize.js', needle: "get('p2icons-p3-mig') === '1'" },
-  { name: '#390 TA的心情分享 10% 概率 tag 显示「你的心情」（TA 有时发这张卡实为想问对方心情，tag 恒「TA的心情」表达不清；概率分支删掉即回归）', file: 'js/chat.js', needle: "? '你的心情' : 'TA的心情';" },
+  { name: '#390 TA的心情分享 10% 概率 tag 显示「你的心情」（TA 有时发这张卡实为想问对方心情，tag 恒「TA的心情」表达不清；概率分支删掉即回归）', file: 'js/chat.js', needle: "? '你的心情' : '他的心情';" },
   { name: '#145 聊天表情按钮再点关闭（window.closeEmojiPanelForInsert 导出，群聊切换关闭复用）', file: 'js/chat.js', needle: 'window.closeEmojiPanelForInsert' },
   { name: '#145 群聊表情按钮再点关闭（面板已开先关不重开）', file: 'js/group-chat.js', needle: 'window.closeEmojiPanelForInsert &&' },
   { name: '#149 引用块缩略图认媒体池令牌（对象引用 imgs 过滤：data: 或 @@m: 令牌，令牌交 media-pool 观察器解图；删掉缩略图又消失）', file: 'js/chat.js', needle: "const isQM = (s) => typeof s === 'string' && (s.indexOf('data:') === 0 || (window.mochiMediaIsToken && window.mochiMediaIsToken(s)));" },
@@ -971,7 +971,7 @@ const FIX_SENTINELS = [
   { name: '#118 写信混入默认字卡读写信场景概率（overallFor mail）', file: 'js/mail.js', needle: 'dcfg.overallFor' },
   { name: '#118 朋友圈默认字卡补池按 dc-overall-feed 概率（未设置=100 维持始终混入）', file: 'js/feed.js', needle: 'dc-overall-feed' },
   { name: '#120 导出侧全部丢失键记录降级（原只 chat-msgs/feed-posts，cc-groups 等静默跳过致导入后彻底丢失）', file: 'js/data-backup.js', needle: 'const nameOf = function (k)' },
-  { name: '#120 导出侧丢失键友好名字 nameOf（cc-groups/quote-cards/fav-msgs/avatar-*/music-file/reply-*/ta-* 等）', file: 'js/data-backup.js', needle: 'TA回复字卡(' },
+  { name: '#120 导出侧丢失键友好名字 nameOf（cc-groups/quote-cards/fav-msgs/avatar-*/music-file/reply-*/ta-* 等）', file: 'js/data-backup.js', needle: "他回复字卡(" },
   { name: '#120 导入侧保留备份未含的旧键防 clear 致丢（idbReplaceAll 前列出当前 IDB 键，备份没有的读出值加入 pairs）', file: 'js/data-backup.js', needle: '已保留备份未含的' },
   { name: '导出权威键强制读 IDB（isAuthorityKey，chat-msgs/feed-posts 不因 LS 有损小快照跳过 IDB 权威，修跨浏览器导入丢数据）', file: 'js/data-backup.js', needle: 'isAuthorityKey' },
   { name: '导入 chat-msgs 无 IDB 权威时 LS 快照写 IDB 兜底（chatFallback，不再无条件跳过导致彻底丢失）', file: 'js/data-backup.js', needle: 'chatFallback' },
@@ -1075,10 +1075,10 @@ const FIX_SENTINELS = [
   { name: '#115 input 监听命中相同文本时先放行真实编辑（只摘守卫标记不清框）', file: 'js/chat.js', needle: "if (userEditedAfterClear()) { input._mClearTxt = ''; return; }" },
   { name: '#115 真实输入活动跟踪（keydown/compositionstart/insert 类 beforeinput 捕获阶段刷新 lastUserEditAt，闸门判据来源）', file: 'js/chat.js', needle: "input.addEventListener('compositionstart', () => { lastUserEditAt = Date.now(); }, true);" },
   { name: 'v3.14 聚焦态清空走 execCommand 编辑管线终结组合会话（防输入法迟到写回；#115 补登哨兵，该块此前整块零保护）', file: 'js/chat.js', needle: "document.execCommand('selectAll', false, null)" },
-  { name: '#122 TA的心情235张系统预设注册字卡库跨分类搜索（修「系统编码字卡搜不到」）', file: 'js/ta-mood.js', needle: "name: 'TA的心情'" },
+  { name: '#122 TA的心情235张系统预设注册字卡库跨分类搜索（修「系统编码字卡搜不到」）', file: 'js/ta-mood.js', needle: "name: '他的心情'" },
   { name: '#122 聊天内置系统回应池（兜底/邀请婉拒/贴贴）注册字卡库跨分类搜索', file: 'js/chat.js', needle: "name: '聊天系统回应'" },
   // #1422 换锚（2026-09-29）：两池已进系统预设单一数据源（DEFAULT_CARD_DATA.interact），chatcard 的「默认聊天字卡」登记项遍历全部分类自动收录，旧 `name: '朋友圈互动'` 登记块整块撤掉＝旧 needle 必然消失；锚收到预设行取值处（feed.js 内唯一）
-  { name: '#122 朋友圈内置互动回应池（TA评论/TA回应）注册字卡库跨分类搜索', file: 'js/feed.js', needle: "uniqArr(feedPresetLines('朋友圈·TA的点评', TA_COMMENT_POOL).concat(feedPresetLines('朋友圈·TA的回复', TA_REPLY_POOL)))" },
+  { name: '#122 朋友圈内置互动回应池（TA评论/TA回应）注册字卡库跨分类搜索', file: 'js/feed.js', needle: "uniqArr(feedPresetLines('朋友圈·他的点评', TA_COMMENT_POOL).concat(feedPresetLines('朋友圈·他的回复', TA_REPLY_POOL)))" },
   { name: '#122 番茄钟陪伴模式内置话术池注册字卡库跨分类搜索', file: 'js/p2-features.js', needle: "name: '番茄钟陪伴'" },
   { name: '#122 群聊内置兜底回复池注册字卡库跨分类搜索', file: 'js/group-chat.js', needle: "name: '群聊系统回应'" },
   { name: '#123 大历史聊天懒加载（账本b字段门控 chatPrefetchIfLight，防低端机开屏/切桌预读 155MB 聊天包 OOM 崩溃，OPPO Find X9 Chrome 实测）', file: 'js/chat.js', needle: 'function chatPrefetchIfLight(load) {' },
@@ -1340,7 +1340,7 @@ const FIX_SENTINELS = [
   { name: '#132 房间字卡门控接 dcf-room（删 sayLine 门控行即回归）', file: 'js/room.js', needle: "window.dcfGet('room')" },
   { name: '#132 此间字卡门控接 dcf-cjian（删 cjLine 门控行即回归）', file: 'js/cjian.js', needle: "window.dcfGet('cjian')" },
   { name: '#611 梦角档案管理·入口提醒（档案页管理弹窗顶部「梦角会跟着桌面联系人自动创建」，删这句即回归）', file: 'js/cjian.js', needle: "'梦角会跟着桌面联系人自动创建，一般不用手动添加'" },
-  { name: '#611 梦角档案管理·arc 不带时辰（档案页添加梦角不弹时辰浮层、提示改指此间；改回「下一步还能限定 TA 常在的时辰区间」即回归）', file: 'js/cjian.js', needle: "'选一个时间偏移（想限定 TA 常在的时辰，去「此间」设）'" },
+  { name: '#611 梦角档案管理·arc 不带时辰（档案页添加梦角不弹时辰浮层、提示改指此间；改回「下一步还能限定 TA 常在的时辰区间」即回归）', file: 'js/cjian.js', needle: "'选一个时间偏移（想限定 他 常在的时辰，去「此间」设）'" },
   { name: '#611 梦角档案管理·入口传 arc 标记（删 { arc: 1 } 即回归——档案页又会冒出此间的「时辰区间」）', file: 'js/memo-arc.js', needle: 'e.stopPropagation(); if (window.cjianManage) window.cjianManage({ arc: 1 });' },
   { name: '#132 漂流瓶字卡门控接 dcf-drift（删 poolLine 门控行即回归）', file: 'js/drift-bottle.js', needle: "window.dcfGet('drift')" },
   { name: '#132 音乐字卡门控接 dcf-music（删 taPauseSendCard 门控行即回归）', file: 'js/music-player.js', needle: "window.dcfGet('music')" },
@@ -1878,7 +1878,7 @@ const FIX_SENTINELS = [
   { name: '#675c 删除记录对象登记（删了不登记＝原位收敛拿不到删除清单回退整窗）', file: 'js/chat.js', needle: 'try { if (normRemovedRecs) normRemovedRecs.push(a); } catch (e) {} // FIX #675' },
   { name: '#675d 收尾删除路径接线（改回 removedAll>0 无条件 renderWindow 则复发）', file: 'js/chat.js', needle: 'patched = patchChangedInPlace(newIdxs, renderStart);' },
   // ==== 2026-09-13 #403 漂流瓶都是空白没有留言（多机型）——dcf-drift 概率/总开关关断时 poolLine 返回空串，normal/special/TA 兜底全落空＝瓶子装空白信纸；修复=三道来源全空回退内置兜底话术（FB），瓶内文案永不落空 ====
-  { name: '#403 TA 瓶三道来源全空回退内置兜底（删则 dcf 关断+无历史时出空白信纸）', file: 'js/drift-bottle.js', needle: "note = sampleHistLine() || poolLine('TA的话', 'ta') || rnd(FB.ta);" },
+  { name: '#403 TA 瓶三道来源全空回退内置兜底（删则 dcf 关断+无历史时出空白信纸）', file: 'js/drift-bottle.js', needle: "note = sampleHistLine() || poolLine('他的话', 'ta') || rnd(FB.ta);" },
   { name: '#403 普通/特殊瓶文案永不落空（删则 dcf 关断时 normal/special 瓶空白）', file: 'js/drift-bottle.js', needle: "note = poolLine('海风', 'sea') || rnd(FB.sea);" },
   { name: '#400 收藏分类内容优先（改回信任存储 type 则误存语音的图片收藏又变语音条）', file: 'js/chat.js', needle: 'const isVoice = looksVoice;' },
   // ==== 2026-09-13 #406 后台来电点开通知无弹窗也无未接消息（OPPO Reno14 Edge 实报，多机型同族；诊断「LS 写入失败 QuotaExceededError」实锤）——holdIncomingCall 的 LS setItem 与 idbSet 同处一个 try，LS 配额满一抛整块中止、IDB 也不写＝后台只有通知没有挂起；且 resumeHeldCall 只读 LS、后台触发的来电（跨桌面/后台定时命中）重响从不补首发「打来了语音通话」系统消息。修复=①挂起双写拆开各吃各的 try，LS 失败 IDB 仍落；②resumeHeldCall 先读 LS 读不到再回读 IDB（holdBusy 防双处理）；③挂起携带 msg 已写标记，后台来电重响补首发系统消息 ====
@@ -2014,7 +2014,7 @@ const FIX_SENTINELS = [
   { name: '#713b cardSnapshot 问卷分支存 qarr/aarr（删则点心形静默无效＝#660 同族回归）', file: 'js/chat.js', needle: "else if (special === 'ask-survey') {" },
   { name: '#713c 收藏页问卷重放（删则收藏夹里问卷只剩一行摘要、题目与 TA 作答丢失）', file: 'js/chat.js', needle: "f.special === 'ask-survey' && Array.isArray(f.qarr)" },
   { name: '#713d 问卷详情收藏操作条（删则详情里没有整卡收藏与单题批量收藏入口＝主诉回归）', file: 'js/ta-ask.js', needle: 'id="sv-fav-allbtn"' },
-  { name: '#713e 单题收藏写入题库（删则勾选收藏只弹 toast 不落库、题库永远收不到题）', file: 'js/ta-ask.js', needle: '道题到问问TA题库' },
+  { name: '#713e 单题收藏写入题库（删则勾选收藏只弹 toast 不落库、题库永远收不到题）', file: 'js/ta-ask.js', needle: "道题到问问他题库" },
   // ==== 2026-09-18 #714 电脑端宽屏「很多按钮飞出屏幕」（用户直派）——手机上视口=手机壳，视口 fixed 通栏条/贴边钮贴边即贴壳；电脑（>900px 桌面模拟器外壳）上视口 1440+，ver-update-bar 备份/更新提醒条、pwa-install/pwa-ios-hint 右下钮、字卡批量管理条、位置面板（含 loc-full 全屏）、音乐批量条、sm-float 悬浮小框、群聊设置整页/@提及面板全部落到浏览器窗口边缘＝按钮飞出屏幕。修复=按壳几何锚回：壳中线=视口中线、壳宽 390 ⇒ 水平 50%±195px（壳内偏移按原值折算），body padding24+双轴 flex 居中+壳高 min(844,100dvh-48) ⇒ 垂直沿 max(24px, 50vh-422px)（900 高实测 28px 吻合）；老内核不识 max()/嵌套 calc 整条丢弃=回退原视口贴边，≤900px 不进查询零影响。游戏全屏（pong/brick/snake-fs）、通话/图片查看器/组件库等居中遮罩类为沉浸设计刻意不动 ====
   { name: '#714a 顶部提醒条锚回壳顶（删/去 :not 门控则电脑端提醒条横跨窗口、或满屏形态下错误钳成 390 居中）', file: 'css/base.css', needle: 'html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .ver-update-bar { top: max(24px, 50vh - 422px); left: calc(50% - 195px); right: calc(50% - 195px); }' },
   { name: '#714b 字卡批量管理条锚回壳内（删则电脑端管理时操作条按钮落到窗口左右边缘）', file: 'css/chat-pages.css', needle: 'html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .cc-manage-bar { left: calc(50% - 177px); right: calc(50% - 177px); bottom: calc(max(24px, 50vh - 422px) + 18px); }' },
@@ -2639,7 +2639,7 @@ const FIX_SENTINELS = [
   { name: '#577b 引导步骤内补充提示块（删则 warn 文案不再渲染＝回到只有一句 d）', file: 'js/onboarding.js', needle: 's.warn ? ' },
   { name: '#577c 功能介绍·快速开始写明聊天昵称要单独设（删则又只说「设置双方昵称、头像」）', file: 'template.html', needle: '聊天里显示的名字 / 头像与它<b>互相独立、不会同步</b>' },
   { name: '#577d 聊天设置「昵称与头像」标题标注聊天专用（删则设置页不提与桌面独立，用户仍以为改桌面即生效）', file: 'template.html', needle: '昵称与头像（聊天专用 · 与桌面各自独立，互不同步）' },
-  { name: '#577e 功能大全昵称条目关键词补「桌面昵称 / 不同步」（删则搜「桌面昵称」找不到这两条）', file: 'js/feature-hub.js', needle: '昵称 名字 联系人 改名 聊天昵称 桌面昵称 不同步 不一样 没变 显示 TA' },
+  { name: '#577e 功能大全昵称条目关键词补「桌面昵称 / 不同步」（删则搜「桌面昵称」找不到这两条）', file: 'js/feature-hub.js', needle: "昵称 名字 联系人 改名 聊天昵称 桌面昵称 不同步 不一样 没变 显示 他" },
   // ---- #577b 用户追加（2026-09-16）：「聊天里的更换头像，你没说可以直接在聊天设置里更换，
   //      或在聊天输入栏左边打开更多功能里的【头像互动】上传头像库可互动」——漏了头像互动这条换聊天头像的路 ----
   // #616（2026-09-16）：「头像互动」整块改名「头像和昵称互动」后，这三条 needle 里的旧名
@@ -3037,7 +3037,7 @@ const FIX_SENTINELS = [
   { name: '#616d 头像/昵称两级 pane 切换（删掉＝切到「昵称」大类看不到昵称池，或切回「头像」两个 pane 同时露出来）', file: 'js/avatar-lib.js', needle: 'if (avPaneC) avPaneC.hidden = !(nameKind && !me);' },
   { name: '#616e 空池也要显示空态提示（删掉＝「库没变」快路径把空库误判成已渲染，四个池的「还没有…点击下方按钮添加」永不出现）', file: 'js/avatar-lib.js', needle: 'function emptyHintMismatch(el, lib) { return !!el && el.hidden !== (lib.length > 0); }' },
   { name: '#616f 昵称事件消息豁免改名清扫（删掉＝第二次改名把旧记录改写成 {ta}，两条记录看起来一模一样＝用户报的「看不出换了什么昵称」复发）', file: 'js/chat.js', needle: 'if (r.nickKeep) return false;' },
-  { name: '#616g 昵称系统消息文案写明「换成了「XXX」」（删掉＝退回「XX 更换了昵称」，看不出换成哪个昵称，与 #616f 配套）', file: 'js/avatar-lib.js', needle: "function nickMsgPartner(to) { return 'TA 把聊天昵称换成了「' + to + '」'; }" },
+  { name: '#616g 昵称系统消息文案写明「换成了「XXX」」（删掉＝退回「XX 更换了昵称」，看不出换成哪个昵称，与 #616f 配套）', file: 'js/avatar-lib.js', needle: "function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }" },
   { name: '#616h 昵称事件消息渲染原样呈现（回退成无条件 pokePersonMap＝「我把 TA 的昵称换成了「小满」」被回填成「我把 小满 的昵称换成了「小满」」自指句）', file: 'js/chat.js', needle: "m.innerHTML = '<span>' + (rec.nickKeep ? escTxt(rec.text) : pokeIconHtml(pokePersonMap(rec.text, __taNm, __meNm))) + '</span>' +" },
   { name: '#616i 昵称池读取净化（删掉＝纯零宽字符条目又进池，顶栏/系统消息引号里渲染成空白＝用户报的「换成了「」」复发）', file: 'js/avatar-lib.js', needle: 'v.map(cleanNick).filter(Boolean)' },
   { name: '#616j 换昵称回应消息取实际生效昵称且空名不写引号（删掉＝引号内可能出现空值，用户报障形态复发）', file: 'js/avatar-lib.js', needle: "const to = String(name || store.get('cs-lbl-user') || '');" },
@@ -3141,7 +3141,7 @@ const FIX_SENTINELS = [
   { name: '#626b 改名钩子接尾巴清扫（删掉＝当前会话改名后尾巴日志不同步，重复复发；#775c 带 slot＝签名演进）', file: 'js/chat.js', needle: 'try { chatTailSweepNick(oldName, slot); }' },
   { name: '#626c 惰性补扫·最近旧名分支同步清尾巴（删掉＝重启后补扫不清尾巴，重载補回重复；#775c 按槽位补扫＝签名演进）', file: 'js/chat.js', needle: 'chatTailSweepNick(hist[hist.length - 1], slotKey)' },
   { name: '#626d 惰性补扫·历次旧名循环同步清尾巴（删掉＝备份导入等绕过钩子的改名仍留重复；#775c 按槽位补扫＝签名演进）', file: 'js/chat.js', needle: 'chatTailSweepNick(hist[i], slotKey)' },
-  { name: '#775e 聊天设置·联系人昵称改名基线取实际显示名（改回只读 cs-lbl-partner＝旧名片名扫不掉，历史拍一拍停在旧名片名）', file: 'js/chat-settings.js', needle: "const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || 'TA');" },
+  { name: '#775e 聊天设置·联系人昵称改名基线取实际显示名（改回只读 cs-lbl-partner＝旧名片名扫不掉，历史拍一拍停在旧名片名）', file: 'js/chat-settings.js', needle: "const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');" },
   { name: '#775c2 聊天设置·我的昵称接 me 槽改名钩子（删掉这行＝改了「我的昵称」后聊天里的拍一拍仍旧名）', file: 'js/chat-settings.js', needle: "if (oldEff !== (val || '我')) {" },
   { name: '#775c3 昵称池换「我的昵称」同走 me 槽钩子（删掉＝点昵称池改名后历史不跟随，与聊天设置那条路径不一致）', file: 'js/avatar-lib.js', needle: "const newEff = store.get('cs-lbl-user') || '我';" },
   { name: '#775f 名片改名的聊天有效名基线走显示链（含名片名；改回掺桌面 lbl-partner＝只改名片时既不记 hist 也不清扫）', file: 'js/contacts.js', needle: 'const oldEff = csLbl || oldName || taWordId;' },
@@ -3969,7 +3969,7 @@ const FIX_SENTINELS = [
   //   单聊/群聊两处说明从行上方挪到「回复条数最少/最多」两行正下方、开头点破语义「这两项＝你每发 1 条消息，TA 就跟着回你几条」，
   //   加粗强调「这是每条消息的条数、不是 TA 一天最多发几条，不建议调大」＋调大后果实例（连发各触发一批／群聊成员各算各的）。
   //   群聊设置抽屉镜像（group-chat.js cntNote）同文案随 #794 在途批收口、本批不携带。====
-  { name: '#869a 单聊条数说明点破「每条消息」语义（删回笼统说明＝再被读成总上限、调大后联系人刷屏复发）', file: 'template.html', needle: '注意：这是「每条消息」的条数，不是 TA 一天最多发几条' },
+  { name: '#869a 单聊条数说明点破「每条消息」语义（删回笼统说明＝再被读成总上限、调大后联系人刷屏复发）', file: 'template.html', needle: "注意：这是「每条消息」的条数，不是 他 一天最多发几条" },
   { name: '#869b 群聊条数说明点破「每条消息每个成员」语义（删＝群聊各算各的刷屏提醒缺失）', file: 'template.html', needle: '注意：这是「每条消息、每个成员」的条数' },
   // ==== 2026-09-19 #875 「TA在身边」藏在寻踪里是设计（位置面板唯一入口就在寻踪半框/寻踪页），
   //   但入口原是全宽浅色虚线的次要按钮、排在面板最底部 ⇒ 被读成寻踪的附加说明：用户既不知道
@@ -4019,7 +4019,7 @@ const FIX_SENTINELS = [
   { name: '#1015i TA 自动送礼源头闸（删＝扣款已发生而礼物消息被总闸拦＝扣了钱没礼物）', file: 'js/gift-shop.js', needle: "if (window.nightModeActive && window.nightModeActive()) return;\nconst st = wlSettings();" },
   { name: '#1015j 朋友圈自动动态夜间不生成（删＝夜里照发动态+聊天提示）', file: 'js/feed.js', needle: "if (window.nightModeActive && window.nightModeActive()) return;\ntry {\nconst cs = window.storeFor(cid);" },
   { name: '#1015k 跨桌面消息队列回放夜间暂停（删＝夜里回放其他桌面队列照常进聊天）', file: 'js/bg-keep.js', needle: "if (!force && window.nightModeActive && window.nightModeActive()) return 0;" },
-  { name: '#1015l 夜间模式说明＝「只拦 TA 主动，你的消息与回复照常」口径（退回旧含糊文案＝用户再被误导「为什么还在发」）', file: 'js/settings-help.js', needle: "你自己发的消息与 TA 对你的回复照常即时送达" },
+  { name: '#1015l 夜间模式说明＝「只拦 TA 主动，你的消息与回复照常」口径（退回旧含糊文案＝用户再被误导「为什么还在发」）', file: 'js/settings-help.js', needle: "你自己发的消息与 他 对你的回复照常即时送达" },
   // ==== 2026-09-20 #876 吃什么转盘「转盘抽取」中奖片不在指针下：旧公式把指针当在右侧 0 角（2π-normalized），CSS 指针实际钉在正上方（.eat-pointer top:-12px 尖朝下＝画布角 3π/2）＝高亮片/「今天吃」菜名恒与指针错开约 1/4 圈（2~30 格×500 随机角仿真 100% 错位）。修法＝抽 eatIdxUnderPtr（顶部指针几何），主转盘＋切菜单转盘两处接线 ====
   { name: '#876a 转盘中奖片按顶部指针几何计算（指针 .eat-pointer 在 12 点＝画布角 3π/2；改回 2π-零角旧形态＝高亮/菜名恒不在指针下）', file: 'js/p2-features.js', needle: 'function eatIdxUnderPtr(normalized, n, slice) { return Math.floor((((3 * Math.PI / 2 - normalized)' },
   { name: '#876b 主转盘接线（删＝吃什么页「转盘抽取」中奖片与指针错位复发）', file: 'js/p2-features.js', needle: 'eatIdxUnderPtr(normalized, dishes.length, slice)' },
@@ -4032,8 +4032,8 @@ const FIX_SENTINELS = [
   { name: '#879a 网页包裹方案提取入口（删＝分享/售卖网页文件里的方案解析失败复发「美化文件导入用不了」）', file: 'js/personalize.js', needle: "const htmlLike = /<!doctype\\s*html|<html[\\s>]|<body[\\s>]|<textarea[\\s>]/i.test(t1);" },
   { name: '#879b 提取失败可行动报错（删＝用户再拿到天书 JSON error 无从下手）', file: 'js/personalize.js', needle: "lastErr = new Error('粘贴的是网页不是方案文本" },
   // ==== 2026-09-20 #881 聊天设置两行头像补「头像和昵称互动也能换＋会覆盖」静态提示（用户直派：互动触发联系人换头像会覆盖聊天设置的头像，用户不知情以为设置失效）====
-  { name: '#881a 联系人头像行覆盖提醒（删＝开随机更换的用户不知道 TA 换头像会顶掉这里设置的头像）', file: 'template.html', needle: '开了随机更换后，TA 换头像会覆盖这里设置的' },
-  { name: '#881b 我的头像行覆盖提醒（删＝开 TA 主动给我换头像的用户不知道会顶掉这里设置的头像）', file: 'template.html', needle: '「TA 主动给我换头像」触发时会覆盖这里设置的' },
+  { name: '#881a 联系人头像行覆盖提醒（删＝开随机更换的用户不知道 TA 换头像会顶掉这里设置的头像）', file: 'template.html', needle: "开了随机更换后，他 换头像会覆盖这里设置的" },
+  { name: '#881b 我的头像行覆盖提醒（删＝开 TA 主动给我换头像的用户不知道会顶掉这里设置的头像）', file: 'template.html', needle: "「他 主动给我换头像」触发时会覆盖这里设置的" },
   // ==== 2026-09-20 #886 吃什么转盘「指针永远跟着显示的菜走」＋切桌面复位＋提醒键清扫（用户确认三项都修）：①打开/「换一个」/改菜单重抽（都走 eatPick）后 eatAlignWheelToDish 把显示菜扇区中线转到顶部指针下——#876 只修了「转盘抽取」，静置/换一个时指针仍与显示菜无关；②编辑菜单面板/切换菜单浮层是页内常驻节点，.page 整页隐藏看不见但跨桌面重进会带着上一桌面的面板状态（第一次点「编辑菜单」变关闭），contact-switched 时停转＋关浮层＋收面板；③eat-remind-done「今日已提醒」键每天至多 4 键永不清理，清扫只留当天（xyStore.remove 三处同清） ====
   { name: '#886a 指针永远指着显示的菜（显示菜扇区中线转到 3π/2；删＝打开/换一个后指针与显示菜无关）', file: 'js/p2-features.js', needle: 'eatSpinAngle = ((3 * Math.PI / 2 - (i + 0.5) * slice) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);' },
   { name: '#886b 切桌面复位（删＝跨桌面重进带着上一桌面的编辑面板/切换浮层状态）', file: 'js/p2-features.js', needle: "document.addEventListener('contact-switched', function () { eatClearSpin(); eatSwitchClose(); const mp = document.getElementById('eat-menu-panel'); if (mp) mp.hidden = true; });" },
@@ -4856,7 +4856,7 @@ const FIX_SENTINELS = [
   { name: '#1006l 存钱罐「回一句给TA」走用户发送侧（改回 chatAddIn＝用户的话又落在 TA 气泡）', file: 'js/p2-features.js', needle: "if (t && window.chatSendMsg) { try { window.chatSendMsg(t); } catch (e) {} toast('已回复'); }" },
   { name: '#1006m 吃什么「问 TA」走用户发送侧（改回 chatAddIn＝变成 TA 问用户）', file: 'js/p2-features.js', needle: 'if (window.chatSendMsg) { try { window.chatSendMsg(msg); }' },
   { name: '#1006n 摸鱼小结信 TA 口吻（改回「你俩…（我 +x · 名字 +y）」＝TA 把自己算在外、把用户标成「我」）', file: 'js/mail.js', needle: "'你和我一共摸鱼 ' + totalFish + ' 点（你 +' + fm + ' · 我 +' + ft + '）。'" },
-  { name: '#1006o 市集标语送给 TA（改回「送给你」＝收礼人写成用户）', file: 'js/gift-shop.js', needle: '挑一份心意，跨越两个世界送给 TA' },
+  { name: '#1006o 市集标语送给 TA（改回「送给你」＝收礼人写成用户）', file: 'js/gift-shop.js', needle: "挑一份心意，跨越两个世界送给 他" },
   /* ==== 2026-09-22 #1026 输入框提示文字（「说点什么…」）颜色与显隐可控（用户直派「聊天设置里【说点什么...】这一行输入栏的文字无法更换颜色或关闭」）：那行字由 .chat-input:empty::before 画，原颜色写死（单聊 #b5b5b5、群聊 #aaa）且设置里没有入口——唯一相近的「对方正在输入文字颜色」管的是气泡上方那条提示，与它无关。新增 cs-ph-ink / cs-ph-show 两键（每联系人独立、随聊天美化方案走），applySettings 写 :root 的 --chat-ph-ink / --chat-ph-visibility，未设置即删变量回落主题灰；隐藏走 visibility 不走 display，输入栏几何一字不动。 ==== */
   { name: '#1026a 占位符取用户色变量（改回写死色＝设置里换色无效）', file: 'css/chat-main.css', needle: 'content:attr(data-ph); color:var(--chat-ph-ink, var(--hint-ink)); pointer-events:none;' },
   { name: '#1026b 占位符显隐接线（删＝「隐藏提示文字」开关失效）', file: 'js/chat-settings.js', needle: "setVar(root, '--chat-ph-visibility', 'hidden')" },
@@ -4986,7 +4986,7 @@ const FIX_SENTINELS = [
   { name: '#1180e 限流三个键的默认值行（不登记＝rl-en 永不进 getCfg，开关初值恒空、rl-win/rl-max 读不到兜底值）', file: 'js/reply-settings.js', needle: "'rl-en': 0, 'rl-win': 5, 'rl-max': 15," },
   { name: '#1180f 回复设置·聊天「总量限流」开关行在位（删掉＝用户没有入口打开本功能，功能等于不存在）', file: 'template.html', needle: 'id="rl-en"' },
   { name: '#1180g 「为什么比设的还多」说明指向限流出口（删掉＝用户读完仍不知道只有总量限流能管住这些额外多发，#869 同族报障复发）', file: 'template.html', needle: '想让上面这些一起被管住，打开本面板下方「总量限流」' },
-  { name: '#1180h 开屏公告新增「关于 TA 发消息太多」一章（离线兜底源；删＝用户找不到「回复条数管不住这些」的官方解释）', file: 'template.html', needle: '关于 TA 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>' }, // #1500 同前,
+  { name: '#1180h 开屏公告新增「关于 TA 发消息太多」一章（离线兜底源；删＝用户找不到「回复条数管不住这些」的官方解释）', file: 'template.html', needle: "关于 他 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>" }, // #1500 同前,
 // [开屏精简批 2026-10-15 退役]   { name: '#1180i 在线权威源同口径一章（删＝联网用户只看到旧章节，两份必须同改）', file: 'pwa/notice.json', needle: '关于 TA 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）"' }, // #1500 目录统一编号后标题＝「14、关于 TA 发消息太多…」
   // ==== 2026-09-27 #1341 复核 #1180 四处口径（用户「帮我检查这个功能有没有用、会不会导致无法正常聊天」→「同意，按建议修复这四个问题」）：
   //      ① 限流与 #1015 夜间闸的豁免位拆成两把钥匙（旧写法共用 nightAllow＝带它的 TA 自发内容既不占额度也拦不住，与设置页文案不符）；
@@ -5683,7 +5683,7 @@ const FIX_SENTINELS = [
   { name: '#1351f 判出线上有新版就去请 sw.js 重装一次（全站此前没有一处 registration.update()：新包只能等浏览器自己的更新检查，规范上限 24h 且只在导航时做，而桌面 PWA 一开几天不重新导航＝上一批修好的门对这台手机等于没修过）', file: 'js/pwa.js', needle: "if (r && typeof r.update === 'function') r.update();" },
   { name: '#1351g 换版落地时机一字未动（#965 待换版登记／#992 保活闸门／手动更新条照旧；本批只把「取新包」这一脚补上，改回恒 update＝后台保活被反复打断，删掉＝送达这一半又回到赌用户点条）', file: 'js/pwa.js', needle: 'if (ts > baseTs) askSwUpdate();' },
   { name: '#1358a 桌面「我/TA」两格昵称列进回填后重绘清单（删＝昵称只剩库里一份的设备上那一格整场停在模板字面量＝OPPO Reno14 实报「退出就刷新成原始状态」）', file: 'js/personalize.js', needle: "paintDeskNames(); } catch (e) {} // #1358a" },
-  { name: '#1358b 桌面昵称的回退值问 taWord()（改回写死「TA」＝称呼设了他/她主页永远看不到，实报「设置了但是没用，每次都是TA」）', file: 'js/personalize.js', needle: "return key === 'lbl-partner' ? (window.taWord ? window.taWord() : 'TA') : '我';" },
+  { name: '#1358b 桌面昵称的回退值问 taWord()（改回写死「TA」＝称呼设了他/她主页永远看不到，实报「设置了但是没用，每次都是TA」）', file: 'js/personalize.js', needle: "return key === 'lbl-partner' ? (window.taWord ? window.taWord() : '他') : '我';" },
   { name: '#1358c 称呼变更当场重绘桌面昵称（删＝要切一次桌面才跟随）', file: 'js/personalize.js', needle: "document.addEventListener('ta-word-changed', function (ev) {" },
   { name: '#1358d 数据层读侧「库里那份到位叫我一声」那只口（删＝问回来也没人重画那一屏）', file: 'js/idb.js', needle: "whenBigKeyBack(k, cb) {" },
   { name: '#1358e 只认 bigHydAsk 的 ok，absent/unknown 都不回调（改成无条件回调＝把「没读到」讲成「没有」，替空态作证）', file: 'js/idb.js', needle: "if (st !== 'ok') return;" },
@@ -5926,16 +5926,16 @@ const FIX_SENTINELS = [
   //   站内此前只有 TA→我 那一半（maybeMusicRequest 按概率弹 openMusicInvitePanel）；本批补我→TA 这一半
   //   （三档回应＝同意 60／拒绝 25／申请换一首 15，换那一跳复用同一个邀请面板、不另建弹窗）。
   //   删任一处＝那一半又回到「只能等 TA 按概率开口」，或退成「点了只有一句台词、不会真的起播」（聊天里那张通用邀请字卡就是这毛病）。
-  { name: '#1400a 管理音乐那排挂「邀请 TA 一起听」（删＝我这一侧的邀请又零入口）', file: 'js/music-player.js', needle: '<button class="cc-tool" id="sm-e-ta-ask">邀请 TA 一起听</button>' },
-  { name: '#1400b 同一排挂「让 TA 邀我听这首」（删＝想立刻请 TA 邀这一首只剩 音乐设置→诊断邀请→强制触发，而那颗是随机挑歌、不是用户点的这首）', file: 'js/music-player.js', needle: '<button class="cc-tool" id="sm-e-ta-inv">让 TA 邀我听这首</button>' },
+  { name: '#1400a 管理音乐那排挂「邀请 TA 一起听」（删＝我这一侧的邀请又零入口）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-ask\">邀请 他 一起听</button>" },
+  { name: '#1400b 同一排挂「让 TA 邀我听这首」（删＝想立刻请 TA 邀这一首只剩 音乐设置→诊断邀请→强制触发，而那颗是随机挑歌、不是用户点的这首）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-inv\">让 他 邀我听这首</button>" },
   { name: '#1400c 强制邀请那颗的接线（#994 教训：渲染与接线成对，只画按钮不挂处理器＝点了没反应的静默死亡）', file: 'js/music-player.js', needle: "if (taInv) taInv.addEventListener('click', () => { forceTaInviteFor(id); });" },
-  { name: '#1400d 我方邀请三档掷骰的同意档走 accept 真起播（改成只发台词＝又回到聊天邀请字卡那种「答应了却没播」）', file: 'js/music-player.js', needle: "if (roll < 0.6) { accept(say('音乐邀请TA·同意'" },
+  { name: '#1400d 我方邀请三档掷骰的同意档走 accept 真起播（改成只发台词＝又回到聊天邀请字卡那种「答应了却没播」）', file: 'js/music-player.js', needle: "if (roll < 0.6) { accept(say('音乐邀请他·同意'" },
   { name: '#1400e 拒绝档在聊天里留一句痕（删＝这次邀请的结果只有气泡，回看不知 TA 答没答应）', file: 'js/music-player.js', needle: "taMusicSys(name + ' 这次没答应，说待会儿再听《' + trackName + '》');" },
   { name: '#1400f 申请换一首那一跳复用唯一邀请面板（换成新建一层弹窗或改成直接抢播＝与 TA→我 那条「你点一起听才播」的口径分叉）', file: 'js/music-player.js', needle: 'if (!openMusicInvitePanel(pick.id, !!currentId)) {' },
-  { name: '#1400g 我方邀请的在飞闸（TA 的回应延迟 1.5~4s 落地，没这道闸连点就把三条回应叠成一串）', file: 'js/music-player.js', needle: "if (myInvitePending) { toast('刚才那条还在等 TA 回，先看这一条'); return; }" },
+  { name: '#1400g 我方邀请的在飞闸（TA 的回应延迟 1.5~4s 落地，没这道闸连点就把三条回应叠成一串）', file: 'js/music-player.js', needle: "if (myInvitePending) { toast('刚才那条还在等 他 回，先看这一条'); return; }" },
   { name: '#1400h 切桌面时交还我方在飞闸（残留＝新桌面的正常邀请被旧桌面那条还没落地的邀请挡掉，看着像按钮坏了）', file: 'js/music-player.js', needle: 'reqData = null;\nmyInvitePending = false;' },
-  { name: '#1400i 音乐设置那句「一起听歌」说明指到两颗新按钮（不指路＝功能在做而用户找不到，只能报「没有这个设计」）', file: 'js/music-player.js', needle: '想现在就要（或换你主动邀 TA）' },
-  { name: '#1400j 功能介绍第 10 节补「你也可以主动邀请 TA 听歌」条', file: 'template.html', needle: '你也可以主动邀请 TA 听歌' },
+  { name: '#1400i 音乐设置那句「一起听歌」说明指到两颗新按钮（不指路＝功能在做而用户找不到，只能报「没有这个设计」）', file: 'js/music-player.js', needle: "想现在就要（或换你主动邀 他）" },
+  { name: '#1400j 功能介绍第 10 节补「你也可以主动邀请 TA 听歌」条', file: 'template.html', needle: "你也可以主动邀请 他 听歌" },
   { name: '#1400k 第 10 节计数随新条同步 11→12（漂移＝按章标题上的条数找不到条，#980b/#997h 同款）', file: 'template.html', needle: '音乐</span><span class="lg-count">12</span>' },
   { name: '#1400l 待确认邀请只在面板真在屏上时才算数（tc 层共用：被别的面板顶掉后 reqData 还是真的，拿它锁门＝这两个入口从此永久拒绝）', file: 'js/music-player.js', needle: "return !!(reqData && m && !m.hidden && document.getElementById('sm-req-yes'));" },
   /* ==== 2026-09-29 #1403 作者直派三件事：①「关闭寻踪时不需要隐藏我的按钮图标，因为这个功能里还有一个【TA在身边 · 位置感知】需要点击进去才能看到页面」②「寻踪记录没有自动折叠起来导致记录很长，改为默认只显示当天、其他自动折叠，并检查其他历史记录有没有这种问题」③「关闭时功能里需文字显示已禁用 联系人无法再触发更新日常，并检查关闭寻踪功能有没有出现错误」。#823 当年把「停用生成」和「收起入口」捆成一件事，于是关一个功能连带把住在同一页里的另一个独立功能（位置面板唯一入口就在寻踪页/半框，见 #875）一起藏了——三处入口同时收＝寻踪页再也进不去。本批拆开：闸门只留生成侧（#823a doCheckin、#823b 半框、#823f 更多面板三针一字未动），桌面图标与寻踪页恢复可用，页顶写明「已禁用：联系人无法再触发更新日常」，关闭态那颗「刷新」不再空转（旧写法进 doCheckin 首行 return＝点了没任何反应＝站内最大宗那一型静默失败）。记录折叠复用 #1053（帮我决定记录）那套「当天直显＋更早 details 默认折叠」与它的全局 .dc-h-* 样式皮＝零新增 CSS、两处视觉一致。检查面另见 #1279：功能诊断那句 gated 从此不可达，一并摘掉（留着＝真故障时诊断拿它当借口）。行为断言 tools/verify-checkin-disable.mjs（本批改约后复跑）＋tools/verify-1279-func-diag-checkin-row.mjs B4/B5 换向 ==== */
@@ -6215,7 +6215,7 @@ const FIX_SENTINELS = [
   { name: '#1515b p2 fishPool 兜底过闸（删＝摸鱼浮字/抓包回应全关后照旧回落）', file: 'js/p2-features.js', needle: "return arr.length ? arr : (window.gateCardFallback ? window.gateCardFallback('fish', fallback) : fallback.slice());" },
   { name: '#1515c p2 tpPool 尾行裸兜底过闸（删＝TA 此刻整组停用后状态照旧出）', file: 'js/p2-features.js', needle: "return pool.length ? pool : (window.gateCardFallback ? window.gateCardFallback('sync', DEF_STATUS) : DEF_STATUS.slice());" },
   { name: '#1515d 聊天催水空池不发（删＝全关后 TA 照旧发「undefined（还差N杯）」）', file: 'js/p2-features.js', needle: 'if (!m) return false; // #1515 全关＝不发（真停用，不再回落同文兜底）' },
-  { name: '#1515e 存钱罐取款关心空池不追问（删＝全关后追问行出「TA：undefined」）', file: 'js/p2-features.js', needle: "if (q) { var care = libPool('piggy', '取款关心', PIGGY_CARE); if (care.length) { var careTxt = 'TA：' + care[" },
+  { name: '#1515e 存钱罐取款关心空池不追问（删＝全关后追问行出「TA：undefined」）', file: 'js/p2-features.js', needle: "if (q) { var care = libPool('piggy', '取款关心', PIGGY_CARE); if (care.length) { var careTxt = '他：' + care[" },
   { name: '#1515f 摸鱼浮字空池不烧冷却不浮层（删＝全关后浮字出 undefined 且白吃冷却额度）', file: 'js/p2-features.js', needle: "if (!note) { lastTa = cur; return; } // #1515 全关＝不浮字不吃冷却（lastTa 照常推进）" },
   { name: '#1515g 拍卖 TA 抱走回应空池静默（删＝整组停用后每件固定发未入库兜底句「这件归我啦。」）', file: 'js/auction.js', needle: "const say = pool.length ? pool[Math.floor(Math.random() * pool.length)] : ''; // #1515 整组停用＝静默（TA 抱走）" },
   { name: '#1515h 拍卖流拍回应空池静默（删＝整组停用后固定发「这玩意没人要啊。」）', file: 'js/auction.js', needle: "const say = pool.length ? pool[Math.floor(Math.random() * pool.length)] : ''; // #1515 整组停用＝静默（流拍）" },
@@ -6329,7 +6329,7 @@ const FIX_SENTINELS = [
   { name: '#1477c 身份反查命中后把节点下标修回真值（删＝就地状态补丁 rpPatchStatusInPlace 找不到节点＝领取后整窗重建闪屏回归）', file: 'js/chat.js', needle: 'if (j >= 0) { item.dataset.idx = String(j); return { rec: msgs[j], idx: j }; }' },
   { name: '#1477d normCell 无 ts 存量改盖自身事件时间（删＝每次首遇跳到数组末尾的漂移驱动回归，#407 同族）', file: 'js/chat.js', needle: 'if (!r.ts) { r.ts = (r.rpTs || r.askTs || r.surveyTs || r.dAt) || Date.now(); c = true; }' },
   { name: "#1477e msgKeyOf 拼卡片身份字段＋时间同链（删＝同毫秒同侧两张红包分不开／盖章后 data-mk 失效）", file: 'js/chat.js', needle: "String(rec.text || '').slice(0, 80) + chatRecCardExtra(rec);" },
-  { name: '#1477f 待领取侧判据与「联系人 发出」渲染对齐（删＝side 缺失历史卡显示可领、点了一样「等待TA领取」自相矛盾）', file: 'js/chat.js', needle: "return rec.side === 'out' ? (window.taFit ? window.taFit('待TA领取') : '待TA领取') : '待领取';" },
+  { name: '#1477f 待领取侧判据与「联系人 发出」渲染对齐（删＝side 缺失历史卡显示可领、点了一样「等待TA领取」自相矛盾）', file: 'js/chat.js', needle: "return rec.side === 'out' ? (window.taFit ? window.taFit('待他领取') : '待他领取') : '待领取';" },
   // ==== 2026-09-30 #1441 红米 K80 Chrome 实报「退出聊天页面回到桌面，再回聊天页面，来回切换时聊天数据总是重新加载并闪屏」（作者明说其他设备型号也有出现、点名不要覆盖式修补）====
   // 根因：enterChat 那一发 loadMsgs 读不读只由 IDB_RELOAD_MIN_GAP(8s) 时间闸决定——「在桌面待够 8 秒」被当成库里比内存新的证据；页内切页不是外部写入面（TA 的新消息本就进 msgs、真后台回场有 #967/#1067/#1294 三支自带 forceIdb、切联系人与大历史未预读会把 authLoadedPrefix 归位），于是历史很大那一档每趟白起一轮读库＝进度条挂上来、合并收尾还可能再画一遍。
   // 修法＝起读只由四条现成事实支配（①本桌权威未落定 ②内存里还没有这一桌 ③别的同源文档写过＝storage 事件 ④跨桌面中转箱有货），任一成立照旧真读。零机型／零 UA 分支、不轮询不新增定时器。
@@ -6435,16 +6435,16 @@ const FIX_SENTINELS = [
   { name: '#1516 vv 基线钳进布局视口（删＝Edge 工具栏假高顶高基线，正常高度被误判键盘收缩、会话劫持钉全高＝被盖/空隙乱象）', file: 'js/mobile-adapt.js', needle: '_aH = Math.min(h, window.innerHeight || h);' },
   { name: '#1519a 寻踪预设开关只对预设卡生效（删＝「整组停用『地点』」与逐张开关把用户自建的地点/做的事/说的话一起关光；作者实报多机型同现）', file: 'js/p2-features.js', needle: 'if (CK_DEF_LIST[k].indexOf(x) < 0) return false;' },
   { name: '#1519b 功能字卡取池口请库取回（删＝cc-groups 大键切后台读空时 13 类自建功能卡静默缺席，聊天回复池有钩只有这条路没有）', file: 'js/chatcard.js', needle: 'maybeHydrateReplyPool(); if (CC_FUNC_KEYS.indexOf(cat) < 0) return [];' },
-  { name: '#1519c TA 的提问题库整包写前问读全没有（删＝盲窗里管理页任何开关/增删＝用纯预设题库顶掉库里自定义题）', file: 'js/ta-ask.js', needle: "window.xyBigWriteBlocked(store, KEY, 'TA 的提问题库')" },
+  { name: '#1519c TA 的提问题库整包写前问读全没有（删＝盲窗里管理页任何开关/增删＝用纯预设题库顶掉库里自定义题）', file: 'js/ta-ask.js', needle: "window.xyBigWriteBlocked(store, KEY, '他 的提问题库')" },
   { name: '#1519d 查岗问题库整包写前问读全没有（删＝同型清库）', file: 'js/ck-question.js', needle: "window.xyBigWriteBlocked(store, KEY, '查岗问题库')" },
   { name: '#1519e 邀请字卡库整包写前问读全没有（删＝同型清库）', file: 'js/ta-invite.js', needle: "window.xyBigWriteBlocked(store, KEY, '邀请字卡库')" },
   { name: '#1519f 题库读空请库取回（删＝盲窗这一拍按纯预设走且下一拍也不主动取回）', file: 'js/ta-ask.js', needle: 'if (store.awaitingBigKey && store.awaitingBigKey(KEY)) store.requestBigKey(KEY);' },
   { name: '#1519g 位置卡库整包写前问读全没有（删＝盲窗里增删位置卡＝整本被顶）', file: 'js/loc-lib.js', needle: "window.xyBigWriteBlocked(store, CUSTOM_KEY, '位置卡库')" },
   { name: '#1520a 寻踪字卡库整包写前问读全没有（删＝盲窗里批量添加/删除/编辑把整本自建卡顶掉，与 #1519 读侧闸同族的写侧洞）', file: 'js/p2-features.js', needle: "xyBigWriteBlocked(store, 'checkin-cards-' + k, '寻踪字卡库')" },
   { name: '#1520b 保底那一发不再重入新闸（删＝慢设备取回首窗 6s > 4s 保底 ⇒ 残缺一发＋6 秒后完整一发＝双发推送双条记录）', file: 'js/p2-features.js', needle: 'ckBigBypass = true;' },
-  { name: '#1520c TA 的小问题库整包写前问读全没有（删＝#1519 漏掉的同文件三本题库之一，清库风险同型）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY2, 'TA 的小问题库')" },
-  { name: '#1520d TA 的好奇题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY3, 'TA 的好奇题库')" },
-  { name: '#1520e TA 的吐槽题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY4, 'TA 的吐槽题库')" },
+  { name: '#1520c TA 的小问题库整包写前问读全没有（删＝#1519 漏掉的同文件三本题库之一，清库风险同型）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY2, '他 的小问题库')" },
+  { name: '#1520d TA 的好奇题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY3, '他 的好奇题库')" },
+  { name: '#1520e TA 的吐槽题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY4, '他 的吐槽题库')" },
   { name: '#1520f 内存里已读得到就不发取回（删＝键挂在启动挂起名单且 IDB 不稳时，功能字卡取池口每次都重发 MB 级读）', file: 'js/chatcard.js', needle: 'if (HYDRATE_TRUSTS_MEMORY) {' },
   { name: '#1520g 用户动作尊重写闸结果（删＝被拦后仍清空输入框并报「已添加/已导入」，用户没料可再点一次）', file: 'js/p2-features.js', needle: 'ckSaveItems(ckTab, list) === false' },
   { name: '#1520h 位置卡库保存回传布尔（删＝调用方无法知道这一发没落笔）', file: 'js/loc-lib.js', needle: "CUSTOM_KEY, '位置卡库')) return false;" },

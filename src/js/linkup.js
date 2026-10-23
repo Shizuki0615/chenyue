@@ -82,7 +82,7 @@
   let themeKey = 'fruit';
   function themeKinds() { return (THEMES[themeKey] || THEMES.fruit).kinds; }
   function themeBtn() { return document.getElementById('lk-theme'); }
-  const THINK_LINES = ['TA正在找能连的……', 'TA扫视着棋盘', 'TA歪头想了想'];
+  const THINK_LINES = ['他正在找能连的……', '他扫视着棋盘', '他歪头想了想'];
   const TURN_MIN = 900, TURN_VAR = 800;
 
   const T = window.taFit || function (x) { return x; };
@@ -635,7 +635,7 @@
     }
     const body =
       '<div class="pong-end-stat">💕 默契 ' + chem + '</div>' +
-      '<div class="pong-end-stat">你 ' + st.myPairs + ' 对 · ' + T('TA') + ' ' + st.taPairs + ' 对 · 点错 ' + st.misPicks + ' 次 · 最高连击 ×' + (st.maxCombo || 0) + '</div>' +
+      '<div class="pong-end-stat">你 ' + st.myPairs + ' 对 · ' + T('他') + ' ' + st.taPairs + ' 对 · 点错 ' + st.misPicks + ' 次 · 最高连击 ×' + (st.maxCombo || 0) + '</div>' +
       '<div class="pong-end-stat">累计完成 ' + s.clears + ' 局 · 历史最佳默契 ' + s.bestChem + '</div>' +
       (coinLine ? '<div class="pong-end-stat">' + coinLine + '</div>' : '') +
       dropLine;
@@ -677,8 +677,8 @@
   function showStartOverlay() {
     const s = loadStats();
     showOverlay('连连看',
-      '<div class="c4-start-tip">和 ' + T('TA') + ' 轮流点击两张相同的牌<br>连线不超过两个弯就消除，一起清完整张棋盘</div>' +
-      '<div class="c4-start-note">🧰 道具：💡 提示 ×3（点亮一对能连的牌）· 🔀 洗牌 ×2（重排剩下的牌），点右上角那两个图标使用<br>🎲 ' + T('TA') + '每回合状态随机——快速找 / 凭记忆 / 随缘点</div>' +
+      '<div class="c4-start-tip">和 ' + T('他') + ' 轮流点击两张相同的牌<br>连线不超过两个弯就消除，一起清完整张棋盘</div>' +
+      '<div class="c4-start-note">🧰 道具：💡 提示 ×3（点亮一对能连的牌）· 🔀 洗牌 ×2（重排剩下的牌），点右上角那两个图标使用<br>🎲 ' + T('他') + '每回合状态随机——快速找 / 凭记忆 / 随缘点</div>' +
       (s.clears > 0 ? '<div class="pong-end-stat">累计完成 ' + s.clears + ' 局 · 历史最佳默契 ' + s.bestChem + '</div>' : ''),
       s.clears > 0 ? '再来一局' : '开始对局');
     if (endBtn) endBtn.hidden = true;
@@ -753,7 +753,7 @@
 
   // ---- 打开 / 关闭 ----
   function setNames() {
-    let name = T('TA');
+    let name = T('他');
     try {
       const s = window.activeStore && window.activeStore();
       name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;

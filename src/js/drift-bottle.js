@@ -24,7 +24,7 @@
   // ---- 基础工具 ----
   function S() { try { return window.activeStore(); } catch (e) { return null; } }
   function pn() {
-    try { const s = S(); return (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || 'TA'; } catch (e) { return 'TA'; }
+    try { const s = S(); return (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || '他'; } catch (e) { return '他'; }
   }
   function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
   function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
@@ -333,7 +333,7 @@
         if (m.willReply && !m.replied && m.replyAt && now >= m.replyAt) {
           m.replied = now;
           // v3.32.x #132：dcf-drift 关断（0）时 poolLine 返回空串——不出空回应瓶
-          const _dl = poolLine('TA的回应', 'reply');
+          const _dl = poolLine('他的回应', 'reply');
           if (_dl) {
             pushGot({ kind: 'reply', from: 'ta', text: _dl, relateId: m.id });
             if (!m.noticed) {
@@ -415,7 +415,7 @@
         // v3.32.x #132：dcf-drift 关断时 poolLine 返回空串
         // FIX 2026-09-13 #403：三道来源全空（dcf 总开关关断/概率 0 + 无历史候选 + 无字卡）
         // 时回退内置兜底话术——绝不让瓶子装一张空白信纸（多机型「漂流瓶都是空白的没有留言」）
-        note = sampleHistLine() || poolLine('TA的话', 'ta') || rnd(FB.ta);
+        note = sampleHistLine() || poolLine('他的话', 'ta') || rnd(FB.ta);
         if (note) sig = '—— ' + pn();
         if (Math.random() < 0.2) gift = rnd(ITEMS);
       } else if (kind === 'special') {
@@ -571,7 +571,7 @@
     if (!rows.length) {
       // #797：瓶子记录走 IDB 回填，未完成时不把空值陈述成终态文案（诱导用户以为记录丢了）
       if (window.mochiDataPending && window.mochiDataPending()) { el.innerHTML = window.mochiLoadingHtml('漂流瓶'); return; }
-      el.innerHTML = '<div class="dl-empty">' + (tab === 'mine' ? '还没有放过的瓶子。写一句话放进海里吧。<br><button class="memo-send-btn" id="dl-empty-put" style="margin-top:8px">写一句话放瓶子</button>' : tab === 'got' ? '还没有捡到的瓶子。去海边捡一个试试。' : tab === 'theirs' ? '还没有捡到过你说的话。多去捡几次，说不定就被 TA 捞起来了。' : '还没有收藏的瓶子。') + '</div>';
+      el.innerHTML = '<div class="dl-empty">' + (tab === 'mine' ? '还没有放过的瓶子。写一句话放进海里吧。<br><button class="memo-send-btn" id="dl-empty-put" style="margin-top:8px">写一句话放瓶子</button>' : tab === 'got' ? '还没有捡到的瓶子。去海边捡一个试试。' : tab === 'theirs' ? '还没有捡到过你说的话。多去捡几次，说不定就被 他 捞起来了。' : '还没有收藏的瓶子。') + '</div>';
       return;
     }
     rows.slice(0, 60).forEach(r => {
@@ -649,7 +649,7 @@
     if (!window.openModal) return;
     window.openModal('漂流瓶 · 关于这片海', '', function () {}, {
       noInput: true,
-      staticText: '你写下的话会漂到两个世界之间：过几天它可能自己漂回来，也可能收到一句回应。\n\n有时候，也会捡到「' + pn() + '」漂来的瓶子——TA以前在聊天里说过的字卡，都可能单独漂回来；没有合适的话时，才从字卡库的漂流瓶分组里取一句。\n\n我捡瓶的时候，' + pn() + '偶尔也会从我在聊天里说过的话中捞起一句——它们会收进「' + pn() + '捡到的漂流瓶」分类里。\n\n每日首次捡瓶送 2 心意币，特殊瓶 +5（每天最多 10）。瓶子是偶尔的惊喜，不用一直守着海。'
+      staticText: '你写下的话会漂到两个世界之间：过几天它可能自己漂回来，也可能收到一句回应。\n\n有时候，也会捡到「' + pn() + '」漂来的瓶子——他以前在聊天里说过的字卡，都可能单独漂回来；没有合适的话时，才从字卡库的漂流瓶分组里取一句。\n\n我捡瓶的时候，' + pn() + '偶尔也会从我在聊天里说过的话中捞起一句——它们会收进「' + pn() + '捡到的漂流瓶」分类里。\n\n每日首次捡瓶送 2 心意币，特殊瓶 +5（每天最多 10）。瓶子是偶尔的惊喜，不用一直守着海。'
     });
   }
 

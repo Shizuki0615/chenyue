@@ -113,7 +113,7 @@
   enabledEl.checked = enabled();
   enabledEl.addEventListener('change', () => {
     ls.set('tm-enabled', enabledEl.checked ? '1' : '0');
-    toast(enabledEl.checked ? '已开启：TA 会偶尔分享自己的心情' : '已关闭：TA 不再主动分享心情');
+    toast(enabledEl.checked ? '已开启：他 会偶尔分享自己的心情' : '已关闭：他 不再主动分享心情');
   });
   // 分享概率 stepper（与全站 stepper 交互一致）
   const probRow = document.getElementById('tm-prob-val');
@@ -128,13 +128,13 @@
         const v = Math.max(min, getProb() - stp);
         ls.set('tm-prob', String(v));
         probRow.value = String(v);
-        toast('TA 的心情分享概率：' + v + '%');
+        toast('他 的心情分享概率：' + v + '%');
       });
       stepEl.querySelector('.stp-max').addEventListener('click', () => {
         const v = Math.min(max, getProb() + stp);
         ls.set('tm-prob', String(v));
         probRow.value = String(v);
-        toast('TA 的心情分享概率：' + v + '%');
+        toast('他 的心情分享概率：' + v + '%');
       });
     }
   }
@@ -234,7 +234,7 @@
   }
   // v3.26.x(#122)：注册「TA的心情」跨分类搜索（字卡库列表页搜索同源可查，235 张系统预设不再搜不到；已关卡片带 ·已关 标记）
   window.__cardSearchFns = window.__cardSearchFns || [];
-  window.__cardSearchFns.push({ name: 'TA的心情', fn: function (kw) {
+  window.__cardSearchFns.push({ name: '他的心情', fn: function (kw) {
     const out = [];
     try {
       (DATA.cards || []).forEach(function (c) {

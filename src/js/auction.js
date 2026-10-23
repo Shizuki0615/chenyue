@@ -235,11 +235,11 @@
         bag.unshift({ ico: p.ico, img: p.img || '', name: p.name, fen: 0, ts: Date.now(), from: 'ta' });
         saveBag(bag);
         delivered++;
-        try { if (window.chatAddIn) window.chatAddIn(T('TA') + ' 把之前拍走的「' + p.name + '」寄给你了，纸条上写：拍品该物归原主呀', {}); } catch (e) {}
+        try { if (window.chatAddIn) window.chatAddIn(T('他') + ' 把之前拍走的「' + p.name + '」寄给你了，纸条上写：拍品该物归原主呀', {}); } catch (e) {}
       } else rest.push(p);
     });
     if (rest.length !== pend.length) savePending(rest);
-    if (delivered && statusEl && !panel.hidden) setStatus('📬 ' + T('TA') + ' 寄来了 ' + delivered + ' 件拍品，已收进 🎒');
+    if (delivered && statusEl && !panel.hidden) setStatus('📬 ' + T('他') + ' 寄来了 ' + delivered + ' 件拍品，已收进 🎒');
     // #343 寄到时背包列表开着就重渲染：unshift 会让已渲染行的 data-i 整体 +1，不重渲＝「送TA」可能送错件
     if (delivered && bagOpen) { try { showBag(); } catch (e) {} }
   }
@@ -274,7 +274,7 @@
       let bidTxt;
       if (st.leader === 'none') bidTxt = '起拍价 ' + yuan(st.cur);
       else if (st.leader === 'you') bidTxt = '你的出价 ' + yuan(st.cur);
-      else bidTxt = esc(T('TA')) + ' 出价 ' + yuan(st.cur);
+      else bidTxt = esc(T('他')) + ' 出价 ' + yuan(st.cur);
       // #301 蒙面拍品：开拍只给描述，落槌才揭晓；#1041 自制拍品有商品图时展示图（dataURL 走白名单正则再入 innerHTML）
       const auImg = item.mystery ? '' : auSafeImg(item.img);
       const showIco = item.mystery ? '\u{1F381}' : auImg ? '<img class="au-ico-img" src="' + auImg + '" alt="">' : item.ico;
@@ -364,9 +364,9 @@
     renderLot();
     if (st.lucky) {
       if (typeof window.arcadeMarkLuckyPlayed === 'function') window.arcadeMarkLuckyPlayed('auction');
-      setStatus('🍀 今日幸运拍卖：' + T('TA') + '今天手松——' + TA_MODES[st.mode].talk + '，你来出价');
+      setStatus('🍀 今日幸运拍卖：' + T('他') + '今天手松——' + TA_MODES[st.mode].talk + '，你来出价');
     } else {
-      setStatus('槌起！' + T('TA') + TA_MODES[st.mode].talk + '——你来出价');
+      setStatus('槌起！' + T('他') + TA_MODES[st.mode].talk + '——你来出价');
     }
   }
   // 你的加价：出价 = 当前价 + step；随后轮到 TA 掂量
@@ -383,7 +383,7 @@
     st.leader = 'you';
     sfxBid();
     renderLot();
-    scheduleTaThink('TA低头想了想……');
+    scheduleTaThink('他低头想了想……');
   }
   // #348 长按任一档位弹自定义出价（≥当前价+¥1，确认即压价）
   function customBidModal() {
@@ -442,7 +442,7 @@
       sfxBid();
       renderLot();
       taSay(pick(m.calls));
-      setStatus(T('TA') + '举牌：' + yuan(st.cur) + '——到你出价了');
+      setStatus(T('他') + '举牌：' + yuan(st.cur) + '——到你出价了');
       updateBidBtns();
     } else {
       if (st.mode === 'bluff') taSay(pick(['好吧，被你看穿了', '其实……也就那样']));
@@ -473,12 +473,12 @@
       savePending(pend);
     } catch (e) {}
     const rt = rarityOf(item);
-    showOverlay(T('TA') + '拍得了',
+    showOverlay(T('他') + '拍得了',
       '<div class="au-ov-ico">' + item.ico + '</div>' +
-      '<div class="pong-end-stat"><span class="au-rare ' + rt.cls + '">' + rt.label + '</span> ' + esc(item.name) + ' · ' + yuan(st.cur) + ' 归 ' + esc(T('TA')) + '</div>' +
-      '<div class="pong-end-stat">📬 不过 TA 拍走的拍品，过几天会寄回给你</div>',
+      '<div class="pong-end-stat"><span class="au-rare ' + rt.cls + '">' + rt.label + '</span> ' + esc(item.name) + ' · ' + yuan(st.cur) + ' 归 ' + esc(T('他')) + '</div>' +
+      '<div class="pong-end-stat">📬 不过 他 拍走的拍品，过几天会寄回给你</div>',
       st.idx + 1 < st.lots.length ? '下一件' : '结算', 'ta');
-    setStatus(esc(T('TA')) + '把「' + esc(item.name) + '」抱走了');
+    setStatus(esc(T('他')) + '把「' + esc(item.name) + '」抱走了');
     try {
       const fb = ['这件归我啦。', '嘿嘿，到手。', '眼光不错吧。'];
       const pool = window.getInteractPool ? window.getInteractPool('游戏胜利·回应', fb) : fb;
@@ -552,7 +552,7 @@
       '<div class="au-ov-ico">' + item.ico + '</div>' +
       '<div class="pong-end-stat"><span class="au-rare ' + rt.cls + '">' + rt.label + '</span> ' + esc(item.name) + ' · ' + yuan(st.cur) + ' 拍下</div>' +
       '<div class="pong-end-stat">💌 ' + esc(item.wish) + '</div>' +
-      '<div class="pong-end-stat">已收进 🎒 小收藏（剩 ' + yuan(myBalance()) + '）· 可在 🎒 里转赠给 ' + esc(T('TA')) + '</div>',
+      '<div class="pong-end-stat">已收进 🎒 小收藏（剩 ' + yuan(myBalance()) + '）· 可在 🎒 里转赠给 ' + esc(T('他')) + '</div>',
       st.idx + 1 < st.lots.length ? '下一件' : '结算', 'win');
     setStatus('「' + esc(item.name) + '」是你的了，花了 ' + yuan(st.cur));
     try {
@@ -598,7 +598,7 @@
       let txt = T('心意币拍卖会') + ' · ';
       if (st.myWins) txt += '拍下 ' + st.myWins + ' 件 ' + yuan(st.spent);
       else txt += '空手而归';
-      if (st.taWins) txt += ' · ' + T('TA') + ' 拍走 ' + st.taWins + ' 件';
+      if (st.taWins) txt += ' · ' + T('他') + ' 拍走 ' + st.taWins + ' 件';
       // #891：带结构化结算负载（chat.js 小游戏卡片渲染；{ta} 由渲染侧按当前昵称展开）
       const auRes = st.myWins >= st.taWins ? (st.myWins ? '拍下 ' + st.myWins + ' 件！' : '谁也没拍到') : '{ta} 拍走 ' + st.taWins + ' 件';
       if (window.chatAddSystem) window.chatAddSystem(txt, { special: 'auction', game: {
@@ -614,7 +614,7 @@
     const s = loadStats();
     showOverlay('本场结束',
       '<div class="pong-end-stat">你拍得 ' + st.myWins + ' 件 · 花了 ' + yuan(st.spent) + '</div>' +
-      '<div class="pong-end-stat">' + T('TA') + ' 拍走 ' + st.taWins + ' 件 · 流拍 ' + st.passed + ' 件</div>' +
+      '<div class="pong-end-stat">' + T('他') + ' 拍走 ' + st.taWins + ' 件 · 流拍 ' + st.passed + ' 件</div>' +
       '<div class="pong-end-stat">累计 ' + s.sessions + ' 场 · 🎒 收藏 ' + loadBag().length + ' 件</div>',
       '再来一场');
     if (startBtn) startBtn.textContent = '再来一场';
@@ -650,15 +650,15 @@
       let taCnt = 0;
       bag.forEach((it) => { if (it.from === 'ta') taCnt++; });
       const stat = '共 <b>' + bag.length + '</b> 件 · 累计花费 <b>' + yuan(s.spentFen || 0) + '</b>' +
-        (taCnt ? ' · ' + esc(T('TA')) + ' 寄回 <b>' + taCnt + '</b> 件' : '');
+        (taCnt ? ' · ' + esc(T('他')) + ' 寄回 <b>' + taCnt + '</b> 件' : '');
       body = '<div class="au-bag-stat">' + stat + '</div><div class="au-bag-grid">' +
         bag.map((it, i) => {
           const rt = bagRarity(it);
           const frame = rt.cls === 'au-r2' ? ' au-bag-ssr' : rt.cls === 'au-r1' ? ' au-bag-rare' : '';
           const foot = it.from === 'ta'
-            ? '<div class="au-bag-meta au-bag-from-ta">📬 ' + esc(T('TA')) + ' 寄来的</div>'
+            ? '<div class="au-bag-meta au-bag-from-ta">📬 ' + esc(T('他')) + ' 寄来的</div>'
             : '<div class="au-bag-meta">' + yuan(it.fen) + ' 拍下 · ' + bagDate(it.ts) + '</div>' +
-              '<button class="pong-overlay-btn au-send-btn au-bag-send" data-i="' + i + '" type="button">送' + esc(T('TA')) + '</button>';
+              '<button class="pong-overlay-btn au-send-btn au-bag-send" data-i="' + i + '" type="button">送' + esc(T('他')) + '</button>';
           return '<div class="au-bag-card' + frame + '">' +
             '<span class="au-rare ' + rt.cls + ' au-bag-badge">' + rt.label + '</span>' +
             '<div class="au-bag-tile">' + (auSafeImg(it.img) ? '<img class="au-bag-img" src="' + auSafeImg(it.img) + '" alt="">' : it.ico) + '</div>' +
@@ -673,7 +673,7 @@
   function showHistory() {
     const h = loadHistory();
     const fmt = (t) => { const d = new Date(t); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; };
-    const whoTxt = { you: '你拍得', ta: T('TA') + '拍走', pass: '流拍' };
+    const whoTxt = { you: '你拍得', ta: T('他') + '拍走', pass: '流拍' };
     const cls = (r) => r === 'SSR' ? 'au-r2' : r === '稀有' ? 'au-r1' : 'au-r0';
     const body = h.length
       ? h.map((it) => '<div class="pong-end-stat au-hist-row"><span class="au-rare ' + cls(it.rarity) + '">' + (it.rarity || '普通') + '</span> ' + (auSafeImg(it.img) ? '<img class="au-hist-img" src="' + auSafeImg(it.img) + '" alt="">' : it.ico) + ' ' + esc(it.name) + ' · ' + (it.who === 'pass' ? '流拍' : yuan(it.price)) + ' · ' + (whoTxt[it.who] || '') + ' · ' + fmt(it.t) + '</div>').join('')
@@ -880,7 +880,7 @@
     sfxHammer();
     taSay(pick(['送给我的？！', '谢谢，我很喜欢！', '怎么突然对我这么好']));
     try {
-      if (window.chatAddSystem) window.chatAddSystem(T('心意币拍卖会') + ' · 转赠 ' + T('TA') + '「' + it.name + '」', { special: 'auction' });
+      if (window.chatAddSystem) window.chatAddSystem(T('心意币拍卖会') + ' · 转赠 ' + T('他') + '「' + it.name + '」', { special: 'auction' });
     } catch (e) {}
     const cid3 = prefix();
     setTimeout(() => {
@@ -912,12 +912,12 @@
     // #321 开场教学改全屏浮层：半框放不下这么多行说明，全屏才有地方，杜绝被裁切
     if (introStepsEl) {
       introStepsEl.innerHTML =
-        '<b>怎么玩</b>：和 ' + T('TA') + ' 轮番举牌，抢 3 件宝贝，价高者得。<br>' +
+        '<b>怎么玩</b>：和 ' + T('他') + ' 轮番举牌，抢 3 件宝贝，价高者得。<br>' +
         '<b>① 看拍品</b>　每件有起拍价，先掂量值不值。<br>' +
         '<b>② 出价</b>　点档位「出 ¥X」就是在当前价上加价、压上你的价。<br>' +
-        '<b>③ 轮替</b>　你出价后 ' + T('TA') + ' 掂量掂量，轮到你时按钮才亮。<br>' +
-        '<b>④ 成交</b>　你最高价点「落槌」→按现价买下（真扣心意币、进 🎒）；' + T('TA') + ' 最高价→放弃这件；都不要→流拍。<br>' +
-        '<b>⑤ 彩蛋</b>　' + T('TA') + ' 拍走的过几天寄回给你。';
+        '<b>③ 轮替</b>　你出价后 ' + T('他') + ' 掂量掂量，轮到你时按钮才亮。<br>' +
+        '<b>④ 成交</b>　你最高价点「落槌」→按现价买下（真扣心意币、进 🎒）；' + T('他') + ' 最高价→放弃这件；都不要→流拍。<br>' +
+        '<b>⑤ 彩蛋</b>　' + T('他') + ' 拍走的过几天寄回给你。';
     }
     const statsHtml =
       (s.sessions > 0 ? '累计 ' + s.sessions + ' 场 · 你拍得 ' + s.myWins + ' 件 · 花了 ' + yuan(s.spentFen || 0) + '　' : '') +
@@ -941,7 +941,7 @@
         if (st && st.started && !st.over) {
           renderLot();
           // #346 返回文案按真实回合态：TA 掂量中不再误报「到你出价了」
-          setStatus(lotActive() && st.leader === 'you' && thinkT ? T('TA') + ' 正在掂量你的出价……' : '继续——到你出价了');
+          setStatus(lotActive() && st.leader === 'you' && thinkT ? T('他') + ' 正在掂量你的出价……' : '继续——到你出价了');
         } else if (st && st.over) {
           showSummary(); // #346 结算后开背包，「返回」= 回到本场结算汇总
         } else {
@@ -987,7 +987,7 @@
       if (typeof window.openModal === 'function') {
         const ctl = window.openModal('送出拍品', '', function () { giftAway(i); }, {
           noInput: true,
-          staticText: '把「' + it.ico + ' ' + it.name + '」送给 ' + T('TA') + '？送出后不可撤回。'
+          staticText: '把「' + it.ico + ' ' + it.name + '」送给 ' + T('他') + '？送出后不可撤回。'
         });
         try { if (ctl && ctl.okText) ctl.okText('送出'); } catch (e2) {}
         return;
@@ -1005,7 +1005,7 @@
 
   // ---- 打开 / 关闭 ----
   function setNames() {
-    let name = T('TA');
+    let name = T('他');
     try {
       const s = window.activeStore && window.activeStore();
       name = (s && (s.get('lbl-partner') || s.get('cs-lbl-partner'))) || name;
@@ -1021,7 +1021,7 @@
     try { checkGifts(); } catch (e) {}   // #301 到期回寄投递
     // 有进行中的场次 → 接着拍（关面板期间 TA 思考的补调度）
     if (st && st.started && !st.over) {
-      if (st.phase === 'bidding') { renderLot(); if (!thinkT && st.leader === 'you') scheduleTaThink('TA低头想了想……'); else updateBidBtns(); }
+      if (st.phase === 'bidding') { renderLot(); if (!thinkT && st.leader === 'you') scheduleTaThink('他低头想了想……'); else updateBidBtns(); }
       return;
     }
     showStartOverlay();
