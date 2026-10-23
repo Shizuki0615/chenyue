@@ -123,8 +123,17 @@ window.getQuoteOfDay = function () {
 const useDefault = getUseDefault();
 const custom = getCustom();
 let quotes = null;
-if (useDefault) quotes = (custom.length ? custom.map(c => c.t) : DEFAULT_QUOTES.filter(q => !isQuoteOff(q))).filter(q => !isQuoteOff(q));
-else quotes = custom.map(c => c.t).filter(q => !isQuoteOff(q)); // 只用自己的
+if (useDefault) {
+const pool = custom.map(c => c.t).concat(DEFAULT_QUOTES);
+const seen = Object.create(null);
+quotes = pool.filter(q => {
+if (isQuoteOff(q) || seen[q]) return false;
+seen[q] = 1;
+return true;
+});
+} else {
+quotes = custom.map(c => c.t).filter(q => !isQuoteOff(q)); // 只用自己的
+}
 if (!quotes.length) return '';
 const d = new Date();
 const today = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();

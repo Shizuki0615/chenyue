@@ -165,8 +165,21 @@
     const useDefault = getUseDefault();
     const custom = getCustom();
     let quotes = null;
-    if (useDefault) quotes = (custom.length ? custom.map(c => c.t) : DEFAULT_QUOTES.filter(q => !isQuoteOff(q))).filter(q => !isQuoteOff(q));
-    else quotes = custom.map(c => c.t).filter(q => !isQuoteOff(q)); // 只用自己的
+    // v8.49：系统预设与「我的添加」同池抽取——原实现只要自定义库非空就完全不用系统预设，
+    // 「使用系统预设情话」开关开着也永远抽不到预设（用户实报「桌面一直显示我的添加」）。
+    // 现在开＝两边合并随机；关＝只用我的添加。逐句开关 quote-off 对两边照旧生效。
+    // 按文本去重：导入/旧数据里自定义若混入与预设同句，不让它凭空多一倍权重。
+    if (useDefault) {
+      const pool = custom.map(c => c.t).concat(DEFAULT_QUOTES);
+      const seen = Object.create(null);
+      quotes = pool.filter(q => {
+        if (isQuoteOff(q) || seen[q]) return false;
+        seen[q] = 1;
+        return true;
+      });
+    } else {
+      quotes = custom.map(c => c.t).filter(q => !isQuoteOff(q)); // 只用自己的
+    }
     if (!quotes.length) return '';
     const d = new Date();
     const today = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
