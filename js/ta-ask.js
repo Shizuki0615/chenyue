@@ -1637,11 +1637,24 @@ tcPush(q, { popupProb: askPopupProb(s) });
 setTimeout(maybeTriggerTC, 90000);
 setInterval(maybeTriggerTC, 240000);
 var _tcVvBound = false;
+function tcMaskKbish() {
+try {
+var vv = window.visualViewport;
+if (!vv) return false;
+var ih = window.innerHeight || 0;
+if ((vv.offsetTop || 0) > 8 || (vv.offsetLeft || 0) > 8) return true;
+if (ih && vv.height && vv.height < ih - 60) return true;
+if (vv.scale && vv.scale < 0.95) return true;
+return false;
+} catch (e) { return false; }
+}
 function tcPinMask() {
 try {
 var m = document.getElementById('tc-mask');
 var vv = window.visualViewport;
-if (!m || m.hidden || !vv || !vv.width || !vv.height) return;
+if (!m || m.hidden) return;
+if (!tcMaskKbish()) { tcUnpinMask(); return; }
+if (!vv || !vv.width || !vv.height) return;
 m.style.position = 'fixed';
 m.style.left = (vv.offsetLeft || 0) + 'px';
 m.style.top = (vv.offsetTop || 0) + 'px';

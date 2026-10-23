@@ -1987,11 +1987,28 @@ const TC_DEFAULT = [
 //   关闭（hidden 置真）时摘掉全部内联定位，回到 CSS 的 absolute 语义。
 // 零机型分支：只依赖标准 visualViewport 读数；无该 API 的老内核一个内联值都不写，行为不变。
 var _tcVvBound = false;
+// 只在「键盘在场」时改钉视觉视口——判据全是标准可观测信号，零机型分支：
+//   vv 被平移（offsetTop/Left>8）、vv 比布局视口矮 60px 以上、或内核缩放 <0.95。
+// 桌面端/无键盘时三条件都不成立 → 摘掉内联值，遮罩保持 CSS 的 absolute（只盖 .phone），
+// 与修复前观感逐像素一致。
+function tcMaskKbish() {
+  try {
+    var vv = window.visualViewport;
+    if (!vv) return false;
+    var ih = window.innerHeight || 0;
+    if ((vv.offsetTop || 0) > 8 || (vv.offsetLeft || 0) > 8) return true;
+    if (ih && vv.height && vv.height < ih - 60) return true;
+    if (vv.scale && vv.scale < 0.95) return true;
+    return false;
+  } catch (e) { return false; }
+}
 function tcPinMask() {
   try {
     var m = document.getElementById('tc-mask');
     var vv = window.visualViewport;
-    if (!m || m.hidden || !vv || !vv.width || !vv.height) return;
+    if (!m || m.hidden) return;
+    if (!tcMaskKbish()) { tcUnpinMask(); return; }
+    if (!vv || !vv.width || !vv.height) return;
     m.style.position = 'fixed';
     m.style.left = (vv.offsetLeft || 0) + 'px';
     m.style.top = (vv.offsetTop || 0) + 'px';
