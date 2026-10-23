@@ -947,8 +947,16 @@ window.openModal('联系人昵称', cur, (v) => {
 const val = (v || '').trim();
 const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
 if (val) store.set('cs-lbl-partner', val); else store.remove('cs-lbl-partner');
-if (oldEff !== (window.chatPartnerName ? window.chatPartnerName() : (val || '他'))) {
+const newEff = window.chatPartnerName ? window.chatPartnerName() : (val || '他');
+if (oldEff !== newEff) {
 try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {}
+if (val) {
+try {
+if (window.chatAddSystem && window.chatNickMsgMeSet) {
+window.chatAddSystem(window.chatNickMsgMeSet(val), { nickKeep: true });
+}
+} catch (e) {}
+}
 }
 applyProfile();
 try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}

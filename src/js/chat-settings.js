@@ -1321,8 +1321,18 @@
         // 只在联系人管理里改过名」的用户屏上旧名是名片名，清扫却拿 'TA' 去扫＝旧名扫不掉。
         const oldEff = window.chatPartnerName ? window.chatPartnerName() : (store.get('cs-lbl-partner') || '他');
         if (val) store.set('cs-lbl-partner', val); else store.remove('cs-lbl-partner');
-        if (oldEff !== (window.chatPartnerName ? window.chatPartnerName() : (val || '他'))) {
+        const newEff = window.chatPartnerName ? window.chatPartnerName() : (val || '他');
+        if (oldEff !== newEff) {
           try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff); } catch (e) {}
+          // v8.45：手动改联系人聊天昵称后，聊天里也落一条与「他 把聊天昵称换成了「X」」
+          // 同格式的记录（主语＝我的聊天昵称）。清空昵称＝恢复默认显示，不算改名，不发。
+          if (val) {
+            try {
+              if (window.chatAddSystem && window.chatNickMsgMeSet) {
+                window.chatAddSystem(window.chatNickMsgMeSet(val), { nickKeep: true });
+              }
+            } catch (e) {}
+          }
         }
         applyProfile();
         try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}
