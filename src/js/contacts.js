@@ -397,11 +397,8 @@
   // 只改显示不改存储原文，历史消息重新渲染即自动跟随。
   // v8.40 软禁用性别选择：用户裁决「选择性别的功能目前也不太需要」，
   // 强制 partnerGenderFor 恒返回 'he'，全局覆盖所有联系人的存储值，运行期全链路上只走「他」。
-  // 想回滚：删掉下面这行 return 'he' 并恢复原来的存储读取即可。
+  // 想回滚：恢复读取 window.xyStore(G + ':' + (cid || 'default')).get('partner-gender') || '' 即可。
   window.partnerGenderFor = function (cid) { return 'he'; };
-  window.__partnerGenderForStored = function (cid) {
-    try { return window.xyStore(G + ':' + (cid || 'default')).get('partner-gender') || ''; } catch (e) { return ''; }
-  };
   window.taWordFor = function (cid) {
     const g = window.partnerGenderFor(cid);
     if (g === 'he') return '他';

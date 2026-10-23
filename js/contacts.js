@@ -140,9 +140,6 @@ try { if (cb) cb(); } catch (e2) {}
 window.storeFor = function (cid) { return window.xyStore(G + ':' + cid); };
 window.storeForCid = function (cid) { return cid === 'default' ? defaultStore() : window.xyStore(G + ':' + cid); };
 window.partnerGenderFor = function (cid) { return 'he'; };
-window.__partnerGenderForStored = function (cid) {
-try { return window.xyStore(G + ':' + (cid || 'default')).get('partner-gender') || ''; } catch (e) { return ''; }
-};
 window.taWordFor = function (cid) {
 const g = window.partnerGenderFor(cid);
 if (g === 'he') return '他';
