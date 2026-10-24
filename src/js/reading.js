@@ -264,10 +264,14 @@
     page.hidden = true;
     page.innerHTML =
       '<div class="rd-shelf" id="rd-shelf">' +
-        '<div class="rd-head">' +
-          '<button class="rd-back" id="rd-shelf-back" type="button">返回</button>' +
-          '<div class="rd-title">一起读书</div>' +
-          '<button class="rd-back" id="rd-import" type="button">导入</button>' +
+        '<div class="chat-head">' +
+          '<span class="ch-back" id="rd-shelf-back">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+          '</span>' +
+          '<span class="ch-name">一起读书</span>' +
+          '<button class="ch-settings" id="rd-import" type="button" title="导入">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          '</button>' +
         '</div>' +
         '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
         '<div class="rd-grid" id="rd-grid"></div>' +
