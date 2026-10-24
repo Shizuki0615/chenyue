@@ -138,7 +138,7 @@ if (c > 32) total++;
 }
 return { text: text, bad: total ? bad / total : 0 };
 }
-const RD_CH_TITLE_RE = /^\s*(第[0-9零一二三四五六七八九十百千万]+[章回节卷]|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
+const RD_CH_TITLE_RE = /^\s*(?:(?:上|中|下)(?:卷|部|篇)|第[0-9零一二三四五六七八九十百千万]+[章回节卷]|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
 function splitChapters(text) {
 const src = String(text == null ? '' : text);
 const n = src.length;
