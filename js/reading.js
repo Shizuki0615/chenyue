@@ -5,6 +5,8 @@ const G = 'xy-home-v2';
 const store = window.xyStore(G);
 const RD_INDEX_KEY = 'reading-books';
 const RD_PREFS_KEY = 'reading-prefs';
+const RD_HABIT_KEY = 'reading-habits';
+const RD_HABIT_DAYS = 45;
 const RD_BODY_P = 'xy-home-v2:reading-body:';
 const RD_TOC_P = 'xy-home-v2:reading-toc:';
 const RD_ANNO_P = 'xy-home-v2:reading-anno:';
@@ -267,7 +269,9 @@ page.innerHTML =
 '<div class="rd-body" id="rd-body"></div>' +
 '<div class="rd-foot" id="rd-foot">' +
 '<div class="rd-bar" id="rd-bar"><span class="rd-bar-fill" id="rd-bar-fill"></span><span class="rd-buddy-dot" id="rd-buddy-dot" hidden></span></div>' +
-'<div class="rd-foot-row" id="rd-foot-row" role="button"><span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
+'<div class="rd-foot-row" id="rd-foot-row" role="button">' +
+'<span class="rd-lamp" id="rd-lamp" hidden><i class="rd-lamp-dot rd-lamp-me"></i><i class="rd-lamp-dot rd-lamp-him"></i></span>' +
+'<span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
 '</div>' +
 '<div class="rd-buddy-card" id="rd-buddy-card" hidden>' +
 '<div class="rd-import-head"><div class="rd-import-title">他在哪</div>' +
@@ -275,6 +279,7 @@ page.innerHTML =
 '<div class="rd-buddy-state" id="rd-buddy-state"></div>' +
 '<div class="rd-buddy-pos" id="rd-buddy-pos"></div>' +
 '<div class="rd-buddy-near" id="rd-buddy-near"></div>' +
+'<div class="rd-buddy-habit" id="rd-buddy-habit"></div>' +
 '<div class="rd-buddy-modes" id="rd-buddy-modes">' +
 '<button class="rd-btn rd-btn-mini" data-bmode="follow" type="button">跟随我</button>' +
 '<button class="rd-btn rd-btn-mini" data-bmode="solo" type="button">独立推进</button>' +
@@ -356,6 +361,7 @@ page.classList.add('full');
 function rdClose() {
 if (!page) return;
 rdWriteProgress();
+rdHabitEndSession();
 rdCloseBookMenu();
 page.classList.remove('full');
 page.hidden = true;
@@ -365,6 +371,7 @@ if (home) home.hidden = false;
 function rdShowShelf() {
 if (!page) return;
 rdWriteProgress();
+rdHabitEndSession();
 closeToc();
 rdClearSel(false);
 rdCloseSheet();
@@ -423,9 +430,12 @@ rdBuddyAdvance(book);
 saveIndex(list);
 rdBook = {
 id: id, toc: toc, ch: ch, off: off,
-cache: {}, text: '', pages: [], pageIdx: 0, anno: [],
+cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
 lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 };
+rdBookmarkPlayed = false;
+clearTimeout(rdBookmarkWaitTimer);
+rdHabitStartSession();
 rdEnsureChapter('offset').then(function () {
 rdBuddyProcessReplies();
 });
@@ -460,6 +470,7 @@ body.innerHTML = '<button class="rd-retry" id="rd-retry" type="button">这一章
 return;
 }
 b.text = text;
+b.sents = rdSentenceList(text);
 b.anno = await getAnnos(b.id, b.ch);
 if (!rdBook || rdBook !== b) return;
 b.pages = rdPaginateChapter(b);
@@ -569,6 +580,7 @@ const no = document.getElementById('rd-page-no');
 if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
 rdUpdateBar();
 rdSaveProgress();
+rdHabitTouchPage();
 rdScheduleHisAnno();
 }
 function rdUpdateBar() {
@@ -602,6 +614,204 @@ if (line) {
 line.textContent = rdBuddyLine(book, st);
 line.classList.toggle('rd-buddy-same-text', same);
 }
+rdSyncLamp(book, st);
+rdMaybeBookmarkReturn(book, b, bd, st);
+}
+function rdMaybeBookmarkReturn(book, b, bd, st) {
+if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+if (!(bd.ch > b.ch)) return;
+const dot = document.getElementById('rd-buddy-dot');
+if (!dot || dot.hidden) return;
+rdBookmarkPlayed = true;
+const page = b.pages[b.pageIdx] || { s: 0 };
+const minePct = rdPosPct(book, b.ch, page.s);
+const hisPct = rdPosPct(book, bd.ch, bd.off);
+dot.style.transition = 'left .55s ease';
+dot.classList.add('rd-buddy-return');
+setTimeout(function () {
+if (!rdBook || rdBook !== b) return;
+dot.style.left = 'calc(' + minePct + '% + 6px)';
+}, 900);
+setTimeout(function () {
+if (!rdBook || rdBook !== b) return;
+dot.classList.remove('rd-buddy-return');
+dot.style.left = hisPct + '%';
+setTimeout(function () { if (dot) dot.style.transition = ''; }, 600);
+}, 2100);
+clearTimeout(rdBookmarkWaitTimer);
+const pageKey = b.ch + ':' + b.pageIdx;
+rdBookmarkWaitTimer = setTimeout(function () {
+if (!rdBook || rdBook !== b) return;
+const reader = document.getElementById('rd-reader');
+if (!reader || reader.hidden) return;
+if (b.ch + ':' + b.pageIdx !== pageKey) return;
+if (rdBuddyState(book) !== 'wait') return;
+rdToast('我先往前走了几步，在这儿等你。');
+}, 30000);
+}
+let rdHabitSession = null;
+function rdDayTs(key) {
+const p = String(key || '').split('-');
+return new Date(Number(p[0]) || 1970, (Number(p[1]) || 1) - 1, Number(p[2]) || 1).getTime();
+}
+function rdHabitLoad() {
+try {
+const raw = store.get(RD_HABIT_KEY);
+if (!raw) return { v: 1, me: {}, him: {} };
+const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+if (!o || typeof o !== 'object') return { v: 1, me: {}, him: {} };
+if (!o.me || typeof o.me !== 'object') o.me = {};
+if (!o.him || typeof o.him !== 'object') o.him = {};
+return o;
+} catch (e) { return { v: 1, me: {}, him: {} }; }
+}
+function rdHabitSave(h) {
+try {
+['me', 'him'].forEach(function (side) {
+const keys = Object.keys(h[side] || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); });
+while (keys.length > RD_HABIT_DAYS) delete h[side][keys.shift()];
+});
+store.set(RD_HABIT_KEY, JSON.stringify(h));
+} catch (e) {}
+}
+function rdHabitAdd(side, sec, pages, hour, at) {
+const secs = Math.round(Number(sec) || 0);
+if (secs <= 0) return;
+const h = rdHabitLoad();
+const when = Number(at) || Date.now();
+const day = rdTodayKey(when);
+const d = h[side][day] || (h[side][day] = { sec: 0, pages: 0, firstAt: 0, lastAt: 0, hours: {} });
+if (!d.hours || typeof d.hours !== 'object') d.hours = {};
+d.sec += secs;
+d.pages += Math.max(0, Math.round(Number(pages) || 0));
+if (!d.firstAt || when < d.firstAt) d.firstAt = when;
+d.lastAt = Math.max(d.lastAt || 0, when);
+if (hour != null) {
+const k = String(hour);
+d.hours[k] = (d.hours[k] || 0) + 1;
+}
+rdHabitSave(h);
+}
+function rdHabitStartSession() {
+if (rdHabitSession) return;
+rdHabitSession = { start: Date.now(), pages: 0, lastKey: '' };
+}
+function rdHabitTouchPage() {
+const b = rdBook;
+if (!rdHabitSession || !b) return;
+const key = b.ch + ':' + b.pageIdx;
+if (key === rdHabitSession.lastKey) return;
+rdHabitSession.lastKey = key;
+rdHabitSession.pages++;
+}
+function rdHabitEndSession() {
+const s = rdHabitSession;
+if (!s) return;
+rdHabitSession = null;
+const now = Date.now();
+const sec = Math.round((now - s.start) / 1000);
+if (sec < 20) return; // 只翻一下不算一次阅读
+rdHabitAdd('me', sec, s.pages, null, now);
+const b = rdBook;
+if (!b) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+const bd = rdBuddyGet(book);
+if (!bd || !bd.started || bd.mode !== 'follow') return;
+if (rdBuddyState(book) !== 'read') return;
+rdBuddyAdvance(book);
+rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
+}
+function rdBuddyCommonHour(h) {
+const today = rdTodayKey();
+const keys = Object.keys(h.him || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); })
+.filter(function (k) { return k !== today; }).slice(-7);
+if (keys.length < 3) return null;
+const counts = {};
+for (let i = 0; i < keys.length; i++) {
+const hrs = (h.him[keys[i]] && h.him[keys[i]].hours) || {};
+Object.keys(hrs).forEach(function (hr) { counts[hr] = (counts[hr] || 0) + Number(hrs[hr] || 0); });
+}
+let best = null, bestN = 0;
+Object.keys(counts).forEach(function (hr) {
+if (counts[hr] > bestN) { bestN = counts[hr]; best = Number(hr); }
+});
+return bestN >= 3 ? best : null;
+}
+function rdMyCommonHour(h) {
+const keys = Object.keys(h.me || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); }).slice(-5);
+if (keys.length < 3) return null;
+const counts = {};
+for (let i = 0; i < keys.length; i++) {
+const d = h.me[keys[i]];
+if (!d || !d.firstAt) continue;
+const hr = new Date(d.firstAt).getHours();
+counts[hr] = (counts[hr] || 0) + 1;
+}
+let best = null, bestN = 0;
+Object.keys(counts).forEach(function (hr) {
+if (counts[hr] > bestN) { bestN = counts[hr]; best = Number(hr); }
+});
+return bestN >= 3 ? best : null;
+}
+function rdHourPhrase(hr) {
+const h = Number(hr);
+if (h >= 22 || h < 2) return '22 点后';
+if (h >= 5 && h < 9) return '早上';
+if (h >= 12 && h < 14) return '中午';
+if (h >= 18 && h < 22) return '晚上';
+return h + ' 点';
+}
+function rdHabitObs(book) {
+if (!book) return '';
+const st = rdBuddyState(book);
+if (st === 'none' || st === 'skip') return '';
+const h = rdHabitLoad();
+const today = rdTodayKey();
+const ht = h.him[today] || null;
+const keys = Object.keys(h.him || {}).filter(function (k) { return k !== today; })
+.sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); }).slice(-7);
+let avg = 0;
+if (keys.length) {
+let sum = 0;
+for (let i = 0; i < keys.length; i++) sum += (h.him[keys[i]] && h.him[keys[i]].sec) || 0;
+avg = sum / keys.length;
+}
+if (ht && keys.length >= 3 && avg > 60 && ht.sec > avg * 1.4) return '今天他读得比平时久。';
+if (ht && ht.sec > 0 && ht.sec < 120 && keys.length >= 3 && avg > 480) return '他今天只读了一段就合上了。';
+const hs = rdBuddyCommonHour(h);
+if (hs != null) {
+const phrase = rdHourPhrase(hs);
+if (phrase === '早上' || phrase === '中午' || phrase === '晚上') return '他最近总在' + phrase + '翻两页。';
+return '他最近总在 ' + phrase + '，翻两页。';
+}
+const ms = rdMyCommonHour(h);
+if (ms != null) return '你最近都是这个点来。';
+return '';
+}
+function rdSyncLamp(book, st) {
+const lamp = document.getElementById('rd-lamp');
+if (!lamp) return;
+const now = new Date();
+const hr = now.getHours();
+const night = hr >= 22 || hr < 7;
+const show = night && (st === 'read' || st === 'wait' || st === 'done');
+lamp.hidden = !show;
+if (!show) return;
+const him = lamp.querySelector('.rd-lamp-him');
+if (him) him.classList.add('on');
+if ((hr === 23 && now.getMinutes() >= 30) || hr < 7) rdHabitLateNote(book);
+}
+function rdHabitLateNote(book) {
+if (!book) return;
+const day = rdTodayKey();
+if (book.lateNoteDay === day) return;
+book.lateNoteDay = day;
+const list = readIndex();
+const fb = rdFindBook(book.id, list);
+if (fb) { fb.lateNoteDay = day; saveIndex(list); }
+rdToast('灯我留着，明天再读也一样。');
 }
 let rdSaveTimer = 0;
 function rdSaveProgress() {
@@ -627,6 +837,8 @@ saveIndex(list);
 }
 const RD_CHARS_PER_MIN = 420;
 const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
+let rdBookmarkPlayed = false;
+let rdBookmarkWaitTimer = 0;
 function rdTodayKey(ts) {
 const d = new Date(ts || Date.now());
 return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
@@ -689,11 +901,18 @@ const prog = book.progress || {};
 const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
 let his = rdFlatPos(book, bd.ch, bd.off);
 if (bd.mode === 'solo') {
-const dt = Math.max(0, Math.min(now - (bd.updatedAt || now), RD_CATCHUP_MAX_MS));
+const prevAt = bd.updatedAt || now;
+const dt = Math.max(0, Math.min(now - prevAt, RD_CATCHUP_MAX_MS));
 const ms = (bd.carry || 0) + dt;
 const units = Math.floor(ms / 60000);
 bd.carry = ms - units * 60000;
-his = Math.min(total, his + units * RD_CHARS_PER_MIN);
+const nextHis = Math.min(total, his + units * RD_CHARS_PER_MIN);
+if (units > 0) {
+const words = Math.max(0, nextHis - his);
+const pages = words > 0 ? Math.max(1, Math.round(words / 500)) : 0;
+rdHabitAdd('him', units * 60, pages, new Date(prevAt).getHours(), now);
+}
+his = nextHis;
 bd.waiting = false;
 } else {
 if (his < mine) his = mine; // 跟随：追上来，但不往回退
@@ -740,6 +959,19 @@ function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
 if (!a) return false;
 if (a.by === 'me') return true;
 return a.e > pageStart && a.e <= pageEnd;
+}
+function rdTraceEnabled() {
+if (rdDcfRatio() <= 0) return false;
+const pool = rdLibPool('anno');
+return pool === null ? true : pool.length > 0;
+}
+function rdBuddyReadOff(book, ch, textLen) {
+const bd = rdBuddyGet(book);
+if (!bd || !bd.started) return -1;
+if (bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now())) return -1;
+if (bd.ch > ch) return textLen;
+if (bd.ch === ch) return Math.max(0, Math.min(bd.off, textLen));
+return -1;
 }
 function rdCloseBuddyCard() {
 const el = document.getElementById('rd-buddy-card');
@@ -800,6 +1032,8 @@ return a && a.by !== 'me' && Math.abs((a.e || 0) - bd.off) <= 5000;
 }).length;
 if (n) nearEl.textContent = '这附近他留了 ' + n + ' 条批注';
 }
+const habitEl = document.getElementById('rd-buddy-habit');
+if (habitEl) habitEl.textContent = rdHabitObs(book);
 if (!rdBook || rdBook !== b) return;
 if (card) card.hidden = false;
 }
@@ -1183,14 +1417,37 @@ if (!b || !body || !b.pages.length) return;
 const p = b.pages[b.pageIdx] || { s: 0, e: b.text.length };
 const start = p.s;
 const end = p.e;
+const traceOn = rdTraceEnabled();
+let hisOff = -1;
+if (traceOn) {
+const idx = readIndex();
+const book = rdFindBook(b.id, idx);
+if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
+}
+const traces = {};
+if (hisOff > start) {
+const sents = b.sents || [];
+const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
+for (let si = from; si < sents.length; si++) {
+const sn = sents[si];
+if (!sn || sn.e <= start) continue;
+if (sn.e > end) break;
+if (sn.e <= hisOff) traces[sn.e] = true;
+}
+}
 const marks = {};
 (b.anno || []).forEach(function (a) {
 if (!rdBuddyAnnoVisible(a, start, end)) return;
-const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false });
+const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false, his: false });
 m.n++;
 if (a.by === 'me') m.mine = true;
+else if (traceOn) m.his = true;
 });
-const cuts = Object.keys(marks).map(Number).sort(function (x, y) { return x - y; });
+Object.keys(traces).forEach(function (k) { if (marks[k]) delete traces[k]; });
+const cutMap = {};
+Object.keys(marks).forEach(function (k) { cutMap[k] = 1; });
+Object.keys(traces).forEach(function (k) { cutMap[k] = 1; });
+const cuts = Object.keys(cutMap).map(Number).sort(function (x, y) { return x - y; });
 const sel = rdSel && rdSel.e > start && rdSel.s < end
 ? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
 function emit(a, z) {
@@ -1207,9 +1464,14 @@ let i = start;
 for (let k = 0; k < cuts.length; k++) {
 const m = cuts[k];
 html += emit(i, m);
+if (traces[m]) html += '<span class="rd-trace" aria-hidden="true"></span>';
 const mk = marks[m];
-html += '<span class="rd-mark' + (mk.mine ? '' : ' rd-mark-his') + '" data-pos="' + m + '" role="button">' +
+if (mk) {
+const both = traceOn && mk.mine && mk.his;
+const cls = 'rd-mark' + (both ? ' rd-mark-both' : (mk.mine ? '' : ' rd-mark-his'));
+html += '<span class="' + cls + '" data-pos="' + m + '" role="button">' +
 (mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
+}
 i = m;
 }
 html += emit(i, end);
@@ -1461,7 +1723,22 @@ rdCloseBuddyCard();
 rdPopPos = pos;
 const all = !!expand || items.length <= RD_POP_MAX;
 const show = all ? items : items.slice(0, RD_POP_MAX);
-list.innerHTML = show.map(function (a) {
+let sameFirst = false;
+if (rdTraceEnabled()) {
+const hasMine = items.some(function (a) { return a && a.by === 'me'; });
+const hasHis = items.some(function (a) { return a && a.by !== 'me'; });
+if (hasMine && hasHis) {
+const idx = readIndex();
+const book = rdFindBook(b.id, idx);
+if (book && !book.sameLineSeen) {
+book.sameLineSeen = 1;
+saveIndex(idx);
+sameFirst = true;
+}
+}
+}
+let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
+html += show.map(function (a) {
 const mine = a.by === 'me';
 return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 (a.replyTo ? ' rd-pop-reply' : '') + '"' +
@@ -1470,9 +1747,10 @@ return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div></div>';
 }).join('');
 if (!all) {
-list.innerHTML += '<button class="rd-pop-more" type="button">还有 ' +
+html += '<button class="rd-pop-more" type="button">还有 ' +
 (items.length - RD_POP_MAX) + ' 条，展开</button>';
 }
+list.innerHTML = html;
 pop.hidden = false;
 }
 function rdCloseAnnoOps() {
@@ -1642,6 +1920,12 @@ else if (rel > 0.68) rdTurn(1);
 }
 }, true);
 document.addEventListener('pointercancel', function () { rdTouch = null; }, true);
+document.addEventListener('visibilitychange', function () {
+if (document.hidden) { rdHabitEndSession(); return; }
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) rdHabitStartSession();
+});
+window.addEventListener('pagehide', function () { rdHabitEndSession(); });
 let rdSelTimer = 0, rdSelX = 0, rdSelY = 0;
 function rdCancelSelPress() { if (rdSelTimer) { clearTimeout(rdSelTimer); rdSelTimer = 0; } }
 document.addEventListener('pointerdown', function (e) {

@@ -6539,7 +6539,7 @@ const FIX_SENTINELS = [
   { name: '#1547e 两份进度真值分开存、永不合并（删＝他和我绑成一个值，「独立推进」语义失效）', file: 'js/reading.js', needle: 'let his = rdFlatPos(book, bd.ch, bd.off);' },
   { name: '#1547f 跟随只追不拽（删＝他往回退，把我拽回他停下的位置）', file: 'js/reading.js', needle: 'if (his < mine) his = mine;' },
   { name: '#1547g 他超到我前面就停下来等（删＝他继续往前读，读到我还没读的章＝剧透）', file: 'js/reading.js', needle: 'bd.waiting = his > mine;' },
-  { name: '#1547h 独立推进单次最多补 30 分钟（删＝隔夜打开一口气读完整本）', file: 'js/reading.js', needle: 'Math.min(now - (bd.updatedAt || now), RD_CATCHUP_MAX_MS)' },
+  { name: '#1547h 独立推进单次最多补 30 分钟（删＝隔夜打开一口气读完整本）', file: 'js/reading.js', needle: 'Math.min(now - prevAt, RD_CATCHUP_MAX_MS)' },
   { name: '#1547i 独立推进按 420 字/分钟（删＝他原地不动或跳得太快）', file: 'js/reading.js', needle: 'his + units * RD_CHARS_PER_MIN' },
   { name: '#1547j 今天不读跨天自动恢复原模式（删＝永远停在「今天不读」，第二天也不翻书）', file: 'js/reading.js', needle: "bd.mode = bd.prevMode === 'solo' ? 'solo' : 'follow';" },
   { name: '#1547k 他的批注只在我读到的字符区间里浮现（删＝屏幕外/后文批注一起冒出来＝剧透）', file: 'js/reading.js', needle: 'return a.e > pageStart && a.e <= pageEnd;' },
@@ -6556,6 +6556,20 @@ const FIX_SENTINELS = [
   { name: '#1547v 取池只在数据缺失时回落内置池（改成空数组就回落＝刚关掉的句子又被内置池捡回来）', file: 'js/reading.js', needle: 'if (pool === null) pool = RD_HIS_ANNO_POOL.slice();' },
   { name: '#1547w 导入面板书名输入（删＝粘贴的书全部重名，书架分不出哪本）', file: 'js/reading.js', needle: 'id="rd-imp-name"' },
   { name: '#1547x 粘贴换行归一（删＝手机上 contenteditable 代理让空行翻倍，段落间多出空行）', file: 'js/reading.js', needle: "replace(/\\n{3,}/g, '\\n\\n')" },
+  // ==== 2026-10-24 #1548 一起读书·陪伴感三条（折角书签 / 读过的痕迹 / 阅读习惯同步）====
+  { name: '#1548a 折角书签圆点滑回我这一页（删＝他领先时圆点只会静静停在前面）', file: 'js/reading.js', needle: "dot.style.left = 'calc(' + minePct + '% + 6px)';" },
+  { name: '#1548b 折角书签等待文案只在原地停留后出现（删＝一打开就弹话，变成催促）', file: 'js/reading.js', needle: "'我先往前走了几步，在这儿等你。'" },
+  { name: '#1548c 读过的痕迹跟随「共读批注」总开关（删＝整组停用/概率 0% 后淡痕仍出现）', file: 'js/reading.js', needle: 'return pool === null ? true : pool.length > 0;' },
+  { name: '#1548d 淡痕只画到他真正读到的位置（删＝未读句子也出现铅笔痕）', file: 'js/reading.js', needle: 'if (sn.e <= hisOff) traces[sn.e] = true;' },
+  { name: '#1548e 同一句两人都批注时画双圈（删＝同句默契退化成普通实心点）', file: 'js/reading.js', needle: 'const both = traceOn && mk.mine && mk.his;' },
+  { name: '#1548f 同句首次提示每本书只给一次（删＝每次点开都重复「你们停在了同一句」）', file: 'js/reading.js', needle: 'if (book && !book.sameLineSeen) {' },
+  { name: '#1548g 阅读习惯按天存小键并随备份（删＝换机后作息记录全丢）', file: 'js/reading.js', needle: 'store.set(RD_HABIT_KEY, JSON.stringify(h));' },
+  { name: '#1548h 跟随模式下他也记一段共读（删＝跟随模式永远没有他的作息数据）', file: 'js/reading.js', needle: "rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);" },
+  { name: '#1548i 独立推进记他的阅读时段（删＝独立推进读过多久全不留痕）', file: 'js/reading.js', needle: "rdHabitAdd('him', units * 60, pages, new Date(prevAt).getHours(), now);" },
+  { name: '#1548j 小卡显示阅读习惯观察（删＝习惯同步只剩看不见的数据）', file: 'js/reading.js', needle: 'if (habitEl) habitEl.textContent = rdHabitObs(book);' },
+  { name: '#1548k 夜间留灯按他的状态亮（删＝深夜灯常亮，失去「他也在」的含义）', file: 'js/reading.js', needle: "const show = night && (st === 'read' || st === 'wait' || st === 'done');" },
+  { name: '#1548l 23:30 后每夜一次留灯文案（删＝最晚的一句留在书页上的话消失）', file: 'js/reading.js', needle: "rdToast('灯我留着，明天再读也一样。');" },
+  { name: '#1548m 切后台/关页收尾阅读会话（删＝后台时间被算进阅读时长）', file: 'js/reading.js', needle: "window.addEventListener('pagehide', function () { rdHabitEndSession(); });" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

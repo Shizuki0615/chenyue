@@ -12,6 +12,9 @@
   const RD_INDEX_KEY = 'reading-books';
   // 字号/行距偏好：全局小键，不进备份白名单也不进书架索引
   const RD_PREFS_KEY = 'reading-prefs';
+  // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
+  const RD_HABIT_KEY = 'reading-habits';
+  const RD_HABIT_DAYS = 45;
   // IDB 键前缀：正文 / 目录 / 批注
   const RD_BODY_P = 'xy-home-v2:reading-body:';
   const RD_TOC_P = 'xy-home-v2:reading-toc:';
@@ -304,7 +307,9 @@
         '<div class="rd-body" id="rd-body"></div>' +
         '<div class="rd-foot" id="rd-foot">' +
           '<div class="rd-bar" id="rd-bar"><span class="rd-bar-fill" id="rd-bar-fill"></span><span class="rd-buddy-dot" id="rd-buddy-dot" hidden></span></div>' +
-          '<div class="rd-foot-row" id="rd-foot-row" role="button"><span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
+          '<div class="rd-foot-row" id="rd-foot-row" role="button">' +
+            '<span class="rd-lamp" id="rd-lamp" hidden><i class="rd-lamp-dot rd-lamp-me"></i><i class="rd-lamp-dot rd-lamp-him"></i></span>' +
+            '<span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
         '</div>' +
         '<div class="rd-buddy-card" id="rd-buddy-card" hidden>' +
           '<div class="rd-import-head"><div class="rd-import-title">他在哪</div>' +
@@ -312,6 +317,7 @@
           '<div class="rd-buddy-state" id="rd-buddy-state"></div>' +
           '<div class="rd-buddy-pos" id="rd-buddy-pos"></div>' +
           '<div class="rd-buddy-near" id="rd-buddy-near"></div>' +
+          '<div class="rd-buddy-habit" id="rd-buddy-habit"></div>' +
           '<div class="rd-buddy-modes" id="rd-buddy-modes">' +
             '<button class="rd-btn rd-btn-mini" data-bmode="follow" type="button">跟随我</button>' +
             '<button class="rd-btn rd-btn-mini" data-bmode="solo" type="button">独立推进</button>' +
@@ -396,6 +402,7 @@
   function rdClose() {
     if (!page) return;
     rdWriteProgress();
+    rdHabitEndSession();
     rdCloseBookMenu();
     page.classList.remove('full');
     page.hidden = true;
@@ -405,6 +412,7 @@
   function rdShowShelf() {
     if (!page) return;
     rdWriteProgress();
+    rdHabitEndSession();
     closeToc();
     rdClearSel(false);
     rdCloseSheet();
@@ -467,9 +475,13 @@
     saveIndex(list);
     rdBook = {
       id: id, toc: toc, ch: ch, off: off,
-      cache: {}, text: '', pages: [], pageIdx: 0, anno: [],
+      cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
       lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
     };
+    // 每次打开书重新给折角书签一次机会（只播一次，不随每次翻页重复）
+    rdBookmarkPlayed = false;
+    clearTimeout(rdBookmarkWaitTimer);
+    rdHabitStartSession();
     rdEnsureChapter('offset').then(function () {
       // 下次打开才处理待回应：他越过那句、且当前是「共读中」才会有下文
       rdBuddyProcessReplies();
@@ -509,6 +521,7 @@
       return;
     }
     b.text = text;
+    b.sents = rdSentenceList(text);
     b.anno = await getAnnos(b.id, b.ch);
     if (!rdBook || rdBook !== b) return;
     b.pages = rdPaginateChapter(b);
@@ -629,6 +642,7 @@
     if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
     rdUpdateBar();
     rdSaveProgress();
+    rdHabitTouchPage();
     // 停一下再考虑他是否在这一页留纸条，避免翻页瞬间闪出新角标
     rdScheduleHisAnno();
   }
@@ -665,6 +679,218 @@
       line.textContent = rdBuddyLine(book, st);
       line.classList.toggle('rd-buddy-same-text', same);
     }
+    rdSyncLamp(book, st);
+    rdMaybeBookmarkReturn(book, b, bd, st);
+  }
+
+  // 折角书签：他领先我一章以上时，进度圆点先停在前面的位置，再慢慢滑回我这一页的
+  // 边缘，停一下，然后回到他自己的位置——像把书签从后面挪回来夹好。纯展示，不改进度。
+  function rdMaybeBookmarkReturn(book, b, bd, st) {
+    if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+    if (!(bd.ch > b.ch)) return;
+    const dot = document.getElementById('rd-buddy-dot');
+    if (!dot || dot.hidden) return;
+    rdBookmarkPlayed = true;
+    const page = b.pages[b.pageIdx] || { s: 0 };
+    const minePct = rdPosPct(book, b.ch, page.s);
+    const hisPct = rdPosPct(book, bd.ch, bd.off);
+    dot.style.transition = 'left .55s ease';
+    dot.classList.add('rd-buddy-return');
+    setTimeout(function () {
+      if (!rdBook || rdBook !== b) return;
+      dot.style.left = 'calc(' + minePct + '% + 6px)';
+    }, 900);
+    setTimeout(function () {
+      if (!rdBook || rdBook !== b) return;
+      dot.classList.remove('rd-buddy-return');
+      dot.style.left = hisPct + '%';
+      setTimeout(function () { if (dot) dot.style.transition = ''; }, 600);
+    }, 2100);
+    // 在原地停 30 秒没翻页，他才轻轻说一句；翻页了就不打扰
+    clearTimeout(rdBookmarkWaitTimer);
+    const pageKey = b.ch + ':' + b.pageIdx;
+    rdBookmarkWaitTimer = setTimeout(function () {
+      if (!rdBook || rdBook !== b) return;
+      const reader = document.getElementById('rd-reader');
+      if (!reader || reader.hidden) return;
+      if (b.ch + ':' + b.pageIdx !== pageKey) return;
+      if (rdBuddyState(book) !== 'wait') return;
+      rdToast('我先往前走了几步，在这儿等你。');
+    }, 30000);
+  }
+
+  // ===== 阅读习惯同步 =====
+  // 只记「哪天、读了多久、翻了几页、大约几点」，不记任何正文内容。
+  // 存成一个小键（reading-habits），随备份一起走，换机后习惯记录不断。
+  let rdHabitSession = null;
+  function rdDayTs(key) {
+    const p = String(key || '').split('-');
+    return new Date(Number(p[0]) || 1970, (Number(p[1]) || 1) - 1, Number(p[2]) || 1).getTime();
+  }
+  function rdHabitLoad() {
+    try {
+      const raw = store.get(RD_HABIT_KEY);
+      if (!raw) return { v: 1, me: {}, him: {} };
+      const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!o || typeof o !== 'object') return { v: 1, me: {}, him: {} };
+      if (!o.me || typeof o.me !== 'object') o.me = {};
+      if (!o.him || typeof o.him !== 'object') o.him = {};
+      return o;
+    } catch (e) { return { v: 1, me: {}, him: {} }; }
+  }
+  function rdHabitSave(h) {
+    try {
+      ['me', 'him'].forEach(function (side) {
+        const keys = Object.keys(h[side] || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); });
+        while (keys.length > RD_HABIT_DAYS) delete h[side][keys.shift()];
+      });
+      store.set(RD_HABIT_KEY, JSON.stringify(h));
+    } catch (e) {}
+  }
+  function rdHabitAdd(side, sec, pages, hour, at) {
+    const secs = Math.round(Number(sec) || 0);
+    if (secs <= 0) return;
+    const h = rdHabitLoad();
+    const when = Number(at) || Date.now();
+    const day = rdTodayKey(when);
+    const d = h[side][day] || (h[side][day] = { sec: 0, pages: 0, firstAt: 0, lastAt: 0, hours: {} });
+    if (!d.hours || typeof d.hours !== 'object') d.hours = {};
+    d.sec += secs;
+    d.pages += Math.max(0, Math.round(Number(pages) || 0));
+    if (!d.firstAt || when < d.firstAt) d.firstAt = when;
+    d.lastAt = Math.max(d.lastAt || 0, when);
+    if (hour != null) {
+      const k = String(hour);
+      d.hours[k] = (d.hours[k] || 0) + 1;
+    }
+    rdHabitSave(h);
+  }
+  function rdHabitStartSession() {
+    if (rdHabitSession) return;
+    rdHabitSession = { start: Date.now(), pages: 0, lastKey: '' };
+  }
+  function rdHabitTouchPage() {
+    const b = rdBook;
+    if (!rdHabitSession || !b) return;
+    const key = b.ch + ':' + b.pageIdx;
+    if (key === rdHabitSession.lastKey) return;
+    rdHabitSession.lastKey = key;
+    rdHabitSession.pages++;
+  }
+  function rdHabitEndSession() {
+    const s = rdHabitSession;
+    if (!s) return;
+    rdHabitSession = null;
+    const now = Date.now();
+    const sec = Math.round((now - s.start) / 1000);
+    if (sec < 20) return; // 只翻一下不算一次阅读
+    rdHabitAdd('me', sec, s.pages, null, now);
+    // 跟随模式：他和我一起读，记同一段；独立推进由 rdBuddyAdvance 自己记
+    const b = rdBook;
+    if (!b) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    const bd = rdBuddyGet(book);
+    if (!bd || !bd.started || bd.mode !== 'follow') return;
+    if (rdBuddyState(book) !== 'read') return;
+    rdBuddyAdvance(book);
+    rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
+  }
+  // 最近 N 天里他最常出现的整点（至少 3 次才算习惯）；没形成习惯就返回 null
+  function rdBuddyCommonHour(h) {
+    const today = rdTodayKey();
+    const keys = Object.keys(h.him || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); })
+      .filter(function (k) { return k !== today; }).slice(-7);
+    if (keys.length < 3) return null;
+    const counts = {};
+    for (let i = 0; i < keys.length; i++) {
+      const hrs = (h.him[keys[i]] && h.him[keys[i]].hours) || {};
+      Object.keys(hrs).forEach(function (hr) { counts[hr] = (counts[hr] || 0) + Number(hrs[hr] || 0); });
+    }
+    let best = null, bestN = 0;
+    Object.keys(counts).forEach(function (hr) {
+      if (counts[hr] > bestN) { bestN = counts[hr]; best = Number(hr); }
+    });
+    return bestN >= 3 ? best : null;
+  }
+  // 我最近几天是不是都在同一个时段来
+  function rdMyCommonHour(h) {
+    const keys = Object.keys(h.me || {}).sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); }).slice(-5);
+    if (keys.length < 3) return null;
+    const counts = {};
+    for (let i = 0; i < keys.length; i++) {
+      const d = h.me[keys[i]];
+      if (!d || !d.firstAt) continue;
+      const hr = new Date(d.firstAt).getHours();
+      counts[hr] = (counts[hr] || 0) + 1;
+    }
+    let best = null, bestN = 0;
+    Object.keys(counts).forEach(function (hr) {
+      if (counts[hr] > bestN) { bestN = counts[hr]; best = Number(hr); }
+    });
+    return bestN >= 3 ? best : null;
+  }
+  function rdHourPhrase(hr) {
+    const h = Number(hr);
+    if (h >= 22 || h < 2) return '22 点后';
+    if (h >= 5 && h < 9) return '早上';
+    if (h >= 12 && h < 14) return '中午';
+    if (h >= 18 && h < 22) return '晚上';
+    return h + ' 点';
+  }
+  // 小卡里那行自然观察：优先今天的异常，其次他自己的固定时段，最后是我的
+  function rdHabitObs(book) {
+    if (!book) return '';
+    const st = rdBuddyState(book);
+    if (st === 'none' || st === 'skip') return '';
+    const h = rdHabitLoad();
+    const today = rdTodayKey();
+    const ht = h.him[today] || null;
+    const keys = Object.keys(h.him || {}).filter(function (k) { return k !== today; })
+      .sort(function (a, b) { return rdDayTs(a) - rdDayTs(b); }).slice(-7);
+    let avg = 0;
+    if (keys.length) {
+      let sum = 0;
+      for (let i = 0; i < keys.length; i++) sum += (h.him[keys[i]] && h.him[keys[i]].sec) || 0;
+      avg = sum / keys.length;
+    }
+    if (ht && keys.length >= 3 && avg > 60 && ht.sec > avg * 1.4) return '今天他读得比平时久。';
+    if (ht && ht.sec > 0 && ht.sec < 120 && keys.length >= 3 && avg > 480) return '他今天只读了一段就合上了。';
+    const hs = rdBuddyCommonHour(h);
+    if (hs != null) {
+      const phrase = rdHourPhrase(hs);
+      if (phrase === '早上' || phrase === '中午' || phrase === '晚上') return '他最近总在' + phrase + '翻两页。';
+      return '他最近总在 ' + phrase + '，翻两页。';
+    }
+    const ms = rdMyCommonHour(h);
+    if (ms != null) return '你最近都是这个点来。';
+    return '';
+  }
+  // 夜里两盏小灯：我那盏常亮，他那盏按他此刻的状态亮
+  function rdSyncLamp(book, st) {
+    const lamp = document.getElementById('rd-lamp');
+    if (!lamp) return;
+    const now = new Date();
+    const hr = now.getHours();
+    const night = hr >= 22 || hr < 7;
+    const show = night && (st === 'read' || st === 'wait' || st === 'done');
+    lamp.hidden = !show;
+    if (!show) return;
+    const him = lamp.querySelector('.rd-lamp-him');
+    if (him) him.classList.add('on');
+    if ((hr === 23 && now.getMinutes() >= 30) || hr < 7) rdHabitLateNote(book);
+  }
+  // 23:30 后还开着书：每本书每夜只留一次灯
+  function rdHabitLateNote(book) {
+    if (!book) return;
+    const day = rdTodayKey();
+    if (book.lateNoteDay === day) return;
+    book.lateNoteDay = day;
+    const list = readIndex();
+    const fb = rdFindBook(book.id, list);
+    if (fb) { fb.lateNoteDay = day; saveIndex(list); }
+    rdToast('灯我留着，明天再读也一样。');
   }
 
   // 进度真值只存「章 + 章内字符偏移」，页码只是展示值：换字号/换屏幕后仍能落回同一句话。
@@ -703,6 +929,9 @@
   // 提前出现在正文中，只有我翻到那一页才浮现（见 rdBuddyAnnoVisible）。
   const RD_CHARS_PER_MIN = 420;
   const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
+  // 折角书签：每次打开书最多播一次的展示状态，不影响任何进度真值
+  let rdBookmarkPlayed = false;
+  let rdBookmarkWaitTimer = 0;
 
   function rdTodayKey(ts) {
     const d = new Date(ts || Date.now());
@@ -771,11 +1000,19 @@
     let his = rdFlatPos(book, bd.ch, bd.off);
     if (bd.mode === 'solo') {
       // 按离开时长推进，单次最多补 30 分钟，避免隔夜一口气读完整本
-      const dt = Math.max(0, Math.min(now - (bd.updatedAt || now), RD_CATCHUP_MAX_MS));
+      const prevAt = bd.updatedAt || now;
+      const dt = Math.max(0, Math.min(now - prevAt, RD_CATCHUP_MAX_MS));
       const ms = (bd.carry || 0) + dt;
       const units = Math.floor(ms / 60000);
       bd.carry = ms - units * 60000;
-      his = Math.min(total, his + units * RD_CHARS_PER_MIN);
+      const nextHis = Math.min(total, his + units * RD_CHARS_PER_MIN);
+      // 他独立读掉的这一段也记进习惯（只记时长与估算页数，不记内容）
+      if (units > 0) {
+        const words = Math.max(0, nextHis - his);
+        const pages = words > 0 ? Math.max(1, Math.round(words / 500)) : 0;
+        rdHabitAdd('him', units * 60, pages, new Date(prevAt).getHours(), now);
+      }
+      his = nextHis;
       bd.waiting = false;
     } else {
       if (his < mine) his = mine; // 跟随：追上来，但不往回退
@@ -824,6 +1061,24 @@
     if (!a) return false;
     if (a.by === 'me') return true;
     return a.e > pageStart && a.e <= pageEnd;
+  }
+
+  // ===== 读过的痕迹（淡痕 + 同句双圈）=====
+  // 总开关跟随字卡库「共读批注」分类：整组停用、逐张关光、二级密码锁或概率 0% 时，
+  // 淡痕与双圈一起关闭，不另设入口。
+  function rdTraceEnabled() {
+    if (rdDcfRatio() <= 0) return false;
+    const pool = rdLibPool('anno');
+    return pool === null ? true : pool.length > 0;
+  }
+  // 他在这一章读到第几个字：返回 -1 表示还没读到这一章
+  function rdBuddyReadOff(book, ch, textLen) {
+    const bd = rdBuddyGet(book);
+    if (!bd || !bd.started) return -1;
+    if (bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now())) return -1;
+    if (bd.ch > ch) return textLen;
+    if (bd.ch === ch) return Math.max(0, Math.min(bd.off, textLen));
+    return -1;
   }
 
   function rdCloseBuddyCard() {
@@ -889,6 +1144,8 @@
       }).length;
       if (n) nearEl.textContent = '这附近他留了 ' + n + ' 条批注';
     }
+    const habitEl = document.getElementById('rd-buddy-habit');
+    if (habitEl) habitEl.textContent = rdHabitObs(book);
     if (!rdBook || rdBook !== b) return;
     if (card) card.hidden = false;
   }
@@ -1315,15 +1572,41 @@
     const p = b.pages[b.pageIdx] || { s: 0, e: b.text.length };
     const start = p.s;
     const end = p.e;
+    // 读过的痕迹：他读过的句子句尾有极淡的铅笔竖线；同一句两人都留了批注时角标变双圈。
+    // 两者共用「共读批注」分类的总开关，关掉整组或概率归零时一起消失。
+    const traceOn = rdTraceEnabled();
+    let hisOff = -1;
+    if (traceOn) {
+      const idx = readIndex();
+      const book = rdFindBook(b.id, idx);
+      if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
+    }
+    const traces = {};
+    if (hisOff > start) {
+      const sents = b.sents || [];
+      const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
+      for (let si = from; si < sents.length; si++) {
+        const sn = sents[si];
+        if (!sn || sn.e <= start) continue;
+        if (sn.e > end) break;
+        if (sn.e <= hisOff) traces[sn.e] = true;
+      }
+    }
     const marks = {};
     (b.anno || []).forEach(function (a) {
       // 他的批注走「我读到才浮现」的闸门；我的批注照常显示
       if (!rdBuddyAnnoVisible(a, start, end)) return;
-      const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false });
+      const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false, his: false });
       m.n++;
       if (a.by === 'me') m.mine = true;
+      else if (traceOn) m.his = true;
     });
-    const cuts = Object.keys(marks).map(Number).sort(function (x, y) { return x - y; });
+    // 批注所在句已经有更明确的记号，不再叠淡痕，避免同一处挤两个标记
+    Object.keys(traces).forEach(function (k) { if (marks[k]) delete traces[k]; });
+    const cutMap = {};
+    Object.keys(marks).forEach(function (k) { cutMap[k] = 1; });
+    Object.keys(traces).forEach(function (k) { cutMap[k] = 1; });
+    const cuts = Object.keys(cutMap).map(Number).sort(function (x, y) { return x - y; });
     const sel = rdSel && rdSel.e > start && rdSel.s < end
       ? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
     function emit(a, z) {
@@ -1340,9 +1623,14 @@
     for (let k = 0; k < cuts.length; k++) {
       const m = cuts[k];
       html += emit(i, m);
+      if (traces[m]) html += '<span class="rd-trace" aria-hidden="true"></span>';
       const mk = marks[m];
-      html += '<span class="rd-mark' + (mk.mine ? '' : ' rd-mark-his') + '" data-pos="' + m + '" role="button">' +
-        (mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
+      if (mk) {
+        const both = traceOn && mk.mine && mk.his;
+        const cls = 'rd-mark' + (both ? ' rd-mark-both' : (mk.mine ? '' : ' rd-mark-his'));
+        html += '<span class="' + cls + '" data-pos="' + m + '" role="button">' +
+          (mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
+      }
       i = m;
     }
     html += emit(i, end);
@@ -1616,7 +1904,23 @@
     rdPopPos = pos;
     const all = !!expand || items.length <= RD_POP_MAX;
     const show = all ? items : items.slice(0, RD_POP_MAX);
-    list.innerHTML = show.map(function (a) {
+    // 同句双圈：这一句两人都留了批注。每本书第一次撞上时给一句提示，之后只保留双圈。
+    let sameFirst = false;
+    if (rdTraceEnabled()) {
+      const hasMine = items.some(function (a) { return a && a.by === 'me'; });
+      const hasHis = items.some(function (a) { return a && a.by !== 'me'; });
+      if (hasMine && hasHis) {
+        const idx = readIndex();
+        const book = rdFindBook(b.id, idx);
+        if (book && !book.sameLineSeen) {
+          book.sameLineSeen = 1;
+          saveIndex(idx);
+          sameFirst = true;
+        }
+      }
+    }
+    let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
+    html += show.map(function (a) {
       const mine = a.by === 'me';
       return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
         (a.replyTo ? ' rd-pop-reply' : '') + '"' +
@@ -1625,9 +1929,10 @@
         '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div></div>';
     }).join('');
     if (!all) {
-      list.innerHTML += '<button class="rd-pop-more" type="button">还有 ' +
+      html += '<button class="rd-pop-more" type="button">还有 ' +
         (items.length - RD_POP_MAX) + ' 条，展开</button>';
     }
+    list.innerHTML = html;
     pop.hidden = false;
   }
 
@@ -1812,6 +2117,14 @@
     }
   }, true);
   document.addEventListener('pointercancel', function () { rdTouch = null; }, true);
+
+  // 阅读习惯：切后台/关页时把这一段收尾；回前台仍在阅读器里就重新开一段
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { rdHabitEndSession(); return; }
+    const reader = document.getElementById('rd-reader');
+    if (reader && !reader.hidden) rdHabitStartSession();
+  });
+  window.addEventListener('pagehide', function () { rdHabitEndSession(); });
 
   // 长按选句：520ms 内位移不超过 10px 才算长按；点到角标不选句
   let rdSelTimer = 0, rdSelX = 0, rdSelY = 0;
