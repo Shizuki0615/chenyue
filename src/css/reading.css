@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
@@ -31,6 +31,25 @@
 /* 正文区的纸感只由背景承担，不改内边距/字号/行高，避免分页尺寸变化 */
 .rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+/* 阅读背景：auto 沿用全站主题；eye / night 只在阅读器内覆盖 */
+.rd-reader[data-rd-bg="eye"]{--bg:#ffffff;--line:#e6e6e6;--ink:#111111;--muted:#8a8a8a;color:#111111;background:#fbf8f1}
+.rd-reader[data-rd-bg="night"]{--bg:#1e1e1e;--line:#333333;--ink:#f0f0f0;--muted:#aaaaaa;color:#f0f0f0;background:#1b1916}
+.rd-reader[data-rd-bg="eye"] .ch-name{color:#111111}
+.rd-reader[data-rd-bg="night"] .ch-name{color:#f0f0f0}
+.page.full .rd-reader[data-rd-bg="eye"] .chat-head{background:rgba(255,255,255,.92);border-bottom-color:rgba(0,0,0,.1);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.page.full .rd-reader[data-rd-bg="night"] .chat-head{background:rgba(30,30,30,.92);border-bottom-color:rgba(255,255,255,.1);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.rd-reader[data-rd-bg="eye"] .ch-back,.rd-reader[data-rd-bg="eye"] .ch-settings{background:rgba(255,255,255,.92);border-color:rgba(0,0,0,.1)}
+.rd-reader[data-rd-bg="night"] .ch-back,.rd-reader[data-rd-bg="night"] .ch-settings{background:rgba(40,40,40,.92);border-color:rgba(255,255,255,.12)}
+.rd-reader[data-rd-bg="eye"] .ch-back svg{stroke:#111111}
+.rd-reader[data-rd-bg="night"] .ch-back svg{stroke:#f0f0f0}
+.rd-reader[data-rd-bg="eye"] .rd-body{background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-reader[data-rd-bg="night"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+.rd-reader[data-rd-bg="eye"] .rd-bar{background:#e5e5e5}
+.rd-reader[data-rd-bg="night"] .rd-bar{background:#333333}
+.rd-reader[data-rd-bg="eye"] .rd-buddy-dot{border-color:#ffffff}
+.rd-reader[data-rd-bg="night"] .rd-buddy-dot{border-color:#1b1916}
+.rd-reader[data-rd-bg="night"] #rd-buddy.rd-buddy-same-text,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-tog,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-pace{color:#ff9b92}
+.rd-reader[data-rd-bg="night"] .rd-toc-row.on{color:#ff9b92}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
@@ -99,6 +118,12 @@
 .rd-set-preview-text{padding:14px 16px 20px;font-size:17px;line-height:1.8;white-space:pre-wrap;color:var(--ink)}
 [data-theme="dark"] .rd-set-preview{background:linear-gradient(180deg,#201e1a,#191714);border-color:var(--dark-border,#333)}
 [data-theme="dark"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-preview[data-rd-bg="eye"]{--ink:#111111;--muted:#8a8a8a;background:linear-gradient(180deg,#fdfbf6,#f8f3e9);border-color:#e6e6e6}
+.rd-set-preview[data-rd-bg="eye"] .rd-set-preview-h{border-bottom-color:rgba(0,0,0,.05)}
+.rd-set-preview[data-rd-bg="eye"] .rd-set-preview-text{color:#111111}
+.rd-set-preview[data-rd-bg="night"]{--ink:#f0f0f0;--muted:#aaaaaa;background:linear-gradient(180deg,#201e1a,#191714);border-color:#333333}
+.rd-set-preview[data-rd-bg="night"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-preview[data-rd-bg="night"] .rd-set-preview-text{color:#f0f0f0}
 .rd-set-row{display:flex;flex-direction:column;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
 .rd-set-row:last-child{border-bottom:none}
 .rd-set-row-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -117,6 +142,49 @@
 [data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
 [data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
 .rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
+.rd-live-entry{display:flex;align-items:center;gap:10px;width:100%;margin:12px 0 0;padding:11px 14px;border:1px solid var(--card-border,#ddd);border-radius:12px;background:var(--card-bg,#fff);background:color-mix(in srgb,var(--btn-bg,#111) 10%,var(--card-bg,#fff));color:var(--btn-bg,#111);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-live-entry-t{flex:1;min-width:0}
+.rd-live-entry-name{display:block;font-size:15px;font-weight:700;line-height:1.25}
+.rd-live-entry-sub{display:block;font-size:11.5px;font-weight:400;opacity:.85;margin-top:2px}
+.rd-live-entry-go{flex:none;font-size:12px;font-weight:700;padding:7px 10px;border:1px solid var(--btn-bg,#111);border-radius:999px;background:var(--btn-bg,#111);color:var(--btn-ink,#fff);white-space:nowrap}
+.rd-bg-opts{display:flex;gap:8px}
+.rd-bg-opt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);cursor:pointer;font-size:11.5px;text-align:left}
+.rd-bg-opt.on{border-color:rgba(244,182,194,.85);box-shadow:inset 0 0 0 1px rgba(244,182,194,.35)}
+.rd-bg-opt span{display:block;padding:0 2px}
+.rd-bg-sw{display:block;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+.rd-bg-sw.auto{background:linear-gradient(90deg,#fdfbf6 0%,#fdfbf6 50%,#1b1916 50%,#1b1916 100%)}
+.rd-bg-sw.eye{background:linear-gradient(180deg,#fdfbf6,#f2e9d8)}
+.rd-bg-sw.night{background:linear-gradient(180deg,#201e1a,#141311)}
+[data-theme="dark"] .rd-bg-opt{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-bg-sw{border-color:rgba(255,255,255,.12)}
+
+/* ---------- 边看边调抽屉 ---------- */
+#rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}
+#rd-live-drawer[data-rd-bg="eye"]{--ink:#111111;--muted:#8a8a8a;--line:#e6e6e6;--card-border:#e6e6e6;--btn-cancel-bg:#fafafa;background:rgba(255,255,255,.94);color:#111111}
+#rd-live-drawer[data-rd-bg="night"]{--ink:#f0f0f0;--muted:#aaaaaa;--line:#3a3a3a;--card-border:#3a3a3a;--btn-cancel-bg:#2a2a2a;background:rgba(30,30,30,.94);color:#f0f0f0}
+.rd-live-grip{width:36px;height:4px;border-radius:2px;background:var(--card-border,#ddd);margin:7px auto 0;flex:none}
+.rd-live-head{display:flex;align-items:center;gap:8px;flex:none;padding:6px 0 2px}
+.rd-live-title{flex:none;font-size:13px;font-weight:700}
+.rd-live-hint{flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-live-mini{flex:none;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink);font-size:11.5px;padding:6px 11px;cursor:pointer}
+.rd-live-body{display:flex;flex-direction:column;gap:8px;padding:6px 0 2px}
+.rd-live-slider span{font-size:11px}
+.rd-live-val{width:38px;text-align:right}
+.rd-live-bgrow{display:flex;align-items:center;gap:10px}
+.rd-live-bgrow>span{flex:none;font-size:11px;color:var(--muted)}
+.rd-live-bg{display:flex;flex:1;min-width:0;gap:6px}
+.rd-live-bgopt{flex:1;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink);font-size:11.5px;padding:6px 4px;cursor:pointer}
+.rd-live-bgopt.on{border-color:rgba(244,182,194,.85);background:rgba(244,182,194,.22)}
+#rd-live-drawer[data-rd-bg="night"] .rd-live-bgopt.on{background:rgba(244,182,194,.16)}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#3a3a3a var(--rd-pct,50%),#3a3a3a 100%)}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#1e1e1e}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#e6e6e6 var(--rd-pct,50%),#e6e6e6 100%)}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#ffffff}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-moz-range-track{background:#e6e6e6}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#ffffff}
+.rd-live-note{font-size:10.5px;line-height:1.5;color:var(--muted);padding:2px 0 0}
 
 /* ---------- 目录 ---------- */
 .rd-toc{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}

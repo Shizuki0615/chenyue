@@ -10,8 +10,9 @@
 
   // 书架索引键（只存书目元信息，条目很小）
   const RD_INDEX_KEY = 'reading-books';
-  // 字号/行距偏好：全局小键，不进备份白名单也不进书架索引
+  // 字号/行距/背景偏好：全局小键，不进备份白名单也不进书架索引
   const RD_PREFS_KEY = 'reading-prefs';
+  const RD_BG_KEY = 'reading-bg';
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
@@ -382,6 +383,7 @@
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(page);
     rdApplyPrefs(rdReadPrefs());
+    rdApplyBg();
     return page;
   }
 
@@ -403,7 +405,14 @@
         '<span class="ch-name">阅读设置</span>' +
       '</div>' +
       '<div class="rd-set-body">' +
-        '<div class="rd-set-preview">' +
+        '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
+          '<span class="rd-live-entry-t">' +
+            '<span class="rd-live-entry-name">边看边调</span>' +
+            '<span class="rd-live-entry-sub">打开调色条：预览在上、控件在下，改哪看哪、即时生效</span>' +
+          '</span>' +
+          '<span class="rd-live-entry-go">点击开启 ›</span>' +
+        '</button>' +
+        '<div class="rd-set-preview" id="rd-set-preview">' +
           '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
           '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
         '</div>' +
@@ -417,8 +426,16 @@
             '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
             '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
           '</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
+            '<div class="rd-bg-opts">' +
+              '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
+              '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
+              '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
-        '<div class="rd-set-note">这些偏好只作用在阅读器，不影响聊天和桌面字号。预览用的是内置样文；打开书后会按同一套偏好重新分页。</div>' +
+        '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
       '</div>';
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(settingsPage);
@@ -432,6 +449,7 @@
   function rdOpenSettings() {
     buildSettingsPage();
     if (!page || !settingsPage) return;
+    rdCloseLiveDrawer();
     page.hidden = true;
     settingsPage.hidden = false;
     settingsPage.classList.add('full');
@@ -441,13 +459,123 @@
   }
   function rdCloseSettings() {
     if (!settingsPage) return;
+    rdCloseLiveDrawer();
     settingsPage.hidden = true;
     if (page) page.hidden = false;
     rdRenderShelf();
   }
 
+  // ===== 边看边调抽屉（挂 body，预览在上、控件在下）=====
+  let liveDrawer = null;
+  let rdLiveDragBot = 0;
+  function rdLiveApplyBottom() {
+    if (!liveDrawer) return;
+    liveDrawer.style.bottom = Math.max(0, Math.min(Math.round(window.innerHeight * 0.6), rdLiveDragBot)) + 'px';
+  }
+  function bindLiveDrag(handle) {
+    if (!handle) return;
+    handle.style.touchAction = 'none';
+    let sy = 0, sb = 0, drag = false;
+    handle.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      drag = true; sy = e.clientY; sb = rdLiveDragBot;
+      if (liveDrawer) liveDrawer.style.transition = 'none';
+      try { handle.setPointerCapture(e.pointerId); } catch (er) {}
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      rdLiveDragBot = Math.max(0, Math.min(Math.round(window.innerHeight * 0.6), Math.round(sb + sy - e.clientY)));
+      rdLiveApplyBottom();
+      e.preventDefault();
+    });
+    const up = function () {
+      if (!drag) return;
+      drag = false;
+      if (liveDrawer) liveDrawer.style.transition = 'bottom .16s ease';
+      if (rdLiveDragBot < 24) rdLiveDragBot = 0;
+      rdLiveApplyBottom();
+    };
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+    handle.style.cursor = 'grab';
+  }
+  function buildLiveDrawer() {
+    if (liveDrawer) return liveDrawer;
+    liveDrawer = document.createElement('div');
+    liveDrawer.id = 'rd-live-drawer';
+    liveDrawer.hidden = true;
+    liveDrawer.innerHTML =
+      '<div class="rd-live-grip"></div>' +
+      '<div class="rd-live-head" id="rd-live-head">' +
+        '<span class="rd-live-title">边看边调（即时生效）</span>' +
+        '<span class="rd-live-hint">按住标题行上下拖 · 让开看预览</span>' +
+        '<button class="rd-live-mini" id="rd-live-fold" type="button">收起</button>' +
+        '<button class="rd-live-mini" id="rd-live-close" type="button">✕</button>' +
+      '</div>' +
+      '<div class="rd-live-body" id="rd-live-body">' +
+        '<div class="rd-set-slider rd-live-slider"><span>字号</span><input type="range" id="rd-live-fs-range" min="12" max="30" step="1" aria-label="字号"><span class="rd-live-val" id="rd-live-fs-val"></span></div>' +
+        '<div class="rd-set-slider rd-live-slider"><span>行距</span><input type="range" id="rd-live-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span class="rd-live-val" id="rd-live-lh-val"></span></div>' +
+        '<div class="rd-live-bgrow"><span>背景</span><div class="rd-live-bg">' +
+          '<button class="rd-live-bgopt" data-rd-bgopt="auto" type="button">跟随</button>' +
+          '<button class="rd-live-bgopt" data-rd-bgopt="eye" type="button">护眼</button>' +
+          '<button class="rd-live-bgopt" data-rd-bgopt="night" type="button">夜间</button>' +
+        '</div></div>' +
+        '<div class="rd-live-note">改动即时生效；关掉抽屉后保留。</div>' +
+      '</div>';
+    document.body.appendChild(liveDrawer);
+    const fsRange = liveDrawer.querySelector('#rd-live-fs-range');
+    if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
+    const lhRange = liveDrawer.querySelector('#rd-live-lh-range');
+    if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+    bindLiveDrag(liveDrawer.querySelector('.rd-live-grip'));
+    bindLiveDrag(liveDrawer.querySelector('#rd-live-head'));
+    rdApplyBg();
+    return liveDrawer;
+  }
+  function rdOpenLiveDrawer() {
+    if (!settingsPage || settingsPage.hidden) return;
+    buildLiveDrawer();
+    rdLiveDragBot = 0;
+    const body = document.getElementById('rd-live-body');
+    if (body) body.style.display = 'flex';
+    const foldBtn = document.getElementById('rd-live-fold');
+    if (foldBtn) foldBtn.textContent = '收起';
+    liveDrawer.hidden = false;
+    liveDrawer.style.transition = 'bottom .16s ease';
+    rdLiveApplyBottom();
+    rdApplyBg();
+    rdRenderPrefsActive();
+    const setBody = settingsPage.querySelector('.rd-set-body');
+    if (setBody) {
+      setBody.style.overflow = 'hidden';
+      const prev = document.getElementById('rd-set-preview');
+      if (prev) {
+        const top = prev.getBoundingClientRect().top - setBody.getBoundingClientRect().top + setBody.scrollTop;
+        setBody.scrollTop = Math.max(0, top - 8);
+      }
+    }
+  }
+  function rdCloseLiveDrawer() {
+    if (!liveDrawer) return;
+    liveDrawer.hidden = true;
+    rdLiveDragBot = 0;
+    const setBody = settingsPage && settingsPage.querySelector('.rd-set-body');
+    if (setBody) setBody.style.overflow = '';
+  }
+  function rdToggleLiveFold() {
+    const body = document.getElementById('rd-live-body');
+    const btn = document.getElementById('rd-live-fold');
+    if (!body) return;
+    const willFold = body.style.display !== 'none';
+    body.style.display = willFold ? 'none' : 'flex';
+    if (btn) btn.textContent = willFold ? '展开' : '收起';
+  }
+
   function rdOpen() {
     buildPage();
+    rdCloseLiveDrawer();
     rdRenderShelf();
     rdRetryPendingDelete();
     document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
@@ -470,6 +598,7 @@
     rdWriteProgress();
     rdHabitEndSession();
     rdCloseBookMenu();
+    rdCloseLiveDrawer();
     if (settingsPage) settingsPage.hidden = true;
     page.classList.remove('full');
     page.hidden = true;
@@ -491,6 +620,7 @@
     rdCloseLost();
     rdCloseBuddyCard();
     rdPopPos = -1;
+    rdCloseLiveDrawer();
     if (settingsPage) settingsPage.hidden = true;
     const shelf = document.getElementById('rd-shelf');
     const reader = document.getElementById('rd-reader');
@@ -2897,6 +3027,29 @@
     body.style.fontSize = (p && p.fs ? p.fs : 17) + 'px';
     body.style.lineHeight = String((p && p.lh) || 1.8);
   }
+  // ===== 阅读背景：auto 跟随全局主题，eye / night 只在阅读器内覆盖 =====
+  const RD_BG_LABEL = { auto: '跟随主题', eye: '护眼', night: '夜间' };
+  function rdReadBg() {
+    try {
+      const v = store.get(RD_BG_KEY);
+      return (v === 'eye' || v === 'night') ? v : 'auto';
+    } catch (e) { return 'auto'; }
+  }
+  function rdApplyBg() {
+    const mode = rdReadBg();
+    const reader = document.getElementById('rd-reader');
+    if (reader) reader.setAttribute('data-rd-bg', mode);
+    const prev = document.getElementById('rd-set-preview');
+    if (prev) prev.setAttribute('data-rd-bg', mode);
+    const drawer = document.getElementById('rd-live-drawer');
+    if (drawer) drawer.setAttribute('data-rd-bg', mode);
+  }
+  function rdSetBg(mode) {
+    if (mode !== 'eye' && mode !== 'night') mode = 'auto';
+    try { store.set(RD_BG_KEY, mode); }
+    catch (e) {}
+    rdRenderPrefsActive();
+  }
   function rdSetPrefs(patch) {
     const p = rdReadPrefs();
     if (patch && patch.fs) p.fs = patch.fs;
@@ -2923,15 +3076,27 @@
   }
   function rdRenderPrefsActive() {
     const p = rdReadPrefs();
+    const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
+    const lhPct = Math.max(0, Math.min(100, (p.lh - 1.4) / 0.8 * 100)) + '%';
     const fsRange = document.getElementById('rd-set-fs-range');
     if (fsRange) {
       fsRange.value = String(p.fs);
-      fsRange.style.setProperty('--rd-pct', Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%');
+      fsRange.style.setProperty('--rd-pct', fsPct);
     }
     const lhRange = document.getElementById('rd-set-lh-range');
     if (lhRange) {
       lhRange.value = String(p.lh);
-      lhRange.style.setProperty('--rd-pct', Math.max(0, Math.min(100, (p.lh - 1.4) / 0.8 * 100)) + '%');
+      lhRange.style.setProperty('--rd-pct', lhPct);
+    }
+    const liveFs = document.getElementById('rd-live-fs-range');
+    if (liveFs) {
+      liveFs.value = String(p.fs);
+      liveFs.style.setProperty('--rd-pct', fsPct);
+    }
+    const liveLh = document.getElementById('rd-live-lh-range');
+    if (liveLh) {
+      liveLh.value = String(p.lh);
+      liveLh.style.setProperty('--rd-pct', lhPct);
     }
     const prev = document.getElementById('rd-set-preview-text');
     if (prev) {
@@ -2942,6 +3107,17 @@
     if (fsVal) fsVal.textContent = p.fs + 'px';
     const lhVal = document.getElementById('rd-set-lh-val');
     if (lhVal) lhVal.textContent = p.lh.toFixed(1);
+    const liveFsVal = document.getElementById('rd-live-fs-val');
+    if (liveFsVal) liveFsVal.textContent = p.fs + 'px';
+    const liveLhVal = document.getElementById('rd-live-lh-val');
+    if (liveLhVal) liveLhVal.textContent = p.lh.toFixed(1);
+    const bg = rdReadBg();
+    document.querySelectorAll('[data-rd-bgopt]').forEach(function (btn) {
+      btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);
+    });
+    const bgVal = document.getElementById('rd-set-bg-val');
+    if (bgVal) bgVal.textContent = RD_BG_LABEL[bg] || RD_BG_LABEL.auto;
+    rdApplyBg();
   }
 
   // ===== 目录 =====
@@ -3518,6 +3694,11 @@
     if (el.closest('#rd-shelf-back')) { rdClose(); return; }
     if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
     if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
+    if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
+    if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); return; }
+    if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
+    const bgOpt = el.closest('[data-rd-bgopt]');
+    if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
     if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
