@@ -496,6 +496,8 @@
     rdTogLogged = false;
     rdTogNoteLogged = false;
     rdTogWatchStart();
+    // 翻页节奏也重新开始量：换一本书不该继承上一本的停留时长
+    rdPaceReset();
     // 封存一句是异步读写：等本章先加载完，再依次解锁旧纸条、处理回应、折新纸条，
     // 避免三处同时改同一章的批注数组互相覆盖。
     rdEnsureChapter('offset').then(function () {
@@ -656,6 +658,8 @@
     if (b.pageIdx > b.pages.length - 1) b.pageIdx = b.pages.length - 1;
     // 折角书签的 30 秒只等在同一页；一翻页就清零，不在新页继续倒计时
     if (rdBookmarkWaitPage && rdBookmarkWaitPage !== b.ch + ':' + b.pageIdx) rdBmClearWait();
+    // 翻页节奏在这里结算：上一页停了多久、最近几页翻得多快
+    rdMarkPagePace();
     const body = document.getElementById('rd-body');
     const p = b.pages[b.pageIdx];
     rdPaintPage();
@@ -699,9 +703,11 @@
     }
     if (line) {
       const tog = rdTogetherOn(book);
-      line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);
+      const paceNote = tog ? '' : rdPaceNote(book, b);
+      line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
       line.classList.toggle('rd-buddy-same-text', same);
       line.classList.toggle('rd-tog', tog);
+      line.classList.toggle('rd-pace', !!paceNote);
     }
     rdSyncLamp(book, st);
     rdMaybeBookmarkReturn(book, b, bd, st);
@@ -1054,6 +1060,91 @@
       if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
       rdToast('他在上一章的末尾留了一句。');
     }).catch(function () {});
+  }
+
+  // ===== 翻页被看见 =====
+  // 他记得我读得快还是慢：同一页停很久、或短时间内连翻很多页，各会被他记住一次。
+  // 判定只用本地翻页时间戳，不记任何内容；每章各回应一次，回应落在章末与那张纸条上。
+  const RD_PACE_SLOW_MS = 90 * 1000;
+  const RD_PACE_FAST_MS = 10 * 1000;
+  const RD_PACE_FAST_FLIPS = 5;
+  const RD_PACE_SLOW_LINE = '这一页你停了很久。';
+  const RD_PACE_FAST_LINE = '你翻得好快，是不是在找我？';
+  let rdPaceKey = '';
+  let rdPaceEnterAt = 0;
+  let rdPacePrev = null;
+  let rdPaceFlips = [];
+
+  function rdPaceReset() {
+    rdPaceKey = '';
+    rdPaceEnterAt = Date.now();
+    rdPacePrev = null;
+    rdPaceFlips = [];
+  }
+  // 切后台不算「停在这一页」：回前台重新开始计时，和折角书签那 30 秒同一个口径
+  function rdPacePause() { rdPaceEnterAt = 0; }
+  function rdPaceResume() { if (rdBook) rdPaceEnterAt = Date.now(); }
+
+  // 节奏记录按章各存一份；换到别的章就重开一格，回来重读还能再被看见一次
+  function rdPaceSlot(book, ch) {
+    const old = book.pace;
+    if (old && old.ch === ch) return old;
+    return { ch: ch, slow: 0, slowUsed: 0, slowS: 0, slowE: 0, fast: 0, fastUsed: 0 };
+  }
+  function rdPaceMarkSlow(b, prev) {
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    const slot = rdPaceSlot(book, prev.ch);
+    if (slot.slow) return;
+    slot.slow = Date.now();
+    slot.slowS = prev.s;
+    slot.slowE = prev.e;
+    book.pace = slot;
+    saveIndex(list);
+  }
+  function rdPaceMarkFast(b) {
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    const slot = rdPaceSlot(book, b.ch);
+    if (slot.fast) return;
+    slot.fast = Date.now();
+    slot.fastUsed = 0;
+    book.pace = slot;
+    saveIndex(list);
+  }
+  // 只在真正翻页时结算一次：同一页重绘（换字号、浮层关掉后补画）不算翻页
+  function rdMarkPagePace() {
+    const b = rdBook;
+    if (!b || !b.pages.length) return;
+    const now = Date.now();
+    const key = b.ch + ':' + b.pageIdx;
+    if (key === rdPaceKey) return;
+    const prev = rdPacePrev;
+    if (prev && prev.ch === b.ch && rdPaceEnterAt && now - rdPaceEnterAt >= RD_PACE_SLOW_MS) {
+      rdPaceMarkSlow(b, prev);
+    }
+    const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
+    rdPacePrev = { ch: b.ch, s: p.s, e: p.e };
+    rdPaceKey = key;
+    rdPaceEnterAt = now;
+    rdPaceFlips.push(now);
+    while (rdPaceFlips.length > RD_PACE_FAST_FLIPS) rdPaceFlips.shift();
+    if (rdPaceFlips.length >= RD_PACE_FAST_FLIPS &&
+        rdPaceFlips[rdPaceFlips.length - 1] - rdPaceFlips[0] <= RD_PACE_FAST_MS) {
+      rdPaceMarkFast(b);
+    }
+  }
+  // 只在章末那一页给感想；同读优先，这里只管翻页节奏
+  function rdPaceNote(book, b) {
+    if (!book || !b || !b.pages.length) return '';
+    if (b.pageIdx !== b.pages.length - 1) return '';
+    const pace = book.pace;
+    if (!pace || pace.ch !== b.ch) return '';
+    if (pace.slow) return '这页你停了很久';
+    if (pace.fast) return '你翻得好快，是不是在找我？';
+    return '';
   }
 
   // 进度真值只存「章 + 章内字符偏移」，页码只是展示值：换字号/换屏幕后仍能落回同一句话。
@@ -1626,6 +1717,13 @@
     if (!bd.started || bd.mode === 'skip' || st === 'none' || st === 'done') return;
     const frontier = rdBuddyFrontier(book, b);
     if (frontier <= 0) return;
+    // 翻页被看见：这一章里我停很久 / 翻太快，各给一次回应
+    const pace = book.pace && book.pace.ch === b.ch ? book.pace : null;
+    let paceKind = '';
+    if (pace) {
+      if (pace.slow && !pace.slowUsed) paceKind = 'slow';
+      else if (pace.fast && !pace.fastUsed) paceKind = 'fast';
+    }
     let at = rdPosFromFlat(book, frontier);
     // 正好停在章末时，换算会落到下一章第 0 字；按「刚读完上一章」处理，
     // 否则他永远没法在上一章结尾留纸条。
@@ -1636,7 +1734,8 @@
     if (!force) {
       if (key === rdHisTryKey) return;
       rdHisTryKey = key;
-      if (Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
+      // 回应翻页节奏不走概率：这是他看见我之后主动留的，不是随机掉落
+      if (!paceKind && Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
     }
 
     // 目标章可能是他读到的那一章，不一定是屏幕上这一章
@@ -1655,7 +1754,8 @@
     if (cur) b.cache[targetCh] = text; // 只缓存当前章，别把整本都留在内存里
     const sents = rdSentenceList(text);
     if (!sents.length) return;
-    const limit = Math.min(at.off, text.length);
+    // 轮到回应翻页节奏时不受他的前沿限制：慢读那页是我停过的，章尾也不会剧透到我还没读的地方
+    const limit = paceKind ? text.length : Math.min(at.off, text.length);
     const occupied = hisArr.map(function (a) { return rdSentIndexAt(sents, a.e); });
     const taken = {};
     (annos || []).forEach(function (a) {
@@ -1666,12 +1766,20 @@
       const q = sents[i];
       if (q.e > limit) break;
       if (taken[q.e]) continue;
-      let near = false;
-      for (let k = 0; k < occupied.length; k++) {
-        if (Math.abs(occupied[k] - i) < RD_HIS_GAP) { near = true; break; }
+      // 快翻：把这张纸条藏到章尾，等我翻到最后才看见
+      if (paceKind === 'fast' && i !== sents.length - 1) continue;
+      // 慢读：只在我停过的那一页里挑
+      if (paceKind === 'slow' && !(q.e > pace.slowS && q.s < pace.slowE)) continue;
+      // 回应翻页节奏时不隔句：那一页可能只有两三句，隔八句就永远挑不到
+      if (!paceKind) {
+        let near = false;
+        for (let k = 0; k < occupied.length; k++) {
+          if (Math.abs(occupied[k] - i) < RD_HIS_GAP) { near = true; break; }
+        }
+        if (near) continue;
       }
-      if (near) continue;
-      const sc = rdHisScore(q.quote);
+      // 节奏回应用的是固定那句话，不依赖字卡场景，任何句子都能落
+      const sc = paceKind ? 1 : rdHisScore(q.quote);
       if (sc > 0) pool.push({ idx: i, sc: sc, q: q });
     }
     if (!pool.length) return;
@@ -1680,13 +1788,14 @@
     const pick = top[Math.floor(Math.random() * top.length)].q;
     const txt = rdHisText(book);
     if (!txt) return;
+    const paceLine = paceKind === 'slow' ? RD_PACE_SLOW_LINE : (paceKind === 'fast' ? RD_PACE_FAST_LINE : '');
     const item = {
       id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
       by: 'his',
       s: pick.s,
       e: pick.e,
       quote: pick.quote,
-      text: String(txt).slice(0, 500),
+      text: String(paceLine ? paceLine + '\n' + txt : txt).slice(0, 500),
       at: Date.now(),
       rev: 1,
       deviceId: 'local'
@@ -1704,6 +1813,11 @@
       const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
       used.push(rdCardKey(item.text));
       fb.buddyTexts = used.slice(-200);
+      // 这一章对这次翻页节奏的回应已经落地，不再重复
+      if (paceKind && fb.pace && fb.pace.ch === b.ch) {
+        if (paceKind === 'slow') fb.pace.slowUsed = 1;
+        else fb.pace.fastUsed = 1;
+      }
       saveIndex(fresh);
     }
     if (cur) {
@@ -2557,12 +2671,14 @@
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       rdBmPauseWait();
+      rdPacePause();
       rdHabitEndSession();
       return;
     }
     const reader = document.getElementById('rd-reader');
     if (reader && !reader.hidden) {
       rdHabitStartSession();
+      rdPaceResume();
       if (rdBookmarkWaitPage && rdBook && rdBook.ch + ':' + rdBook.pageIdx === rdBookmarkWaitPage) rdBmScheduleWait();
     }
   });
@@ -2620,6 +2736,9 @@
     const b = rdBook;
     if (b && b.text) {
       const off = b.pages[b.pageIdx] ? b.pages[b.pageIdx].s : 0;
+      // 换字号/行距会重新分页，页码跟着变——这次重绘不算翻页，
+      // 否则停留时长会被当成「翻走了一页」而误记一次翻页节奏
+      rdPaceReset(); // 重新分页不算翻页
       b.pages = rdPaginateChapter(b);
       rdCheckPagination(b.pages, b.text.length);
       b.pageIdx = rdPageForOffset(b.pages, off);

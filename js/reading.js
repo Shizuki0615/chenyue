@@ -449,6 +449,7 @@ rdHabitStartSession();
 rdTogLogged = false;
 rdTogNoteLogged = false;
 rdTogWatchStart();
+rdPaceReset();
 rdEnsureChapter('offset').then(function () {
 return rdUnlockSealed(book).catch(function () {});
 }).then(function () {
@@ -590,6 +591,7 @@ if (!b || !b.pages.length) return;
 if (b.pageIdx < 0) b.pageIdx = 0;
 if (b.pageIdx > b.pages.length - 1) b.pageIdx = b.pages.length - 1;
 if (rdBookmarkWaitPage && rdBookmarkWaitPage !== b.ch + ':' + b.pageIdx) rdBmClearWait();
+rdMarkPagePace();
 const body = document.getElementById('rd-body');
 const p = b.pages[b.pageIdx];
 rdPaintPage();
@@ -630,9 +632,11 @@ dot.classList.toggle('rd-buddy-same', same);
 }
 if (line) {
 const tog = rdTogetherOn(book);
-line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);
+const paceNote = tog ? '' : rdPaceNote(book, b);
+line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
 line.classList.toggle('rd-buddy-same-text', same);
 line.classList.toggle('rd-tog', tog);
+line.classList.toggle('rd-pace', !!paceNote);
 }
 rdSyncLamp(book, st);
 rdMaybeBookmarkReturn(book, b, bd, st);
@@ -957,6 +961,81 @@ const fb = rdFindBook(b.id, fresh);
 if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
 rdToast('他在上一章的末尾留了一句。');
 }).catch(function () {});
+}
+const RD_PACE_SLOW_MS = 90 * 1000;
+const RD_PACE_FAST_MS = 10 * 1000;
+const RD_PACE_FAST_FLIPS = 5;
+const RD_PACE_SLOW_LINE = '这一页你停了很久。';
+const RD_PACE_FAST_LINE = '你翻得好快，是不是在找我？';
+let rdPaceKey = '';
+let rdPaceEnterAt = 0;
+let rdPacePrev = null;
+let rdPaceFlips = [];
+function rdPaceReset() {
+rdPaceKey = '';
+rdPaceEnterAt = Date.now();
+rdPacePrev = null;
+rdPaceFlips = [];
+}
+function rdPacePause() { rdPaceEnterAt = 0; }
+function rdPaceResume() { if (rdBook) rdPaceEnterAt = Date.now(); }
+function rdPaceSlot(book, ch) {
+const old = book.pace;
+if (old && old.ch === ch) return old;
+return { ch: ch, slow: 0, slowUsed: 0, slowS: 0, slowE: 0, fast: 0, fastUsed: 0 };
+}
+function rdPaceMarkSlow(b, prev) {
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+const slot = rdPaceSlot(book, prev.ch);
+if (slot.slow) return;
+slot.slow = Date.now();
+slot.slowS = prev.s;
+slot.slowE = prev.e;
+book.pace = slot;
+saveIndex(list);
+}
+function rdPaceMarkFast(b) {
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+const slot = rdPaceSlot(book, b.ch);
+if (slot.fast) return;
+slot.fast = Date.now();
+slot.fastUsed = 0;
+book.pace = slot;
+saveIndex(list);
+}
+function rdMarkPagePace() {
+const b = rdBook;
+if (!b || !b.pages.length) return;
+const now = Date.now();
+const key = b.ch + ':' + b.pageIdx;
+if (key === rdPaceKey) return;
+const prev = rdPacePrev;
+if (prev && prev.ch === b.ch && rdPaceEnterAt && now - rdPaceEnterAt >= RD_PACE_SLOW_MS) {
+rdPaceMarkSlow(b, prev);
+}
+const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
+rdPacePrev = { ch: b.ch, s: p.s, e: p.e };
+rdPaceKey = key;
+rdPaceEnterAt = now;
+rdPaceFlips.push(now);
+while (rdPaceFlips.length > RD_PACE_FAST_FLIPS) rdPaceFlips.shift();
+if (rdPaceFlips.length >= RD_PACE_FAST_FLIPS &&
+rdPaceFlips[rdPaceFlips.length - 1] - rdPaceFlips[0] <= RD_PACE_FAST_MS) {
+rdPaceMarkFast(b);
+}
+}
+function rdPaceNote(book, b) {
+if (!book || !b || !b.pages.length) return '';
+if (b.pageIdx !== b.pages.length - 1) return '';
+const pace = book.pace;
+if (!pace || pace.ch !== b.ch) return '';
+if (pace.slow) return '这页你停了很久';
+if (pace.fast) return '你翻得好快，是不是在找我？';
+return '';
 }
 let rdSaveTimer = 0;
 function rdSaveProgress() {
@@ -1460,6 +1539,12 @@ const st = rdBuddyState(book);
 if (!bd.started || bd.mode === 'skip' || st === 'none' || st === 'done') return;
 const frontier = rdBuddyFrontier(book, b);
 if (frontier <= 0) return;
+const pace = book.pace && book.pace.ch === b.ch ? book.pace : null;
+let paceKind = '';
+if (pace) {
+if (pace.slow && !pace.slowUsed) paceKind = 'slow';
+else if (pace.fast && !pace.fastUsed) paceKind = 'fast';
+}
 let at = rdPosFromFlat(book, frontier);
 if (at.off === 0 && at.ch > 0 && book.chWords && book.chWords[at.ch - 1]) {
 at = { ch: at.ch - 1, off: book.chWords[at.ch - 1] };
@@ -1468,7 +1553,7 @@ const key = b.id + '|' + b.ch + '|' + b.pageIdx + '|' + at.ch + '|' + at.off;
 if (!force) {
 if (key === rdHisTryKey) return;
 rdHisTryKey = key;
-if (Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
+if (!paceKind && Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
 }
 const targetCh = at.ch;
 const cur = targetCh === b.ch;
@@ -1484,7 +1569,7 @@ if (!text) return;
 if (cur) b.cache[targetCh] = text; // 只缓存当前章，别把整本都留在内存里
 const sents = rdSentenceList(text);
 if (!sents.length) return;
-const limit = Math.min(at.off, text.length);
+const limit = paceKind ? text.length : Math.min(at.off, text.length);
 const occupied = hisArr.map(function (a) { return rdSentIndexAt(sents, a.e); });
 const taken = {};
 (annos || []).forEach(function (a) {
@@ -1495,12 +1580,16 @@ for (let i = 0; i < sents.length; i++) {
 const q = sents[i];
 if (q.e > limit) break;
 if (taken[q.e]) continue;
+if (paceKind === 'fast' && i !== sents.length - 1) continue;
+if (paceKind === 'slow' && !(q.e > pace.slowS && q.s < pace.slowE)) continue;
+if (!paceKind) {
 let near = false;
 for (let k = 0; k < occupied.length; k++) {
 if (Math.abs(occupied[k] - i) < RD_HIS_GAP) { near = true; break; }
 }
 if (near) continue;
-const sc = rdHisScore(q.quote);
+}
+const sc = paceKind ? 1 : rdHisScore(q.quote);
 if (sc > 0) pool.push({ idx: i, sc: sc, q: q });
 }
 if (!pool.length) return;
@@ -1509,13 +1598,14 @@ const top = pool.slice(0, 6);
 const pick = top[Math.floor(Math.random() * top.length)].q;
 const txt = rdHisText(book);
 if (!txt) return;
+const paceLine = paceKind === 'slow' ? RD_PACE_SLOW_LINE : (paceKind === 'fast' ? RD_PACE_FAST_LINE : '');
 const item = {
 id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
 by: 'his',
 s: pick.s,
 e: pick.e,
 quote: pick.quote,
-text: String(txt).slice(0, 500),
+text: String(paceLine ? paceLine + '\n' + txt : txt).slice(0, 500),
 at: Date.now(),
 rev: 1,
 deviceId: 'local'
@@ -1533,6 +1623,10 @@ fb.annoCount = (Number(fb.annoCount) || 0) + 1;
 const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
 used.push(rdCardKey(item.text));
 fb.buddyTexts = used.slice(-200);
+if (paceKind && fb.pace && fb.pace.ch === b.ch) {
+if (paceKind === 'slow') fb.pace.slowUsed = 1;
+else fb.pace.fastUsed = 1;
+}
 saveIndex(fresh);
 }
 if (cur) {
@@ -2315,12 +2409,14 @@ document.addEventListener('pointercancel', function () { rdTouch = null; }, true
 document.addEventListener('visibilitychange', function () {
 if (document.hidden) {
 rdBmPauseWait();
+rdPacePause();
 rdHabitEndSession();
 return;
 }
 const reader = document.getElementById('rd-reader');
 if (reader && !reader.hidden) {
 rdHabitStartSession();
+rdPaceResume();
 if (rdBookmarkWaitPage && rdBook && rdBook.ch + ':' + rdBook.pageIdx === rdBookmarkWaitPage) rdBmScheduleWait();
 }
 });
@@ -2374,6 +2470,7 @@ rdApplyPrefs(p);
 const b = rdBook;
 if (b && b.text) {
 const off = b.pages[b.pageIdx] ? b.pages[b.pageIdx].s : 0;
+rdPaceReset(); // 重新分页不算翻页
 b.pages = rdPaginateChapter(b);
 rdCheckPagination(b.pages, b.text.length);
 b.pageIdx = rdPageForOffset(b.pages, off);

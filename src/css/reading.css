@@ -49,6 +49,8 @@
 #rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
 /* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
 #rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
+/* 翻页被看见：章末那一页给出这章的节奏感想 */
+#rd-buddy.rd-pace{opacity:1;color:#d9534f}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}

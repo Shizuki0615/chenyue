@@ -6609,7 +6609,7 @@ const FIX_SENTINELS = [
   { name: '#1553b 同读要求他处在共读中（删＝他在前面等我 / 读完了 / 今天不读 也亮同读）', file: 'js/reading.js', needle: "return rdBuddyState(book) === 'read';" },
   { name: '#1553c 一次阅读会话只计一次同读（删＝每翻一页 togCount +1，书脊一夜长满）', file: 'js/reading.js', needle: 'book.togCount = rdTogCount(book) + 1;' },
   { name: '#1553d 停在同页读够十分钟也要亮（删＝只有翻页那一刻才重新判定，静读永不触发）', file: 'js/reading.js', needle: 'rdTogTimer = setInterval(function () {' },
-  { name: '#1553e 页脚换成「此刻 · 同读」（删＝判定成立但界面没有任何反馈）', file: 'js/reading.js', needle: "line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);" },
+  { name: '#1553e 页脚换成「此刻 · 同读」（删＝判定成立但界面没有任何反馈）', file: 'js/reading.js', needle: "line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));" },
   { name: '#1553f 书脊每累计三次同读多一道细纹（删＝累计计数存了但书架上永远看不见）', file: 'js/reading.js', needle: 'return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));' },
   { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:3px;' },
   { name: '#1553h 小卡头像同读时亮呼吸光（删＝小卡里看不出此刻正在一起读）', file: 'js/reading.js', needle: "if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));" },
@@ -6629,6 +6629,21 @@ const FIX_SENTINELS = [
   { name: '#1554f 返回书架时按面板状态同步顶栏（删＝从阅读器回来顶栏还是收着的）', file: 'js/reading.js', needle: "if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));" },
   { name: '#1554g 书架顶栏标题为「读书」（删＝退回带「一起」的旧名）', file: 'js/reading.js', needle: "'<span class=\"ch-name\">读书</span>'" },
   { name: '#1554h 桌面图标名与聊天更多入口同步为「读书」（删＝图标还叫一起读书，和顶栏不一致）', file: 'template.html', needle: '<div class="app-name">读书</div>' },
+  // ==== 2026-10-24 #1555 一起读书·翻页被看见（他记得我读得快还是慢）====
+  { name: '#1555a 同一页停留满九十秒算慢读（删＝阈值失效或判定消失）', file: 'js/reading.js', needle: 'now - rdPaceEnterAt >= RD_PACE_SLOW_MS' },
+  { name: '#1555b 最近五次翻页落在十秒内算快翻（删＝快翻判定消失）', file: 'js/reading.js', needle: 'rdPaceFlips.length >= RD_PACE_FAST_FLIPS' },
+  { name: '#1555c 同一页重绘不算翻页（删＝换字号/补画也结算停留，慢读误触发）', file: 'js/reading.js', needle: 'if (key === rdPaceKey) return;' },
+  { name: '#1555d 慢读纸条只落在我停过的那一页（删＝纸条跑到别的页，追不上那一眼）', file: 'js/reading.js', needle: "if (paceKind === 'slow' && !(q.e > pace.slowS && q.s < pace.slowE)) continue;" },
+  { name: '#1555e 快翻纸条只落在章尾（删＝纸条没藏到章尾，效果变成普通掉落）', file: 'js/reading.js', needle: "if (paceKind === 'fast' && i !== sents.length - 1) continue;" },
+  { name: '#1555f 节奏回应不走随机概率（删＝被 45% 挡掉，可能永远看不见他回应）', file: 'js/reading.js', needle: 'if (!paceKind && Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;' },
+  { name: '#1555g 节奏回应不隔八句（删＝短页只有两三句，永远挑不到落点）', file: 'js/reading.js', needle: 'const sc = paceKind ? 1 : rdHisScore(q.quote);' },
+  { name: '#1555h 节奏回应不受他的前沿限制（删＝他还没读到章尾，章尾纸条永远出不来）', file: 'js/reading.js', needle: 'const limit = paceKind ? text.length : Math.min(at.off, text.length);' },
+  { name: '#1555i 纸条正文带上那句感想（删＝纸条只剩字卡内容，被看见的感觉没了）', file: 'js/reading.js', needle: "const paceLine = paceKind === 'slow' ? RD_PACE_SLOW_LINE : (paceKind === 'fast' ? RD_PACE_FAST_LINE : '');" },
+  { name: '#1555j 回应落地后标记已用（删＝每次翻页都重复留同一句）', file: 'js/reading.js', needle: "if (paceKind === 'slow') fb.pace.slowUsed = 1;" },
+  { name: '#1555k 章末页脚给出节奏感想（删＝被看见这件事在界面上没有任何回音）', file: 'js/reading.js', needle: "if (pace.slow) return '这页你停了很久';" },
+  { name: '#1555l 同读优先于节奏感想（删＝两个文案抢同一行，状态显示错乱）', file: 'js/reading.js', needle: "const paceNote = tog ? '' : rdPaceNote(book, b);" },
+  { name: '#1555m 切后台暂停停留计时（删＝后台待五分钟被算成「停在这一页很久」）', file: 'js/reading.js', needle: 'function rdPacePause() { rdPaceEnterAt = 0; }' },
+  { name: '#1555n 换字号/行距重新分页不算翻页（删＝重排后页码变化被当成翻走一页，误记一次节奏）', file: 'js/reading.js', needle: 'rdPaceReset(); // 重新分页不算翻页' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
