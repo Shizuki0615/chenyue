@@ -425,7 +425,9 @@ id: id, toc: toc, ch: ch, off: off,
 cache: {}, text: '', pages: [], pageIdx: 0, anno: [],
 lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 };
-rdEnsureChapter('offset');
+rdEnsureChapter('offset').then(function () {
+rdBuddyProcessReplies();
+});
 }
 let rdBook = null;
 const RD_PAGE_CACHE = {};
@@ -566,6 +568,7 @@ const no = document.getElementById('rd-page-no');
 if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
 rdUpdateBar();
 rdSaveProgress();
+rdScheduleHisAnno();
 }
 function rdUpdateBar() {
 const b = rdBook;
@@ -849,6 +852,289 @@ b.pageIdx = rdPageForOffset(b.pages, bd.off);
 rdRenderPage();
 }
 }
+const RD_HIS_PER_CH = 3;      // 每章最多 3 条
+const RD_HIS_GAP = 8;         // 同章两条之间至少隔 8 句
+const RD_HIS_CHANCE = 0.45;   // 翻到一页时他留下新批注的概率
+const RD_REPLY_CHANCE = 0.62; // 越过那句之后真正回应的概率（允许一部分永远安静）
+const RD_REPLY_MAX = 2;       // 每次打开最多回应 2 条
+const RD_HIS_ANNO_POOL = [
+'这里我停了一下。',
+'读到这句的时候，周围正好安静下来。',
+'我也想过一样的事。',
+'这句我想抄下来。',
+'原来你也会被这种句子留住。',
+'这一句读得很慢。',
+'这里让人想起很旧的一个下午。',
+'我把这句又读了一遍。',
+'写这句话的人，大概也在犹豫。',
+'这里适合合上书想一会儿。',
+'读到这儿，忽然不想往下翻了。',
+'这句轻，但落得很深。',
+'我喜欢这里的停顿。',
+'这一句有光。',
+'像是有人替我把话说完了。',
+'这里我先记住了。',
+'读完这句，安静了一会儿。',
+'这句让我想起你之前说过的话。',
+'读到这里，心里空了一下。',
+'这一段值得慢一点。'
+];
+const RD_HIS_REPLY_POOL = [
+'嗯，我也这么想。',
+'你标在这里的这句，我也停下来看了。',
+'原来你注意的是这里。',
+'这句被你圈出来之后，更好看了。',
+'我读到这里的时候，想的是同一件事。',
+'你写的这句，我收下了。',
+'是这个感觉。',
+'我也在这句旁边待了一会儿。',
+'被你这么一说，我又回头看了一遍。',
+'嗯，这里确实值得留一张纸条。'
+];
+const RD_HIS_WORDS = ('突然 忽然 眼泪 哭 笑 心跳 声音 安静 温柔 孤独 等待 记得 想起 喜欢 害怕 ' +
+'离开 回来 风 光 夜 雨 雪 窗 路 名字 再见 后来 原来 终于 轻轻 慢慢').split(' ');
+function rdNightGuard() {
+try { return !!(window.nightModeActive && window.nightModeActive()); } catch (e) { return false; }
+}
+function rdSentenceList(text) {
+const src = String(text || '');
+const out = [];
+const n = src.length;
+let s = 0;
+while (s < n) {
+let e = s;
+while (e < n && RD_SENT_END.indexOf(src[e]) < 0) e++;
+if (e < n) {
+e++;
+while (e < n && RD_SENT_TAIL.indexOf(src[e]) >= 0) e++;
+}
+let a = s;
+let z = e;
+while (a < z && /\s/.test(src[a])) a++;
+while (z > a && /\s/.test(src[z - 1])) z--;
+if (z > a) out.push({ s: a, e: z, quote: src.slice(a, z) });
+s = e > s ? e : s + 1;
+}
+return out;
+}
+function rdSentIndexAt(sents, off) {
+let lo = 0;
+let hi = sents.length - 1;
+let best = -1;
+while (lo <= hi) {
+const mid = (lo + hi) >> 1;
+if (sents[mid].e <= off) { best = mid; lo = mid + 1; }
+else hi = mid - 1;
+}
+return best;
+}
+function rdHisScore(q) {
+const t = String(q || '');
+if (t.length < 8 || t.length > 80) return 0;
+let sc = 0;
+if (/[！？…]/.test(t)) sc += 2;
+if (/[“”「」『』]/.test(t)) sc += 1;
+if (/[，、；：]/.test(t)) sc += 1;
+for (let i = 0; i < RD_HIS_WORDS.length; i++) if (t.indexOf(RD_HIS_WORDS[i]) >= 0) sc += 1;
+return sc;
+}
+function rdHisText(book) {
+let pool = [];
+try {
+if (window.getReadingAnnoCards) pool = window.getReadingAnnoCards() || [];
+} catch (e) { pool = []; }
+pool = pool.filter(function (t) {
+return typeof t === 'string' && t.trim() && t.trim().length <= 120;
+}).map(function (t) { return t.trim(); });
+if (!pool.length) pool = RD_HIS_ANNO_POOL.slice();
+const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
+let avail = pool.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
+if (!avail.length) avail = pool; // 池子用尽就允许复用，不因此断掉批注
+return avail[Math.floor(Math.random() * avail.length)];
+}
+function rdHisReplyText(book) {
+const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
+let avail = RD_HIS_REPLY_POOL.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
+if (!avail.length) avail = RD_HIS_REPLY_POOL;
+return avail[Math.floor(Math.random() * avail.length)];
+}
+function rdBuddyFrontier(book, b) {
+const bd = rdBuddyGet(book);
+let flat = rdFlatPos(book, bd.ch, bd.off);
+if (bd.mode !== 'solo') {
+const p = b.pages[b.pageIdx] || { e: 0 };
+const mineEnd = rdFlatPos(book, b.ch, p.e);
+if (mineEnd > flat) flat = mineEnd;
+}
+return flat;
+}
+let rdHisTryKey = '';
+let rdHisTimer = 0;
+function rdScheduleHisAnno() {
+clearTimeout(rdHisTimer);
+rdHisTimer = setTimeout(rdMaybeHisAnno, 850);
+}
+async function rdMaybeHisAnno(force) {
+const b = rdBook;
+if (!b || !b.pages.length) return;
+if (rdNightGuard()) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+rdBuddyAdvance(book);
+const bd = rdBuddyGet(book);
+const st = rdBuddyState(book);
+if (!bd.started || bd.mode === 'skip' || st === 'none' || st === 'done') return;
+const frontier = rdBuddyFrontier(book, b);
+if (frontier <= 0) return;
+let at = rdPosFromFlat(book, frontier);
+if (at.off === 0 && at.ch > 0 && book.chWords && book.chWords[at.ch - 1]) {
+at = { ch: at.ch - 1, off: book.chWords[at.ch - 1] };
+}
+const key = b.id + '|' + b.ch + '|' + b.pageIdx + '|' + at.ch + '|' + at.off;
+if (!force) {
+if (key === rdHisTryKey) return;
+rdHisTryKey = key;
+if (Math.random() > RD_HIS_CHANCE) return;
+}
+const targetCh = at.ch;
+const cur = targetCh === b.ch;
+let annos = cur ? (b.anno || []).slice() : null;
+if (!annos) annos = await getAnnos(b.id, targetCh);
+if (!rdBook || rdBook !== b) return;
+const hisArr = (annos || []).filter(function (a) { return a && a.by !== 'me'; });
+if (hisArr.length >= RD_HIS_PER_CH) return;
+let text = b.cache[targetCh];
+if (text == null) { text = await getBody(b.id, targetCh); }
+if (!rdBook || rdBook !== b) return;
+if (!text) return;
+if (cur) b.cache[targetCh] = text; // 只缓存当前章，别把整本都留在内存里
+const sents = rdSentenceList(text);
+if (!sents.length) return;
+const limit = Math.min(at.off, text.length);
+const occupied = hisArr.map(function (a) { return rdSentIndexAt(sents, a.e); });
+const taken = {};
+(annos || []).forEach(function (a) {
+if (a) taken[a.e] = 1; // 同一句不再叠第二张纸条
+});
+const pool = [];
+for (let i = 0; i < sents.length; i++) {
+const q = sents[i];
+if (q.e > limit) break;
+if (taken[q.e]) continue;
+let near = false;
+for (let k = 0; k < occupied.length; k++) {
+if (Math.abs(occupied[k] - i) < RD_HIS_GAP) { near = true; break; }
+}
+if (near) continue;
+const sc = rdHisScore(q.quote);
+if (sc > 0) pool.push({ idx: i, sc: sc, q: q });
+}
+if (!pool.length) return;
+pool.sort(function (x, y) { return y.sc - x.sc; });
+const top = pool.slice(0, 6);
+const pick = top[Math.floor(Math.random() * top.length)].q;
+const txt = rdHisText(book);
+if (!txt) return;
+const item = {
+id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'his',
+s: pick.s,
+e: pick.e,
+quote: pick.quote,
+text: String(txt).slice(0, 500),
+at: Date.now(),
+rev: 1,
+deviceId: 'local'
+};
+const next = (annos || []).slice();
+next.push(item);
+try { await putAnnos(b.id, targetCh, next); }
+catch (e) { return; } // 被动生成失败就静默跳过，下一页再试，不弹提示打断阅读
+if (!rdBook || rdBook !== b) return;
+if (cur) b.anno = next;
+const fresh = readIndex();
+const fb = rdFindBook(b.id, fresh);
+if (fb) {
+fb.annoCount = (Number(fb.annoCount) || 0) + 1;
+const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
+used.push(rdCardKey(item.text));
+fb.buddyTexts = used.slice(-200);
+saveIndex(fresh);
+}
+if (cur) rdPaintPage(); // 落在当前页才会被闸门放出来
+}
+async function rdBuddyProcessReplies(force) {
+const b = rdBook;
+if (!b) return;
+if (rdNightGuard()) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+rdBuddyAdvance(book);
+const bd = rdBuddyGet(book);
+if (!bd.started) return;
+if (rdBuddyState(book) !== 'read') return; // 未开始 / 停在这等你 / 今天不读 / 读完了 都不回应
+const queue = Array.isArray(book.replyQueue) ? book.replyQueue.slice() : [];
+if (!queue.length) return;
+queue.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
+const hisFlat = rdFlatPos(book, bd.ch, bd.off);
+const cache = {};
+let replied = 0;
+let added = 0;
+let curDirty = false;
+const addedTexts = [];
+const rest = [];
+for (let i = 0; i < queue.length; i++) {
+const q = queue[i];
+if (!q || !q.id) continue;
+if (replied >= RD_REPLY_MAX) { rest.push(q); continue; }
+if (q.quiet) continue; // 已经决定一直安静留着，不再尝试
+if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; } // 他还没读到那句
+if (!cache[q.ch]) {
+cache[q.ch] = q.ch === b.ch ? (b.anno || []).slice() : await getAnnos(b.id, q.ch);
+}
+const arr = cache[q.ch];
+const mine = arr.filter(function (x) { return x && x.id === q.id; })[0];
+if (!mine) continue; // 我那条已经删了，队列作废
+if (arr.some(function (x) { return x && x.replyTo === q.id; })) continue; // 已经回过
+if (!force && Math.random() > RD_REPLY_CHANCE) continue;
+const item = {
+id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'his',
+s: mine.s,
+e: mine.e,
+quote: mine.quote,
+text: rdHisReplyText(book).slice(0, 500),
+at: Date.now(),
+replyTo: q.id,
+rev: 1,
+deviceId: 'local'
+};
+arr.push(item);
+try { await putAnnos(b.id, q.ch, arr); }
+catch (e) { arr.pop(); rest.push(q); continue; }
+if (!rdBook || rdBook !== b) return;
+addedTexts.push(rdCardKey(item.text));
+replied++;
+added++;
+if (q.ch === b.ch) { b.anno = arr; curDirty = true; }
+}
+if (!added && rest.length === queue.length) return;
+const fresh = readIndex();
+const fb = rdFindBook(b.id, fresh);
+if (fb) {
+fb.replyQueue = rest;
+if (added) {
+fb.annoCount = (Number(fb.annoCount) || 0) + added;
+const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
+for (let i = 0; i < addedTexts.length; i++) used.push(addedTexts[i]);
+fb.buddyTexts = used.slice(-200);
+}
+saveIndex(fresh);
+}
+if (curDirty) rdPaintPage();
+}
 let rdSel = null;
 let rdDraft = null;
 let rdAnnoPool = [];
@@ -874,7 +1160,10 @@ const start = p.s;
 const end = p.e;
 const marks = {};
 (b.anno || []).forEach(function (a) {
-if (rdBuddyAnnoVisible(a, start, end)) marks[a.e] = (marks[a.e] || 0) + 1;
+if (!rdBuddyAnnoVisible(a, start, end)) return;
+const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false });
+m.n++;
+if (a.by === 'me') m.mine = true;
 });
 const cuts = Object.keys(marks).map(Number).sort(function (x, y) { return x - y; });
 const sel = rdSel && rdSel.e > start && rdSel.s < end
@@ -893,8 +1182,9 @@ let i = start;
 for (let k = 0; k < cuts.length; k++) {
 const m = cuts[k];
 html += emit(i, m);
-const n = marks[m];
-html += '<span class="rd-mark" data-pos="' + m + '" role="button">' + (n > 1 ? '<b>' + n + '</b>' : '') + '</span>';
+const mk = marks[m];
+html += '<span class="rd-mark' + (mk.mine ? '' : ' rd-mark-his') + '" data-pos="' + m + '" role="button">' +
+(mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
 i = m;
 }
 html += emit(i, end);
@@ -1118,7 +1408,13 @@ catch (e) { rdToast((e && e.message) || '批注没写上：磁盘写入没有完
 b.anno = arr;
 const fresh = readIndex();
 const freshBook = rdFindBook(b.id, fresh);
-if (freshBook) { freshBook.annoCount = used + 1; saveIndex(fresh); }
+if (freshBook) {
+freshBook.annoCount = used + 1;
+if (!Array.isArray(freshBook.replyQueue)) freshBook.replyQueue = [];
+freshBook.replyQueue.push({ id: item.id, ch: b.ch, s: item.s, e: item.e, quote: item.quote, at: item.at });
+if (freshBook.replyQueue.length > 200) freshBook.replyQueue = freshBook.replyQueue.slice(-200);
+saveIndex(fresh);
+}
 rdDraft = null;
 rdClosePreview();
 rdClearSel(false);
@@ -1212,11 +1508,19 @@ const tip = '「' + String(a.text || '').slice(0, 40) + '」删掉之后不能�
 window.openModal('删除这条批注？', '', function () {
 if (!rdBook) return;
 const pos = a.e;
-const next = (rdBook.anno || []).filter(function (x) { return !x || x.id !== id; });
+const before = rdBook.anno || [];
+const removedN = before.filter(function (x) { return x && (x.id === id || x.replyTo === id); }).length;
+const next = before.filter(function (x) { return !x || (x.id !== id && x.replyTo !== id); });
 rdSaveAnnos(next, function () {
 const list = readIndex();
 const fb = rdFindBook(rdBook.id, list);
-if (fb) { fb.annoCount = Math.max(0, (Number(fb.annoCount) || 0) - 1); saveIndex(list); }
+if (fb) {
+fb.annoCount = Math.max(0, (Number(fb.annoCount) || 0) - removedN);
+if (Array.isArray(fb.replyQueue)) {
+fb.replyQueue = fb.replyQueue.filter(function (q) { return q && q.id !== id; });
+}
+saveIndex(list);
+}
 rdOpenPop(pos, true);
 rdToast('已删除');
 });
@@ -1954,7 +2258,11 @@ readIndex: readIndex,
 splitChapters: splitChapters,
 paginate: paginate,
 open: rdOpen,
-close: rdClose
+openBook: rdOpenBook,
+close: rdClose,
+hisAnno: rdMaybeHisAnno,
+replies: rdBuddyProcessReplies,
+sentences: rdSentenceList
 };
 })();
 if (window.__mochiLoaded) window.__mochiLoaded.push("reading.js");

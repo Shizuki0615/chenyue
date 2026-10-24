@@ -86,6 +86,8 @@
 .rd-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-sel{background:rgba(244,182,194,.45);border-radius:3px}
 .rd-mark{display:inline-block;width:8px;height:8px;margin-left:1px;border-radius:50%;background:#f4b6c2;vertical-align:super;position:relative;cursor:pointer}
+/* 我是实心点，他是空心圈：同一句只有他的批注时画空心 */
+.rd-mark-his{background:transparent;border:1.5px solid #f4b6c2;box-sizing:border-box}
 .rd-mark b{position:absolute;left:9px;top:-5px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
 .rd-selbar{position:absolute;z-index:6;display:flex;transform:translateX(-50%);border-radius:12px;background:#2b2b2b;box-shadow:0 6px 22px rgba(0,0,0,.25);overflow:hidden}
 .rd-selbar-btn{border:0;background:transparent;color:#fff;font-size:14px;padding:9px 18px}
