@@ -273,6 +273,7 @@
           '<div class="rd-import-main" id="rd-import-main">' +
             '<div class="rd-import-head"><div class="rd-import-title">导入一本书</div>' +
               '<button class="rd-back" id="rd-import-close" type="button">关闭</button></div>' +
+            '<input class="rd-imp-name" id="rd-imp-name" type="text" maxlength="40" placeholder="书名（可留空；留空时用文件名或「粘贴的书」）">' +
             '<label class="rd-file-label" for="rd-file">选择 TXT 文件</label>' +
             '<input type="file" id="rd-file" accept=".txt,text/plain">' +
             '<div class="rd-file-info" id="rd-file-info" hidden></div>' +
@@ -2083,8 +2084,10 @@
     const cf = document.getElementById('rd-confirm');
     const file = document.getElementById('rd-file');
     const paste = document.getElementById('rd-paste');
+    const nameEl = document.getElementById('rd-imp-name');
     if (file) { try { file.value = ''; } catch (e) {} }
     if (paste) paste.value = '';
+    if (nameEl) nameEl.value = '';
     rdSetFileInfo('');
     const gbk = document.getElementById('rd-gbk-row');
     if (gbk) gbk.hidden = true;
@@ -2115,7 +2118,11 @@
     }
   }
   function rdStartImport() {
-    const text = String(rdImp.text || '');
+    // 手机上输入框会被 mobile-adapt 换成 contenteditable 代理，打字/粘贴产生的
+    // 换行可能翻倍（正文段落之间多出一个空行）。统一换行符后，把 3 个以上连续
+    // 换行压回「1 个空行」（正常段落间距不变），分章与写库都用归一后的文本。
+    const text = String(rdImp.text || '').replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n');
+    rdImp.text = text;
     if (!text.trim()) { rdToast('还没有选文件，也没有粘贴内容'); return; }
     const bytes = rdUtf8Size(text);
     if (bytes > RD_MAX_BYTES) { rdToast('这本约 ' + rdMB(bytes) + ' MB，超过单本 20MB 上限'); return; }
@@ -2225,7 +2232,10 @@
       }
       failCh = -1;
       const list = readIndex();
-      const title = rdImp.name ? rdImp.name.replace(/\.txt$/i, '') : '粘贴的书';
+      // 书名优先用导入面板里手填的；留空才回落到文件名 / 「粘贴的书」
+      const nameEl = document.getElementById('rd-imp-name');
+      const typed = nameEl ? String(nameEl.value || '').trim().slice(0, 40) : '';
+      const title = typed || (rdImp.name ? rdImp.name.replace(/\.txt$/i, '') : '粘贴的书');
       list.push({
         id: id,
         title: title || '未命名',

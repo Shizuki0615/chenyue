@@ -6554,6 +6554,8 @@ const FIX_SENTINELS = [
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
   { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },
   { name: '#1547v 取池只在数据缺失时回落内置池（改成空数组就回落＝刚关掉的句子又被内置池捡回来）', file: 'js/reading.js', needle: 'if (pool === null) pool = RD_HIS_ANNO_POOL.slice();' },
+  { name: '#1547w 导入面板书名输入（删＝粘贴的书全部重名，书架分不出哪本）', file: 'js/reading.js', needle: 'id="rd-imp-name"' },
+  { name: '#1547x 粘贴换行归一（删＝手机上 contenteditable 代理让空行翻倍，段落间多出空行）', file: 'js/reading.js', needle: "replace(/\\n{3,}/g, '\\n\\n')" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

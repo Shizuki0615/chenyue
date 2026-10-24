@@ -49,6 +49,7 @@
 .rd-import-head{display:flex;align-items:center;justify-content:space-between}
 .rd-import-title{font-size:16px}
 .rd-file-label{display:inline-block;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#ddd);font-size:13px;cursor:pointer}
+.rd-imp-name{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:9px 10px;font-size:13px;background:transparent;color:inherit}
 #rd-file{width:100%;font-size:12px}
 .rd-file-info{font-size:12px;line-height:1.6;opacity:.75;word-break:break-all}
 .rd-gbk-row{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;background:rgba(244,182,194,.16)}
