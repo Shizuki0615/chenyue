@@ -451,6 +451,7 @@
     if (!page || !settingsPage) return;
     rdCloseLiveDrawer();
     page.hidden = true;
+    rdApplyChrome();
     settingsPage.hidden = false;
     settingsPage.classList.add('full');
     rdRenderPrefsActive();
@@ -462,6 +463,7 @@
     rdCloseLiveDrawer();
     settingsPage.hidden = true;
     if (page) page.hidden = false;
+    rdApplyChrome();
     rdRenderShelf();
   }
 
@@ -581,6 +583,7 @@
     document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
     if (settingsPage) settingsPage.hidden = true;
     page.hidden = false;
+    rdApplyChrome();
     // 本页是运行时新建的，不在 tabs.js 启动时登记的 hidden 观察器名单里，翻 hidden 不会自动
     // 触发 syncChrome。照 p2-features 的做法在 rAF 里手动收起 tabbar 并补 .full。
     requestAnimationFrame(function () {
@@ -602,6 +605,7 @@
     if (settingsPage) settingsPage.hidden = true;
     page.classList.remove('full');
     page.hidden = true;
+    rdApplyChrome();
     const home = document.getElementById('page-phone');
     if (home) home.hidden = false;
   }
@@ -628,6 +632,7 @@
     if (shelf) shelf.hidden = false;
     if (reader) reader.hidden = true;
     if (imp) imp.hidden = true;
+    rdApplyChrome();
     rdRenderShelf();
   }
 
@@ -657,6 +662,7 @@
     const body = document.getElementById('rd-body');
     if (shelf) shelf.hidden = true;
     if (reader) reader.hidden = false;
+    rdApplyChrome();
     if (title) title.textContent = book.title || '未命名';
     if (body) body.textContent = '正在翻开…';
     let ch = (book.progress && book.progress.ch) || 0;
@@ -769,8 +775,11 @@
     const cs = getComputedStyle(body);
     const padL = parseFloat(cs.paddingLeft) || 0;
     const padR = parseFloat(cs.paddingRight) || 0;
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const padB = parseFloat(cs.paddingBottom) || 0;
     const w = Math.max(80, body.clientWidth - padL - padR);
-    const h = Math.max(80, body.clientHeight);
+    // 正文顶部有呼吸位：分页要按内容区高度算，扣掉上下内边距，否则最后一行会被裁掉
+    const h = Math.max(80, body.clientHeight - padT - padB);
     const fs = parseFloat(cs.fontSize) || 17;
     let lh = parseFloat(cs.lineHeight);
     if (!lh || isNaN(lh)) lh = fs * 1.8;
@@ -3043,6 +3052,16 @@
     if (prev) prev.setAttribute('data-rd-bg', mode);
     const drawer = document.getElementById('rd-live-drawer');
     if (drawer) drawer.setAttribute('data-rd-bg', mode);
+    rdApplyChrome();
+  }
+  function rdApplyChrome() {
+    const phone = document.querySelector('.phone');
+    if (!phone) return;
+    const reader = document.getElementById('rd-reader');
+    const mode = rdReadBg();
+    const on = reader && !reader.hidden && (mode === 'eye' || mode === 'night');
+    phone.classList.toggle('rd-chrome-eye', !!on && mode === 'eye');
+    phone.classList.toggle('rd-chrome-night', !!on && mode === 'night');
   }
   function rdSetBg(mode) {
     if (mode !== 'eye' && mode !== 'night') mode = 'auto';

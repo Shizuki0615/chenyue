@@ -411,6 +411,7 @@ buildSettingsPage();
 if (!page || !settingsPage) return;
 rdCloseLiveDrawer();
 page.hidden = true;
+rdApplyChrome();
 settingsPage.hidden = false;
 settingsPage.classList.add('full');
 rdRenderPrefsActive();
@@ -422,6 +423,7 @@ if (!settingsPage) return;
 rdCloseLiveDrawer();
 settingsPage.hidden = true;
 if (page) page.hidden = false;
+rdApplyChrome();
 rdRenderShelf();
 }
 let liveDrawer = null;
@@ -538,6 +540,7 @@ rdRetryPendingDelete();
 document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
 if (settingsPage) settingsPage.hidden = true;
 page.hidden = false;
+rdApplyChrome();
 requestAnimationFrame(function () {
 const tabbar = document.querySelector('.tabbar');
 const phone = document.querySelector('.phone');
@@ -557,6 +560,7 @@ rdCloseLiveDrawer();
 if (settingsPage) settingsPage.hidden = true;
 page.classList.remove('full');
 page.hidden = true;
+rdApplyChrome();
 const home = document.getElementById('page-phone');
 if (home) home.hidden = false;
 }
@@ -583,6 +587,7 @@ const imp = document.getElementById('rd-import-panel');
 if (shelf) shelf.hidden = false;
 if (reader) reader.hidden = true;
 if (imp) imp.hidden = true;
+rdApplyChrome();
 rdRenderShelf();
 }
 async function rdOpenBook(id) {
@@ -609,6 +614,7 @@ const title = document.getElementById('rd-book-title');
 const body = document.getElementById('rd-body');
 if (shelf) shelf.hidden = true;
 if (reader) reader.hidden = false;
+rdApplyChrome();
 if (title) title.textContent = book.title || '未命名';
 if (body) body.textContent = '正在翻开…';
 let ch = (book.progress && book.progress.ch) || 0;
@@ -705,8 +711,10 @@ if (!body) return [{ s: 0, e: String(text || '').length }];
 const cs = getComputedStyle(body);
 const padL = parseFloat(cs.paddingLeft) || 0;
 const padR = parseFloat(cs.paddingRight) || 0;
+const padT = parseFloat(cs.paddingTop) || 0;
+const padB = parseFloat(cs.paddingBottom) || 0;
 const w = Math.max(80, body.clientWidth - padL - padR);
-const h = Math.max(80, body.clientHeight);
+const h = Math.max(80, body.clientHeight - padT - padB);
 const fs = parseFloat(cs.fontSize) || 17;
 let lh = parseFloat(cs.lineHeight);
 if (!lh || isNaN(lh)) lh = fs * 1.8;
@@ -2762,6 +2770,16 @@ const prev = document.getElementById('rd-set-preview');
 if (prev) prev.setAttribute('data-rd-bg', mode);
 const drawer = document.getElementById('rd-live-drawer');
 if (drawer) drawer.setAttribute('data-rd-bg', mode);
+rdApplyChrome();
+}
+function rdApplyChrome() {
+const phone = document.querySelector('.phone');
+if (!phone) return;
+const reader = document.getElementById('rd-reader');
+const mode = rdReadBg();
+const on = reader && !reader.hidden && (mode === 'eye' || mode === 'night');
+phone.classList.toggle('rd-chrome-eye', !!on && mode === 'eye');
+phone.classList.toggle('rd-chrome-night', !!on && mode === 'night');
 }
 function rdSetBg(mode) {
 if (mode !== 'eye' && mode !== 'night') mode = 'auto';

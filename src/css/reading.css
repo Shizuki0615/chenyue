@@ -28,8 +28,8 @@
 .rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
-/* 正文区的纸感只由背景承担，不改内边距/字号/行高，避免分页尺寸变化 */
-.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+/* 正文区的纸感只由背景承担；顶部留出呼吸位，分页高度会把这段内边距扣掉 */
+.rd-body{flex:1;overflow:hidden;padding:18px 18px 0;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 /* 阅读背景：auto 沿用全站主题；eye / night 只在阅读器内覆盖 */
 .rd-reader[data-rd-bg="eye"]{--bg:#ffffff;--line:#e6e6e6;--ink:#111111;--muted:#8a8a8a;color:#111111;background:#fbf8f1}
@@ -50,6 +50,10 @@
 .rd-reader[data-rd-bg="night"] .rd-buddy-dot{border-color:#1b1916}
 .rd-reader[data-rd-bg="night"] #rd-buddy.rd-buddy-same-text,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-tog,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-pace{color:#ff9b92}
 .rd-reader[data-rd-bg="night"] .rd-toc-row.on{color:#ff9b92}
+/* 阅读背景覆盖到模拟状态栏：护眼/夜间时修掉「黑状态栏 + 浅顶栏」的断层 */
+.phone.rd-chrome-eye .statusbar{background:rgba(255,255,255,.92);color:#111111}
+.phone.rd-chrome-night .statusbar{background:rgba(30,30,30,.92);color:#f0f0f0}
+.phone.rd-chrome-night .statusbar .icons{filter:invert(1)}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
