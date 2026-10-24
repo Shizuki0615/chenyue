@@ -6590,6 +6590,20 @@ const FIX_SENTINELS = [
   { name: '#1550d 设置页收起问答门与字卡锁两组（删＝开关明明开着，旧入口还在列表里碍眼）', file: 'css/setting.css', needle: 'html.simple-gates #row-applock-qa,' },
   { name: '#1550e 简化开屏开关本体（删＝没有恢复两道门的入口）', file: 'template.html', needle: 'id="simple-gates-en"' },
   { name: '#1550f 关掉简化后立即恢复两组入口（删＝开关关了但设置页仍不显示旧入口）', file: 'js/applock.js', needle: "toast(c.checked ? '已简化开屏：两道门已收起'" },
+  // ==== 2026-10-24 #1551 一起读书·封存一句（他先读到、折起来，等我读到才展开）====
+  { name: '#1551a 封存纸条解锁前一律不显示（删＝他还没等我读到就剧透整句批注）', file: 'js/reading.js', needle: 'if (a.sealed) return false;' },
+  { name: '#1551b 封存只在他独立推进时生成（删＝跟随模式也折纸条，语义重复）', file: 'js/reading.js', needle: "if (!bd || !bd.started || bd.mode !== 'solo') return;" },
+  { name: '#1551c 封存每天最多一条（删＝一天折好几张，手账堆成山）', file: 'js/reading.js', needle: 'if (book.sealDay === today) return;' },
+  { name: '#1551d 封存每本同时最多三条（删＝纸条无限堆积）', file: 'js/reading.js', needle: 'const RD_SEAL_PER_BOOK = 3;' },
+  { name: '#1551e 封存只挑他已读、我未读的句子（删＝可能挑到他也没读到的内容）', file: 'js/reading.js', needle: 'const limit = ch < hisCh ? text.length : Math.min(hisOff, text.length);' },
+  { name: '#1551f 封存纸条带 sealed 标记（删＝和普通纸条一样立刻出现在正文里）', file: 'js/reading.js', needle: 'sealed: true' },
+  { name: '#1551g 书架手账只给书名与章序号（删＝把句子内容写在书架上，没翻就剧透）', file: 'js/reading.js', needle: "led += '<div class=\"rd-ledger-row\">" },
+  { name: '#1551h 七天没读到改口「他还在等」（删＝一直显示「今天折的」，时间感失真）', file: 'js/reading.js', needle: "? '他还在等'" },
+  { name: '#1551i 十四天收回封存纸条（删＝永远占着章内批注条数）', file: 'js/reading.js', needle: 'rdDropSealedAnno(drops[i].id, drops[i].s)' },
+  { name: '#1551j 解锁后浮层末尾给「你终于读到这了」（删＝展开后只是普通纸条，等过的那段时间没有回音）', file: 'js/reading.js', needle: 'rd-pop-unsealed' },
+  { name: '#1551k 解锁写回当前章内存批注（删＝纸条已解锁但重绘拿不到，要等重开章节）', file: 'js/reading.js', needle: 'if (!found) rdBook.anno = rdBook.anno.concat([hit]);' },
+  { name: '#1551l 打开书时解锁/回应/折纸条串行（删＝三处同时改同一章批注数组会互相覆盖）', file: 'js/reading.js', needle: 'return rdBuddyProcessReplies().catch(function () {});' },
+  { name: '#1551m 共读手账 [hidden] 兜底（删＝作者 display 样式压过 UA，空手账仍占位）', file: 'css/reading.css', needle: '.rd-ledger[hidden]{display:none!important}' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

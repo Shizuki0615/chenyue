@@ -146,3 +146,14 @@
 .rd-buddy-habit:empty{display:none}
 .rd-buddy-modes{display:flex;gap:8px;flex-wrap:wrap}
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
+
+/* 共读手账：封存一句的书架条目，只给章序号，不给内容 */
+.rd-ledger{margin-top:14px;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+.rd-ledger[hidden]{display:none!important}
+.rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
+.rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
+.rd-ledger-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
+.rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
+/* 封存纸条展开后，浮层末尾那行「你终于读到这了」 */
+.rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
+

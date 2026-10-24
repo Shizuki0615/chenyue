@@ -10216,6 +10216,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-buddy-habit:empty{display:none}
 .rd-buddy-modes{display:flex;gap:8px;flex-wrap:wrap}
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
+.rd-ledger{margin-top:14px;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+.rd-ledger[hidden]{display:none!important}
+.rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
+.rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
+.rd-ledger-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
+.rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
+.rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
 </style>
 <!-- v3.40.0：vConsole 手机端调试面板（腾讯开源 v3.15.1）。
      默认不加载，满足任一条件才启用：
@@ -10577,7 +10584,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792829467730" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792830372527" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22374,4 +22381,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvm4dis2 -->
+<!-- __MOCHI_EOF__ mvm4wwxb -->

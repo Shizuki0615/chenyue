@@ -233,6 +233,7 @@ page.innerHTML =
 '</div>' +
 '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
 '<div class="rd-grid" id="rd-grid"></div>' +
+'<div class="rd-ledger" id="rd-ledger" hidden></div>' +
 '<div class="rd-usage" id="rd-usage"></div>' +
 '<div class="rd-import" id="rd-import-panel" hidden>' +
 '<div class="rd-import-main" id="rd-import-main">' +
@@ -439,7 +440,11 @@ rdBookmarkPlayed = false;
 rdBmClearWait();
 rdHabitStartSession();
 rdEnsureChapter('offset').then(function () {
-rdBuddyProcessReplies();
+return rdUnlockSealed(book).catch(function () {});
+}).then(function () {
+return rdBuddyProcessReplies().catch(function () {});
+}).then(function () {
+return rdMaybeSeal(book).catch(function () {});
 });
 }
 let rdBook = null;
@@ -887,6 +892,7 @@ book.progress = { ch: chIdx, off: start };
 book.lastOpenAt = Date.now();
 rdBuddyAdvance(book);
 saveIndex(list);
+rdUnlockSealed(book).catch(function () {});
 }
 const RD_CHARS_PER_MIN = 420;
 const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
@@ -1019,6 +1025,7 @@ return pool[Math.abs(h) % pool.length];
 }
 function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
 if (!a) return false;
+if (a.sealed) return false;
 if (a.by === 'me') return true;
 return a.e > pageStart && a.e <= pageEnd;
 }
@@ -1205,6 +1212,12 @@ const RD_HIS_GAP = 8;         // 同章两条之间至少隔 8 句
 const RD_HIS_CHANCE = 0.45;   // 翻到一页时他留下新批注的概率
 const RD_REPLY_CHANCE = 0.62; // 越过那句之后真正回应的概率（允许一部分永远安静）
 const RD_REPLY_MAX = 2;       // 每次打开最多回应 2 条
+const RD_SEAL_PER_BOOK = 3;   // 每本同时最多 3 条
+const RD_SEAL_CHANCE = 0.55;  // 每天最多一条，但不是每天都有
+const RD_SEAL_WAIT_DAYS = 7;  // 七天没解锁，手账改口「他还在等」
+const RD_SEAL_DROP_DAYS = 14; // 十四天收回
+let rdSealBusy = false;
+let rdUnlockBusy = false;
 const RD_HIS_ANNO_POOL = [
 '这里我停了一下。',
 '读到这句的时候，周围正好安静下来。',
@@ -1437,6 +1450,153 @@ const pop = document.getElementById('rd-anno-pop');
 if (pop && !pop.hidden) rdDeferPaint = true;
 else rdPaintPage(); // 落在当前页才会被闸门放出来
 }
+}
+async function rdSealText(book, ch) {
+const b = rdBook;
+if (b && b.id === book.id && b.ch === ch && b.text) return b.text;
+try { return String(await getBody(book.id, ch) || ''); } catch (e) { return ''; }
+}
+async function rdSealCandidate(book, bd) {
+const myCh = Number(book.progress && book.progress.ch) || 0;
+const myOff = Number(book.progress && book.progress.off) || 0;
+const hisCh = Number(bd.ch) || 0;
+const hisOff = Number(bd.off) || 0;
+if (!(hisCh > myCh || (hisCh === myCh && hisOff > myOff))) return null;
+const last = Math.min(hisCh, myCh + 2);
+for (let ch = myCh; ch <= last; ch++) {
+const text = await rdSealText(book, ch);
+if (!text) continue;
+const sents = rdSentenceList(text);
+if (!sents.length) continue;
+const limit = ch < hisCh ? text.length : Math.min(hisOff, text.length);
+const mineFrom = ch === myCh ? myOff : 0;
+let annos = [];
+try { annos = await getAnnos(book.id, ch); } catch (e) { annos = []; }
+const groups = rdAnnoGroups(sents, annos);
+const occupied = {};
+Object.keys(groups).forEach(function (k) { occupied[k] = true; });
+const pool = [];
+for (let i = 0; i < sents.length; i++) {
+const sn = sents[i];
+if (!sn) continue;
+if (sn.e <= mineFrom) continue;
+if (sn.e > limit) break;
+if (occupied[i]) continue;
+const sc = rdHisScore(sn.quote);
+if (sc > 0) pool.push({ ch: ch, sn: sn, sc: sc });
+}
+if (!pool.length) continue;
+pool.sort(function (x, y) { return y.sc - x.sc; });
+const top = pool.slice(0, 6);
+return top[Math.floor(Math.random() * top.length)];
+}
+return null;
+}
+async function rdMaybeSeal(book) {
+if (rdSealBusy || rdUnlockBusy || !book) return;
+if (rdNightGuard()) return;
+const bd = rdBuddyGet(book);
+if (!bd || !bd.started || bd.mode !== 'solo') return;
+if (rdDcfRatio() <= 0) return;
+const today = rdTodayKey();
+if (book.sealDay === today) return;
+if ((Array.isArray(book.sealed) ? book.sealed : []).length >= RD_SEAL_PER_BOOK) return;
+if (Math.random() > RD_SEAL_CHANCE) return; // 不是每天都有
+rdSealBusy = true;
+try {
+const cand = await rdSealCandidate(book, bd);
+if (!cand) return;
+const txt = rdHisText(book);
+if (!txt) return;
+const fresh0 = readIndex();
+if (!rdFindBook(book.id, fresh0)) return;
+const annos = await getAnnos(book.id, cand.ch);
+const item = {
+id: 'se_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'his',
+s: cand.sn.s,
+e: cand.sn.e,
+quote: cand.sn.quote,
+text: String(txt).slice(0, 500),
+at: Date.now(),
+rev: 1,
+deviceId: 'local',
+sealed: true
+};
+annos.push(item);
+try { await putAnnos(book.id, cand.ch, annos); } catch (e) { return; }
+const fresh = readIndex();
+const fb = rdFindBook(book.id, fresh);
+if (!fb) return;
+fb.sealDay = today;
+if (!Array.isArray(fb.sealed)) fb.sealed = [];
+fb.sealed.push({ id: item.id, ch: cand.ch, e: item.e, at: item.at });
+if (fb.sealed.length > RD_SEAL_PER_BOOK) fb.sealed = fb.sealed.slice(-RD_SEAL_PER_BOOK);
+const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
+used.push(rdCardKey(item.text));
+fb.buddyTexts = used.slice(-200);
+saveIndex(fresh);
+const shelf = document.getElementById('rd-shelf');
+if (shelf && !shelf.hidden) rdRenderShelf();
+} finally {
+rdSealBusy = false;
+}
+}
+function rdRemoveSealedMeta(bookId, sealId) {
+try {
+const list = readIndex();
+const fb = rdFindBook(bookId, list);
+if (!fb || !Array.isArray(fb.sealed)) return;
+const before = fb.sealed.length;
+fb.sealed = fb.sealed.filter(function (x) { return x && x.id !== sealId; });
+if (fb.sealed.length !== before) saveIndex(list);
+} catch (e) {}
+}
+async function rdUnlockSealed(book) {
+if (rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
+const myCh = Number(book.progress && book.progress.ch) || 0;
+const myOff = Number(book.progress && book.progress.off) || 0;
+const pending = book.sealed.filter(function (s) {
+if (!s) return false;
+const ch = Number(s.ch) || 0;
+return ch < myCh || (ch === myCh && Number(s.e) <= myOff);
+});
+if (!pending.length) return;
+rdUnlockBusy = true;
+try {
+for (let i = 0; i < pending.length; i++) {
+const s = pending[i];
+let annos = [];
+try { annos = await getAnnos(book.id, s.ch); } catch (e) { continue; }
+let hit = null;
+for (let j = 0; j < annos.length; j++) {
+if (annos[j] && annos[j].id === s.id && annos[j].sealed) { hit = annos[j]; break; }
+}
+if (!hit) { rdRemoveSealedMeta(book.id, s.id); continue; }
+hit.sealed = false;
+hit.unlockedAt = Date.now();
+try { await putAnnos(book.id, s.ch, annos); } catch (e) { continue; }
+rdRemoveSealedMeta(book.id, s.id);
+if (rdBook && rdBook.id === book.id && rdBook.ch === s.ch) {
+let found = false;
+for (let k = 0; k < rdBook.anno.length; k++) {
+if (rdBook.anno[k] && rdBook.anno[k].id === hit.id) { rdBook.anno[k] = hit; found = true; break; }
+}
+if (!found) rdBook.anno = rdBook.anno.concat([hit]);
+rdPaintPage();
+}
+}
+} finally {
+rdUnlockBusy = false;
+}
+}
+async function rdDropSealedAnno(bookId, s) {
+if (!s) return;
+try {
+const annos = await getAnnos(bookId, s.ch);
+const next = annos.filter(function (a) { return !(a && a.id === s.id && a.sealed); });
+if (next.length !== annos.length) await putAnnos(bookId, s.ch, next);
+} catch (e) {}
 }
 async function rdBuddyProcessReplies(force) {
 const b = rdBook;
@@ -1884,7 +2044,9 @@ return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 (a.replyTo ? ' rd-pop-reply' : '') + '"' +
 ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
 '<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
-'<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div></div>';
+'<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div>' +
+(a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
+'</div>';
 }).join('');
 if (!all) {
 html += '<button class="rd-pop-more" type="button">还有 ' +
@@ -2243,6 +2405,39 @@ html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
 }
 grid.innerHTML = html;
 if (empty) empty.hidden = list.length > 0;
+const ledger = document.getElementById('rd-ledger');
+if (ledger) {
+const now = Date.now();
+const DAY = 86400000;
+let led = '';
+let dirty = false;
+const drops = [];
+for (let i = 0; i < list.length; i++) {
+const b = list[i];
+if (!b || !Array.isArray(b.sealed) || !b.sealed.length) continue;
+const keep = [];
+for (let j = 0; j < b.sealed.length; j++) {
+const s = b.sealed[j];
+if (!s || !s.at) continue;
+const age = now - s.at;
+if (age >= RD_SEAL_DROP_DAYS * DAY) { drops.push({ id: b.id, s: s }); dirty = true; continue; }
+keep.push(s);
+const chNo = (Number(s.ch) || 0) + 1;
+const days = Math.floor(age / DAY);
+const sameDay = rdTodayKey(s.at) === rdTodayKey();
+const line = days >= RD_SEAL_WAIT_DAYS
+? '他还在等'
+: (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
+led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
+'</span><span class="a">第 ' + chNo + ' 章</span></div>';
+}
+if (keep.length !== b.sealed.length) b.sealed = keep;
+}
+if (dirty) saveIndex(list);
+for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
+ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
+ledger.hidden = !led;
+}
 const usage = document.getElementById('rd-usage');
 if (usage) {
 let bytes = 0;
