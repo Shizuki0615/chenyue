@@ -3,10 +3,11 @@
 .rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
-.rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 16px 24px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+/* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
+.rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
+.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-usage{padding-top:16px;text-align:center;font-size:11px;opacity:.55}
+.rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
 .rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
 .rd-menu-title{padding:10px 14px 6px;font-size:12px;opacity:.55;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
@@ -26,7 +27,7 @@
 .rd-head{display:flex;align-items:center;gap:10px;padding:10px 0 12px}
 .rd-head .rd-title{flex:1;text-align:center;font-size:16px}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
-.rd-empty{padding:40px 0;text-align:center;font-size:13px;opacity:.6}
+.rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
 .rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
@@ -57,7 +58,11 @@
 .rd-retry{margin-top:20px;border:0;border-radius:10px;padding:10px 14px;font-size:14px;background:var(--line,#eee);color:inherit}
 
 /* ---------- 导入 ---------- */
-.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff);overflow:auto}
+/* 导入面板是书架的子页面，自己带标题和关闭按钮：打开时收起书架顶栏。
+   否则 sticky 的 chat-head（z-index 5）会压在面板头部（z-index 2）上面，
+   半透明底色还会把「导入一本书 / 关闭」透出来，看起来像一张悬浮卡片。 */
+.rd-shelf.rd-importing > .chat-head{display:none}
+.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff);overflow:auto}
 .rd-import-head{display:flex;align-items:center;justify-content:space-between}
 .rd-import-title{font-size:16px}
 .rd-file-label{display:inline-block;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#ddd);font-size:13px;cursor:pointer}
@@ -72,7 +77,7 @@
 .rd-import-main{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
 
 /* ---------- 确认分章 ---------- */
-.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
+.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
 .rd-confirm-bar{display:flex;gap:8px;flex-wrap:wrap}
 .rd-confirm-list{flex:1;min-height:0;overflow-y:auto}
 .rd-cf-row{padding:10px 0;border-bottom:1px solid var(--line,#eee)}
@@ -162,7 +167,7 @@
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
 /* 共读手账：封存一句的书架条目，只给章序号，不给内容 */
-.rd-ledger{margin-top:14px;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+.rd-ledger{margin:14px 16px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
 .rd-ledger[hidden]{display:none!important}
 .rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
 .rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}

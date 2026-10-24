@@ -10103,10 +10103,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .set-row .txt .sub { font-size: calc(11.5px + var(--mochi-text-adj, 0px)); }
 .gc-set-row .txt { font-size: calc(14px + var(--mochi-text-adj, 0px)); }
 .rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
-.rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 16px 24px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
+.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-usage{padding-top:16px;text-align:center;font-size:11px;opacity:.55}
+.rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
 .rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
 .rd-menu-title{padding:10px 14px 6px;font-size:12px;opacity:.55;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
@@ -10123,7 +10123,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-head{display:flex;align-items:center;gap:10px;padding:10px 0 12px}
 .rd-head .rd-title{flex:1;text-align:center;font-size:16px}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
-.rd-empty{padding:40px 0;text-align:center;font-size:13px;opacity:.6}
+.rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
 .rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
@@ -10146,7 +10146,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-bounce-next{animation:rdBounceNext .18s ease}
 .rd-bounce-prev{animation:rdBouncePrev .18s ease}
 .rd-retry{margin-top:20px;border:0;border-radius:10px;padding:10px 14px;font-size:14px;background:var(--line,#eee);color:inherit}
-.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff);overflow:auto}
+.rd-shelf.rd-importing > .chat-head{display:none}
+.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff);overflow:auto}
 .rd-import-head{display:flex;align-items:center;justify-content:space-between}
 .rd-import-title{font-size:16px}
 .rd-file-label{display:inline-block;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#ddd);font-size:13px;cursor:pointer}
@@ -10159,7 +10160,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 #rd-paste{flex:1;min-height:140px;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:10px;font-size:13px;line-height:1.6;resize:none;background:transparent;color:inherit}
 .rd-import-foot{display:flex;justify-content:flex-end}
 .rd-import-main{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
-.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
+.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
 .rd-confirm-bar{display:flex;gap:8px;flex-wrap:wrap}
 .rd-confirm-list{flex:1;min-height:0;overflow-y:auto}
 .rd-cf-row{padding:10px 0;border-bottom:1px solid var(--line,#eee)}
@@ -10227,7 +10228,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-buddy-habit:empty{display:none}
 .rd-buddy-modes{display:flex;gap:8px;flex-wrap:wrap}
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
-.rd-ledger{margin-top:14px;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+.rd-ledger{margin:14px 16px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
 .rd-ledger[hidden]{display:none!important}
 .rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
 .rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
@@ -10595,7 +10596,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792832679076" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792834460723" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -10699,7 +10700,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <div class="app" data-app="reading" data-desk-widget="app-reading">
           <div class="app-badge-box"><div class="app-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><span class="app-badge" id="rd-badge" hidden></span></div>
-          <div class="app-name">一起读书</div>
+          <div class="app-name">读书</div>
         </div>
         <div class="app" data-app="group-chat" data-desk-widget="app-group-chat" hidden>
           <div class="app-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/><circle cx="9" cy="11" r="1.2" fill="#111111"/><circle cx="13" cy="11" r="1.2" fill="#111111"/><circle cx="17" cy="11" r="1.2" fill="#111111"/></svg></div>
@@ -16789,9 +16790,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 114.8.4c0 1.7-2.4 2.1-2.4 3.3"/><path d="M12 16.7h.01"/></svg></span>
             <span>问问他</span>
           </button>
-          <button class="more-item" id="more-reading" data-mcat="chat" title="一起读书（书架与共读）">
+          <button class="more-item" id="more-reading" data-mcat="chat" title="读书（书架与共读）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></span>
-            <span>一起读书</span>
+            <span>读书</span>
           </button>
           <button class="more-item" id="more-search" data-mcat="tool" title="搜索聊天记录">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
@@ -22392,4 +22393,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvm6aco4 -->
+<!-- __MOCHI_EOF__ mvm7cjeb -->

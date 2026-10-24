@@ -268,7 +268,7 @@
           '<span class="ch-back" id="rd-shelf-back">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
           '</span>' +
-          '<span class="ch-name">一起读书</span>' +
+          '<span class="ch-name">读书</span>' +
           '<button class="ch-settings" id="rd-import" type="button" title="导入">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
           '</button>' +
@@ -2730,6 +2730,10 @@
     const grid = document.getElementById('rd-grid');
     const empty = document.getElementById('rd-empty');
     if (!grid) return;
+    // 顶栏收放跟着导入面板的开关走：从阅读器返回、重开本页时也靠这里同步回来
+    const shelfEl = document.getElementById('rd-shelf');
+    const impPanel = document.getElementById('rd-import-panel');
+    if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
     const list = readIndex().slice();
     list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
     let html = '';
@@ -2888,11 +2892,16 @@
     if (main) main.hidden = false;
     if (cf) cf.hidden = true;
     if (panel) panel.hidden = false;
+    // 收起书架顶栏：导入面板自己有标题和关闭按钮，顶栏留着会压住面板头部
+    const shelf = document.getElementById('rd-shelf');
+    if (shelf) shelf.classList.add('rd-importing');
   }
   function rdCloseImport() {
     const panel = document.getElementById('rd-import-panel');
     const main = document.getElementById('rd-import-main');
     const cf = document.getElementById('rd-confirm');
+    const shelf = document.getElementById('rd-shelf');
+    if (shelf) shelf.classList.remove('rd-importing');
     if (panel) panel.hidden = true;
     if (main) main.hidden = false;
     if (cf) cf.hidden = true;
