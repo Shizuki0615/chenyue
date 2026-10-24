@@ -2163,6 +2163,13 @@ e.preventDefault();
 rdOpen();
 return;
 }
+if (el.closest('#more-reading')) {
+e.preventDefault();
+const mp = document.getElementById('chat-more-panel');
+if (mp) mp.hidden = true;
+rdOpen();
+return;
+}
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
