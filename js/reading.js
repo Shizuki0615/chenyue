@@ -234,6 +234,9 @@ page.innerHTML =
 '<button class="ch-settings" id="rd-import" type="button" title="导入">' +
 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
 '</button>' +
+'<button class="ch-settings" id="rd-shelf-settings" type="button" title="设置">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
+'</button>' +
 '</div>' +
 '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
 '<div class="rd-grid" id="rd-grid"></div>' +
@@ -265,11 +268,14 @@ page.innerHTML =
 '</div>' +
 '</div>' +
 '<div class="rd-reader" id="rd-reader" hidden>' +
-'<div class="rd-head">' +
-'<button class="rd-back" id="rd-reader-back" type="button">返回</button>' +
-'<div class="rd-title" id="rd-book-title"></div>' +
-'<button class="rd-back" id="rd-font-btn" type="button">Aa</button>' +
-'<button class="rd-back" id="rd-toc-btn" type="button">目录</button>' +
+'<div class="chat-head rd-reader-head">' +
+'<button class="ch-back" id="rd-reader-back" type="button" aria-label="返回">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+'</button>' +
+'<span class="ch-name" id="rd-book-title"></span>' +
+'<button class="ch-settings" id="rd-toc-btn" type="button" aria-label="目录" title="目录">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>' +
+'</button>' +
 '</div>' +
 '<div class="rd-body" id="rd-body"></div>' +
 '<div class="rd-foot" id="rd-foot">' +
@@ -292,16 +298,6 @@ page.innerHTML =
 '<button class="rd-btn rd-btn-mini" data-bmode="skip" type="button">今天不读</button>' +
 '</div>' +
 '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-buddy-jump" type="button" hidden>去他那里</button></div>' +
-'</div>' +
-'<div class="rd-prefs" id="rd-prefs" hidden>' +
-'<div class="rd-prefs-row"><span>字号</span>' +
-'<button class="rd-btn rd-btn-mini" data-fs="15" type="button">小</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="17" type="button">标准</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="19" type="button">大</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="21" type="button">特大</button></div>' +
-'<div class="rd-prefs-row"><span>行距</span>' +
-'<button class="rd-btn rd-btn-mini" data-lh="1.7" type="button">紧</button>' +
-'<button class="rd-btn rd-btn-mini" data-lh="1.9" type="button">松</button></div>' +
 '</div>' +
 '<div class="rd-toc" id="rd-toc" hidden>' +
 '<div class="rd-import-head"><div class="rd-import-title">目录</div>' +
@@ -350,11 +346,76 @@ const phone = document.querySelector('.phone');
 rdApplyPrefs(rdReadPrefs());
 return page;
 }
+let settingsPage = null;
+const RD_PREVIEW_TEXT = '书页翻过去的时候，风从窗缝里进来，把桌上的纸吹得轻轻响。\n\n' +
+'你读到这一句，停了停，像是在等谁从下一行走过来。窗外的天色慢慢暗下去，字却还亮着。';
+function buildSettingsPage() {
+if (settingsPage) return settingsPage;
+settingsPage = document.createElement('div');
+settingsPage.className = 'page';
+settingsPage.id = 'page-reading-settings';
+settingsPage.hidden = true;
+settingsPage.innerHTML =
+'<div class="chat-head">' +
+'<button class="ch-back" id="rd-settings-back" type="button" aria-label="返回">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+'</button>' +
+'<span class="ch-name">阅读设置</span>' +
+'</div>' +
+'<div class="rd-set-body">' +
+'<div class="rd-set-preview">' +
+'<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
+'<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
+'</div>' +
+'<div class="gs-title">阅读显示</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
+'<div class="rd-set-pills">' +
+'<button class="rd-btn rd-btn-mini" data-fs="15" type="button">小</button>' +
+'<button class="rd-btn rd-btn-mini" data-fs="17" type="button">标准</button>' +
+'<button class="rd-btn rd-btn-mini" data-fs="19" type="button">大</button>' +
+'<button class="rd-btn rd-btn-mini" data-fs="21" type="button">特大</button>' +
+'</div>' +
+'</div>' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
+'<div class="rd-set-pills">' +
+'<button class="rd-btn rd-btn-mini" data-lh="1.7" type="button">紧</button>' +
+'<button class="rd-btn rd-btn-mini" data-lh="1.8" type="button">标准</button>' +
+'<button class="rd-btn rd-btn-mini" data-lh="1.9" type="button">松</button>' +
+'</div>' +
+'</div>' +
+'</div>' +
+'<div class="rd-set-note">这些偏好只作用在阅读器，不影响聊天和桌面字号。预览用的是内置样文；打开书后会按同一套偏好重新分页。</div>' +
+'</div>';
+const phone = document.querySelector('.phone');
+(phone || document.body).appendChild(settingsPage);
+rdRenderPrefsActive();
+return settingsPage;
+}
+function rdOpenSettings() {
+buildSettingsPage();
+if (!page || !settingsPage) return;
+page.hidden = true;
+settingsPage.hidden = false;
+settingsPage.classList.add('full');
+rdRenderPrefsActive();
+const body = settingsPage.querySelector('.rd-set-body');
+if (body) body.scrollTop = 0;
+}
+function rdCloseSettings() {
+if (!settingsPage) return;
+settingsPage.hidden = true;
+if (page) page.hidden = false;
+rdRenderShelf();
+}
 function rdOpen() {
 buildPage();
 rdRenderShelf();
 rdRetryPendingDelete();
 document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
+if (settingsPage) settingsPage.hidden = true;
 page.hidden = false;
 requestAnimationFrame(function () {
 const tabbar = document.querySelector('.tabbar');
@@ -371,6 +432,7 @@ rdTogWatchStop();
 rdWriteProgress();
 rdHabitEndSession();
 rdCloseBookMenu();
+if (settingsPage) settingsPage.hidden = true;
 page.classList.remove('full');
 page.hidden = true;
 const home = document.getElementById('page-phone');
@@ -391,8 +453,7 @@ rdCloseAnnoOps();
 rdCloseLost();
 rdCloseBuddyCard();
 rdPopPos = -1;
-const prefs = document.getElementById('rd-prefs');
-if (prefs) prefs.hidden = true;
+if (settingsPage) settingsPage.hidden = true;
 const shelf = document.getElementById('rd-shelf');
 const reader = document.getElementById('rd-reader');
 const imp = document.getElementById('rd-import-panel');
@@ -2571,7 +2632,9 @@ try { store.set(RD_PREFS_KEY, JSON.stringify(p)); }
 catch (e) { rdToast('字号设置没保存上'); }
 rdApplyPrefs(p);
 const b = rdBook;
-if (b && b.text) {
+const reader = document.getElementById('rd-reader');
+const body = document.getElementById('rd-body');
+if (b && b.text && reader && !reader.hidden && body && body.clientHeight > 0) {
 const off = b.pages[b.pageIdx] ? b.pages[b.pageIdx].s : 0;
 rdPaceReset(); // 重新分页不算翻页
 b.pages = rdPaginateChapter(b);
@@ -2583,14 +2646,24 @@ rdRenderPrefsActive();
 }
 function rdRenderPrefsActive() {
 const p = rdReadPrefs();
-const box = document.getElementById('rd-prefs');
-if (!box) return;
+const box = document.getElementById('page-reading-settings');
+if (box) {
 box.querySelectorAll('[data-fs]').forEach(function (btn) {
 btn.classList.toggle('on', Number(btn.getAttribute('data-fs')) === p.fs);
 });
 box.querySelectorAll('[data-lh]').forEach(function (btn) {
 btn.classList.toggle('on', Number(btn.getAttribute('data-lh')) === p.lh);
 });
+}
+const prev = document.getElementById('rd-set-preview-text');
+if (prev) {
+prev.style.fontSize = p.fs + 'px';
+prev.style.lineHeight = String(p.lh);
+}
+const fsVal = document.getElementById('rd-set-fs-val');
+if (fsVal) fsVal.textContent = p.fs + 'px';
+const lhVal = document.getElementById('rd-set-lh-val');
+if (lhVal) lhVal.textContent = String(p.lh);
 }
 function rdRenderToc() {
 const list = document.getElementById('rd-toc-list');
@@ -2620,8 +2693,6 @@ if (!toc) return;
 rdCloseBuddyCard();
 rdRenderToc();
 toc.hidden = false;
-const prefs = document.getElementById('rd-prefs');
-if (prefs) prefs.hidden = true;
 }
 function closeToc() {
 const toc = document.getElementById('rd-toc');
@@ -3130,6 +3201,8 @@ rdOpen();
 return;
 }
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
+if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
+if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
@@ -3137,17 +3210,9 @@ if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); ret
 const bMode = el.closest('#rd-buddy-modes [data-bmode]');
 if (bMode) { e.preventDefault(); rdBuddySetMode(bMode.getAttribute('data-bmode')); return; }
 if (el.closest('#rd-buddy-jump')) { e.preventDefault(); rdJumpToBuddy(); return; }
-if (el.closest('#rd-font-btn')) {
-e.preventDefault();
-rdCloseBuddyCard();
-const prefs = document.getElementById('rd-prefs');
-if (prefs) { prefs.hidden = !prefs.hidden; rdRenderPrefsActive(); }
-closeToc();
-return;
-}
-const fsBtn = el.closest('#rd-prefs [data-fs]');
+const fsBtn = el.closest('#page-reading-settings [data-fs]');
 if (fsBtn) { e.preventDefault(); rdSetPrefs({ fs: Number(fsBtn.getAttribute('data-fs')) }); return; }
-const lhBtn = el.closest('#rd-prefs [data-lh]');
+const lhBtn = el.closest('#page-reading-settings [data-lh]');
 if (lhBtn) { e.preventDefault(); rdSetPrefs({ lh: Number(lhBtn.getAttribute('data-lh')) }); return; }
 if (el.closest('#rd-toc-btn')) { e.preventDefault(); openToc(); return; }
 if (el.closest('#rd-toc-close')) { e.preventDefault(); closeToc(); return; }

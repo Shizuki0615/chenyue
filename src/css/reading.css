@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
@@ -24,11 +24,13 @@
 /* ---------- 阅读器骨架 ---------- */
 #page-reading{position:relative}
 .rd-reader{position:absolute;inset:0;display:flex;flex-direction:column}
-.rd-head{display:flex;align-items:center;gap:10px;padding:10px 0 12px}
-.rd-head .rd-title{flex:1;text-align:center;font-size:16px}
+/* 阅读器顶栏复用全局 chat-head：返回/目录改成 button 后补一条原生样式复位 */
+.rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
-.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px}
+/* 正文区的纸感只由背景承担，不改内边距/字号/行高，避免分页尺寸变化 */
+.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+[data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
@@ -89,12 +91,28 @@
 .rd-btn-mini{padding:5px 10px;font-size:12px}
 .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
-/* ---------- 字号/行距浮层 ---------- */
-.rd-prefs{position:absolute;right:12px;top:52px;z-index:4;padding:10px;border-radius:14px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
-.rd-prefs-row{display:flex;align-items:center;gap:6px;font-size:12px}
+/* ---------- 阅读设置页 ---------- */
+#page-reading-settings{overflow:hidden;padding-bottom:0}
+.rd-set-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 16px 28px}
+.rd-set-preview{margin:12px 0 2px;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e6e6e6);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-set-preview-h{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.04em}
+.rd-set-preview-text{padding:14px 16px 20px;font-size:17px;line-height:1.8;white-space:pre-wrap;color:var(--ink)}
+[data-theme="dark"] .rd-set-preview{background:linear-gradient(180deg,#201e1a,#191714);border-color:var(--dark-border,#333)}
+[data-theme="dark"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-row{display:flex;flex-direction:column;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-row:last-child{border-bottom:none}
+.rd-set-row-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rd-set-row-t{font-size:14px}
+.rd-set-row-v{font-size:11.5px;color:var(--muted)}
+.rd-set-pills{display:flex;gap:6px;flex-wrap:wrap}
+.rd-set-pills .rd-btn-mini{padding:6px 12px;border:1px solid var(--line,#e6e6e6);background:var(--bg,#fff)}
+.rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.35);border-color:rgba(244,182,194,.8)}
+[data-theme="dark"] .rd-set-pills .rd-btn-mini{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.22);border-color:rgba(244,182,194,.5)}
+.rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
 
 /* ---------- 目录 ---------- */
-.rd-toc{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
+.rd-toc{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
 .rd-toc-list{flex:1;min-height:0;overflow-y:auto}
 .rd-toc-row{display:flex;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line,#eee);font-size:14px}
 .rd-toc-row.on{color:#d9534f}

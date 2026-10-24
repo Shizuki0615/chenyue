@@ -6549,7 +6549,7 @@ const FIX_SENTINELS = [
   { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
   { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
   { name: '#1547q 聊天「更多 → 互动」入口（删＝只剩桌面图标一条入口）', file: 'template.html', needle: 'id="more-reading" data-mcat="chat"' },
-  { name: '#1547r 阅读页登记为全屏页（删＝进阅读器后 tabbar 常驻，遮住底部「他在哪」行）', file: 'js/tabs.js', needle: "'page-reading'];" },
+  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
   { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },

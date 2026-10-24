@@ -10102,7 +10102,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .set-row .txt { font-size: calc(14px + var(--mochi-text-adj, 0px)); }
 .set-row .txt .sub { font-size: calc(11.5px + var(--mochi-text-adj, 0px)); }
 .gc-set-row .txt { font-size: calc(14px + var(--mochi-text-adj, 0px)); }
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
 .rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -10120,11 +10120,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-badge{position:absolute;right:6px;bottom:28px;font-size:10px;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
 #page-reading{position:relative}
 .rd-reader{position:absolute;inset:0;display:flex;flex-direction:column}
-.rd-head{display:flex;align-items:center;gap:10px;padding:10px 0 12px}
-.rd-head .rd-title{flex:1;text-align:center;font-size:16px}
+.rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
-.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px}
+.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+[data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
@@ -10170,9 +10170,25 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-cf-ops{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .rd-btn-mini{padding:5px 10px;font-size:12px}
 .rd-btn-mini.on{background:rgba(244,182,194,.5)}
-.rd-prefs{position:absolute;right:12px;top:52px;z-index:4;padding:10px;border-radius:14px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
-.rd-prefs-row{display:flex;align-items:center;gap:6px;font-size:12px}
-.rd-toc{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
+#page-reading-settings{overflow:hidden;padding-bottom:0}
+.rd-set-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 16px 28px}
+.rd-set-preview{margin:12px 0 2px;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e6e6e6);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-set-preview-h{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.04em}
+.rd-set-preview-text{padding:14px 16px 20px;font-size:17px;line-height:1.8;white-space:pre-wrap;color:var(--ink)}
+[data-theme="dark"] .rd-set-preview{background:linear-gradient(180deg,#201e1a,#191714);border-color:var(--dark-border,#333)}
+[data-theme="dark"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-row{display:flex;flex-direction:column;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-row:last-child{border-bottom:none}
+.rd-set-row-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rd-set-row-t{font-size:14px}
+.rd-set-row-v{font-size:11.5px;color:var(--muted)}
+.rd-set-pills{display:flex;gap:6px;flex-wrap:wrap}
+.rd-set-pills .rd-btn-mini{padding:6px 12px;border:1px solid var(--line,#e6e6e6);background:var(--bg,#fff)}
+.rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.35);border-color:rgba(244,182,194,.8)}
+[data-theme="dark"] .rd-set-pills .rd-btn-mini{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.22);border-color:rgba(244,182,194,.5)}
+.rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
+.rd-toc{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
 .rd-toc-list{flex:1;min-height:0;overflow-y:auto}
 .rd-toc-row{display:flex;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line,#eee);font-size:14px}
 .rd-toc-row.on{color:#d9534f}
@@ -10599,7 +10615,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792839679233" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792846836573" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22396,4 +22412,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvmage0x -->
+<!-- __MOCHI_EOF__ mvmepsnx -->
