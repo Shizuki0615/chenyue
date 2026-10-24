@@ -6644,6 +6644,19 @@ const FIX_SENTINELS = [
   { name: '#1555l 同读优先于节奏感想（删＝两个文案抢同一行，状态显示错乱）', file: 'js/reading.js', needle: "const paceNote = tog ? '' : rdPaceNote(book, b);" },
   { name: '#1555m 切后台暂停停留计时（删＝后台待五分钟被算成「停在这一页很久」）', file: 'js/reading.js', needle: 'function rdPacePause() { rdPaceEnterAt = 0; }' },
   { name: '#1555n 换字号/行距重新分页不算翻页（删＝重排后页码变化被当成翻走一页，误记一次节奏）', file: 'js/reading.js', needle: 'rdPaceReset(); // 重新分页不算翻页' },
+  // ==== 2026-10-24 #1556 一起读书·错过七天（他写下，又划掉了）====
+  { name: '#1556a 批注放满七天才会被划掉（删＝刚写下的也划，时间差没有意义）', file: 'js/reading.js', needle: 'if (!a.at || now - a.at < RD_MISS_DAYS * DAY) return a;' },
+  { name: '#1556b 我读到那句之后才划掉（删＝还没读到就划，等于提前动手）', file: 'js/reading.js', needle: 'if ((Number(a.e) || 0) > myEnd) return a; // 我还没读到这一句' },
+  { name: '#1556c 旧句留成 oldText 而不是删掉（删＝没有「划掉」的痕迹，只剩换掉的一句话）', file: 'js/reading.js', needle: 'oldText: a.text,' },
+  { name: '#1556d 新句不能和旧句一样（删＝划掉又写回同一句，白划一次）', file: 'js/reading.js', needle: 'if (!t || t === a.text) return a;' },
+  { name: '#1556e 浮层给出「N 天前写下这句，后来划掉了」（删＝只看到两句话，读不出时间差）', file: 'js/reading.js', needle: "'<div class=\"rd-pop-cross\">' + oldDays + ' 天前写下这句，后来划掉了</div>' +" },
+  { name: '#1556f 被划掉的旧句渲染成可点的淡字（删＝旧句点不动，回应触发不了）', file: 'js/reading.js', needle: "'<div class=\"rd-pop-old\" data-old=\"' + rdEsc(a.id || '') + '\">' + rdEsc(old) + '</div>'" },
+  { name: '#1556g 点旧句触发他的回应（删＝淡字只是装饰，互动消失）', file: 'js/reading.js', needle: "if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }" },
+  { name: '#1556h 同一条旧句只回一次（删＝反复点反复回，纸条越堆越多）', file: 'js/reading.js', needle: 'if (seen.indexOf(id) >= 0) return;' },
+  { name: '#1556i 他回不回是有概率的（删＝每点必有，太满）', file: 'js/reading.js', needle: 'if (Math.random() > RD_MISS_REPLY_CHANCE) return;' },
+  { name: '#1556j 回应锚在同一条批注上（删＝回应跑偏到别句，replyTo 链断掉）', file: 'js/reading.js', needle: 'replyTo: id' },
+  { name: '#1556k 同一页只扫一次批注（删＝每翻一页都整章读一遍批注）', file: 'js/reading.js', needle: 'if (rdCrossKey === key) return; // 同一页只扫一次，别每翻一页都整章读批注' },
+  { name: '#1556l 打开书时接进串行链（删＝和封存/回应并发写同一章批注，互相覆盖）', file: 'js/reading.js', needle: 'return rdCrossOldAnnos(book).catch(function () {});' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

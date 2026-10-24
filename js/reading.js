@@ -450,12 +450,15 @@ rdTogLogged = false;
 rdTogNoteLogged = false;
 rdTogWatchStart();
 rdPaceReset();
+rdCrossKey = '';
 rdEnsureChapter('offset').then(function () {
 return rdUnlockSealed(book).catch(function () {});
 }).then(function () {
 return rdBuddyProcessReplies().catch(function () {});
 }).then(function () {
 return rdMaybeSeal(book).catch(function () {});
+}).then(function () {
+return rdCrossOldAnnos(book).catch(function () {});
 });
 }
 let rdBook = null;
@@ -1037,6 +1040,98 @@ if (pace.slow) return '这页你停了很久';
 if (pace.fast) return '你翻得好快，是不是在找我？';
 return '';
 }
+const RD_MISS_DAYS = 7;
+const RD_MISS_REPLY_CHANCE = 0.6;
+const RD_MISS_REPLY_LINE = '你看到这个了？';
+let rdCrossKey = '';
+async function rdCrossOldAnnos(book) {
+const b = rdBook;
+if (!b || !book || !b.pages.length) return;
+if (rdNightGuard()) return;
+const ch = b.ch;
+const key = b.id + '|' + ch + '|' + b.pageIdx;
+if (rdCrossKey === key) return; // 同一页只扫一次，别每翻一页都整章读批注
+rdCrossKey = key;
+let annos = [];
+try { annos = await getAnnos(book.id, ch); } catch (e) { return; }
+if (!rdBook || rdBook !== b) return;
+if (!Array.isArray(annos) || !annos.length) return;
+const now = Date.now();
+const DAY = 86400000;
+const myEnd = (b.pages[b.pageIdx] || {}).e || 0;
+const freshList = [];
+let dirty = false;
+const next = annos.map(function (a) {
+if (!a || a.by === 'me' || a.crossedAt) return a;
+if (!a.at || now - a.at < RD_MISS_DAYS * DAY) return a;
+if ((Number(a.e) || 0) > myEnd) return a; // 我还没读到这一句
+const t = rdHisText(book);
+if (!t || t === a.text) return a;
+freshList.push(t);
+dirty = true;
+return Object.assign({}, a, {
+text: t,
+oldText: a.text,
+oldAt: a.at,
+crossedAt: now
+});
+});
+if (!dirty) return;
+try { await putAnnos(book.id, ch, next); } catch (e) { return; }
+if (!rdBook || rdBook !== b) return;
+b.anno = next;
+const freshIdx = readIndex();
+const fb = rdFindBook(b.id, freshIdx);
+if (fb) {
+const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
+for (let i = 0; i < freshList.length; i++) used.push(rdCardKey(freshList[i]));
+fb.buddyTexts = used.slice(-200);
+saveIndex(freshIdx);
+}
+const pop = document.getElementById('rd-anno-pop');
+if (pop && !pop.hidden) rdDeferPaint = true;
+else rdPaintPage();
+}
+async function rdMissReply(id) {
+const b = rdBook;
+if (!b || !id) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book) return;
+const seen = Array.isArray(book.missSeen) ? book.missSeen : [];
+if (seen.indexOf(id) >= 0) return;
+book.missSeen = seen.concat([id]).slice(-60);
+saveIndex(list);
+if (Math.random() > RD_MISS_REPLY_CHANCE) return;
+const ch = b.ch;
+const annos = await getAnnos(b.id, ch);
+if (!rdBook || rdBook !== b) return;
+const arr = Array.isArray(annos) ? annos : [];
+const src = arr.filter(function (a) { return a && a.id === id; })[0];
+if (!src) return;
+if (arr.some(function (a) { return a && a.replyTo === id; })) return;
+const item = {
+id: 'mr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'his',
+s: src.s,
+e: src.e,
+quote: src.quote,
+text: RD_MISS_REPLY_LINE,
+at: Date.now(),
+rev: 1,
+deviceId: 'local',
+replyTo: id
+};
+const next = arr.concat([item]);
+try { await putAnnos(b.id, ch, next); } catch (e) { return; }
+if (!rdBook || rdBook !== b) return;
+b.anno = next;
+const fresh = readIndex();
+const fb = rdFindBook(b.id, fresh);
+if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
+rdPaintPage();
+if (rdPopPos >= 0) rdOpenPop(rdPopPos, true);
+}
 let rdSaveTimer = 0;
 function rdSaveProgress() {
 if (!rdBook) return;
@@ -1060,6 +1155,7 @@ rdBuddyAdvance(book);
 rdTogTick(book);
 saveIndex(list);
 rdUnlockSealed(book).catch(function () {});
+rdCrossOldAnnos(book).catch(function () {});
 }
 const RD_CHARS_PER_MIN = 420;
 const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
@@ -2222,12 +2318,19 @@ sameFirst = true;
 }
 }
 let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
+const nowTs = Date.now();
 html += show.map(function (a) {
 const mine = a.by === 'me';
+const old = !mine && a.crossedAt && a.oldText ? a.oldText : '';
+const oldDays = old ? Math.max(RD_MISS_DAYS, Math.floor((nowTs - (a.oldAt || a.at || nowTs)) / 86400000)) : 0;
 return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 (a.replyTo ? ' rd-pop-reply' : '') + '"' +
 ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
 '<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
+(old
+? '<div class="rd-pop-cross">' + oldDays + ' 天前写下这句，后来划掉了</div>' +
+'<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
+: '') +
 '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div>' +
 (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
 '</div>';
@@ -2982,6 +3085,8 @@ return;
 if (rdOpsId && Date.now() - rdOpsAt > 350 && !el.closest('#rd-anno-ops')) rdCloseAnnoOps();
 const mk = el.closest('.rd-mark');
 if (mk) { e.preventDefault(); rdOpenPop(Number(mk.getAttribute('data-pos'))); return; }
+const oldEl = el.closest('#rd-pop-list .rd-pop-old');
+if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }
 if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
 const selBtn = el.closest('#rd-selbar [data-act]');
 if (selBtn) {

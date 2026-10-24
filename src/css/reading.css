@@ -177,4 +177,7 @@
 .rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
 /* 封存纸条展开后，浮层末尾那行「你终于读到这了」 */
 .rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
+/* 错过七天：旧句被划掉留成淡字，点一下他有概率接一句 */
+.rd-pop-cross{font-size:11px;opacity:.5;margin:2px 0 5px}
+.rd-pop-old{font-size:13px;line-height:1.6;opacity:.42;text-decoration:line-through;margin-bottom:6px;white-space:pre-wrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
 

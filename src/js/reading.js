@@ -498,6 +498,7 @@
     rdTogWatchStart();
     // 翻页节奏也重新开始量：换一本书不该继承上一本的停留时长
     rdPaceReset();
+    rdCrossKey = '';
     // 封存一句是异步读写：等本章先加载完，再依次解锁旧纸条、处理回应、折新纸条，
     // 避免三处同时改同一章的批注数组互相覆盖。
     rdEnsureChapter('offset').then(function () {
@@ -507,6 +508,9 @@
       return rdBuddyProcessReplies().catch(function () {});
     }).then(function () {
       return rdMaybeSeal(book).catch(function () {});
+    }).then(function () {
+      // 放满七天我才读到的那句，旧句在这里被划掉
+      return rdCrossOldAnnos(book).catch(function () {});
     });
   }
 
@@ -1147,6 +1151,105 @@
     return '';
   }
 
+  // ===== 错过七天：他写下，又划掉了 =====
+  // 他某条批注放满七天我还没读到，等我真读到那句时，旧句被划掉、换成他现在的句子。
+  // 旧句留成淡字，点一下他有概率回一句「你看到这个了？」。
+  const RD_MISS_DAYS = 7;
+  const RD_MISS_REPLY_CHANCE = 0.6;
+  const RD_MISS_REPLY_LINE = '你看到这个了？';
+  let rdCrossKey = '';
+
+  async function rdCrossOldAnnos(book) {
+    const b = rdBook;
+    if (!b || !book || !b.pages.length) return;
+    if (rdNightGuard()) return;
+    const ch = b.ch;
+    const key = b.id + '|' + ch + '|' + b.pageIdx;
+    if (rdCrossKey === key) return; // 同一页只扫一次，别每翻一页都整章读批注
+    rdCrossKey = key;
+    let annos = [];
+    try { annos = await getAnnos(book.id, ch); } catch (e) { return; }
+    if (!rdBook || rdBook !== b) return;
+    if (!Array.isArray(annos) || !annos.length) return;
+    const now = Date.now();
+    const DAY = 86400000;
+    const myEnd = (b.pages[b.pageIdx] || {}).e || 0;
+    const freshList = [];
+    let dirty = false;
+    const next = annos.map(function (a) {
+      if (!a || a.by === 'me' || a.crossedAt) return a;
+      if (!a.at || now - a.at < RD_MISS_DAYS * DAY) return a;
+      if ((Number(a.e) || 0) > myEnd) return a; // 我还没读到这一句
+      const t = rdHisText(book);
+      if (!t || t === a.text) return a;
+      freshList.push(t);
+      dirty = true;
+      return Object.assign({}, a, {
+        text: t,
+        oldText: a.text,
+        oldAt: a.at,
+        crossedAt: now
+      });
+    });
+    if (!dirty) return;
+    try { await putAnnos(book.id, ch, next); } catch (e) { return; }
+    if (!rdBook || rdBook !== b) return;
+    b.anno = next;
+    const freshIdx = readIndex();
+    const fb = rdFindBook(b.id, freshIdx);
+    if (fb) {
+      const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
+      for (let i = 0; i < freshList.length; i++) used.push(rdCardKey(freshList[i]));
+      fb.buddyTexts = used.slice(-200);
+      saveIndex(freshIdx);
+    }
+    // 正在看这一页就把划掉的旧句画出来
+    const pop = document.getElementById('rd-anno-pop');
+    if (pop && !pop.hidden) rdDeferPaint = true;
+    else rdPaintPage();
+  }
+  // 点开旧句：他有概率接一句，同一条只回应一次
+  async function rdMissReply(id) {
+    const b = rdBook;
+    if (!b || !id) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    const seen = Array.isArray(book.missSeen) ? book.missSeen : [];
+    if (seen.indexOf(id) >= 0) return;
+    book.missSeen = seen.concat([id]).slice(-60);
+    saveIndex(list);
+    if (Math.random() > RD_MISS_REPLY_CHANCE) return;
+    const ch = b.ch;
+    const annos = await getAnnos(b.id, ch);
+    if (!rdBook || rdBook !== b) return;
+    const arr = Array.isArray(annos) ? annos : [];
+    const src = arr.filter(function (a) { return a && a.id === id; })[0];
+    if (!src) return;
+    if (arr.some(function (a) { return a && a.replyTo === id; })) return;
+    const item = {
+      id: 'mr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      by: 'his',
+      s: src.s,
+      e: src.e,
+      quote: src.quote,
+      text: RD_MISS_REPLY_LINE,
+      at: Date.now(),
+      rev: 1,
+      deviceId: 'local',
+      replyTo: id
+    };
+    const next = arr.concat([item]);
+    try { await putAnnos(b.id, ch, next); } catch (e) { return; }
+    if (!rdBook || rdBook !== b) return;
+    b.anno = next;
+    const fresh = readIndex();
+    const fb = rdFindBook(b.id, fresh);
+    if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
+    rdPaintPage();
+    if (rdPopPos >= 0) rdOpenPop(rdPopPos, true);
+  }
+
   // 进度真值只存「章 + 章内字符偏移」，页码只是展示值：换字号/换屏幕后仍能落回同一句话。
   // 翻页时 300ms 防抖写入，离开阅读器时立即落盘，避免连翻时反复写索引。
   let rdSaveTimer = 0;
@@ -1174,6 +1277,8 @@
     saveIndex(list);
     // 我的进度越过某句封存纸条的句尾时，纸条展开成普通批注
     rdUnlockSealed(book).catch(function () {});
+    // 读到哪一页就扫哪一页：放满七天的旧句在这一页被划掉
+    rdCrossOldAnnos(book).catch(function () {});
   }
 
   // ===== 他在哪：两份独立的进度真值 =====
@@ -2465,12 +2570,20 @@
       }
     }
     let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
+    const nowTs = Date.now();
     html += show.map(function (a) {
       const mine = a.by === 'me';
+      // 错过七天：旧句被划掉，正文换成他现在写的那句
+      const old = !mine && a.crossedAt && a.oldText ? a.oldText : '';
+      const oldDays = old ? Math.max(RD_MISS_DAYS, Math.floor((nowTs - (a.oldAt || a.at || nowTs)) / 86400000)) : 0;
       return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
         (a.replyTo ? ' rd-pop-reply' : '') + '"' +
         ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
         '<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
+        (old
+          ? '<div class="rd-pop-cross">' + oldDays + ' 天前写下这句，后来划掉了</div>' +
+            '<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
+          : '') +
         '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div>' +
         (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
         '</div>';
@@ -3283,6 +3396,9 @@
     // 角标：点开这句旁边的批注
     const mk = el.closest('.rd-mark');
     if (mk) { e.preventDefault(); rdOpenPop(Number(mk.getAttribute('data-pos'))); return; }
+    // 浮层里那条被划掉的旧句：点一下他有概率接一句
+    const oldEl = el.closest('#rd-pop-list .rd-pop-old');
+    if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }
     // 浮层里「还有 N 条」展开
     if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
     // 选句浮条
