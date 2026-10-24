@@ -6570,6 +6570,19 @@ const FIX_SENTINELS = [
   { name: '#1548k 夜间留灯按他的状态亮（删＝深夜灯常亮，失去「他也在」的含义）', file: 'js/reading.js', needle: "const show = night && (st === 'read' || st === 'wait' || st === 'done');" },
   { name: '#1548l 23:30 后每夜一次留灯文案（删＝最晚的一句留在书页上的话消失）', file: 'js/reading.js', needle: "rdToast('灯我留着，明天再读也一样。');" },
   { name: '#1548m 切后台/关页收尾阅读会话（删＝后台时间被算进阅读时长）', file: 'js/reading.js', needle: "window.addEventListener('pagehide', function () { rdHabitEndSession(); });" },
+  // ==== 2026-10-24 #1549 陪伴感三条·细则定稿（双圈优先 / 按句判定 / 频控与静默）====
+  { name: '#1549a 双圈优先不显示数字（删＝同句两人批注又退回「2」，盖掉默契的含义）', file: 'js/reading.js', needle: 'mk.n > 1 && !both' },
+  { name: '#1549b 同一句按句子索引判定（删＝退回终点偏移相同，句中选词永远撞不上他的整句批注）', file: 'js/reading.js', needle: 'return bestOv >= (e - s) / 2 ? best : -1;' },
+  { name: '#1549c 双圈合并到句尾（删＝同句两个角标各画各的，没有「停在同一句」）', file: 'js/reading.js', needle: 'merged[sn.e] = g.list;' },
+  { name: '#1549d 折角书签每天最多两次（删＝每次打开都播，变成机械提示）', file: 'js/reading.js', needle: 'const RD_BOOKMARK_DAILY = 2;' },
+  { name: '#1549e 折角书签计数跨天按本地 0 点重置（删＝昨天的次数压着今天不播）', file: 'js/reading.js', needle: 'if (fb.bmDay !== day) { fb.bmDay = day; fb.bmCount = 0; }' },
+  { name: '#1549f 折角书签三条文案轮换（删＝永远只说同一句「在这儿等你」）', file: 'js/reading.js', needle: 'const RD_BOOKMARK_LINES = [' },
+  { name: '#1549g 折角书签夜间静默（删＝22:00–07:00 还在书里说话）', file: 'js/reading.js', needle: 'if (rdNightGuard()) return; // 夜间免打扰开着时不在书里说话' },
+  { name: '#1549h 折角书签 30 秒切后台暂停（删＝后台计时，回前台立刻弹话）', file: 'js/reading.js', needle: 'rdBmPauseWait();' },
+  { name: '#1549i 回前台同一页重新计满 30 秒（删＝后台停表后永远不再说话）', file: 'js/reading.js', needle: "if (rdBookmarkWaitPage && rdBook && rdBook.ch + ':' + rdBook.pageIdx === rdBookmarkWaitPage) rdBmScheduleWait();" },
+  { name: '#1549j 减少动态效果时折角书签不滑动（删＝开了系统减弱动效仍在滑）', file: 'js/reading.js', needle: 'if (rdBmReduced()) {' },
+  { name: '#1549k 浮层开着时他新写的纸条延后重绘（删＝正看的纸条被抽走）', file: 'js/reading.js', needle: 'if (pop && !pop.hidden) rdDeferPaint = true;' },
+  { name: '#1549l 关掉浮层后补双圈（删＝延后的重绘永远不发生，双圈要等下次翻页）', file: 'js/reading.js', needle: 'if (rdDeferPaint) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

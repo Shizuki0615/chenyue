@@ -401,6 +401,7 @@
   }
   function rdClose() {
     if (!page) return;
+    rdBmClearWait();
     rdWriteProgress();
     rdHabitEndSession();
     rdCloseBookMenu();
@@ -411,6 +412,7 @@
   }
   function rdShowShelf() {
     if (!page) return;
+    rdBmClearWait();
     rdWriteProgress();
     rdHabitEndSession();
     closeToc();
@@ -480,7 +482,7 @@
     };
     // 每次打开书重新给折角书签一次机会（只播一次，不随每次翻页重复）
     rdBookmarkPlayed = false;
-    clearTimeout(rdBookmarkWaitTimer);
+    rdBmClearWait();
     rdHabitStartSession();
     rdEnsureChapter('offset').then(function () {
       // 下次打开才处理待回应：他越过那句、且当前是「共读中」才会有下文
@@ -634,6 +636,8 @@
     if (!b || !b.pages.length) return;
     if (b.pageIdx < 0) b.pageIdx = 0;
     if (b.pageIdx > b.pages.length - 1) b.pageIdx = b.pages.length - 1;
+    // 折角书签的 30 秒只等在同一页；一翻页就清零，不在新页继续倒计时
+    if (rdBookmarkWaitPage && rdBookmarkWaitPage !== b.ch + ':' + b.pageIdx) rdBmClearWait();
     const body = document.getElementById('rd-body');
     const p = b.pages[b.pageIdx];
     rdPaintPage();
@@ -685,38 +689,89 @@
 
   // 折角书签：他领先我一章以上时，进度圆点先停在前面的位置，再慢慢滑回我这一页的
   // 边缘，停一下，然后回到他自己的位置——像把书签从后面挪回来夹好。纯展示，不改进度。
+  function rdBmReduced() {
+    try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+    catch (e) { return false; }
+  }
+  function rdBmPauseWait() {
+    if (rdBookmarkWaitTimer) { clearTimeout(rdBookmarkWaitTimer); rdBookmarkWaitTimer = 0; }
+  }
+  function rdBmClearWait() {
+    rdBmPauseWait();
+    rdBookmarkWaitPage = '';
+  }
+  function rdBookmarkTake(book) {
+    try {
+      const list = readIndex();
+      const fb = rdFindBook(book.id, list);
+      if (!fb) return false;
+      const day = rdTodayKey();
+      if (fb.bmDay !== day) { fb.bmDay = day; fb.bmCount = 0; }
+      if ((Number(fb.bmCount) || 0) >= RD_BOOKMARK_DAILY) return false;
+      fb.bmCount = (Number(fb.bmCount) || 0) + 1;
+      saveIndex(list);
+      return true;
+    } catch (e) { return true; }
+  }
+  function rdBmScheduleWait() {
+    rdBmPauseWait();
+    if (!rdBookmarkWaitPage) return;
+    rdBookmarkWaitTimer = setTimeout(function () {
+      rdBookmarkWaitTimer = 0;
+      const b = rdBook;
+      if (!b) return;
+      if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
+      const reader = document.getElementById('rd-reader');
+      if (!reader || reader.hidden) return;
+      const book = rdFindBook(b.id, readIndex());
+      if (!book) return;
+      rdBuddyAdvance(book);
+      if (rdBuddyState(book) !== 'wait') return;
+      if (rdNightGuard()) return; // 夜间免打扰开着时不在书里说话
+      const line = RD_BOOKMARK_LINES[rdBookmarkCopyIdx % RD_BOOKMARK_LINES.length];
+      rdBookmarkCopyIdx = (rdBookmarkCopyIdx + 1) % RD_BOOKMARK_LINES.length;
+      rdToast(line);
+    }, RD_BOOKMARK_WAIT_MS);
+  }
   function rdMaybeBookmarkReturn(book, b, bd, st) {
     if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
     if (!(bd.ch > b.ch)) return;
     const dot = document.getElementById('rd-buddy-dot');
     if (!dot || dot.hidden) return;
     rdBookmarkPlayed = true;
+    if (!rdBookmarkTake(book)) return; // 每天两次用完就不再播
     const page = b.pages[b.pageIdx] || { s: 0 };
     const minePct = rdPosPct(book, b.ch, page.s);
     const hisPct = rdPosPct(book, bd.ch, bd.off);
-    dot.style.transition = 'left .55s ease';
-    dot.classList.add('rd-buddy-return');
-    setTimeout(function () {
-      if (!rdBook || rdBook !== b) return;
+    const animKey = b.ch + ':' + b.pageIdx;
+    if (rdBmReduced()) {
+      // 减少动态效果：不滑动，圆点直接停在我这页边缘亮一下，再回到他的位置
+      dot.style.transition = 'none';
+      dot.classList.add('rd-buddy-return');
       dot.style.left = 'calc(' + minePct + '% + 6px)';
-    }, 900);
-    setTimeout(function () {
-      if (!rdBook || rdBook !== b) return;
-      dot.classList.remove('rd-buddy-return');
-      dot.style.left = hisPct + '%';
-      setTimeout(function () { if (dot) dot.style.transition = ''; }, 600);
-    }, 2100);
-    // 在原地停 30 秒没翻页，他才轻轻说一句；翻页了就不打扰
-    clearTimeout(rdBookmarkWaitTimer);
-    const pageKey = b.ch + ':' + b.pageIdx;
-    rdBookmarkWaitTimer = setTimeout(function () {
-      if (!rdBook || rdBook !== b) return;
-      const reader = document.getElementById('rd-reader');
-      if (!reader || reader.hidden) return;
-      if (b.ch + ':' + b.pageIdx !== pageKey) return;
-      if (rdBuddyState(book) !== 'wait') return;
-      rdToast('我先往前走了几步，在这儿等你。');
-    }, 30000);
+      setTimeout(function () {
+        if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
+        dot.classList.remove('rd-buddy-return');
+        dot.style.left = hisPct + '%';
+        setTimeout(function () { if (dot) dot.style.transition = ''; }, 60);
+      }, 1500);
+    } else {
+      dot.style.transition = 'left .55s ease';
+      dot.classList.add('rd-buddy-return');
+      setTimeout(function () {
+        if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
+        dot.style.left = 'calc(' + minePct + '% + 6px)';
+      }, 900);
+      setTimeout(function () {
+        if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
+        dot.classList.remove('rd-buddy-return');
+        dot.style.left = hisPct + '%';
+        setTimeout(function () { if (dot) dot.style.transition = ''; }, 600);
+      }, 2100);
+    }
+    // 停在同一页满 30 秒才说话；翻页清零，切后台暂停，回前台重新计满
+    rdBookmarkWaitPage = animKey;
+    rdBmScheduleWait();
   }
 
   // ===== 阅读习惯同步 =====
@@ -929,9 +984,19 @@
   // 提前出现在正文中，只有我翻到那一页才浮现（见 rdBuddyAnnoVisible）。
   const RD_CHARS_PER_MIN = 420;
   const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
-  // 折角书签：每次打开书最多播一次的展示状态，不影响任何进度真值
+  // 折角书签：每次打开书最多播一次的展示状态，不影响任何进度真值。
+  // 每天最多两次，跨天按本地 0 点重置；计数随书架索引进备份。
+  const RD_BOOKMARK_DAILY = 2;
+  const RD_BOOKMARK_WAIT_MS = 30000;
+  const RD_BOOKMARK_LINES = [
+    '我先往前走了几步，在这儿等你。',
+    '书签给你夹回去了。',
+    '别急，我在前面慢慢走。'
+  ];
   let rdBookmarkPlayed = false;
   let rdBookmarkWaitTimer = 0;
+  let rdBookmarkWaitPage = '';
+  let rdBookmarkCopyIdx = 0;
 
   function rdTodayKey(ts) {
     const d = new Date(ts || Date.now());
@@ -1061,6 +1126,61 @@
     if (!a) return false;
     if (a.by === 'me') return true;
     return a.e > pageStart && a.e <= pageEnd;
+  }
+  // 批注归属哪一句：取与批注区间重叠最多的一句；重叠不到批注长度的一半，视为跨句失配。
+  // 他的批注锚在整句上，我的批注可能只是句中的半句，所以用「批注自身长度」作分母。
+  function rdAnnoSentIdx(sents, a) {
+    if (!a || !sents || !sents.length) return -1;
+    const s = Math.max(0, Number(a.s) || 0);
+    const e = Math.max(s + 1, Number(a.e) || (s + 1));
+    let best = -1;
+    let bestOv = 0;
+    for (let i = 0; i < sents.length; i++) {
+      const sn = sents[i];
+      if (!sn || sn.e <= s) continue;
+      if (sn.s >= e) break;
+      const ov = Math.min(e, sn.e) - Math.max(s, sn.s);
+      if (ov > bestOv) { bestOv = ov; best = i; }
+    }
+    if (best < 0) return -1;
+    return bestOv >= (e - s) / 2 ? best : -1;
+  }
+  // 同一句里两人都留过批注的组：绘制时合并成一个句尾双圈；其余批注仍各占自己的结尾偏移。
+  function rdAnnoGroups(sents, annos) {
+    const map = {};
+    (annos || []).forEach(function (a) {
+      if (!a) return;
+      const idx = rdAnnoSentIdx(sents, a);
+      if (idx < 0) return;
+      const g = map[idx] || (map[idx] = { idx: idx, mine: false, his: false, list: [] });
+      g.list.push(a);
+      if (a.by === 'me') g.mine = true;
+      else g.his = true;
+    });
+    return map;
+  }
+  // 点角标时该位置要展示的批注：双圈组按整句取，其余按结尾偏移取。
+  function rdAnnosAtPos(b, pos) {
+    const out = [];
+    const seen = new Set();
+    const sents = (b && b.sents) || [];
+    const groups = rdAnnoGroups(sents, (b && b.anno) || []);
+    Object.keys(groups).forEach(function (k) {
+      const g = groups[k];
+      const sn = sents[g.idx];
+      if (!sn || !(g.mine && g.his) || sn.e !== pos) return;
+      g.list.forEach(function (a) {
+        if (!a || seen.has(a)) return;
+        seen.add(a);
+        out.push(a);
+      });
+    });
+    ((b && b.anno) || []).forEach(function (a) {
+      if (!a || a.e !== pos || seen.has(a)) return;
+      seen.add(a);
+      out.push(a);
+    });
+    return out.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
   }
 
   // ===== 读过的痕迹（淡痕 + 同句双圈）=====
@@ -1464,7 +1584,12 @@
       fb.buddyTexts = used.slice(-200);
       saveIndex(fresh);
     }
-    if (cur) rdPaintPage(); // 落在当前页才会被闸门放出来
+    if (cur) {
+      // 浮层正开着时不重绘，避免把正在看的纸条打断；记下来，等浮层关掉再补
+      const pop = document.getElementById('rd-anno-pop');
+      if (pop && !pop.hidden) rdDeferPaint = true;
+      else rdPaintPage(); // 落在当前页才会被闸门放出来
+    }
   }
 
   // 下次打开这本书时才处理待回应：他的位置越过那句 + 状态是「共读中」才掷骰子
@@ -1550,6 +1675,8 @@
   let rdSuppressTap = false;
   // 批注浮层当前定位（展开后仍要按这个落点重开）、自己批注的操作菜单
   let rdPopPos = -1;
+  // 他新写的纸条落在当前页、但浮层正开着时，先记下，等浮层关掉再重绘补双圈
+  let rdDeferPaint = false;
   let rdOpsId = '';
   let rdOpsAt = 0;
 
@@ -1581,9 +1708,9 @@
       const book = rdFindBook(b.id, idx);
       if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
     }
+    const sents = b.sents || [];
     const traces = {};
     if (hisOff > start) {
-      const sents = b.sents || [];
       const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
       for (let si = from; si < sents.length; si++) {
         const sn = sents[si];
@@ -1592,14 +1719,34 @@
         if (sn.e <= hisOff) traces[sn.e] = true;
       }
     }
+    // 同一句里两人都留过批注：合并成一个句尾双圈，双圈优先、不再显示数字。
+    // 他若还在未读区间，这个合并不成立，先按单圈显示，等我读到再补。
+    const groups = rdAnnoGroups(sents, b.anno || []);
+    const consumed = new Set();
+    const merged = {};
+    Object.keys(groups).forEach(function (k) {
+      const g = groups[k];
+      if (!(g.mine && g.his)) return;
+      const sn = sents[g.idx];
+      if (!sn || !(sn.e > start && sn.e <= end)) return;
+      merged[sn.e] = g.list;
+      g.list.forEach(function (a) { consumed.add(a); });
+    });
     const marks = {};
     (b.anno || []).forEach(function (a) {
+      if (consumed.has(a)) return;
       // 他的批注走「我读到才浮现」的闸门；我的批注照常显示
       if (!rdBuddyAnnoVisible(a, start, end)) return;
       const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false, his: false });
       m.n++;
       if (a.by === 'me') m.mine = true;
       else if (traceOn) m.his = true;
+    });
+    Object.keys(merged).forEach(function (k) {
+      const m = marks[k] || (marks[k] = { n: 0, mine: false, his: false });
+      m.n += merged[k].length;
+      m.mine = true;
+      m.his = true;
     });
     // 批注所在句已经有更明确的记号，不再叠淡痕，避免同一处挤两个标记
     Object.keys(traces).forEach(function (k) { if (marks[k]) delete traces[k]; });
@@ -1628,8 +1775,9 @@
       if (mk) {
         const both = traceOn && mk.mine && mk.his;
         const cls = 'rd-mark' + (both ? ' rd-mark-both' : (mk.mine ? '' : ' rd-mark-his'));
+        // 双圈优先：两人同句时不显示数字，条数进浮层里看；只有单人多条才显示数字
         html += '<span class="' + cls + '" data-pos="' + m + '" role="button">' +
-          (mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
+          (mk.n > 1 && !both ? '<b>' + mk.n + '</b>' : '') + '</span>';
       }
       i = m;
     }
@@ -1828,6 +1976,12 @@
   function rdClosePop() {
     const el = document.getElementById('rd-anno-pop');
     if (el) el.hidden = true;
+    // 他新写的纸条落在当前页、刚才因为浮层开着没重绘：关掉浮层后补上双圈
+    if (rdDeferPaint) {
+      rdDeferPaint = false;
+      const reader = document.getElementById('rd-reader');
+      if (reader && !reader.hidden) rdPaintPage();
+    }
   }
 
   // 预览：原句 + 批注全文，必须经过这一步，不做点了就发
@@ -1895,8 +2049,7 @@
     const list = document.getElementById('rd-pop-list');
     const pop = document.getElementById('rd-anno-pop');
     if (!b || !list || !pop) return;
-    const items = (b.anno || []).filter(function (a) { return a && a.e === pos; })
-      .sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
+    const items = rdAnnosAtPos(b, pos);
     if (!items.length) { pop.hidden = true; return; }
     rdClearSel(true);
     rdCloseAnnoOps();
@@ -2119,10 +2272,18 @@
   document.addEventListener('pointercancel', function () { rdTouch = null; }, true);
 
   // 阅读习惯：切后台/关页时把这一段收尾；回前台仍在阅读器里就重新开一段
+  // 折角书签的 30 秒也在这里暂停：切后台停表，回前台同一页重新计满
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { rdHabitEndSession(); return; }
+    if (document.hidden) {
+      rdBmPauseWait();
+      rdHabitEndSession();
+      return;
+    }
     const reader = document.getElementById('rd-reader');
-    if (reader && !reader.hidden) rdHabitStartSession();
+    if (reader && !reader.hidden) {
+      rdHabitStartSession();
+      if (rdBookmarkWaitPage && rdBook && rdBook.ch + ':' + rdBook.pageIdx === rdBookmarkWaitPage) rdBmScheduleWait();
+    }
   });
   window.addEventListener('pagehide', function () { rdHabitEndSession(); });
 

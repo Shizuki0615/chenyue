@@ -360,6 +360,7 @@ page.classList.add('full');
 }
 function rdClose() {
 if (!page) return;
+rdBmClearWait();
 rdWriteProgress();
 rdHabitEndSession();
 rdCloseBookMenu();
@@ -370,6 +371,7 @@ if (home) home.hidden = false;
 }
 function rdShowShelf() {
 if (!page) return;
+rdBmClearWait();
 rdWriteProgress();
 rdHabitEndSession();
 closeToc();
@@ -434,7 +436,7 @@ cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
 lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 };
 rdBookmarkPlayed = false;
-clearTimeout(rdBookmarkWaitTimer);
+rdBmClearWait();
 rdHabitStartSession();
 rdEnsureChapter('offset').then(function () {
 rdBuddyProcessReplies();
@@ -572,6 +574,7 @@ const b = rdBook;
 if (!b || !b.pages.length) return;
 if (b.pageIdx < 0) b.pageIdx = 0;
 if (b.pageIdx > b.pages.length - 1) b.pageIdx = b.pages.length - 1;
+if (rdBookmarkWaitPage && rdBookmarkWaitPage !== b.ch + ':' + b.pageIdx) rdBmClearWait();
 const body = document.getElementById('rd-body');
 const p = b.pages[b.pageIdx];
 rdPaintPage();
@@ -617,37 +620,87 @@ line.classList.toggle('rd-buddy-same-text', same);
 rdSyncLamp(book, st);
 rdMaybeBookmarkReturn(book, b, bd, st);
 }
+function rdBmReduced() {
+try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+catch (e) { return false; }
+}
+function rdBmPauseWait() {
+if (rdBookmarkWaitTimer) { clearTimeout(rdBookmarkWaitTimer); rdBookmarkWaitTimer = 0; }
+}
+function rdBmClearWait() {
+rdBmPauseWait();
+rdBookmarkWaitPage = '';
+}
+function rdBookmarkTake(book) {
+try {
+const list = readIndex();
+const fb = rdFindBook(book.id, list);
+if (!fb) return false;
+const day = rdTodayKey();
+if (fb.bmDay !== day) { fb.bmDay = day; fb.bmCount = 0; }
+if ((Number(fb.bmCount) || 0) >= RD_BOOKMARK_DAILY) return false;
+fb.bmCount = (Number(fb.bmCount) || 0) + 1;
+saveIndex(list);
+return true;
+} catch (e) { return true; }
+}
+function rdBmScheduleWait() {
+rdBmPauseWait();
+if (!rdBookmarkWaitPage) return;
+rdBookmarkWaitTimer = setTimeout(function () {
+rdBookmarkWaitTimer = 0;
+const b = rdBook;
+if (!b) return;
+if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
+const reader = document.getElementById('rd-reader');
+if (!reader || reader.hidden) return;
+const book = rdFindBook(b.id, readIndex());
+if (!book) return;
+rdBuddyAdvance(book);
+if (rdBuddyState(book) !== 'wait') return;
+if (rdNightGuard()) return; // 夜间免打扰开着时不在书里说话
+const line = RD_BOOKMARK_LINES[rdBookmarkCopyIdx % RD_BOOKMARK_LINES.length];
+rdBookmarkCopyIdx = (rdBookmarkCopyIdx + 1) % RD_BOOKMARK_LINES.length;
+rdToast(line);
+}, RD_BOOKMARK_WAIT_MS);
+}
 function rdMaybeBookmarkReturn(book, b, bd, st) {
 if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
 if (!(bd.ch > b.ch)) return;
 const dot = document.getElementById('rd-buddy-dot');
 if (!dot || dot.hidden) return;
 rdBookmarkPlayed = true;
+if (!rdBookmarkTake(book)) return; // 每天两次用完就不再播
 const page = b.pages[b.pageIdx] || { s: 0 };
 const minePct = rdPosPct(book, b.ch, page.s);
 const hisPct = rdPosPct(book, bd.ch, bd.off);
+const animKey = b.ch + ':' + b.pageIdx;
+if (rdBmReduced()) {
+dot.style.transition = 'none';
+dot.classList.add('rd-buddy-return');
+dot.style.left = 'calc(' + minePct + '% + 6px)';
+setTimeout(function () {
+if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
+dot.classList.remove('rd-buddy-return');
+dot.style.left = hisPct + '%';
+setTimeout(function () { if (dot) dot.style.transition = ''; }, 60);
+}, 1500);
+} else {
 dot.style.transition = 'left .55s ease';
 dot.classList.add('rd-buddy-return');
 setTimeout(function () {
-if (!rdBook || rdBook !== b) return;
+if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
 dot.style.left = 'calc(' + minePct + '% + 6px)';
 }, 900);
 setTimeout(function () {
-if (!rdBook || rdBook !== b) return;
+if (!rdBook || rdBook !== b || b.ch + ':' + b.pageIdx !== animKey) return;
 dot.classList.remove('rd-buddy-return');
 dot.style.left = hisPct + '%';
 setTimeout(function () { if (dot) dot.style.transition = ''; }, 600);
 }, 2100);
-clearTimeout(rdBookmarkWaitTimer);
-const pageKey = b.ch + ':' + b.pageIdx;
-rdBookmarkWaitTimer = setTimeout(function () {
-if (!rdBook || rdBook !== b) return;
-const reader = document.getElementById('rd-reader');
-if (!reader || reader.hidden) return;
-if (b.ch + ':' + b.pageIdx !== pageKey) return;
-if (rdBuddyState(book) !== 'wait') return;
-rdToast('我先往前走了几步，在这儿等你。');
-}, 30000);
+}
+rdBookmarkWaitPage = animKey;
+rdBmScheduleWait();
 }
 let rdHabitSession = null;
 function rdDayTs(key) {
@@ -837,8 +890,17 @@ saveIndex(list);
 }
 const RD_CHARS_PER_MIN = 420;
 const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
+const RD_BOOKMARK_DAILY = 2;
+const RD_BOOKMARK_WAIT_MS = 30000;
+const RD_BOOKMARK_LINES = [
+'我先往前走了几步，在这儿等你。',
+'书签给你夹回去了。',
+'别急，我在前面慢慢走。'
+];
 let rdBookmarkPlayed = false;
 let rdBookmarkWaitTimer = 0;
+let rdBookmarkWaitPage = '';
+let rdBookmarkCopyIdx = 0;
 function rdTodayKey(ts) {
 const d = new Date(ts || Date.now());
 return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
@@ -959,6 +1021,57 @@ function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
 if (!a) return false;
 if (a.by === 'me') return true;
 return a.e > pageStart && a.e <= pageEnd;
+}
+function rdAnnoSentIdx(sents, a) {
+if (!a || !sents || !sents.length) return -1;
+const s = Math.max(0, Number(a.s) || 0);
+const e = Math.max(s + 1, Number(a.e) || (s + 1));
+let best = -1;
+let bestOv = 0;
+for (let i = 0; i < sents.length; i++) {
+const sn = sents[i];
+if (!sn || sn.e <= s) continue;
+if (sn.s >= e) break;
+const ov = Math.min(e, sn.e) - Math.max(s, sn.s);
+if (ov > bestOv) { bestOv = ov; best = i; }
+}
+if (best < 0) return -1;
+return bestOv >= (e - s) / 2 ? best : -1;
+}
+function rdAnnoGroups(sents, annos) {
+const map = {};
+(annos || []).forEach(function (a) {
+if (!a) return;
+const idx = rdAnnoSentIdx(sents, a);
+if (idx < 0) return;
+const g = map[idx] || (map[idx] = { idx: idx, mine: false, his: false, list: [] });
+g.list.push(a);
+if (a.by === 'me') g.mine = true;
+else g.his = true;
+});
+return map;
+}
+function rdAnnosAtPos(b, pos) {
+const out = [];
+const seen = new Set();
+const sents = (b && b.sents) || [];
+const groups = rdAnnoGroups(sents, (b && b.anno) || []);
+Object.keys(groups).forEach(function (k) {
+const g = groups[k];
+const sn = sents[g.idx];
+if (!sn || !(g.mine && g.his) || sn.e !== pos) return;
+g.list.forEach(function (a) {
+if (!a || seen.has(a)) return;
+seen.add(a);
+out.push(a);
+});
+});
+((b && b.anno) || []).forEach(function (a) {
+if (!a || a.e !== pos || seen.has(a)) return;
+seen.add(a);
+out.push(a);
+});
+return out.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
 }
 function rdTraceEnabled() {
 if (rdDcfRatio() <= 0) return false;
@@ -1319,7 +1432,11 @@ used.push(rdCardKey(item.text));
 fb.buddyTexts = used.slice(-200);
 saveIndex(fresh);
 }
-if (cur) rdPaintPage(); // 落在当前页才会被闸门放出来
+if (cur) {
+const pop = document.getElementById('rd-anno-pop');
+if (pop && !pop.hidden) rdDeferPaint = true;
+else rdPaintPage(); // 落在当前页才会被闸门放出来
+}
 }
 async function rdBuddyProcessReplies(force) {
 const b = rdBook;
@@ -1399,6 +1516,7 @@ let rdDraft = null;
 let rdAnnoPool = [];
 let rdSuppressTap = false;
 let rdPopPos = -1;
+let rdDeferPaint = false;
 let rdOpsId = '';
 let rdOpsAt = 0;
 function rdDeviceId() {
@@ -1424,9 +1542,9 @@ const idx = readIndex();
 const book = rdFindBook(b.id, idx);
 if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
 }
+const sents = b.sents || [];
 const traces = {};
 if (hisOff > start) {
-const sents = b.sents || [];
 const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
 for (let si = from; si < sents.length; si++) {
 const sn = sents[si];
@@ -1435,13 +1553,31 @@ if (sn.e > end) break;
 if (sn.e <= hisOff) traces[sn.e] = true;
 }
 }
+const groups = rdAnnoGroups(sents, b.anno || []);
+const consumed = new Set();
+const merged = {};
+Object.keys(groups).forEach(function (k) {
+const g = groups[k];
+if (!(g.mine && g.his)) return;
+const sn = sents[g.idx];
+if (!sn || !(sn.e > start && sn.e <= end)) return;
+merged[sn.e] = g.list;
+g.list.forEach(function (a) { consumed.add(a); });
+});
 const marks = {};
 (b.anno || []).forEach(function (a) {
+if (consumed.has(a)) return;
 if (!rdBuddyAnnoVisible(a, start, end)) return;
 const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false, his: false });
 m.n++;
 if (a.by === 'me') m.mine = true;
 else if (traceOn) m.his = true;
+});
+Object.keys(merged).forEach(function (k) {
+const m = marks[k] || (marks[k] = { n: 0, mine: false, his: false });
+m.n += merged[k].length;
+m.mine = true;
+m.his = true;
 });
 Object.keys(traces).forEach(function (k) { if (marks[k]) delete traces[k]; });
 const cutMap = {};
@@ -1470,7 +1606,7 @@ if (mk) {
 const both = traceOn && mk.mine && mk.his;
 const cls = 'rd-mark' + (both ? ' rd-mark-both' : (mk.mine ? '' : ' rd-mark-his'));
 html += '<span class="' + cls + '" data-pos="' + m + '" role="button">' +
-(mk.n > 1 ? '<b>' + mk.n + '</b>' : '') + '</span>';
+(mk.n > 1 && !both ? '<b>' + mk.n + '</b>' : '') + '</span>';
 }
 i = m;
 }
@@ -1654,6 +1790,11 @@ if (el) el.hidden = true;
 function rdClosePop() {
 const el = document.getElementById('rd-anno-pop');
 if (el) el.hidden = true;
+if (rdDeferPaint) {
+rdDeferPaint = false;
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) rdPaintPage();
+}
 }
 function rdOpenPreview(text, cardId) {
 if (!rdSel) return;
@@ -1714,8 +1855,7 @@ const b = rdBook;
 const list = document.getElementById('rd-pop-list');
 const pop = document.getElementById('rd-anno-pop');
 if (!b || !list || !pop) return;
-const items = (b.anno || []).filter(function (a) { return a && a.e === pos; })
-.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
+const items = rdAnnosAtPos(b, pos);
 if (!items.length) { pop.hidden = true; return; }
 rdClearSel(true);
 rdCloseAnnoOps();
@@ -1921,9 +2061,16 @@ else if (rel > 0.68) rdTurn(1);
 }, true);
 document.addEventListener('pointercancel', function () { rdTouch = null; }, true);
 document.addEventListener('visibilitychange', function () {
-if (document.hidden) { rdHabitEndSession(); return; }
+if (document.hidden) {
+rdBmPauseWait();
+rdHabitEndSession();
+return;
+}
 const reader = document.getElementById('rd-reader');
-if (reader && !reader.hidden) rdHabitStartSession();
+if (reader && !reader.hidden) {
+rdHabitStartSession();
+if (rdBookmarkWaitPage && rdBook && rdBook.ch + ':' + rdBook.pageIdx === rdBookmarkWaitPage) rdBmScheduleWait();
+}
 });
 window.addEventListener('pagehide', function () { rdHabitEndSession(); });
 let rdSelTimer = 0, rdSelX = 0, rdSelY = 0;
