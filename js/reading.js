@@ -6,6 +6,10 @@ const store = window.xyStore(G);
 const RD_INDEX_KEY = 'reading-books';
 const RD_PREFS_KEY = 'reading-prefs';
 const RD_BG_KEY = 'reading-bg';
+const RD_COOP_KEY = 'reading-coop';
+const RD_LAMP_KEY = 'reading-lamp';
+const RD_BOOKMARK_KEY = 'reading-bookmark';
+const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_BODY_P = 'xy-home-v2:reading-body:';
@@ -396,6 +400,29 @@ settingsPage.innerHTML =
 '</div>' +
 '</div>' +
 '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+'<div class="gs-title">共读</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-row rd-set-toggle">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
+'</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
+'</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
+'</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
+'</div>' +
+'</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(settingsPage);
@@ -403,6 +430,14 @@ const fsRange = settingsPage.querySelector('#rd-set-fs-range');
 if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
 const lhRange = settingsPage.querySelector('#rd-set-lh-range');
 if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+const coopToggle = settingsPage.querySelector('#rd-coop-toggle');
+if (coopToggle) coopToggle.addEventListener('change', function () { rdSetCoop(this.checked); });
+const lampToggle = settingsPage.querySelector('#rd-lamp-toggle');
+if (lampToggle) lampToggle.addEventListener('change', function () { rdSetLamp(this.checked); });
+const bmToggle = settingsPage.querySelector('#rd-bookmark-toggle');
+if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
+const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
+if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
 rdRenderPrefsActive();
 return settingsPage;
 }
@@ -809,6 +844,18 @@ const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
 const myPct = rdPosPct(book, b.ch, p.s);
 fill.style.width = myPct + '%';
 rdBuddyAdvance(book);
+if (!rdCoopOn()) {
+const dot = document.getElementById('rd-buddy-dot');
+if (dot) dot.hidden = true;
+const line = document.getElementById('rd-buddy');
+if (line) {
+line.textContent = '';
+line.classList.remove('rd-buddy-same-text', 'rd-tog', 'rd-pace');
+}
+const lamp = document.getElementById('rd-lamp');
+if (lamp) lamp.hidden = true;
+return;
+}
 const st = rdBuddyState(book);
 const bd = rdBuddyGet(book);
 const dot = document.getElementById('rd-buddy-dot');
@@ -848,6 +895,7 @@ rdBmPauseWait();
 rdBookmarkWaitPage = '';
 }
 function rdBookmarkTake(book) {
+if (!rdBookmarkOn()) return false;
 try {
 const list = readIndex();
 const fb = rdFindBook(book.id, list);
@@ -862,9 +910,13 @@ return true;
 }
 function rdBmScheduleWait() {
 rdBmPauseWait();
+if (!rdCoopOn()) { rdBookmarkWaitPage = ''; return; }
+if (!rdBookmarkOn()) { rdBookmarkWaitPage = ''; return; }
 if (!rdBookmarkWaitPage) return;
 rdBookmarkWaitTimer = setTimeout(function () {
 rdBookmarkWaitTimer = 0;
+if (!rdCoopOn()) return;
+if (!rdBookmarkOn()) return;
 const b = rdBook;
 if (!b) return;
 if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
@@ -881,7 +933,7 @@ rdToast(line);
 }, RD_BOOKMARK_WAIT_MS);
 }
 function rdMaybeBookmarkReturn(book, b, bd, st) {
-if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+if (!rdCoopOn() || !rdBookmarkOn() || rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
 if (!(bd.ch > b.ch)) return;
 const dot = document.getElementById('rd-buddy-dot');
 if (!dot || dot.hidden) return;
@@ -946,6 +998,7 @@ store.set(RD_HABIT_KEY, JSON.stringify(h));
 function rdHabitAdd(side, sec, pages, hour, at) {
 const secs = Math.round(Number(sec) || 0);
 if (secs <= 0) return;
+if (side === 'him' && !rdHabitSyncOn()) return;
 const h = rdHabitLoad();
 const when = Number(at) || Date.now();
 const day = rdTodayKey(when);
@@ -988,6 +1041,7 @@ const book = rdFindBook(b.id, list);
 if (!book) return;
 const bd = rdBuddyGet(book);
 if (!bd || !bd.started || bd.mode !== 'follow') return;
+if (!rdCoopOn()) return;
 if (rdBuddyState(book) !== 'read') return;
 rdBuddyAdvance(book);
 rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
@@ -1034,6 +1088,7 @@ return h + ' 点';
 }
 function rdHabitObs(book) {
 if (!book) return '';
+if (!rdHabitSyncOn()) return '';
 const st = rdBuddyState(book);
 if (st === 'none' || st === 'skip') return '';
 const h = rdHabitLoad();
@@ -1062,6 +1117,8 @@ return '';
 function rdSyncLamp(book, st) {
 const lamp = document.getElementById('rd-lamp');
 if (!lamp) return;
+if (!rdCoopOn()) { lamp.hidden = true; return; }
+if (!rdLampOn()) { lamp.hidden = true; return; }
 const now = new Date();
 const hr = now.getHours();
 const night = hr >= 22 || hr < 7;
@@ -1073,7 +1130,7 @@ if (him) him.classList.add('on');
 if ((hr === 23 && now.getMinutes() >= 30) || hr < 7) rdHabitLateNote(book);
 }
 function rdHabitLateNote(book) {
-if (!book) return;
+if (!rdLampOn() || !book) return;
 const day = rdTodayKey();
 if (book.lateNoteDay === day) return;
 book.lateNoteDay = day;
@@ -1092,7 +1149,7 @@ let rdTogNoteLogged = false;
 let rdTogTimer = 0;
 function rdTogetherOn(book) {
 const s = rdHabitSession;
-if (!s || !book) return false;
+if (!rdCoopOn() || !s || !book) return false;
 if (Date.now() - s.start < RD_TOG_MIN_MS) return false;
 return rdBuddyState(book) === 'read';
 }
@@ -1100,6 +1157,7 @@ function rdTogCount(book) {
 return Math.max(0, Number(book && book.togCount) || 0);
 }
 function rdTogSpine(book) {
+if (!rdCoopOn()) return 0;
 return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));
 }
 function rdTogTick(book) {
@@ -1110,6 +1168,7 @@ book.togCount = rdTogCount(book) + 1;
 }
 function rdTogWatchStart() {
 rdTogWatchStop();
+if (!rdCoopOn()) return;
 rdTogTimer = setInterval(function () {
 if (!rdBook) { rdTogWatchStop(); return; }
 rdUpdateBar();
@@ -1119,7 +1178,7 @@ function rdTogWatchStop() {
 if (rdTogTimer) { clearInterval(rdTogTimer); rdTogTimer = 0; }
 }
 function rdTogChapterNote(b) {
-if (!b || rdTogNoteLogged) return;
+if (!rdCoopOn() || !b || rdTogNoteLogged) return;
 const s = rdHabitSession;
 if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;
 if (rdNightGuard()) return;
@@ -1224,7 +1283,7 @@ rdPaceMarkFast(b);
 }
 }
 function rdPaceNote(book, b) {
-if (!book || !b || !b.pages.length) return '';
+if (!rdCoopOn() || !book || !b || !b.pages.length) return '';
 if (b.pageIdx !== b.pages.length - 1) return '';
 const pace = book.pace;
 if (!pace || pace.ch !== b.ch) return '';
@@ -1237,6 +1296,7 @@ const RD_MISS_REPLY_CHANCE = 0.6;
 const RD_MISS_REPLY_LINE = '你看到这个了？';
 let rdCrossKey = '';
 async function rdCrossOldAnnos(book) {
+if (!rdCoopOn()) return;
 const b = rdBook;
 if (!b || !book || !b.pages.length) return;
 if (rdNightGuard()) return;
@@ -1285,6 +1345,7 @@ if (pop && !pop.hidden) rdDeferPaint = true;
 else rdPaintPage();
 }
 async function rdMissReply(id) {
+if (!rdCoopOn()) return;
 const b = rdBook;
 if (!b || !id) return;
 const list = readIndex();
@@ -1411,6 +1472,7 @@ function rdBuddyAdvance(book) {
 const bd = rdBuddyGet(book);
 if (!bd) return null;
 const now = Date.now();
+if (!rdCoopOn()) { bd.updatedAt = now; return bd; }
 if (bd.mode === 'skip') {
 if (bd.skipDay === rdTodayKey(now)) { bd.updatedAt = now; return bd; }
 bd.mode = bd.prevMode === 'solo' ? 'solo' : 'follow';
@@ -1480,8 +1542,9 @@ return pool[Math.abs(h) % pool.length];
 }
 function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
 if (!a) return false;
-if (a.sealed) return false;
 if (a.by === 'me') return true;
+if (!rdCoopOn()) return false;
+if (a.sealed) return false;
 return a.e > pageStart && a.e <= pageEnd;
 }
 function rdAnnoSentIdx(sents, a) {
@@ -1517,7 +1580,9 @@ function rdAnnosAtPos(b, pos) {
 const out = [];
 const seen = new Set();
 const sents = (b && b.sents) || [];
-const groups = rdAnnoGroups(sents, (b && b.anno) || []);
+const all = (b && b.anno) || [];
+const annos = rdCoopOn() ? all : all.filter(function (a) { return a && a.by === 'me'; });
+const groups = rdAnnoGroups(sents, annos);
 Object.keys(groups).forEach(function (k) {
 const g = groups[k];
 const sn = sents[g.idx];
@@ -1528,7 +1593,7 @@ seen.add(a);
 out.push(a);
 });
 });
-((b && b.anno) || []).forEach(function (a) {
+annos.forEach(function (a) {
 if (!a || a.e !== pos || seen.has(a)) return;
 seen.add(a);
 out.push(a);
@@ -1536,6 +1601,7 @@ out.push(a);
 return out.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
 }
 function rdTraceEnabled() {
+if (!rdCoopOn()) return false;
 if (rdDcfRatio() <= 0) return false;
 const pool = rdLibPool('anno');
 return pool === null ? true : pool.length > 0;
@@ -1562,6 +1628,7 @@ const pages = rdPaginateText(b, bd.ch, text);
 return '第 ' + (rdPageForOffset(pages, bd.off) + 1) + ' 页';
 }
 async function rdOpenBuddyCard() {
+if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
 const b = rdBook;
 if (!b) return;
 const list = readIndex();
@@ -1615,6 +1682,7 @@ if (!rdBook || rdBook !== b) return;
 if (card) card.hidden = false;
 }
 function rdBuddySetMode(mode) {
+if (!rdCoopOn()) return;
 const b = rdBook;
 if (!b) return;
 const list = readIndex();
@@ -1640,6 +1708,7 @@ rdRenderShelf();
 }
 }
 function rdJumpToBuddy() {
+if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
 const b = rdBook;
 if (!b) return;
 const list = readIndex();
@@ -1812,9 +1881,11 @@ let rdHisTryKey = '';
 let rdHisTimer = 0;
 function rdScheduleHisAnno() {
 clearTimeout(rdHisTimer);
+if (!rdCoopOn()) return;
 rdHisTimer = setTimeout(rdMaybeHisAnno, 850);
 }
 async function rdMaybeHisAnno(force) {
+if (!rdCoopOn()) return;
 const b = rdBook;
 if (!b || !b.pages.length) return;
 if (rdNightGuard()) return;
@@ -1965,7 +2036,7 @@ return top[Math.floor(Math.random() * top.length)];
 return null;
 }
 async function rdMaybeSeal(book) {
-if (rdSealBusy || rdUnlockBusy || !book) return;
+if (!rdCoopOn() || rdSealBusy || rdUnlockBusy || !book) return;
 if (rdNightGuard()) return;
 const bd = rdBuddyGet(book);
 if (!bd || !bd.started || bd.mode !== 'solo') return;
@@ -2025,7 +2096,7 @@ if (fb.sealed.length !== before) saveIndex(list);
 } catch (e) {}
 }
 async function rdUnlockSealed(book) {
-if (rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
+if (!rdCoopOn() || rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
 const myCh = Number(book.progress && book.progress.ch) || 0;
 const myOff = Number(book.progress && book.progress.off) || 0;
 const pending = book.sealed.filter(function (s) {
@@ -2071,6 +2142,7 @@ if (next.length !== annos.length) await putAnnos(bookId, s.ch, next);
 } catch (e) {}
 }
 async function rdBuddyProcessReplies(force) {
+if (!rdCoopOn()) return;
 const b = rdBook;
 if (!b) return;
 if (rdNightGuard()) return;
@@ -2185,7 +2257,9 @@ if (sn.e > end) break;
 if (sn.e <= hisOff) traces[sn.e] = true;
 }
 }
-const groups = rdAnnoGroups(sents, b.anno || []);
+const allAnnos = b.anno || [];
+const annos = rdCoopOn() ? allAnnos : allAnnos.filter(function (a) { return a && a.by === 'me'; });
+const groups = rdAnnoGroups(sents, annos);
 const consumed = new Set();
 const merged = {};
 Object.keys(groups).forEach(function (k) {
@@ -2197,7 +2271,7 @@ merged[sn.e] = g.list;
 g.list.forEach(function (a) { consumed.add(a); });
 });
 const marks = {};
-(b.anno || []).forEach(function (a) {
+annos.forEach(function (a) {
 if (consumed.has(a)) return;
 if (!rdBuddyAnnoVisible(a, start, end)) return;
 const m = marks[a.e] || (marks[a.e] = { n: 0, mine: false, his: false });
@@ -2787,6 +2861,63 @@ try { store.set(RD_BG_KEY, mode); }
 catch (e) {}
 rdRenderPrefsActive();
 }
+function rdCoopOn() {
+try { return store.get(RD_COOP_KEY) !== 'off'; }
+catch (e) { return true; }
+}
+function rdSetCoop(on) {
+try { store.set(RD_COOP_KEY, on ? 'on' : 'off'); }
+catch (e) {}
+if (on) {
+const list = readIndex();
+const now = Date.now();
+for (let i = 0; i < list.length; i++) {
+const bd = rdBuddyGet(list[i]);
+if (bd) bd.updatedAt = now;
+}
+saveIndex(list);
+} else {
+rdTogWatchStop();
+rdBmClearWait();
+rdCloseBuddyCard();
+rdClosePop();
+}
+rdRenderPrefsActive();
+if (rdBook) {
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) {
+rdRenderPage();
+rdUpdateBar();
+}
+}
+rdRenderShelf();
+if (on) rdTogWatchStart();
+rdToast(on ? '共读已打开' : '共读已关闭');
+}
+function rdFlagOn(key) {
+try { return store.get(key) !== 'off'; }
+catch (e) { return true; }
+}
+function rdLampOn() { return rdFlagOn(RD_LAMP_KEY); }
+function rdBookmarkOn() { return rdFlagOn(RD_BOOKMARK_KEY); }
+function rdHabitSyncOn() { return rdFlagOn(RD_HABIT_SYNC_KEY); }
+function rdSetLamp(on) {
+try { store.set(RD_LAMP_KEY, on ? 'on' : 'off'); } catch (e) {}
+rdRenderPrefsActive();
+if (rdBook) {
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) rdUpdateBar();
+}
+}
+function rdSetBookmark(on) {
+try { store.set(RD_BOOKMARK_KEY, on ? 'on' : 'off'); } catch (e) {}
+if (!on) rdBmClearWait();
+rdRenderPrefsActive();
+}
+function rdSetHabitSync(on) {
+try { store.set(RD_HABIT_SYNC_KEY, on ? 'on' : 'off'); } catch (e) {}
+rdRenderPrefsActive();
+}
 function rdSetPrefs(patch) {
 const p = rdReadPrefs();
 if (patch && patch.fs) p.fs = patch.fs;
@@ -2850,6 +2981,20 @@ btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);
 });
 const bgVal = document.getElementById('rd-set-bg-val');
 if (bgVal) bgVal.textContent = RD_BG_LABEL[bg] || RD_BG_LABEL.auto;
+const coopToggle = document.getElementById('rd-coop-toggle');
+if (coopToggle) coopToggle.checked = rdCoopOn();
+const subOn = rdCoopOn();
+function syncSub(id, on) {
+const el = document.getElementById(id);
+if (!el) return;
+el.checked = on;
+el.disabled = !subOn;
+const row = el.closest('.rd-set-sub');
+if (row) row.classList.toggle('is-off', !subOn);
+}
+syncSub('rd-lamp-toggle', rdLampOn());
+syncSub('rd-bookmark-toggle', rdBookmarkOn());
+syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
 rdApplyBg();
 }
 function rdRenderToc() {
@@ -2926,6 +3071,7 @@ return Math.max(0, Math.min(100, Math.round(((ch + 0.5) / n) * 100)));
 function rdBadgeText(b) {
 if (!b) return '';
 if (b.missing) return '待重新导入';
+if (!rdCoopOn()) return '';
 const st = rdBuddyState(b);
 if (st === 'done') return '他读完了';
 if (st === 'wait') return '等你';
@@ -2947,6 +3093,7 @@ for (let i = 0; i < list.length; i++) {
 const b = list[i];
 if (!b || !b.id) continue;
 const title = b.title || '未命名';
+const badge = rdBadgeText(b);
 const spine = rdTogSpine(b);
 let ribs = '';
 for (let k = 0; k < spine; k++) ribs += '<i></i>';
@@ -2955,13 +3102,17 @@ html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
 (ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
 '<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
 '<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-'<span class="rd-badge">' + rdEsc(rdBadgeText(b)) + '</span>' +
+(badge ? '<span class="rd-badge">' + rdEsc(badge) + '</span>' : '') +
 '</div>';
 }
 grid.innerHTML = html;
 if (empty) empty.hidden = list.length > 0;
 const ledger = document.getElementById('rd-ledger');
 if (ledger) {
+if (!rdCoopOn()) {
+ledger.innerHTML = '';
+ledger.hidden = true;
+} else {
 const now = Date.now();
 const DAY = 86400000;
 let led = '';
@@ -2992,6 +3143,7 @@ if (dirty) saveIndex(list);
 for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
 ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
 ledger.hidden = !led;
+}
 }
 const usage = document.getElementById('rd-usage');
 if (usage) {
