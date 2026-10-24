@@ -371,26 +371,21 @@ settingsPage.innerHTML =
 '<div class="set-group glass">' +
 '<div class="rd-set-row">' +
 '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
-'<div class="rd-set-pills">' +
-'<button class="rd-btn rd-btn-mini" data-fs="15" type="button">小</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="17" type="button">标准</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="19" type="button">大</button>' +
-'<button class="rd-btn rd-btn-mini" data-fs="21" type="button">特大</button>' +
-'</div>' +
+'<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
 '</div>' +
 '<div class="rd-set-row">' +
 '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
-'<div class="rd-set-pills">' +
-'<button class="rd-btn rd-btn-mini" data-lh="1.7" type="button">紧</button>' +
-'<button class="rd-btn rd-btn-mini" data-lh="1.8" type="button">标准</button>' +
-'<button class="rd-btn rd-btn-mini" data-lh="1.9" type="button">松</button>' +
-'</div>' +
+'<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
 '</div>' +
 '</div>' +
 '<div class="rd-set-note">这些偏好只作用在阅读器，不影响聊天和桌面字号。预览用的是内置样文；打开书后会按同一套偏好重新分页。</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(settingsPage);
+const fsRange = settingsPage.querySelector('#rd-set-fs-range');
+if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
+const lhRange = settingsPage.querySelector('#rd-set-lh-range');
+if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
 rdRenderPrefsActive();
 return settingsPage;
 }
@@ -2646,14 +2641,15 @@ rdRenderPrefsActive();
 }
 function rdRenderPrefsActive() {
 const p = rdReadPrefs();
-const box = document.getElementById('page-reading-settings');
-if (box) {
-box.querySelectorAll('[data-fs]').forEach(function (btn) {
-btn.classList.toggle('on', Number(btn.getAttribute('data-fs')) === p.fs);
-});
-box.querySelectorAll('[data-lh]').forEach(function (btn) {
-btn.classList.toggle('on', Number(btn.getAttribute('data-lh')) === p.lh);
-});
+const fsRange = document.getElementById('rd-set-fs-range');
+if (fsRange) {
+fsRange.value = String(p.fs);
+fsRange.style.setProperty('--rd-pct', Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%');
+}
+const lhRange = document.getElementById('rd-set-lh-range');
+if (lhRange) {
+lhRange.value = String(p.lh);
+lhRange.style.setProperty('--rd-pct', Math.max(0, Math.min(100, (p.lh - 1.4) / 0.8 * 100)) + '%');
 }
 const prev = document.getElementById('rd-set-preview-text');
 if (prev) {
@@ -2663,7 +2659,7 @@ prev.style.lineHeight = String(p.lh);
 const fsVal = document.getElementById('rd-set-fs-val');
 if (fsVal) fsVal.textContent = p.fs + 'px';
 const lhVal = document.getElementById('rd-set-lh-val');
-if (lhVal) lhVal.textContent = String(p.lh);
+if (lhVal) lhVal.textContent = p.lh.toFixed(1);
 }
 function rdRenderToc() {
 const list = document.getElementById('rd-toc-list');
@@ -3210,10 +3206,6 @@ if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); ret
 const bMode = el.closest('#rd-buddy-modes [data-bmode]');
 if (bMode) { e.preventDefault(); rdBuddySetMode(bMode.getAttribute('data-bmode')); return; }
 if (el.closest('#rd-buddy-jump')) { e.preventDefault(); rdJumpToBuddy(); return; }
-const fsBtn = el.closest('#page-reading-settings [data-fs]');
-if (fsBtn) { e.preventDefault(); rdSetPrefs({ fs: Number(fsBtn.getAttribute('data-fs')) }); return; }
-const lhBtn = el.closest('#page-reading-settings [data-lh]');
-if (lhBtn) { e.preventDefault(); rdSetPrefs({ lh: Number(lhBtn.getAttribute('data-lh')) }); return; }
 if (el.closest('#rd-toc-btn')) { e.preventDefault(); openToc(); return; }
 if (el.closest('#rd-toc-close')) { e.preventDefault(); closeToc(); return; }
 const tocRow = el.closest('#rd-toc-list [data-ch]');

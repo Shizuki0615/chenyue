@@ -104,11 +104,18 @@
 .rd-set-row-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .rd-set-row-t{font-size:14px}
 .rd-set-row-v{font-size:11.5px;color:var(--muted)}
-.rd-set-pills{display:flex;gap:6px;flex-wrap:wrap}
-.rd-set-pills .rd-btn-mini{padding:6px 12px;border:1px solid var(--line,#e6e6e6);background:var(--bg,#fff)}
-.rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.35);border-color:rgba(244,182,194,.8)}
-[data-theme="dark"] .rd-set-pills .rd-btn-mini{background:#242424;border-color:#3a3a3a}
-[data-theme="dark"] .rd-set-pills .rd-btn-mini.on{background:rgba(244,182,194,.22);border-color:rgba(244,182,194,.5)}
+.rd-set-slider{display:flex;align-items:center;gap:10px}
+.rd-set-slider span{flex:none;font-size:11px;color:var(--muted)}
+.rd-set-slider input[type="range"]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;width:0;height:28px;padding:0;background:transparent}
+.rd-set-slider input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),var(--line,#e6e6e6) var(--rd-pct,50%),var(--line,#e6e6e6) 100%)}
+.rd-set-slider input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.rd-set-slider input[type="range"]::-moz-range-track{height:4px;border-radius:2px;background:var(--line,#e6e6e6)}
+.rd-set-slider input[type="range"]::-moz-range-progress{height:4px;border-radius:2px;background:#f4b6c2}
+.rd-set-slider input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#3a3a3a var(--rd-pct,50%),#3a3a3a 100%)}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#1e1e1e}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
 .rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
 
 /* ---------- 目录 ---------- */
