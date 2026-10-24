@@ -6622,7 +6622,7 @@ const FIX_SENTINELS = [
   { name: '#1553o 章末一句存进该章批注数组（删＝只弹一句提示，翻回去看不到任何东西）', file: 'js/reading.js', needle: "rdToast('他在上一章的末尾留了一句。');" },
   // ==== 2026-10-24 #1554 读书顶栏恢复通栏 + 导入面板收起顶栏 + 模块改名 ====
   { name: '#1554a 书架容器不再带横向内边距（删＝顶栏又被挤成内缩的半透明悬浮卡片）', file: 'css/reading.css', needle: 'min-height:0;padding:0 0 24px}' },
-  { name: '#1554b 横向内边距下放到书架内容元素（删＝卡片与手账贴边、飞出屏幕）', file: 'css/reading.css', needle: '.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}' },
+  { name: '#1554b 横向内边距下放与书架顶部留白（删＝卡片贴边/贴顶栏）', file: 'css/reading.css', needle: '.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:28px 16px 0}' },
   { name: '#1554c 导入面板打开时收起书架顶栏（删＝sticky 顶栏压住面板头部并透出下面的字）', file: 'css/reading.css', needle: '.rd-shelf.rd-importing > .chat-head{display:none}' },
   { name: '#1554d 收起顶栏后导入面板自补挖孔安全区（删＝真机上导入面板顶进摄像头挖孔）', file: 'css/reading.css', needle: 'gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff);overflow:auto}' },
   { name: '#1554e 打开导入面板时挂 rd-importing（删＝class 永不出现，收起顶栏的样式成死代码）', file: 'js/reading.js', needle: "if (shelf) shelf.classList.add('rd-importing');" },
