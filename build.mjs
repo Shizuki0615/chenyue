@@ -6530,6 +6530,28 @@ const FIX_SENTINELS = [
   { name: '#1498d 花园悄悄话兜底过闸＋空则不发音（删＝WM 兜底 7/7 与数据组同文，全关后照旧出声）', file: 'js/garden.js', needle: 'window.gateCardFallback("garden", WM)', absent: true },
   { name: '#1522a 花园年报分享走 feedAddPost 正路（删＝退回裸读裸写 feed-posts＝同步层读空一发抹掉朋友圈历史＋点击帧兆级串化长任务）', file: 'js/garden.js', needle: '!!window.feedAddPost(text)', absent: true },
   { name: '#1522b 花园年报整包盲写已退役（删除型；回流＝JSON.parse(st.get(FK)) 读空顶库、st.set 整包写回复发）', file: 'js/garden.js', needle: 'st.set(FK, raw)', absent: true },
+  // ==== 2026-10-24 #1547 一起读书（书架 / 真分页 / 批注 / 他的位置）====
+  // 独立模块 js/reading.js + css/reading.css：正文按章进 IDB、正文不进备份、两份进度真值永不合并。
+  { name: '#1547a 真分页二分测量不溢出（删＝退回按字数估算，末行被切/出现空白页）', file: 'js/reading.js', needle: 'if (box.scrollHeight <= h + 1) { best = mid; lo = mid + 1; }' },
+  { name: '#1547b 分页不拆代理对（删＝emoji 等被切成半个字符）', file: 'js/reading.js', needle: 'if (c >= 0xDC00 && c <= 0xDFFF) e++;' },
+  { name: '#1547c 正文按章分键进 IDB（改回整本存一个键＝大键超限、每次翻页整本读写）', file: 'js/reading.js', needle: "await window.idbSet(RD_BODY_P + id + ':' + ch" },
+  { name: '#1547d 单本 20MB 上限（删＝整本读进内存再分章，手机端导入卡死/挤占存储）', file: 'js/reading.js', needle: 'const RD_MAX_BYTES = 20 * 1024 * 1024;' },
+  { name: '#1547e 两份进度真值分开存、永不合并（删＝他和我绑成一个值，「独立推进」语义失效）', file: 'js/reading.js', needle: 'let his = rdFlatPos(book, bd.ch, bd.off);' },
+  { name: '#1547f 跟随只追不拽（删＝他往回退，把我拽回他停下的位置）', file: 'js/reading.js', needle: 'if (his < mine) his = mine;' },
+  { name: '#1547g 他超到我前面就停下来等（删＝他继续往前读，读到我还没读的章＝剧透）', file: 'js/reading.js', needle: 'bd.waiting = his > mine;' },
+  { name: '#1547h 独立推进单次最多补 30 分钟（删＝隔夜打开一口气读完整本）', file: 'js/reading.js', needle: 'Math.min(now - (bd.updatedAt || now), RD_CATCHUP_MAX_MS)' },
+  { name: '#1547i 独立推进按 420 字/分钟（删＝他原地不动或跳得太快）', file: 'js/reading.js', needle: 'his + units * RD_CHARS_PER_MIN' },
+  { name: '#1547j 今天不读跨天自动恢复原模式（删＝永远停在「今天不读」，第二天也不翻书）', file: 'js/reading.js', needle: "bd.mode = bd.prevMode === 'solo' ? 'solo' : 'follow';" },
+  { name: '#1547k 他的批注只在我读到的字符区间里浮现（删＝屏幕外/后文批注一起冒出来＝剧透）', file: 'js/reading.js', needle: 'return a.e > pageStart && a.e <= pageEnd;' },
+  { name: '#1547l 每章最多 3 条他的批注（删＝一章堆满纸条）', file: 'js/reading.js', needle: 'if (hisArr.length >= RD_HIS_PER_CH) return;' },
+  { name: '#1547m 同章两条他的批注至少隔 8 句（删＝两条挤在同一段）', file: 'js/reading.js', needle: 'if (Math.abs(occupied[k] - i) < RD_HIS_GAP) { near = true; break; }' },
+  { name: '#1547n 夜间免打扰闸（删＝半夜生成他的批注/回应）', file: 'js/reading.js', needle: 'function rdNightGuard() {' },
+  { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
+  { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
+  { name: '#1547q 聊天「更多 → 互动」入口（删＝只剩桌面图标一条入口）', file: 'template.html', needle: 'id="more-reading" data-mcat="chat"' },
+  { name: '#1547r 阅读页登记为全屏页（删＝进阅读器后 tabbar 常驻，遮住底部「他在哪」行）', file: 'js/tabs.js', needle: "'page-reading'];" },
+  { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
+  { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
