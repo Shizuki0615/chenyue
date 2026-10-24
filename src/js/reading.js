@@ -319,7 +319,8 @@
         '<div class="rd-buddy-card" id="rd-buddy-card" hidden>' +
           '<div class="rd-import-head"><div class="rd-import-title">他在哪</div>' +
             '<button class="rd-back" id="rd-buddy-close" type="button">关闭</button></div>' +
-          '<div class="rd-buddy-state" id="rd-buddy-state"></div>' +
+          '<div class="rd-buddy-row"><span class="rd-buddy-av" id="rd-buddy-av"></span>' +
+            '<div class="rd-buddy-state" id="rd-buddy-state"></div></div>' +
           '<div class="rd-buddy-pos" id="rd-buddy-pos"></div>' +
           '<div class="rd-buddy-near" id="rd-buddy-near"></div>' +
           '<div class="rd-buddy-habit" id="rd-buddy-habit"></div>' +
@@ -407,6 +408,7 @@
   function rdClose() {
     if (!page) return;
     rdBmClearWait();
+    rdTogWatchStop();
     rdWriteProgress();
     rdHabitEndSession();
     rdCloseBookMenu();
@@ -418,6 +420,7 @@
   function rdShowShelf() {
     if (!page) return;
     rdBmClearWait();
+    rdTogWatchStop();
     rdWriteProgress();
     rdHabitEndSession();
     closeToc();
@@ -489,6 +492,10 @@
     rdBookmarkPlayed = false;
     rdBmClearWait();
     rdHabitStartSession();
+    // 每次重新翻开书，同读计数与计时都从这一刻重新算
+    rdTogLogged = false;
+    rdTogNoteLogged = false;
+    rdTogWatchStart();
     // 封存一句是异步读写：等本章先加载完，再依次解锁旧纸条、处理回应、折新纸条，
     // 避免三处同时改同一章的批注数组互相覆盖。
     rdEnsureChapter('offset').then(function () {
@@ -691,8 +698,10 @@
       }
     }
     if (line) {
-      line.textContent = rdBuddyLine(book, st);
+      const tog = rdTogetherOn(book);
+      line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);
       line.classList.toggle('rd-buddy-same-text', same);
+      line.classList.toggle('rd-tog', tog);
     }
     rdSyncLamp(book, st);
     rdMaybeBookmarkReturn(book, b, bd, st);
@@ -959,6 +968,94 @@
     rdToast('灯我留着，明天再读也一样。');
   }
 
+  // ===== 此刻同读 =====
+  // 他的阅读时间由我的操作触发（rdBuddyAdvance 只在翻页 / 离开阅读器 / 打开小卡时被调用，
+  // 记进小时表的时间也是我的操作时刻），所以「两人最近阅读时间落在同一窗口」这条判定
+  // 在这个模型里恒成立，拿时间戳比没有意义。改用会话内计时：这次坐下来读满十分钟、
+  // 且他确实处在「共读中」（没在前面等我、没读完、不是今天不读），才算此刻同读。
+  const RD_TOG_MIN_MS = 10 * 60 * 1000;
+  const RD_TOG_CHAP_MS = 15 * 60 * 1000;
+  const RD_TOG_SPINE_STEP = 3;
+  const RD_TOG_SPINE_MAX = 5;
+  const RD_TOG_LINE = '这一章我们一起翻过去的。';
+  let rdTogLogged = false;
+  let rdTogNoteLogged = false;
+  let rdTogTimer = 0;
+
+  function rdTogetherOn(book) {
+    const s = rdHabitSession;
+    if (!s || !book) return false;
+    if (Date.now() - s.start < RD_TOG_MIN_MS) return false;
+    return rdBuddyState(book) === 'read';
+  }
+  function rdTogCount(book) {
+    return Math.max(0, Number(book && book.togCount) || 0);
+  }
+  // 每累计三次同读，书脊多一道细纹；封顶五道，不让书脊画花
+  function rdTogSpine(book) {
+    return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));
+  }
+  // 一次阅读会话只计一次：按翻页数累加的话，读得快的人一晚上就能把书脊长满
+  function rdTogTick(book) {
+    if (rdTogLogged || !book) return;
+    if (!rdTogetherOn(book)) return;
+    rdTogLogged = true;
+    book.togCount = rdTogCount(book) + 1;
+  }
+  // 停在某一页读够十分钟时页脚要自己亮起来，不能只在翻页那一刻才算
+  function rdTogWatchStart() {
+    rdTogWatchStop();
+    rdTogTimer = setInterval(function () {
+      if (!rdBook) { rdTogWatchStop(); return; }
+      rdUpdateBar();
+    }, 60000);
+  }
+  function rdTogWatchStop() {
+    if (rdTogTimer) { clearInterval(rdTogTimer); rdTogTimer = 0; }
+  }
+  // 同读满十五分钟再往下翻章：他在刚读完那一章的末尾留一句。
+  // 这句说的就是「刚翻过去的那一章」，所以锚在旧章末尾，往回翻才看得到。
+  function rdTogChapterNote(b) {
+    if (!b || rdTogNoteLogged) return;
+    const s = rdHabitSession;
+    if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;
+    if (rdNightGuard()) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book || !rdTogetherOn(book)) return;
+    const ch = b.ch;
+    const done = Array.isArray(book.togChaps) ? book.togChaps : [];
+    if (done.indexOf(ch) >= 0) return;
+    const sents = b.sents || [];
+    const last = sents[sents.length - 1];
+    if (!last) return;
+    // 一次会话最多留一句：连续读五章不该在五章末尾各留一句
+    rdTogNoteLogged = true;
+    book.togChaps = done.concat([ch]).slice(-40);
+    saveIndex(list);
+    const item = {
+      id: 'tg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      by: 'his',
+      s: last.s,
+      e: last.e,
+      quote: last.quote,
+      text: RD_TOG_LINE,
+      at: Date.now(),
+      rev: 1,
+      deviceId: 'local'
+    };
+    getAnnos(b.id, ch).then(function (arr) {
+      const annos = Array.isArray(arr) ? arr : [];
+      annos.push(item);
+      return putAnnos(b.id, ch, annos);
+    }).then(function () {
+      const fresh = readIndex();
+      const fb = rdFindBook(b.id, fresh);
+      if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
+      rdToast('他在上一章的末尾留了一句。');
+    }).catch(function () {});
+  }
+
   // 进度真值只存「章 + 章内字符偏移」，页码只是展示值：换字号/换屏幕后仍能落回同一句话。
   // 翻页时 300ms 防抖写入，离开阅读器时立即落盘，避免连翻时反复写索引。
   let rdSaveTimer = 0;
@@ -982,6 +1079,7 @@
     book.lastOpenAt = Date.now();
     // 他的进度是另一份真值：这里只推进 buddy，绝不用我的 progress 覆盖他的 ch/off
     rdBuddyAdvance(book);
+    rdTogTick(book);
     saveIndex(list);
     // 我的进度越过某句封存纸条的句尾时，纸条展开成普通批注
     rdUnlockSealed(book).catch(function () {});
@@ -1244,6 +1342,7 @@
     const bd = rdBuddyGet(book);
     const st = rdBuddyState(book);
     const card = document.getElementById('rd-buddy-card');
+    const avEl = document.getElementById('rd-buddy-av');
     const stateEl = document.getElementById('rd-buddy-state');
     const posEl = document.getElementById('rd-buddy-pos');
     const nearEl = document.getElementById('rd-buddy-near');
@@ -1254,6 +1353,7 @@
     const his = rdFlatPos(book, bd.ch, bd.off);
     const chName = (b.toc[bd.ch] && b.toc[bd.ch].t) || ('第 ' + (bd.ch + 1) + ' 章');
     if (stateEl) stateEl.textContent = RD_BUDDY_STATE_TEXT[st] + ' · ' + rdBuddyLine(book, st);
+    if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));
     if (posEl) {
       const pageTxt = st === 'none' || st === 'skip' ? '' : await rdBuddyPageText(book, bd);
       posEl.textContent = st === 'none' ? '' :
@@ -2410,7 +2510,8 @@
     if (!b) return;
     if (dir > 0) {
       if (b.pageIdx < b.pages.length - 1) { b.pageIdx++; rdRenderPage(); return; }
-      if (b.ch < b.toc.length - 1) { b.ch++; rdEnsureChapter('first'); return; }
+      // 先把旧章末尾那句留下来，再翻到下一章（b.ch / b.sents 都是旧章的）
+      if (b.ch < b.toc.length - 1) { rdTogChapterNote(b); b.ch++; rdEnsureChapter('first'); return; }
       rdBounce(1);
     } else {
       if (b.pageIdx > 0) { b.pageIdx--; rdRenderPage(); return; }
@@ -2636,8 +2737,13 @@
       const b = list[i];
       if (!b || !b.id) continue;
       const title = b.title || '未命名';
+      // 累计同读每满三次，书脊上多一道细纹
+      const spine = rdTogSpine(b);
+      let ribs = '';
+      for (let k = 0; k < spine; k++) ribs += '<i></i>';
       html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-        '<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') + '</div>' +
+        '<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
+          (ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
         '<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
         '<div class="rd-book-title">' + rdEsc(title) + '</div>' +
         '<span class="rd-badge">' + rdEsc(rdBadgeText(b)) + '</span>' +

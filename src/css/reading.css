@@ -11,7 +11,10 @@
 .rd-menu-title{padding:10px 14px 6px;font-size:12px;opacity:.55;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
 .rd-menu-danger{color:#d9534f}
-.rd-cover{aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
+/* 书脊：累计同读每满三次多一道细纹，最多五道 */
+.rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
+.rd-spine i{display:block;height:1px;background:rgba(255,255,255,.62);border-radius:1px}
 .rd-line{height:2px;background:var(--line,#e5e5e5)}
 .rd-line i{display:block;height:100%;background:currentColor;opacity:.45}
 .rd-book-title{margin-top:6px;font-size:12px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -43,6 +46,8 @@
 .rd-lamp-him.on{opacity:.55;background:#f4b6c2;box-shadow:0 0 5px rgba(244,182,194,.85)}
 #rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
+/* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
+#rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -138,6 +143,15 @@
 
 /* 「他在哪」底部小卡 */
 .rd-buddy-card{position:absolute;left:0;right:0;bottom:0;z-index:7;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.rd-buddy-row{display:flex;align-items:center;gap:9px}
+.rd-buddy-row .rd-buddy-state{flex:1;min-width:0}
+/* 小卡头像：同读时浮一圈很轻的呼吸光；减少动态效果时只留静态光圈 */
+.rd-buddy-av{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:rgba(244,182,194,.3);display:flex;align-items:center;justify-content:center}
+.rd-buddy-av::before{content:'';display:block;width:12px;height:12px;border-radius:50%;background:rgba(244,182,194,.85)}
+.rd-buddy-av::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
+.rd-buddy-av.on::after{animation:rdTogBreath 2.8s ease-in-out infinite}
+@keyframes rdTogBreath{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.62;transform:scale(1.18)}}
+@media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}
 .rd-buddy-state{font-size:15px;line-height:1.6}
 .rd-buddy-pos,.rd-buddy-near{font-size:12px;line-height:1.6;opacity:.7}
 .rd-buddy-pos:empty,.rd-buddy-near:empty{display:none}

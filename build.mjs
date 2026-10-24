@@ -6604,6 +6604,22 @@ const FIX_SENTINELS = [
   { name: '#1551k 解锁写回当前章内存批注（删＝纸条已解锁但重绘拿不到，要等重开章节）', file: 'js/reading.js', needle: 'if (!found) rdBook.anno = rdBook.anno.concat([hit]);' },
   { name: '#1551l 打开书时解锁/回应/折纸条串行（删＝三处同时改同一章批注数组会互相覆盖）', file: 'js/reading.js', needle: 'return rdBuddyProcessReplies().catch(function () {});' },
   { name: '#1551m 共读手账 [hidden] 兜底（删＝作者 display 样式压过 UA，空手账仍占位）', file: 'css/reading.css', needle: '.rd-ledger[hidden]{display:none!important}' },
+  // ==== 2026-10-24 #1553 一起读书·此刻同读（会话计时 + 页脚 / 小卡 / 书脊 / 章末一句）====
+  { name: '#1553a 同读按会话时长判定，不比时间戳（删＝他的时间戳由我触发，判定恒成立，永远同读）', file: 'js/reading.js', needle: 'if (Date.now() - s.start < RD_TOG_MIN_MS) return false;' },
+  { name: '#1553b 同读要求他处在共读中（删＝他在前面等我 / 读完了 / 今天不读 也亮同读）', file: 'js/reading.js', needle: "return rdBuddyState(book) === 'read';" },
+  { name: '#1553c 一次阅读会话只计一次同读（删＝每翻一页 togCount +1，书脊一夜长满）', file: 'js/reading.js', needle: 'book.togCount = rdTogCount(book) + 1;' },
+  { name: '#1553d 停在同页读够十分钟也要亮（删＝只有翻页那一刻才重新判定，静读永不触发）', file: 'js/reading.js', needle: 'rdTogTimer = setInterval(function () {' },
+  { name: '#1553e 页脚换成「此刻 · 同读」（删＝判定成立但界面没有任何反馈）', file: 'js/reading.js', needle: "line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);" },
+  { name: '#1553f 书脊每累计三次同读多一道细纹（删＝累计计数存了但书架上永远看不见）', file: 'js/reading.js', needle: 'return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));' },
+  { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:3px;' },
+  { name: '#1553h 小卡头像同读时亮呼吸光（删＝小卡里看不出此刻正在一起读）', file: 'js/reading.js', needle: "if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));" },
+  { name: '#1553i 减少动态效果时呼吸光转静态（删＝关掉系统动效后小卡仍一直呼吸）', file: 'css/reading.css', needle: '@media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}' },
+  { name: '#1553j 翻章前把上一章末尾那句留下来（删＝翻了章才取句，锚到新章开头、语义错位）', file: 'js/reading.js', needle: 'rdTogChapterNote(b); b.ch++;' },
+  { name: '#1553k 章末一句要同读满十五分钟（删＝刚打开书翻章就留，变成每章必留）', file: 'js/reading.js', needle: 'if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;' },
+  { name: '#1553l 一次会话最多留一句（删＝连续读五章会在五章末尾各留一句）', file: 'js/reading.js', needle: 'if (!b || rdTogNoteLogged) return;' },
+  { name: '#1553m 同一章只留一次（删＝重复翻回同一章会叠出多条相同纸条）', file: 'js/reading.js', needle: 'if (done.indexOf(ch) >= 0) return;' },
+  { name: '#1553n 章末一句要求此刻确实在共读（删＝不在同读状态也往章末塞纸条）', file: 'js/reading.js', needle: "if (!book || !rdTogetherOn(book)) return;" },
+  { name: '#1553o 章末一句存进该章批注数组（删＝只弹一句提示，翻回去看不到任何东西）', file: 'js/reading.js', needle: "rdToast('他在上一章的末尾留了一句。');" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

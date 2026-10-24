@@ -281,7 +281,8 @@ page.innerHTML =
 '<div class="rd-buddy-card" id="rd-buddy-card" hidden>' +
 '<div class="rd-import-head"><div class="rd-import-title">他在哪</div>' +
 '<button class="rd-back" id="rd-buddy-close" type="button">关闭</button></div>' +
-'<div class="rd-buddy-state" id="rd-buddy-state"></div>' +
+'<div class="rd-buddy-row"><span class="rd-buddy-av" id="rd-buddy-av"></span>' +
+'<div class="rd-buddy-state" id="rd-buddy-state"></div></div>' +
 '<div class="rd-buddy-pos" id="rd-buddy-pos"></div>' +
 '<div class="rd-buddy-near" id="rd-buddy-near"></div>' +
 '<div class="rd-buddy-habit" id="rd-buddy-habit"></div>' +
@@ -366,6 +367,7 @@ page.classList.add('full');
 function rdClose() {
 if (!page) return;
 rdBmClearWait();
+rdTogWatchStop();
 rdWriteProgress();
 rdHabitEndSession();
 rdCloseBookMenu();
@@ -377,6 +379,7 @@ if (home) home.hidden = false;
 function rdShowShelf() {
 if (!page) return;
 rdBmClearWait();
+rdTogWatchStop();
 rdWriteProgress();
 rdHabitEndSession();
 closeToc();
@@ -443,6 +446,9 @@ lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 rdBookmarkPlayed = false;
 rdBmClearWait();
 rdHabitStartSession();
+rdTogLogged = false;
+rdTogNoteLogged = false;
+rdTogWatchStart();
 rdEnsureChapter('offset').then(function () {
 return rdUnlockSealed(book).catch(function () {});
 }).then(function () {
@@ -623,8 +629,10 @@ dot.classList.toggle('rd-buddy-same', same);
 }
 }
 if (line) {
-line.textContent = rdBuddyLine(book, st);
+const tog = rdTogetherOn(book);
+line.textContent = tog ? '此刻 · 同读' : rdBuddyLine(book, st);
 line.classList.toggle('rd-buddy-same-text', same);
+line.classList.toggle('rd-tog', tog);
 }
 rdSyncLamp(book, st);
 rdMaybeBookmarkReturn(book, b, bd, st);
@@ -875,6 +883,81 @@ const fb = rdFindBook(book.id, list);
 if (fb) { fb.lateNoteDay = day; saveIndex(list); }
 rdToast('灯我留着，明天再读也一样。');
 }
+const RD_TOG_MIN_MS = 10 * 60 * 1000;
+const RD_TOG_CHAP_MS = 15 * 60 * 1000;
+const RD_TOG_SPINE_STEP = 3;
+const RD_TOG_SPINE_MAX = 5;
+const RD_TOG_LINE = '这一章我们一起翻过去的。';
+let rdTogLogged = false;
+let rdTogNoteLogged = false;
+let rdTogTimer = 0;
+function rdTogetherOn(book) {
+const s = rdHabitSession;
+if (!s || !book) return false;
+if (Date.now() - s.start < RD_TOG_MIN_MS) return false;
+return rdBuddyState(book) === 'read';
+}
+function rdTogCount(book) {
+return Math.max(0, Number(book && book.togCount) || 0);
+}
+function rdTogSpine(book) {
+return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));
+}
+function rdTogTick(book) {
+if (rdTogLogged || !book) return;
+if (!rdTogetherOn(book)) return;
+rdTogLogged = true;
+book.togCount = rdTogCount(book) + 1;
+}
+function rdTogWatchStart() {
+rdTogWatchStop();
+rdTogTimer = setInterval(function () {
+if (!rdBook) { rdTogWatchStop(); return; }
+rdUpdateBar();
+}, 60000);
+}
+function rdTogWatchStop() {
+if (rdTogTimer) { clearInterval(rdTogTimer); rdTogTimer = 0; }
+}
+function rdTogChapterNote(b) {
+if (!b || rdTogNoteLogged) return;
+const s = rdHabitSession;
+if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;
+if (rdNightGuard()) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+if (!book || !rdTogetherOn(book)) return;
+const ch = b.ch;
+const done = Array.isArray(book.togChaps) ? book.togChaps : [];
+if (done.indexOf(ch) >= 0) return;
+const sents = b.sents || [];
+const last = sents[sents.length - 1];
+if (!last) return;
+rdTogNoteLogged = true;
+book.togChaps = done.concat([ch]).slice(-40);
+saveIndex(list);
+const item = {
+id: 'tg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'his',
+s: last.s,
+e: last.e,
+quote: last.quote,
+text: RD_TOG_LINE,
+at: Date.now(),
+rev: 1,
+deviceId: 'local'
+};
+getAnnos(b.id, ch).then(function (arr) {
+const annos = Array.isArray(arr) ? arr : [];
+annos.push(item);
+return putAnnos(b.id, ch, annos);
+}).then(function () {
+const fresh = readIndex();
+const fb = rdFindBook(b.id, fresh);
+if (fb) { fb.annoCount = (Number(fb.annoCount) || 0) + 1; saveIndex(fresh); }
+rdToast('他在上一章的末尾留了一句。');
+}).catch(function () {});
+}
 let rdSaveTimer = 0;
 function rdSaveProgress() {
 if (!rdBook) return;
@@ -895,6 +978,7 @@ const start = p.s;
 book.progress = { ch: chIdx, off: start };
 book.lastOpenAt = Date.now();
 rdBuddyAdvance(book);
+rdTogTick(book);
 saveIndex(list);
 rdUnlockSealed(book).catch(function () {});
 }
@@ -1122,6 +1206,7 @@ rdUpdateBar();
 const bd = rdBuddyGet(book);
 const st = rdBuddyState(book);
 const card = document.getElementById('rd-buddy-card');
+const avEl = document.getElementById('rd-buddy-av');
 const stateEl = document.getElementById('rd-buddy-state');
 const posEl = document.getElementById('rd-buddy-pos');
 const nearEl = document.getElementById('rd-buddy-near');
@@ -1132,6 +1217,7 @@ const mine = rdFlatPos(book, b.ch, myOff);
 const his = rdFlatPos(book, bd.ch, bd.off);
 const chName = (b.toc[bd.ch] && b.toc[bd.ch].t) || ('第 ' + (bd.ch + 1) + ' 章');
 if (stateEl) stateEl.textContent = RD_BUDDY_STATE_TEXT[st] + ' · ' + rdBuddyLine(book, st);
+if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));
 if (posEl) {
 const pageTxt = st === 'none' || st === 'skip' ? '' : await rdBuddyPageText(book, bd);
 posEl.textContent = st === 'none' ? '' :
@@ -2191,7 +2277,7 @@ const b = rdBook;
 if (!b) return;
 if (dir > 0) {
 if (b.pageIdx < b.pages.length - 1) { b.pageIdx++; rdRenderPage(); return; }
-if (b.ch < b.toc.length - 1) { b.ch++; rdEnsureChapter('first'); return; }
+if (b.ch < b.toc.length - 1) { rdTogChapterNote(b); b.ch++; rdEnsureChapter('first'); return; }
 rdBounce(1);
 } else {
 if (b.pageIdx > 0) { b.pageIdx--; rdRenderPage(); return; }
@@ -2400,8 +2486,12 @@ for (let i = 0; i < list.length; i++) {
 const b = list[i];
 if (!b || !b.id) continue;
 const title = b.title || '未命名';
+const spine = rdTogSpine(b);
+let ribs = '';
+for (let k = 0; k < spine; k++) ribs += '<i></i>';
 html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-'<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') + '</div>' +
+'<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
+(ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
 '<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
 '<div class="rd-book-title">' + rdEsc(title) + '</div>' +
 '<span class="rd-badge">' + rdEsc(rdBadgeText(b)) + '</span>' +
