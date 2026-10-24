@@ -303,7 +303,20 @@
         '<div class="rd-body" id="rd-body"></div>' +
         '<div class="rd-foot" id="rd-foot">' +
           '<div class="rd-bar" id="rd-bar"><span class="rd-bar-fill" id="rd-bar-fill"></span><span class="rd-buddy-dot" id="rd-buddy-dot" hidden></span></div>' +
-          '<div class="rd-foot-row"><span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
+          '<div class="rd-foot-row" id="rd-foot-row" role="button"><span id="rd-page-no">第 1 / 1 页</span><span id="rd-buddy"></span></div>' +
+        '</div>' +
+        '<div class="rd-buddy-card" id="rd-buddy-card" hidden>' +
+          '<div class="rd-import-head"><div class="rd-import-title">他在哪</div>' +
+            '<button class="rd-back" id="rd-buddy-close" type="button">关闭</button></div>' +
+          '<div class="rd-buddy-state" id="rd-buddy-state"></div>' +
+          '<div class="rd-buddy-pos" id="rd-buddy-pos"></div>' +
+          '<div class="rd-buddy-near" id="rd-buddy-near"></div>' +
+          '<div class="rd-buddy-modes" id="rd-buddy-modes">' +
+            '<button class="rd-btn rd-btn-mini" data-bmode="follow" type="button">跟随我</button>' +
+            '<button class="rd-btn rd-btn-mini" data-bmode="solo" type="button">独立推进</button>' +
+            '<button class="rd-btn rd-btn-mini" data-bmode="skip" type="button">今天不读</button>' +
+          '</div>' +
+          '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-buddy-jump" type="button" hidden>去他那里</button></div>' +
         '</div>' +
         '<div class="rd-prefs" id="rd-prefs" hidden>' +
           '<div class="rd-prefs-row"><span>字号</span>' +
@@ -398,6 +411,7 @@
     rdClosePop();
     rdCloseAnnoOps();
     rdCloseLost();
+    rdCloseBuddyCard();
     rdPopPos = -1;
     const prefs = document.getElementById('rd-prefs');
     if (prefs) prefs.hidden = true;
@@ -439,9 +453,19 @@
     if (title) title.textContent = book.title || '未命名';
     if (body) body.textContent = '正在翻开…';
     let ch = (book.progress && book.progress.ch) || 0;
+    let off = (book.progress && book.progress.off) || 0;
     if (ch < 0 || ch >= toc.length) ch = 0;
+    // 他第一次翻开这本书：跟随模式从我的位置起步；独立模式保留他自己的位置。
+    const bd = rdBuddyGet(book);
+    if (!bd.started) {
+      bd.started = true;
+      if (bd.mode !== 'solo' && bd.mode !== 'skip') { bd.ch = ch; bd.off = off; }
+      bd.updatedAt = Date.now();
+    }
+    rdBuddyAdvance(book);
+    saveIndex(list);
     rdBook = {
-      id: id, toc: toc, ch: ch, off: (book.progress && book.progress.off) || 0,
+      id: id, toc: toc, ch: ch, off: off,
       cache: {}, text: '', pages: [], pageIdx: 0, anno: [],
       lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
     };
@@ -505,8 +529,12 @@
   }
 
   function rdPaginateChapter(b) {
+    return rdPaginateText(b, b.ch, b.text);
+  }
+  // 分页缓存键带章号：给他算「读到第几页」时也能复用同一套排版结果
+  function rdPaginateText(b, ch, text) {
     const body = document.getElementById('rd-body');
-    if (!body) return [{ s: 0, e: b.text.length }];
+    if (!body) return [{ s: 0, e: String(text || '').length }];
     const cs = getComputedStyle(body);
     const padL = parseFloat(cs.paddingLeft) || 0;
     const padR = parseFloat(cs.paddingRight) || 0;
@@ -515,9 +543,9 @@
     const fs = parseFloat(cs.fontSize) || 17;
     let lh = parseFloat(cs.lineHeight);
     if (!lh || isNaN(lh)) lh = fs * 1.8;
-    const key = b.id + '|' + b.ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
+    const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
     if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-    const pages = paginate(b.text, w, h, fs, lh, cs.fontFamily);
+    const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
     RD_PAGE_CACHE[key] = pages;
     const keys = Object.keys(RD_PAGE_CACHE);
     if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
@@ -602,16 +630,35 @@
   function rdUpdateBar() {
     const b = rdBook;
     if (!b) return;
-    const book = rdFindBook(b.id, readIndex());
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
     const fill = document.getElementById('rd-bar-fill');
-    if (!fill) return;
-    let pct = 0;
-    if (book) {
-      const p = b.pages[b.pageIdx] || { s: 0 };
-      const probe = { progress: { ch: b.ch, off: p.s }, chWords: book.chWords, chapterCount: book.chapterCount };
-      pct = rdProgressPct(probe);
+    if (!fill || !book) return;
+    const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
+    const myPct = rdPosPct(book, b.ch, p.s);
+    fill.style.width = myPct + '%';
+    // 展示用的推进只算在内存里，真正落盘统一走 rdWriteProgress，避免每次翻页都写索引
+    rdBuddyAdvance(book);
+    const st = rdBuddyState(book);
+    const bd = rdBuddyGet(book);
+    const dot = document.getElementById('rd-buddy-dot');
+    const line = document.getElementById('rd-buddy');
+    const same = !!(bd && (st === 'read' || st === 'wait') && bd.ch === b.ch && bd.off >= p.s && bd.off <= p.e);
+    if (dot) {
+      const show = st === 'read' || st === 'wait' || st === 'done';
+      dot.hidden = !show;
+      if (show) {
+        const behind = !same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s);
+        dot.style.left = same ? 'calc(' + myPct + '% + 6px)' : rdPosPct(book, bd.ch, bd.off) + '%';
+        dot.classList.toggle('rd-buddy-ahead', !same && !behind);
+        dot.classList.toggle('rd-buddy-behind', behind);
+        dot.classList.toggle('rd-buddy-same', same);
+      }
     }
-    fill.style.width = pct + '%';
+    if (line) {
+      line.textContent = rdBuddyLine(book, st);
+      line.classList.toggle('rd-buddy-same-text', same);
+    }
   }
 
   // 进度真值只存「章 + 章内字符偏移」，页码只是展示值：换字号/换屏幕后仍能落回同一句话。
@@ -635,7 +682,259 @@
     const start = p.s;
     book.progress = { ch: chIdx, off: start };
     book.lastOpenAt = Date.now();
+    // 他的进度是另一份真值：这里只推进 buddy，绝不用我的 progress 覆盖他的 ch/off
+    rdBuddyAdvance(book);
     saveIndex(list);
+  }
+
+  // ===== 他在哪：两份独立的进度真值 =====
+  // 我和他各存一份「章 + 章内偏移」，谁也不覆盖谁。跟随只是他推进的一种规则，
+  // 不是把两个人的进度绑成同一个值：
+  //   follow：落后就追到我的位置，超到我前面就停下来等；
+  //   solo  ：按自己的阅读速度往前走，允许明显超过我，也允许落在我后面；
+  //   skip  ：今天不读，第二天自动恢复原模式。
+  // 由此得到的展示闸门：他读得比我快时，写在我还没读到那部分页里的批注不会
+  // 提前出现在正文中，只有我翻到那一页才浮现（见 rdBuddyAnnoVisible）。
+  const RD_CHARS_PER_MIN = 420;
+  const RD_CATCHUP_MAX_MS = 30 * 60 * 1000;
+
+  function rdTodayKey(ts) {
+    const d = new Date(ts || Date.now());
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function rdTotalWords(book) {
+    const cw = book && Array.isArray(book.chWords) ? book.chWords : null;
+    if (!cw || !cw.length) return 0;
+    let t = 0;
+    for (let i = 0; i < cw.length; i++) t += cw[i] || 0;
+    return t;
+  }
+  // 章 + 章内偏移 ↔ 全书第几个字：只做换算，不改任何状态
+  function rdFlatPos(book, ch, off) {
+    const cw = book && Array.isArray(book.chWords) ? book.chWords : [];
+    let flat = 0;
+    for (let i = 0; i < ch && i < cw.length; i++) flat += cw[i] || 0;
+    if (ch < cw.length) flat += Math.max(0, Math.min(Number(off) || 0, cw[ch] || 0));
+    return flat;
+  }
+  function rdPosFromFlat(book, flat) {
+    const cw = book && Array.isArray(book.chWords) ? book.chWords : [];
+    let left = Math.max(0, Number(flat) || 0);
+    for (let i = 0; i < cw.length; i++) {
+      const n = cw[i] || 0;
+      if (left < n || i === cw.length - 1) return { ch: i, off: Math.min(left, n) };
+      left -= n;
+    }
+    return { ch: 0, off: 0 };
+  }
+  function rdPosPct(book, ch, off) {
+    const total = rdTotalWords(book);
+    if (!total) return 0;
+    return Math.max(0, Math.min(100, (rdFlatPos(book, ch, off) / total) * 100));
+  }
+  function rdBuddyGet(book) {
+    if (!book) return null;
+    if (!book.buddy || typeof book.buddy !== 'object') {
+      book.buddy = { mode: 'follow', ch: 0, off: 0, started: false, waiting: false, updatedAt: Date.now(), carry: 0 };
+    }
+    const bd = book.buddy;
+    if (!bd.mode) bd.mode = 'follow';
+    if (typeof bd.ch !== 'number') bd.ch = 0;
+    if (typeof bd.off !== 'number') bd.off = 0;
+    if (typeof bd.carry !== 'number') bd.carry = 0;
+    return bd;
+  }
+  // 只推进他和书的状态；调用方负责 saveIndex
+  function rdBuddyAdvance(book) {
+    const bd = rdBuddyGet(book);
+    if (!bd) return null;
+    const now = Date.now();
+    // 今天不读：跨天自动恢复原模式，当天只记更新时间
+    if (bd.mode === 'skip') {
+      if (bd.skipDay === rdTodayKey(now)) { bd.updatedAt = now; return bd; }
+      bd.mode = bd.prevMode === 'solo' ? 'solo' : 'follow';
+      bd.skipDay = '';
+      bd.updatedAt = now;
+    }
+    // 他还没翻开：等我第一次打开这本书时再起步
+    if (!bd.started) return bd;
+    const total = rdTotalWords(book);
+    if (!total) return bd;
+    const prog = book.progress || {};
+    const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
+    let his = rdFlatPos(book, bd.ch, bd.off);
+    if (bd.mode === 'solo') {
+      // 按离开时长推进，单次最多补 30 分钟，避免隔夜一口气读完整本
+      const dt = Math.max(0, Math.min(now - (bd.updatedAt || now), RD_CATCHUP_MAX_MS));
+      const ms = (bd.carry || 0) + dt;
+      const units = Math.floor(ms / 60000);
+      bd.carry = ms - units * 60000;
+      his = Math.min(total, his + units * RD_CHARS_PER_MIN);
+      bd.waiting = false;
+    } else {
+      if (his < mine) his = mine; // 跟随：追上来，但不往回退
+      bd.waiting = his > mine;    // 超到我前面就停下来等
+    }
+    const pos = rdPosFromFlat(book, Math.min(his, total));
+    bd.ch = pos.ch;
+    bd.off = pos.off;
+    bd.updatedAt = now;
+    book.status = his >= total ? 'done' : 'co';
+    return bd;
+  }
+  function rdBuddyState(book) {
+    const bd = rdBuddyGet(book);
+    if (!bd) return 'none';
+    if (!bd.started) return 'none';
+    if (bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now())) return 'skip';
+    const total = rdTotalWords(book);
+    const his = rdFlatPos(book, bd.ch, bd.off);
+    if (total && his >= total) return 'done';
+    const prog = book.progress || {};
+    const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
+    if (his > mine) return 'wait';
+    return 'read';
+  }
+  const RD_BUDDY_STATE_TEXT = {
+    none: '还没开始', read: '共读中', wait: '停在这等你', done: '读完了', skip: '今天不读'
+  };
+  // 文案池按状态分组；同一天内固定取同一条，跨天自然轮换
+  const RD_BUDDY_LINES = {
+    none: ['还没翻开这本书。', '他把书放在那儿，等你一起。', '书还合着，他也没动。'],
+    read: ['他在你旁边一页一页看。', '他刚翻过一页。', '他跟着你的速度往下读。'],
+    wait: ['他停在前面等你。', '他先读到前面去了，正等着你。', '他在前面那页等你跟上来。'],
+    done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
+    skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
+  };
+  function rdBuddyLine(book, state) {
+    const pool = RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read;
+    const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    return pool[Math.abs(h) % pool.length];
+  }
+  // 他的批注只在「我读到的那一页」浮现；我的批注不受这个闸门影响。
+  function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
+    if (!a) return false;
+    if (a.by === 'me') return true;
+    return a.e > pageStart && a.e <= pageEnd;
+  }
+
+  function rdCloseBuddyCard() {
+    const el = document.getElementById('rd-buddy-card');
+    if (el) el.hidden = true;
+  }
+  // 他在那一章读到第几页：不同章按需读正文再分页，不复用我当前页的页码
+  async function rdBuddyPageText(book, bd) {
+    const b = rdBook;
+    if (!b) return '';
+    let text = b.cache[bd.ch];
+    if (text == null) text = await getBody(b.id, bd.ch);
+    if (!rdBook || rdBook !== b || !text) return '';
+    const pages = rdPaginateText(b, bd.ch, text);
+    return '第 ' + (rdPageForOffset(pages, bd.off) + 1) + ' 页';
+  }
+  async function rdOpenBuddyCard() {
+    const b = rdBook;
+    if (!b) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    rdBuddyAdvance(book);
+    saveIndex(list);
+    // 小卡里的位置是按当前时间算出来的新真值，进度条上的圆点要同步重画，
+    // 否则会出现「卡片说他往前走了，圆点还停在原处」的错位。
+    rdUpdateBar();
+    const bd = rdBuddyGet(book);
+    const st = rdBuddyState(book);
+    const card = document.getElementById('rd-buddy-card');
+    const stateEl = document.getElementById('rd-buddy-state');
+    const posEl = document.getElementById('rd-buddy-pos');
+    const nearEl = document.getElementById('rd-buddy-near');
+    const modes = document.getElementById('rd-buddy-modes');
+    const jump = document.getElementById('rd-buddy-jump');
+    const myOff = (b.pages[b.pageIdx] || { s: 0 }).s;
+    const mine = rdFlatPos(book, b.ch, myOff);
+    const his = rdFlatPos(book, bd.ch, bd.off);
+    const chName = (b.toc[bd.ch] && b.toc[bd.ch].t) || ('第 ' + (bd.ch + 1) + ' 章');
+    if (stateEl) stateEl.textContent = RD_BUDDY_STATE_TEXT[st] + ' · ' + rdBuddyLine(book, st);
+    if (posEl) {
+      const pageTxt = st === 'none' || st === 'skip' ? '' : await rdBuddyPageText(book, bd);
+      posEl.textContent = st === 'none' ? '' :
+        (his > mine ? '他在前面，读到 ' : '他在 ') + chName + (pageTxt ? ' · ' + pageTxt : '');
+    }
+    if (modes) {
+      modes.querySelectorAll('[data-bmode]').forEach(function (btn) {
+        const m = btn.getAttribute('data-bmode');
+        const cur = bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now()) ? 'skip' : bd.mode;
+        btn.classList.toggle('on', m === cur);
+      });
+    }
+    if (jump) {
+      // 防剧透硬规则：他在我前面时只显示位置，不给跳转入口
+      jump.hidden = !(st === 'read' || st === 'wait' || st === 'done') || his >= mine;
+    }
+    if (nearEl) {
+      nearEl.textContent = '';
+      let arr = bd.ch === b.ch ? (b.anno || []) : await getAnnos(b.id, bd.ch);
+      if (!rdBook || rdBook !== b) return;
+      const n = (arr || []).filter(function (a) {
+        return a && a.by !== 'me' && Math.abs((a.e || 0) - bd.off) <= 5000;
+      }).length;
+      if (n) nearEl.textContent = '这附近他留了 ' + n + ' 条批注';
+    }
+    if (!rdBook || rdBook !== b) return;
+    if (card) card.hidden = false;
+  }
+  function rdBuddySetMode(mode) {
+    const b = rdBook;
+    if (!b) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    const bd = rdBuddyGet(book);
+    if (mode === 'skip') {
+      if (bd.mode !== 'skip') bd.prevMode = bd.mode;
+      bd.mode = 'skip';
+      bd.skipDay = rdTodayKey(Date.now());
+    } else {
+      bd.mode = mode === 'solo' ? 'solo' : 'follow';
+      bd.skipDay = '';
+      bd.prevMode = '';
+    }
+    bd.updatedAt = Date.now();
+    bd.carry = 0;
+    if (bd.mode !== 'solo') rdBuddyAdvance(book);
+    if (saveIndex(list)) {
+      rdUpdateBar();
+      rdOpenBuddyCard();
+      rdRenderShelf();
+    }
+  }
+  function rdJumpToBuddy() {
+    const b = rdBook;
+    if (!b) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    if (!book) return;
+    rdBuddyAdvance(book);
+    const bd = rdBuddyGet(book);
+    const myOff = (b.pages[b.pageIdx] || { s: 0 }).s;
+    if (rdFlatPos(book, bd.ch, bd.off) >= rdFlatPos(book, b.ch, myOff)) {
+      rdToast('他在前面，不跳过去');
+      return;
+    }
+    rdCloseBuddyCard();
+    saveIndex(list);
+    if (bd.ch !== b.ch) {
+      b.ch = bd.ch;
+      b.off = bd.off;
+      b.pageIdx = 0;
+      rdEnsureChapter('offset');
+    } else {
+      b.pageIdx = rdPageForOffset(b.pages, bd.off);
+      rdRenderPage();
+    }
   }
 
   // ===== 批注：选句 → 字卡 → 预览 → 落库 → 句尾角标 =====
@@ -670,7 +969,8 @@
     const end = p.e;
     const marks = {};
     (b.anno || []).forEach(function (a) {
-      if (a && a.e > start && a.e <= end) marks[a.e] = (marks[a.e] || 0) + 1;
+      // 他的批注走「我读到才浮现」的闸门；我的批注照常显示
+      if (rdBuddyAnnoVisible(a, start, end)) marks[a.e] = (marks[a.e] || 0) + 1;
     });
     const cuts = Object.keys(marks).map(Number).sort(function (x, y) { return x - y; });
     const sel = rdSel && rdSel.e > start && rdSel.s < end
@@ -867,6 +1167,7 @@
   function rdOpenSheet() {
     const sheet = document.getElementById('rd-anno-sheet');
     if (!sheet || !rdSel) return;
+    rdCloseBuddyCard();
     const bar = document.getElementById('rd-selbar');
     if (bar) bar.hidden = true;
     const s = document.getElementById('rd-anno-search');
@@ -952,6 +1253,7 @@
     if (!items.length) { pop.hidden = true; return; }
     rdClearSel(true);
     rdCloseAnnoOps();
+    rdCloseBuddyCard();
     rdPopPos = pos;
     const all = !!expand || items.length <= RD_POP_MAX;
     const show = all ? items : items.slice(0, RD_POP_MAX);
@@ -1240,6 +1542,7 @@
   function openToc() {
     const toc = document.getElementById('rd-toc');
     if (!toc) return;
+    rdCloseBuddyCard();
     rdRenderToc();
     toc.hidden = false;
     const prefs = document.getElementById('rd-prefs');
@@ -1293,8 +1596,11 @@
   function rdBadgeText(b) {
     if (!b) return '';
     if (b.missing) return '待重新导入';
-    if (b.status === 'done') return '他读完了';
-    if (b.buddy && b.buddy.waiting) return '等你';
+    const st = rdBuddyState(b);
+    if (st === 'done') return '他读完了';
+    if (st === 'wait') return '等你';
+    if (st === 'skip') return '今天不读';
+    if (st === 'none') return '未开始';
     return '共读中';
   }
   function rdRenderShelf() {
@@ -1564,7 +1870,7 @@
         createdAt: Date.now(),
         lastOpenAt: Date.now(),
         progress: { ch: 0, off: 0 },
-        buddy: { mode: 'follow', ch: 0, off: 0, updatedAt: Date.now(), waiting: false },
+        buddy: { mode: 'follow', ch: 0, off: 0, updatedAt: Date.now(), waiting: false, started: false, carry: 0 },
         status: 'co',
         cid: (typeof window.activePrefix === 'function' ? window.activePrefix() : 'default'),
         lostAnnos: []
@@ -1718,8 +2024,15 @@
     if (el.closest('#rd-shelf-back')) { rdClose(); return; }
     if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
+    // 底部「他在哪」：整行都是热区
+    if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
+    if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); return; }
+    const bMode = el.closest('#rd-buddy-modes [data-bmode]');
+    if (bMode) { e.preventDefault(); rdBuddySetMode(bMode.getAttribute('data-bmode')); return; }
+    if (el.closest('#rd-buddy-jump')) { e.preventDefault(); rdJumpToBuddy(); return; }
     if (el.closest('#rd-font-btn')) {
       e.preventDefault();
+      rdCloseBuddyCard();
       const prefs = document.getElementById('rd-prefs');
       if (prefs) { prefs.hidden = !prefs.hidden; rdRenderPrefsActive(); }
       closeToc();

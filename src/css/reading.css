@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 16px 24px}
@@ -28,8 +28,14 @@
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
-.rd-buddy-dot{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#f4b6c2;border:1.5px solid #fff}
-.rd-foot-row{display:flex;justify-content:space-between;font-size:11px;opacity:.65;margin-top:8px}
+.rd-buddy-dot{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#f4b6c2;border:1.5px solid #fff;z-index:2;transition:left .18s ease}
+/* 他在我前面：60% 不透明；同页：贴在我这一页末端外侧 6px */
+.rd-buddy-dot.rd-buddy-ahead{opacity:.6}
+.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28)}
+.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;opacity:.65;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#rd-page-no{flex:0 0 auto}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -113,3 +119,11 @@
 .rd-lost-item{padding:12px 0;border-bottom:1px solid var(--line,#eee)}
 .rd-lost-quote{padding:8px 10px;border-radius:10px;background:rgba(244,182,194,.14);font-size:12px;line-height:1.5;white-space:pre-wrap}
 .rd-lost-text{margin-top:6px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+
+/* 「他在哪」底部小卡 */
+.rd-buddy-card{position:absolute;left:0;right:0;bottom:0;z-index:7;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.rd-buddy-state{font-size:15px;line-height:1.6}
+.rd-buddy-pos,.rd-buddy-near{font-size:12px;line-height:1.6;opacity:.7}
+.rd-buddy-pos:empty,.rd-buddy-near:empty{display:none}
+.rd-buddy-modes{display:flex;gap:8px;flex-wrap:wrap}
+.rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
