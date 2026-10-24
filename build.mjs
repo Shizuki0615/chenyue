@@ -6616,7 +6616,7 @@ const FIX_SENTINELS = [
   { name: '#1553i 减少动态效果时呼吸光转静态（删＝关掉系统动效后小卡仍一直呼吸）', file: 'css/reading.css', needle: '@media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}' },
   { name: '#1553j 翻章前把上一章末尾那句留下来（删＝翻了章才取句，锚到新章开头、语义错位）', file: 'js/reading.js', needle: 'rdTogChapterNote(b); b.ch++;' },
   { name: '#1553k 章末一句要同读满十五分钟（删＝刚打开书翻章就留，变成每章必留）', file: 'js/reading.js', needle: 'if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;' },
-  { name: '#1553l 一次会话最多留一句（删＝连续读五章会在五章末尾各留一句）', file: 'js/reading.js', needle: 'if (!b || rdTogNoteLogged) return;' },
+  { name: '#1553l 一次会话最多留一句（删＝连续读五章会在五章末尾各留一句）', file: 'js/reading.js', needle: 'if (!rdCoopOn() || !b || rdTogNoteLogged) return;' },
   { name: '#1553m 同一章只留一次（删＝重复翻回同一章会叠出多条相同纸条）', file: 'js/reading.js', needle: 'if (done.indexOf(ch) >= 0) return;' },
   { name: '#1553n 章末一句要求此刻确实在共读（删＝不在同读状态也往章末塞纸条）', file: 'js/reading.js', needle: "if (!book || !rdTogetherOn(book)) return;" },
   { name: '#1553o 章末一句存进该章批注数组（删＝只弹一句提示，翻回去看不到任何东西）', file: 'js/reading.js', needle: "rdToast('他在上一章的末尾留了一句。');" },

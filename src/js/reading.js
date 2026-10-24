@@ -13,6 +13,7 @@
   // 字号/行距/背景偏好：全局小键，不进备份白名单也不进书架索引
   const RD_PREFS_KEY = 'reading-prefs';
   const RD_BG_KEY = 'reading-bg';
+  const RD_COOP_KEY = 'reading-coop';
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
@@ -436,6 +437,14 @@
           '</div>' +
         '</div>' +
         '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+        '<div class="gs-title">共读</div>' +
+        '<div class="set-group glass">' +
+          '<div class="rd-set-row rd-set-toggle">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(settingsPage);
@@ -443,6 +452,8 @@
     if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
     const lhRange = settingsPage.querySelector('#rd-set-lh-range');
     if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+    const coopToggle = settingsPage.querySelector('#rd-coop-toggle');
+    if (coopToggle) coopToggle.addEventListener('change', function () { rdSetCoop(this.checked); });
     rdRenderPrefsActive();
     return settingsPage;
   }
@@ -886,6 +897,18 @@
     fill.style.width = myPct + '%';
     // 展示用的推进只算在内存里，真正落盘统一走 rdWriteProgress，避免每次翻页都写索引
     rdBuddyAdvance(book);
+    if (!rdCoopOn()) {
+      const dot = document.getElementById('rd-buddy-dot');
+      if (dot) dot.hidden = true;
+      const line = document.getElementById('rd-buddy');
+      if (line) {
+        line.textContent = '';
+        line.classList.remove('rd-buddy-same-text', 'rd-tog', 'rd-pace');
+      }
+      const lamp = document.getElementById('rd-lamp');
+      if (lamp) lamp.hidden = true;
+      return;
+    }
     const st = rdBuddyState(book);
     const bd = rdBuddyGet(book);
     const dot = document.getElementById('rd-buddy-dot');
@@ -942,9 +965,11 @@
   }
   function rdBmScheduleWait() {
     rdBmPauseWait();
+    if (!rdCoopOn()) { rdBookmarkWaitPage = ''; return; }
     if (!rdBookmarkWaitPage) return;
     rdBookmarkWaitTimer = setTimeout(function () {
       rdBookmarkWaitTimer = 0;
+      if (!rdCoopOn()) return;
       const b = rdBook;
       if (!b) return;
       if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
@@ -961,7 +986,7 @@
     }, RD_BOOKMARK_WAIT_MS);
   }
   function rdMaybeBookmarkReturn(book, b, bd, st) {
-    if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+    if (!rdCoopOn() || rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
     if (!(bd.ch > b.ch)) return;
     const dot = document.getElementById('rd-buddy-dot');
     if (!dot || dot.hidden) return;
@@ -1075,6 +1100,7 @@
     if (!book) return;
     const bd = rdBuddyGet(book);
     if (!bd || !bd.started || bd.mode !== 'follow') return;
+    if (!rdCoopOn()) return;
     if (rdBuddyState(book) !== 'read') return;
     rdBuddyAdvance(book);
     rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
@@ -1153,6 +1179,7 @@
   function rdSyncLamp(book, st) {
     const lamp = document.getElementById('rd-lamp');
     if (!lamp) return;
+    if (!rdCoopOn()) { lamp.hidden = true; return; }
     const now = new Date();
     const hr = now.getHours();
     const night = hr >= 22 || hr < 7;
@@ -1191,7 +1218,7 @@
 
   function rdTogetherOn(book) {
     const s = rdHabitSession;
-    if (!s || !book) return false;
+    if (!rdCoopOn() || !s || !book) return false;
     if (Date.now() - s.start < RD_TOG_MIN_MS) return false;
     return rdBuddyState(book) === 'read';
   }
@@ -1200,6 +1227,7 @@
   }
   // 每累计三次同读，书脊多一道细纹；封顶五道，不让书脊画花
   function rdTogSpine(book) {
+    if (!rdCoopOn()) return 0;
     return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));
   }
   // 一次阅读会话只计一次：按翻页数累加的话，读得快的人一晚上就能把书脊长满
@@ -1212,6 +1240,7 @@
   // 停在某一页读够十分钟时页脚要自己亮起来，不能只在翻页那一刻才算
   function rdTogWatchStart() {
     rdTogWatchStop();
+    if (!rdCoopOn()) return;
     rdTogTimer = setInterval(function () {
       if (!rdBook) { rdTogWatchStop(); return; }
       rdUpdateBar();
@@ -1223,7 +1252,7 @@
   // 同读满十五分钟再往下翻章：他在刚读完那一章的末尾留一句。
   // 这句说的就是「刚翻过去的那一章」，所以锚在旧章末尾，往回翻才看得到。
   function rdTogChapterNote(b) {
-    if (!b || rdTogNoteLogged) return;
+    if (!rdCoopOn() || !b || rdTogNoteLogged) return;
     const s = rdHabitSession;
     if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;
     if (rdNightGuard()) return;
@@ -1339,7 +1368,7 @@
   }
   // 只在章末那一页给感想；同读优先，这里只管翻页节奏
   function rdPaceNote(book, b) {
-    if (!book || !b || !b.pages.length) return '';
+    if (!rdCoopOn() || !book || !b || !b.pages.length) return '';
     if (b.pageIdx !== b.pages.length - 1) return '';
     const pace = book.pace;
     if (!pace || pace.ch !== b.ch) return '';
@@ -1357,6 +1386,7 @@
   let rdCrossKey = '';
 
   async function rdCrossOldAnnos(book) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !book || !b.pages.length) return;
     if (rdNightGuard()) return;
@@ -1407,6 +1437,7 @@
   }
   // 点开旧句：他有概率接一句，同一条只回应一次
   async function rdMissReply(id) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !id) return;
     const list = readIndex();
@@ -1553,6 +1584,8 @@
     const bd = rdBuddyGet(book);
     if (!bd) return null;
     const now = Date.now();
+    // 共读关闭时冻结他的位置，只把时间戳拨到现在，重新打开不补算关闭期间的阅读
+    if (!rdCoopOn()) { bd.updatedAt = now; return bd; }
     // 今天不读：跨天自动恢复原模式，当天只记更新时间
     if (bd.mode === 'skip') {
       if (bd.skipDay === rdTodayKey(now)) { bd.updatedAt = now; return bd; }
@@ -1629,8 +1662,9 @@
   // 封存纸条（sealed）一律先挡住，等 rdUnlockSealed 把我的进度越过后再放行。
   function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
     if (!a) return false;
-    if (a.sealed) return false;
     if (a.by === 'me') return true;
+    if (!rdCoopOn()) return false;
+    if (a.sealed) return false;
     return a.e > pageStart && a.e <= pageEnd;
   }
   // 批注归属哪一句：取与批注区间重叠最多的一句；重叠不到批注长度的一半，视为跨句失配。
@@ -1670,7 +1704,9 @@
     const out = [];
     const seen = new Set();
     const sents = (b && b.sents) || [];
-    const groups = rdAnnoGroups(sents, (b && b.anno) || []);
+    const all = (b && b.anno) || [];
+    const annos = rdCoopOn() ? all : all.filter(function (a) { return a && a.by === 'me'; });
+    const groups = rdAnnoGroups(sents, annos);
     Object.keys(groups).forEach(function (k) {
       const g = groups[k];
       const sn = sents[g.idx];
@@ -1681,7 +1717,7 @@
         out.push(a);
       });
     });
-    ((b && b.anno) || []).forEach(function (a) {
+    annos.forEach(function (a) {
       if (!a || a.e !== pos || seen.has(a)) return;
       seen.add(a);
       out.push(a);
@@ -1693,6 +1729,7 @@
   // 总开关跟随字卡库「共读批注」分类：整组停用、逐张关光、二级密码锁或概率 0% 时，
   // 淡痕与双圈一起关闭，不另设入口。
   function rdTraceEnabled() {
+    if (!rdCoopOn()) return false;
     if (rdDcfRatio() <= 0) return false;
     const pool = rdLibPool('anno');
     return pool === null ? true : pool.length > 0;
@@ -1722,6 +1759,7 @@
     return '第 ' + (rdPageForOffset(pages, bd.off) + 1) + ' 页';
   }
   async function rdOpenBuddyCard() {
+    if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -1778,6 +1816,7 @@
     if (card) card.hidden = false;
   }
   function rdBuddySetMode(mode) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -1803,6 +1842,7 @@
     }
   }
   function rdJumpToBuddy() {
+    if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -2004,9 +2044,11 @@
   // 翻到一页后静一下再决定要不要留纸条：不打断阅读，也不在每页都必然出现
   function rdScheduleHisAnno() {
     clearTimeout(rdHisTimer);
+    if (!rdCoopOn()) return;
     rdHisTimer = setTimeout(rdMaybeHisAnno, 850);
   }
   async function rdMaybeHisAnno(force) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !b.pages.length) return;
     if (rdNightGuard()) return;
@@ -2176,7 +2218,7 @@
     return null;
   }
   async function rdMaybeSeal(book) {
-    if (rdSealBusy || rdUnlockBusy || !book) return;
+    if (!rdCoopOn() || rdSealBusy || rdUnlockBusy || !book) return;
     if (rdNightGuard()) return;
     const bd = rdBuddyGet(book);
     if (!bd || !bd.started || bd.mode !== 'solo') return;
@@ -2237,7 +2279,7 @@
     } catch (e) {}
   }
   async function rdUnlockSealed(book) {
-    if (rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
+    if (!rdCoopOn() || rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
     const myCh = Number(book.progress && book.progress.ch) || 0;
     const myOff = Number(book.progress && book.progress.off) || 0;
     const pending = book.sealed.filter(function (s) {
@@ -2288,6 +2330,7 @@
 
   // 下次打开这本书时才处理待回应：他的位置越过那句 + 状态是「共读中」才掷骰子
   async function rdBuddyProcessReplies(force) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b) return;
     if (rdNightGuard()) return;
@@ -2415,7 +2458,9 @@
     }
     // 同一句里两人都留过批注：合并成一个句尾双圈，双圈优先、不再显示数字。
     // 他若还在未读区间，这个合并不成立，先按单圈显示，等我读到再补。
-    const groups = rdAnnoGroups(sents, b.anno || []);
+    const allAnnos = b.anno || [];
+    const annos = rdCoopOn() ? allAnnos : allAnnos.filter(function (a) { return a && a.by === 'me'; });
+    const groups = rdAnnoGroups(sents, annos);
     const consumed = new Set();
     const merged = {};
     Object.keys(groups).forEach(function (k) {
@@ -2427,7 +2472,7 @@
       g.list.forEach(function (a) { consumed.add(a); });
     });
     const marks = {};
-    (b.anno || []).forEach(function (a) {
+    annos.forEach(function (a) {
       if (consumed.has(a)) return;
       // 他的批注走「我读到才浮现」的闸门；我的批注照常显示
       if (!rdBuddyAnnoVisible(a, start, end)) return;
@@ -3069,6 +3114,40 @@
     catch (e) {}
     rdRenderPrefsActive();
   }
+  function rdCoopOn() {
+    try { return store.get(RD_COOP_KEY) !== 'off'; }
+    catch (e) { return true; }
+  }
+  function rdSetCoop(on) {
+    try { store.set(RD_COOP_KEY, on ? 'on' : 'off'); }
+    catch (e) {}
+    if (on) {
+      // 重新打开从当下继续：把所有书的更新时间拨到现在，关闭期间不补算他的阅读
+      const list = readIndex();
+      const now = Date.now();
+      for (let i = 0; i < list.length; i++) {
+        const bd = rdBuddyGet(list[i]);
+        if (bd) bd.updatedAt = now;
+      }
+      saveIndex(list);
+    } else {
+      rdTogWatchStop();
+      rdBmClearWait();
+      rdCloseBuddyCard();
+      rdClosePop();
+    }
+    rdRenderPrefsActive();
+    if (rdBook) {
+      const reader = document.getElementById('rd-reader');
+      if (reader && !reader.hidden) {
+        rdRenderPage();
+        rdUpdateBar();
+      }
+    }
+    rdRenderShelf();
+    if (on) rdTogWatchStart();
+    rdToast(on ? '共读已打开' : '共读已关闭');
+  }
   function rdSetPrefs(patch) {
     const p = rdReadPrefs();
     if (patch && patch.fs) p.fs = patch.fs;
@@ -3136,6 +3215,8 @@
     });
     const bgVal = document.getElementById('rd-set-bg-val');
     if (bgVal) bgVal.textContent = RD_BG_LABEL[bg] || RD_BG_LABEL.auto;
+    const coopToggle = document.getElementById('rd-coop-toggle');
+    if (coopToggle) coopToggle.checked = rdCoopOn();
     rdApplyBg();
   }
 
@@ -3217,6 +3298,7 @@
   function rdBadgeText(b) {
     if (!b) return '';
     if (b.missing) return '待重新导入';
+    if (!rdCoopOn()) return '';
     const st = rdBuddyState(b);
     if (st === 'done') return '他读完了';
     if (st === 'wait') return '等你';
@@ -3239,6 +3321,7 @@
       const b = list[i];
       if (!b || !b.id) continue;
       const title = b.title || '未命名';
+      const badge = rdBadgeText(b);
       // 累计同读每满三次，书脊上多一道细纹
       const spine = rdTogSpine(b);
       let ribs = '';
@@ -3248,7 +3331,7 @@
           (ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
         '<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
         '<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-        '<span class="rd-badge">' + rdEsc(rdBadgeText(b)) + '</span>' +
+        (badge ? '<span class="rd-badge">' + rdEsc(badge) + '</span>' : '') +
       '</div>';
     }
     grid.innerHTML = html;
@@ -3256,6 +3339,10 @@
     // 共读手账：只给章序号，不给内容；七天没读到改口「他还在等」，十四天收回
     const ledger = document.getElementById('rd-ledger');
     if (ledger) {
+      if (!rdCoopOn()) {
+        ledger.innerHTML = '';
+        ledger.hidden = true;
+      } else {
       const now = Date.now();
       const DAY = 86400000;
       let led = '';
@@ -3286,6 +3373,7 @@
       for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
       ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
       ledger.hidden = !led;
+      }
     }
     const usage = document.getElementById('rd-usage');
     if (usage) {
