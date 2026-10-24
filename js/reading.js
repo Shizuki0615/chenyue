@@ -7,6 +7,9 @@ const RD_INDEX_KEY = 'reading-books';
 const RD_PREFS_KEY = 'reading-prefs';
 const RD_BG_KEY = 'reading-bg';
 const RD_COOP_KEY = 'reading-coop';
+const RD_LAMP_KEY = 'reading-lamp';
+const RD_BOOKMARK_KEY = 'reading-bookmark';
+const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_BODY_P = 'xy-home-v2:reading-body:';
@@ -404,6 +407,21 @@ settingsPage.innerHTML =
 '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
 '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
 '</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
+'</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
+'</div>' +
+'<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
+'<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
+'<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
+'</div>' +
 '</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
@@ -414,6 +432,12 @@ const lhRange = settingsPage.querySelector('#rd-set-lh-range');
 if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
 const coopToggle = settingsPage.querySelector('#rd-coop-toggle');
 if (coopToggle) coopToggle.addEventListener('change', function () { rdSetCoop(this.checked); });
+const lampToggle = settingsPage.querySelector('#rd-lamp-toggle');
+if (lampToggle) lampToggle.addEventListener('change', function () { rdSetLamp(this.checked); });
+const bmToggle = settingsPage.querySelector('#rd-bookmark-toggle');
+if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
+const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
+if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
 rdRenderPrefsActive();
 return settingsPage;
 }
@@ -871,6 +895,7 @@ rdBmPauseWait();
 rdBookmarkWaitPage = '';
 }
 function rdBookmarkTake(book) {
+if (!rdBookmarkOn()) return false;
 try {
 const list = readIndex();
 const fb = rdFindBook(book.id, list);
@@ -886,10 +911,12 @@ return true;
 function rdBmScheduleWait() {
 rdBmPauseWait();
 if (!rdCoopOn()) { rdBookmarkWaitPage = ''; return; }
+if (!rdBookmarkOn()) { rdBookmarkWaitPage = ''; return; }
 if (!rdBookmarkWaitPage) return;
 rdBookmarkWaitTimer = setTimeout(function () {
 rdBookmarkWaitTimer = 0;
 if (!rdCoopOn()) return;
+if (!rdBookmarkOn()) return;
 const b = rdBook;
 if (!b) return;
 if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
@@ -906,7 +933,7 @@ rdToast(line);
 }, RD_BOOKMARK_WAIT_MS);
 }
 function rdMaybeBookmarkReturn(book, b, bd, st) {
-if (!rdCoopOn() || rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+if (!rdCoopOn() || !rdBookmarkOn() || rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
 if (!(bd.ch > b.ch)) return;
 const dot = document.getElementById('rd-buddy-dot');
 if (!dot || dot.hidden) return;
@@ -971,6 +998,7 @@ store.set(RD_HABIT_KEY, JSON.stringify(h));
 function rdHabitAdd(side, sec, pages, hour, at) {
 const secs = Math.round(Number(sec) || 0);
 if (secs <= 0) return;
+if (side === 'him' && !rdHabitSyncOn()) return;
 const h = rdHabitLoad();
 const when = Number(at) || Date.now();
 const day = rdTodayKey(when);
@@ -1060,6 +1088,7 @@ return h + ' 点';
 }
 function rdHabitObs(book) {
 if (!book) return '';
+if (!rdHabitSyncOn()) return '';
 const st = rdBuddyState(book);
 if (st === 'none' || st === 'skip') return '';
 const h = rdHabitLoad();
@@ -1089,6 +1118,7 @@ function rdSyncLamp(book, st) {
 const lamp = document.getElementById('rd-lamp');
 if (!lamp) return;
 if (!rdCoopOn()) { lamp.hidden = true; return; }
+if (!rdLampOn()) { lamp.hidden = true; return; }
 const now = new Date();
 const hr = now.getHours();
 const night = hr >= 22 || hr < 7;
@@ -1100,7 +1130,7 @@ if (him) him.classList.add('on');
 if ((hr === 23 && now.getMinutes() >= 30) || hr < 7) rdHabitLateNote(book);
 }
 function rdHabitLateNote(book) {
-if (!book) return;
+if (!rdLampOn() || !book) return;
 const day = rdTodayKey();
 if (book.lateNoteDay === day) return;
 book.lateNoteDay = day;
@@ -2864,6 +2894,30 @@ rdRenderShelf();
 if (on) rdTogWatchStart();
 rdToast(on ? '共读已打开' : '共读已关闭');
 }
+function rdFlagOn(key) {
+try { return store.get(key) !== 'off'; }
+catch (e) { return true; }
+}
+function rdLampOn() { return rdFlagOn(RD_LAMP_KEY); }
+function rdBookmarkOn() { return rdFlagOn(RD_BOOKMARK_KEY); }
+function rdHabitSyncOn() { return rdFlagOn(RD_HABIT_SYNC_KEY); }
+function rdSetLamp(on) {
+try { store.set(RD_LAMP_KEY, on ? 'on' : 'off'); } catch (e) {}
+rdRenderPrefsActive();
+if (rdBook) {
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) rdUpdateBar();
+}
+}
+function rdSetBookmark(on) {
+try { store.set(RD_BOOKMARK_KEY, on ? 'on' : 'off'); } catch (e) {}
+if (!on) rdBmClearWait();
+rdRenderPrefsActive();
+}
+function rdSetHabitSync(on) {
+try { store.set(RD_HABIT_SYNC_KEY, on ? 'on' : 'off'); } catch (e) {}
+rdRenderPrefsActive();
+}
 function rdSetPrefs(patch) {
 const p = rdReadPrefs();
 if (patch && patch.fs) p.fs = patch.fs;
@@ -2929,6 +2983,18 @@ const bgVal = document.getElementById('rd-set-bg-val');
 if (bgVal) bgVal.textContent = RD_BG_LABEL[bg] || RD_BG_LABEL.auto;
 const coopToggle = document.getElementById('rd-coop-toggle');
 if (coopToggle) coopToggle.checked = rdCoopOn();
+const subOn = rdCoopOn();
+function syncSub(id, on) {
+const el = document.getElementById(id);
+if (!el) return;
+el.checked = on;
+el.disabled = !subOn;
+const row = el.closest('.rd-set-sub');
+if (row) row.classList.toggle('is-off', !subOn);
+}
+syncSub('rd-lamp-toggle', rdLampOn());
+syncSub('rd-bookmark-toggle', rdBookmarkOn());
+syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
 rdApplyBg();
 }
 function rdRenderToc() {

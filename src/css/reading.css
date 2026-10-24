@@ -135,6 +135,9 @@
 .rd-set-row-v{font-size:11.5px;color:var(--muted)}
 .rd-set-toggle .rd-set-row-h{align-items:center}
 .rd-set-row-desc{font-size:11.5px;line-height:1.6;color:var(--muted)}
+.rd-set-sub{padding-left:28px}
+.rd-set-sub .rd-set-row-t{font-size:13px}
+.rd-set-sub.is-off{opacity:.45}
 .rd-set-slider{display:flex;align-items:center;gap:10px}
 .rd-set-slider span{flex:none;font-size:11px;color:var(--muted)}
 .rd-set-slider input[type="range"]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;width:0;height:28px;padding:0;background:transparent}
