@@ -432,5 +432,41 @@ window.DEFAULT_CARD_DATA.interact.push(["游戏邀请·婉拒",["下次吧，现
 window.DEFAULT_CARD_DATA.interact.push(["朋友圈·他的点评",["收到啦~","我看到了！","这条动态好可爱","记住啦","我也是这么想的","嗯嗯，说得对"]]);
 window.DEFAULT_CARD_DATA.interact.push(["朋友圈·他的回复",["哈哈，好呀","那你呢？","嗯嗯，说得对","我记住啦","跟你分享过的","被你发现了","那很好呀","我也这么觉得"]]);
 window.DEFAULT_CARD_DATA.interact.push(["我发出的邀请",["想和你猜拳，来一局？","想和你玩一局 Pong，来吗？","想和你玩双人贪吃蛇，来吗？","想和你一起听歌"]]);
+window.DEFAULT_CARD_DATA.reading = [
+["他 留在句边", [
+"这里我停了一下。",
+"读到这句的时候，周围正好安静下来。",
+"我也想过一样的事。",
+"这句我想抄下来。",
+"原来你也会被这种句子留住。",
+"这一句读得很慢。",
+"这里让人想起很旧的一个下午。",
+"我把这句又读了一遍。",
+"写这句话的人，大概也在犹豫。",
+"这里适合合上书想一会儿。",
+"读到这儿，忽然不想往下翻了。",
+"这句轻，但落得很深。",
+"我喜欢这里的停顿。",
+"这一句有光。",
+"像是有人替我把话说完了。",
+"这里我先记住了。",
+"读完这句，安静了一会儿。",
+"这句让我想起你之前说过的话。",
+"读到这里，心里空了一下。",
+"这一段值得慢一点。"
+]],
+["他 回应我的批注", [
+"嗯，我也这么想。",
+"你标在这里的这句，我也停下来看了。",
+"原来你注意的是这里。",
+"这句被你圈出来之后，更好看了。",
+"我读到这里的时候，想的是同一件事。",
+"你写的这句，我收下了。",
+"是这个感觉。",
+"我也在这句旁边待了一会儿。",
+"被你这么一说，我又回头看了一遍。",
+"嗯，这里确实值得留一张纸条。"
+]]
+];
 if (window.__mochiLoaded) window.__mochiLoaded.push("default-cards-data.js");
 } catch (__e) { if (window.__mochiErrLoaded) window.__mochiErrLoaded.push("default-cards-data.js"); try { console.error("[JS] default-cards-data.js", __e && __e.message || __e); } catch (x) {} if (window.__jsErrors) window.__jsErrors.push("[default-cards-data.js] " + String(__e && __e.message || __e)); } })();

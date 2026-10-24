@@ -997,6 +997,17 @@
   function rdNightGuard() {
     try { return !!(window.nightModeActive && window.nightModeActive()); } catch (e) { return false; }
   }
+  // 字卡库「共读批注」分类的概率闸（默认 100% = 保持原节奏，0% = 他不再留纸条/回应）。
+  // dcfGet 已套「系统预设字卡总档」与总开关，与其余功能字卡的取数口径一致。
+  function rdDcfRatio() {
+    try {
+      if (window.dcfGet) {
+        const v = Number(window.dcfGet('reading'));
+        if (!isNaN(v)) return Math.max(0, Math.min(100, v)) / 100;
+      }
+    } catch (e) {}
+    return 1;
+  }
 
   // 章内断句：与选句共用同一套句末字符，保证「他锚定的句子」和我长按选到的是同一句
   function rdSentenceList(text) {
@@ -1043,26 +1054,42 @@
     for (let i = 0; i < RD_HIS_WORDS.length; i++) if (t.indexOf(RD_HIS_WORDS[i]) >= 0) sc += 1;
     return sc;
   }
-  // 他的批注文案：优先取字卡库的共读批注类（将来由字卡库提供），否则用内置池；
+  // 取字卡库「共读批注」分类的组内容。只要数据文件里确有 reading 分类，就完全信任
+  // getLibPool 的结果——逐张关光 / 整组停用 / 二级密码锁时它返回空数组，此时不能回落内置池
+  // （否则刚关掉的句子又会被它捡回来）。只有数据文件缺这一分类时才返回 null，由调用方用内置池。
+  function rdLibPool(kind) {
+    let hasData = false;
+    try { hasData = !!(window.DEFAULT_CARD_DATA && Array.isArray(window.DEFAULT_CARD_DATA.reading)); } catch (e) {}
+    if (!hasData || !window.getReadingAnnoCards) return null;
+    try {
+      const a = window.getReadingAnnoCards(kind);
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  // 他的批注文案：优先取字卡库的共读批注类，否则用内置池；
   // 同一本书里不重复同一条文案（只存短哈希，索引不会涨大）。
   function rdHisText(book) {
-    let pool = [];
-    try {
-      if (window.getReadingAnnoCards) pool = window.getReadingAnnoCards() || [];
-    } catch (e) { pool = []; }
+    let pool = rdLibPool('anno');
+    if (pool === null) pool = RD_HIS_ANNO_POOL.slice();
     pool = pool.filter(function (t) {
       return typeof t === 'string' && t.trim() && t.trim().length <= 120;
     }).map(function (t) { return t.trim(); });
-    if (!pool.length) pool = RD_HIS_ANNO_POOL.slice();
+    if (!pool.length) return ''; // 全部关闭/锁定＝他不再留纸条
     const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
     let avail = pool.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
     if (!avail.length) avail = pool; // 池子用尽就允许复用，不因此断掉批注
     return avail[Math.floor(Math.random() * avail.length)];
   }
   function rdHisReplyText(book) {
+    let pool = rdLibPool('reply');
+    if (pool === null) pool = RD_HIS_REPLY_POOL.slice();
+    pool = pool.filter(function (t) {
+      return typeof t === 'string' && t.trim() && t.trim().length <= 500;
+    }).map(function (t) { return t.trim(); });
+    if (!pool.length) return '';
     const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
-    let avail = RD_HIS_REPLY_POOL.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
-    if (!avail.length) avail = RD_HIS_REPLY_POOL;
+    let avail = pool.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
+    if (!avail.length) avail = pool;
     return avail[Math.floor(Math.random() * avail.length)];
   }
 
@@ -1109,7 +1136,7 @@
     if (!force) {
       if (key === rdHisTryKey) return;
       rdHisTryKey = key;
-      if (Math.random() > RD_HIS_CHANCE) return;
+      if (Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
     }
 
     // 目标章可能是他读到的那一章，不一定是屏幕上这一章
@@ -1218,14 +1245,16 @@
       if (!mine) continue; // 我那条已经删了，队列作废
       if (arr.some(function (x) { return x && x.replyTo === q.id; })) continue; // 已经回过
       // 每句只掷一次：没中就一直安静留着，不再整轮重试
-      if (!force && Math.random() > RD_REPLY_CHANCE) continue;
+      if (!force && Math.random() > RD_REPLY_CHANCE * rdDcfRatio()) continue;
+      const repTxt = rdHisReplyText(book);
+      if (!repTxt) continue; // 回应字卡被逐张关光/整组停用/锁定＝这一句就安静留着
       const item = {
         id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
         by: 'his',
         s: mine.s,
         e: mine.e,
         quote: mine.quote,
-        text: rdHisReplyText(book).slice(0, 500),
+        text: repTxt.slice(0, 500),
         at: Date.now(),
         replyTo: q.id,
         rev: 1,

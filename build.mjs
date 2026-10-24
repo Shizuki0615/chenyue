@@ -6552,6 +6552,8 @@ const FIX_SENTINELS = [
   { name: '#1547r 阅读页登记为全屏页（删＝进阅读器后 tabbar 常驻，遮住底部「他在哪」行）', file: 'js/tabs.js', needle: "'page-reading'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
+  { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },
+  { name: '#1547v 取池只在数据缺失时回落内置池（改成空数组就回落＝刚关掉的句子又被内置池捡回来）', file: 'js/reading.js', needle: 'if (pool === null) pool = RD_HIS_ANNO_POOL.slice();' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

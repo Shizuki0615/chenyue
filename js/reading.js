@@ -896,6 +896,15 @@ const RD_HIS_WORDS = ('突然 忽然 眼泪 哭 笑 心跳 声音 安静 温柔 
 function rdNightGuard() {
 try { return !!(window.nightModeActive && window.nightModeActive()); } catch (e) { return false; }
 }
+function rdDcfRatio() {
+try {
+if (window.dcfGet) {
+const v = Number(window.dcfGet('reading'));
+if (!isNaN(v)) return Math.max(0, Math.min(100, v)) / 100;
+}
+} catch (e) {}
+return 1;
+}
 function rdSentenceList(text) {
 const src = String(text || '');
 const out = [];
@@ -938,24 +947,37 @@ if (/[，、；：]/.test(t)) sc += 1;
 for (let i = 0; i < RD_HIS_WORDS.length; i++) if (t.indexOf(RD_HIS_WORDS[i]) >= 0) sc += 1;
 return sc;
 }
-function rdHisText(book) {
-let pool = [];
+function rdLibPool(kind) {
+let hasData = false;
+try { hasData = !!(window.DEFAULT_CARD_DATA && Array.isArray(window.DEFAULT_CARD_DATA.reading)); } catch (e) {}
+if (!hasData || !window.getReadingAnnoCards) return null;
 try {
-if (window.getReadingAnnoCards) pool = window.getReadingAnnoCards() || [];
-} catch (e) { pool = []; }
+const a = window.getReadingAnnoCards(kind);
+return Array.isArray(a) ? a : [];
+} catch (e) { return []; }
+}
+function rdHisText(book) {
+let pool = rdLibPool('anno');
+if (pool === null) pool = RD_HIS_ANNO_POOL.slice();
 pool = pool.filter(function (t) {
 return typeof t === 'string' && t.trim() && t.trim().length <= 120;
 }).map(function (t) { return t.trim(); });
-if (!pool.length) pool = RD_HIS_ANNO_POOL.slice();
+if (!pool.length) return ''; // 全部关闭/锁定＝他不再留纸条
 const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
 let avail = pool.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
 if (!avail.length) avail = pool; // 池子用尽就允许复用，不因此断掉批注
 return avail[Math.floor(Math.random() * avail.length)];
 }
 function rdHisReplyText(book) {
+let pool = rdLibPool('reply');
+if (pool === null) pool = RD_HIS_REPLY_POOL.slice();
+pool = pool.filter(function (t) {
+return typeof t === 'string' && t.trim() && t.trim().length <= 500;
+}).map(function (t) { return t.trim(); });
+if (!pool.length) return '';
 const used = Array.isArray(book.buddyTexts) ? book.buddyTexts : [];
-let avail = RD_HIS_REPLY_POOL.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
-if (!avail.length) avail = RD_HIS_REPLY_POOL;
+let avail = pool.filter(function (t) { return used.indexOf(rdCardKey(t)) < 0; });
+if (!avail.length) avail = pool;
 return avail[Math.floor(Math.random() * avail.length)];
 }
 function rdBuddyFrontier(book, b) {
@@ -995,7 +1017,7 @@ const key = b.id + '|' + b.ch + '|' + b.pageIdx + '|' + at.ch + '|' + at.off;
 if (!force) {
 if (key === rdHisTryKey) return;
 rdHisTryKey = key;
-if (Math.random() > RD_HIS_CHANCE) return;
+if (Math.random() > RD_HIS_CHANCE * rdDcfRatio()) return;
 }
 const targetCh = at.ch;
 const cur = targetCh === b.ch;
@@ -1098,14 +1120,16 @@ const arr = cache[q.ch];
 const mine = arr.filter(function (x) { return x && x.id === q.id; })[0];
 if (!mine) continue; // 我那条已经删了，队列作废
 if (arr.some(function (x) { return x && x.replyTo === q.id; })) continue; // 已经回过
-if (!force && Math.random() > RD_REPLY_CHANCE) continue;
+if (!force && Math.random() > RD_REPLY_CHANCE * rdDcfRatio()) continue;
+const repTxt = rdHisReplyText(book);
+if (!repTxt) continue; // 回应字卡被逐张关光/整组停用/锁定＝这一句就安静留着
 const item = {
 id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
 by: 'his',
 s: mine.s,
 e: mine.e,
 quote: mine.quote,
-text: rdHisReplyText(book).slice(0, 500),
+text: repTxt.slice(0, 500),
 at: Date.now(),
 replyTo: q.id,
 rev: 1,
