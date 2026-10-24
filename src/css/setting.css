@@ -348,3 +348,8 @@ button.ca-jump { background:none; border:0; color:inherit; font:inherit; padding
 [data-theme="dark"] .ca-flow-ok { color:#4fd18f; }
 [data-theme="dark"] .ca-flow-no { color:#ef7b76; }
 [data-theme="dark"] .ca-badge { background:#ef7b76; color:#1a1a1a; }
+
+/* 2026-10-24 简化开屏：开启时把问答门与字卡锁两组从设置页收起（applock.js 在 <html> 上挂类） */
+html.simple-gates #row-applock-qa,
+html.simple-gates #row-cardlock-group { display:none !important; }
+

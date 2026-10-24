@@ -66,7 +66,12 @@
   })();
   // 汇合点统一问这里：锁定 = 系统预设字卡整体不存在
   let lastOpen = isOpen();
-  window.cardLockOpen = isOpen;
+  // 2026-10-24 简化开屏：开启时字卡锁按已解锁处理（不改进度/不删数据，只在取值口放行）。
+  // 关掉简化后回到原状态键，原来的锁定/解锁流程一字未动。
+  window.cardLockOpen = function () {
+    try { if (window.mochiSimpleGates && window.mochiSimpleGates()) return true; } catch (e) {}
+    return isOpen();
+  };
   // #389：wrj 自愈链修好本键后若状态翻转则补发对应事件（#1497 起闸门读会话旗标，此链
   //   只剩「会话内自愈翻转」的边角作用，保留＝事件契约不哑）。
   document.addEventListener('mochi-wrj-heal', function () {

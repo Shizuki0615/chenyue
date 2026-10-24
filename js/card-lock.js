@@ -37,7 +37,10 @@ if (moved === 'open') stSet('open');
 } catch (e) {}
 })();
 let lastOpen = isOpen();
-window.cardLockOpen = isOpen;
+window.cardLockOpen = function () {
+try { if (window.mochiSimpleGates && window.mochiSimpleGates()) return true; } catch (e) {}
+return isOpen();
+};
 document.addEventListener('mochi-wrj-heal', function () {
 try {
 const open = isOpen();

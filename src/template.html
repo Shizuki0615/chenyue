@@ -1649,8 +1649,18 @@
         </div>
         <div class="gs-sub" id="applock-sub">纯本地功能：可设数字密码 + 安全问题（忘记时重置）。提醒：网页数据存于本机，此锁防日常偷看，防不了懂技术的人读取本机数据。</div>
       </div>
+      <!-- 简化开屏（2026-10-24：作者直派「开屏问答和二级验证密码我用不着，删掉或隐藏」）：
+           默认开启，开屏不再问答、字卡锁按已解锁使用；关掉即恢复原来两道门。 -->
+      <div class="set-group glass" id="row-simple-gates">
+        <div class="set-row">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13H10l-1 9L19.5 10H13z"/></svg></div>
+          <div class="txt">简化开屏<span class="sub">隐藏开屏问答门与字卡锁，打开直接进入</span></div>
+          <label class="toggle"><input type="checkbox" id="simple-gates-en"><span class="tk"></span></label>
+        </div>
+        <div class="gs-sub" id="simple-gates-sub">默认开启：不再显示开屏问答，也不再要求二级验证密码；系统内置字卡按已解锁使用。关掉即恢复原来的两道门（问答门按原设置，字卡锁按原锁定状态）。</div>
+      </div>
       <!-- 开屏问答门（可不设应用锁单独用；逻辑在 applock.js） -->
-      <div class="set-group glass">
+      <div class="set-group glass" id="row-applock-qa">
         <div class="set-row">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3.5V11c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5.5z"/><path d="M9.6 9.2a2.6 2.6 0 014.9 1.1c0 1.6-2.5 2-2.5 3.4"/><circle cx="12" cy="16.6" r=".4" fill="#111111"/></svg></div>
           <div class="txt">开屏问答门<span class="sub">答对问题才放行，可不设数字密码</span></div>
@@ -1663,7 +1673,7 @@
            锁定态点开输密码解锁、已解锁态点开可重新上锁。逻辑仍走 clock.js promptCardUnlock /
            card-lock.js cardLockRelock，不新增校验逻辑；状态随 mochi-cardlock-open/-locked 事件重渲
            （clock.js setupCardLockRow）。 -->
-      <div class="set-group glass">
+      <div class="set-group glass" id="row-cardlock-group">
         <div class="set-row" id="row-cardlock-unlock">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.5" fill="#111111"/><path d="M12 17v1.5"/></svg></div>
           <div class="txt">字卡锁（二级验证密码）<span class="sub">防未成年人：系统内置字卡默认全锁，输密码解锁 / 已解锁可重新上锁。密码＝99 ＋ mochi 字卡生日的 4 位数（生日 8 月 15 日 → 0815）</span></div>

@@ -23,6 +23,9 @@
   const SESS = 'mochi-applock-ok';
   // v3.31.x 开屏问答门（可不设数字密码单独用；本机输暗号 QA_SKIP_CODE 永久跳过问答层）
   const K_QA_EN = 'applock-qa-en';
+  // 2026-10-24 简化开屏：作者直派「开屏问答和二级验证密码我用不着」。
+  // 开启时问答层整层不启用、字卡锁按已解锁处理；设置页两组入口收起，只留一个开关可恢复。
+  const K_SIMPLE = 'simple-gates';
   const K_QA_SKIP = 'applock-qaskip';
   // 应用锁数字密码一次性提醒标记：问答门通过后本机未设密码时提示一次（#299）
   const K_PIN_HINT = 'applock-pinhint';
@@ -93,7 +96,22 @@
   // 不可靠）或 webdriver=true 都视为自动化。
   const IS_AUTOMATION = (typeof navigator !== 'undefined') &&
     (navigator.webdriver === true || /Headless/i.test(String(navigator.userAgent)));
+  // 简化开屏：真机未设置时默认开启；自动化（无头/脚本）未设置时默认关闭，
+  // 避免把既有回归脚本挡在问答层外。显式存 '1'/'0' 优先。
+  function simpleGates() {
+    const v = gGet(K_SIMPLE);
+    if (v === '1') return true;
+    if (v === '0') return false;
+    return !IS_AUTOMATION;
+  }
+  window.mochiSimpleGates = simpleGates;
+  function simpleGatesSet(on) { gSet(K_SIMPLE, on ? '1' : '0'); }
+  function applySimpleGates() {
+    try { document.documentElement.classList.toggle('simple-gates', simpleGates()); } catch (e) {}
+  }
+  applySimpleGates();
   function qaEnabled() {
+    if (simpleGates()) return false; // 简化开屏：问答层整层不启用
     const v = gGet(K_QA_EN);
     if (v === '1') return true;
     if (v === '0') return false;
@@ -742,6 +760,19 @@
     });
   }
 
+  function bindSimpleGates() {
+    const c = document.getElementById('simple-gates-en');
+    if (!c) return;
+    c.checked = simpleGates();
+    c.addEventListener('change', function () {
+      simpleGatesSet(c.checked);
+      applySimpleGates();
+      syncQaUi();
+      syncUi();
+      toast(c.checked ? '已简化开屏：两道门已收起' : '已恢复：下次打开按原设置询问');
+    });
+  }
+
   function bindSettings() {
     const c = enEl();
     const s = subEl();
@@ -790,6 +821,8 @@
   // 揭示在同一任务内完成，当帧即盖上，桌面不再先露。自动化/已就绪直接评估。
   function fireLock() { try { evalLock(); } catch (e) {} }
   function init() {
+    applySimpleGates();
+    bindSimpleGates();
     bindSettings();
     bindQaSettings();
     let fired = false;

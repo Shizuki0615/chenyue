@@ -23,6 +23,7 @@ const K_PIN = 'applock-pin';
 const K_QA = 'applock-qa';
 const SESS = 'mochi-applock-ok';
 const K_QA_EN = 'applock-qa-en';
+const K_SIMPLE = 'simple-gates';
 const K_QA_SKIP = 'applock-qaskip';
 const K_PIN_HINT = 'applock-pinhint';
 function gGet(k) {
@@ -75,7 +76,20 @@ return DEFAULT_QA.map(function (it) { return { q: it.q, h: h53(String(it.a).trim
 }
 const IS_AUTOMATION = (typeof navigator !== 'undefined') &&
 (navigator.webdriver === true || /Headless/i.test(String(navigator.userAgent)));
+function simpleGates() {
+const v = gGet(K_SIMPLE);
+if (v === '1') return true;
+if (v === '0') return false;
+return !IS_AUTOMATION;
+}
+window.mochiSimpleGates = simpleGates;
+function simpleGatesSet(on) { gSet(K_SIMPLE, on ? '1' : '0'); }
+function applySimpleGates() {
+try { document.documentElement.classList.toggle('simple-gates', simpleGates()); } catch (e) {}
+}
+applySimpleGates();
 function qaEnabled() {
+if (simpleGates()) return false; // 简化开屏：问答层整层不启用
 const v = gGet(K_QA_EN);
 if (v === '1') return true;
 if (v === '0') return false;
@@ -660,6 +674,18 @@ syncQaUi(); syncUi();
 }
 });
 }
+function bindSimpleGates() {
+const c = document.getElementById('simple-gates-en');
+if (!c) return;
+c.checked = simpleGates();
+c.addEventListener('change', function () {
+simpleGatesSet(c.checked);
+applySimpleGates();
+syncQaUi();
+syncUi();
+toast(c.checked ? '已简化开屏：两道门已收起' : '已恢复：下次打开按原设置询问');
+});
+}
 function bindSettings() {
 const c = enEl();
 const s = subEl();
@@ -701,6 +727,8 @@ onCancel: function () { done(); }
 }
 function fireLock() { try { evalLock(); } catch (e) {} }
 function init() {
+applySimpleGates();
+bindSimpleGates();
 bindSettings();
 bindQaSettings();
 let fired = false;
