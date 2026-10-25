@@ -10148,21 +10148,21 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .phone.rd-chrome-night .statusbar .icons{filter:invert(1)}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
-.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
-.rd-buddy-dot{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#f4b6c2;border:1.5px solid #fff;z-index:2;transition:left .18s ease}
+.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);opacity:.8;border-radius:1px;box-shadow:0 0 6px rgba(244,182,194,.25)}
+.rd-buddy-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:2;transition:left .18s ease}
 .rd-buddy-dot.rd-buddy-ahead{opacity:.6}
-.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28)}
-.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4)}
-.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;opacity:.65;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#rd-page-no{flex:0 0 auto}
+.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28),0 1px 4px rgba(0,0,0,.1)}
+.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}
+.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#rd-page-no{flex:0 0 auto;opacity:.42}
 .rd-lamp{display:inline-flex;align-items:center;gap:3px;margin-right:6px;flex:0 0 auto}
-.rd-lamp-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
-.rd-lamp-me{opacity:.55}
-.rd-lamp-him.on{opacity:.55;background:#f4b6c2;box-shadow:0 0 5px rgba(244,182,194,.85)}
-#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
+.rd-lamp-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.2}
+.rd-lamp-me{opacity:.4}
+.rd-lamp-him.on{opacity:.62;background:#f4b6c2;box-shadow:0 0 6px rgba(244,182,194,.75)}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.68}
+#rd-buddy.rd-buddy-same-text{opacity:.88;color:#d9534f}
 #rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
-#rd-buddy.rd-pace{opacity:1;color:#d9534f}
+#rd-buddy.rd-pace{opacity:.58;color:#c26e69}
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
 @keyframes rdBouncePrev{0%{transform:translateX(0)}40%{transform:translateX(8px)}100%{transform:translateX(0)}}
 .rd-bounce-next{animation:rdBounceNext .18s ease}
@@ -10296,10 +10296,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-prev-text{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-y:auto}
 .rd-pop-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-pop-who{font-size:11px;opacity:.55;margin-bottom:4px}
+.rd-pop-who{font-size:10px;opacity:.42;margin-bottom:3px;letter-spacing:.2px}
 .rd-pop-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
-.rd-pop-mine .rd-pop-who::before{content:'●';font-size:9px;margin-right:4px;vertical-align:1px}
-.rd-pop-his .rd-pop-who::before{content:'○';font-size:9px;margin-right:4px;vertical-align:1px}
+.rd-pop-mine .rd-pop-who::before{content:'●';font-size:8px;margin-right:3px;vertical-align:1px}
+.rd-pop-his .rd-pop-who::before{content:'○';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-reply{margin-left:20px}
 .rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
 .rd-anno-ops{position:absolute;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;padding:6px 8px 14px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
@@ -10695,7 +10695,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792869279034" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792891462028" data-version="v8.86">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -12264,7 +12264,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.0</div>
+          <div class="val" id="about-ver-val">v8.86</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -12355,7 +12355,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.0</div>
+      <div class="ver">Mochi 字卡传讯 v8.86</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -12754,7 +12754,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.0</span>
+              <span class="lic-ver">v8.86</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -22492,4 +22492,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvms2tdm -->
+<!-- __MOCHI_EOF__ mvn5a9vw -->
