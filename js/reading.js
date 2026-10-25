@@ -246,15 +246,43 @@ page.innerHTML =
 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
 '</button>' +
 '</div>' +
-'<div class="rd-empty" id="rd-empty">' +
+'<div class="rd-hero" id="rd-hero" hidden>' +
+'<div class="rd-hero-card" id="rd-hero-card">' +
+'<div class="rd-hero-water" id="rd-hero-water"></div>' +
+'<div class="rd-hero-body">' +
+'<div class="rd-hero-sub">继续阅读</div>' +
+'<div class="rd-hero-title" id="rd-hero-title"></div>' +
+'<div class="rd-hero-meta" id="rd-hero-meta"></div>' +
+'</div>' +
+'<button class="rd-btn rd-btn-primary rd-hero-btn" id="rd-hero-btn" type="button">继续读</button>' +
+'</div>' +
+'</div>' +
+'<div class="rd-habit" id="rd-habit" hidden>' +
+'<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-today">0</div><div class="rd-habit-l">今天 / 分钟</div></div>' +
+'<div class="rd-habit-line"></div>' +
+'<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-week">0</div><div class="rd-habit-l">近 7 天 / 小时</div></div>' +
+'<div class="rd-habit-line"></div>' +
+'<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-done">0</div><div class="rd-habit-l">读完 / 本</div></div>' +
+'</div>' +
+'<div class="rd-ledger" id="rd-ledger" hidden></div>' +
+'<div class="rd-empty" id="rd-empty" hidden>' +
 '<div class="rd-empty-art" aria-hidden="true"><i class="rd-empty-book"></i><i class="rd-empty-mark"></i></div>' +
 '<div class="rd-empty-t">书架还是空的</div>' +
 '<div class="rd-empty-sub">导入一本 TXT，从第一页开始读。</div>' +
 '<button class="rd-btn rd-btn-primary rd-empty-go" id="rd-empty-import" type="button">导入一本书</button>' +
 '<div class="rd-empty-hint">支持 .txt，单本 20MB 以内</div>' +
 '</div>' +
+'<div class="rd-shelf-head" id="rd-shelf-head" hidden>' +
+'<div class="rd-shelf-head-t">我的书架<span class="rd-shelf-head-n" id="rd-shelf-count"> · 0 本</span></div>' +
+'<div class="rd-shelf-sub">按最近阅读</div>' +
+'</div>' +
+'<div class="rd-shelf-filter" id="rd-shelf-filter" hidden>' +
+'<button class="rd-sf on" data-filter="all" type="button">全部</button>' +
+'<button class="rd-sf" data-filter="reading" type="button">在读</button>' +
+'<button class="rd-sf" data-filter="done" type="button">读完</button>' +
+'</div>' +
 '<div class="rd-grid" id="rd-grid"></div>' +
-'<div class="rd-ledger" id="rd-ledger" hidden></div>' +
+'<div class="rd-filter-empty" id="rd-filter-empty" hidden>这个筛选下还没有书</div>' +
 '<div class="rd-usage" id="rd-usage"></div>' +
 '<div class="rd-import" id="rd-import-panel" hidden>' +
 '<div class="rd-import-main" id="rd-import-main">' +
@@ -3692,34 +3720,83 @@ if (st === 'skip') return '今天不读';
 if (st === 'none') return '未开始';
 return '共读中';
 }
+let rdShelfFilter = 'all';
+function rdHeroMeta(b) {
+if (!b) return '';
+if (b.missing) return '待重新导入';
+const pct = rdProgressPct(b);
+if (pct >= 100) return '读完';
+const ch = Math.max(1, ((b.progress && b.progress.ch) || 0) + 1);
+return '第 ' + ch + ' 章 · ' + pct + '%';
+}
+function rdFilterList(list, f) {
+if (!list) return [];
+if (f === 'done') return list.filter(function (b) { return b && rdProgressPct(b) >= 100; });
+if (f === 'reading') return list.filter(function (b) { return b && !b.missing && rdProgressPct(b) < 100; });
+return list.slice();
+}
 function rdRenderShelf() {
 const grid = document.getElementById('rd-grid');
 const empty = document.getElementById('rd-empty');
+const hero = document.getElementById('rd-hero');
+const habit = document.getElementById('rd-habit');
+const heroTitle = document.getElementById('rd-hero-title');
+const heroMeta = document.getElementById('rd-hero-meta');
+const heroWater = document.getElementById('rd-hero-water');
+const heroBtn = document.getElementById('rd-hero-btn');
+const shelfHead = document.getElementById('rd-shelf-head');
+const shelfCount = document.getElementById('rd-shelf-count');
+const shelfFilter = document.getElementById('rd-shelf-filter');
+const filterEmpty = document.getElementById('rd-filter-empty');
+const todayEl = document.getElementById('rd-habit-today');
+const weekEl = document.getElementById('rd-habit-week');
+const doneEl = document.getElementById('rd-habit-done');
 if (!grid) return;
 const shelfEl = document.getElementById('rd-shelf');
 const impPanel = document.getElementById('rd-import-panel');
 if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
 const list = readIndex().slice();
 list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
-let html = '';
-for (let i = 0; i < list.length; i++) {
-const b = list[i];
-if (!b || !b.id) continue;
-const title = b.title || '未命名';
-const badge = rdBadgeText(b);
-const spine = rdTogSpine(b);
-let ribs = '';
-for (let k = 0; k < spine; k++) ribs += '<i></i>';
-html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-'<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
-(ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
-'<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
-'<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-(badge ? '<span class="rd-badge">' + rdEsc(badge) + '</span>' : '') +
-'</div>';
+if (list.length === 0) {
+if (hero) hero.hidden = true;
+if (habit) habit.hidden = true;
+if (shelfHead) shelfHead.hidden = true;
+if (shelfFilter) shelfFilter.hidden = true;
+if (filterEmpty) filterEmpty.hidden = true;
+grid.innerHTML = '';
+if (empty) empty.hidden = false;
+const ledger = document.getElementById('rd-ledger');
+if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+const usage = document.getElementById('rd-usage');
+if (usage) { usage.hidden = true; usage.textContent = ''; }
+return;
 }
-grid.innerHTML = html;
-if (empty) empty.hidden = list.length > 0;
+const heroBook = list[0];
+if (hero && heroBook) {
+hero.hidden = false;
+const title = heroBook.title || '未命名';
+const color = rdCoverColor(title);
+if (heroTitle) heroTitle.textContent = title;
+if (heroMeta) heroMeta.textContent = rdHeroMeta(heroBook);
+if (heroWater) {
+heroWater.textContent = title.slice(0, 1) || '书';
+heroWater.style.color = color;
+}
+if (heroBtn) heroBtn.setAttribute('data-id', rdEsc(heroBook.id));
+} else if (hero) hero.hidden = true;
+const habitData = rdHabitLoad();
+const todayKey = rdTodayKey();
+const todaySec = (habitData.me && habitData.me[todayKey] && habitData.me[todayKey].sec) || 0;
+let weekSec = 0;
+const me = habitData.me || {};
+const keys = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
+for (let i = 0; i < Math.min(7, keys.length); i++) weekSec += (me[keys[i]] && me[keys[i]].sec) || 0;
+let doneN = 0;
+for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
+if (todayEl) todayEl.textContent = Math.round(todaySec / 60);
+if (weekEl) weekEl.textContent = Math.round(weekSec / 3600 * 10) / 10;
+if (doneEl) doneEl.textContent = doneN;
+if (habit) habit.hidden = false;
 const ledger = document.getElementById('rd-ledger');
 if (ledger) {
 if (!rdCoopOn()) {
@@ -3764,12 +3841,50 @@ ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '
 ledger.hidden = !led;
 }
 }
+if (shelfHead) {
+shelfHead.hidden = false;
+if (shelfCount) shelfCount.textContent = ' · ' + list.length + ' 本';
+}
+if (shelfFilter) {
+shelfFilter.hidden = false;
+const btns = shelfFilter.querySelectorAll('.rd-sf');
+for (let i = 0; i < btns.length; i++) {
+btns[i].classList.toggle('on', btns[i].getAttribute('data-filter') === rdShelfFilter);
+}
+}
+if (empty) empty.hidden = true;
+const filtered = rdFilterList(list, rdShelfFilter);
+let html = '';
+for (let i = 0; i < filtered.length; i++) {
+const b = filtered[i];
+if (!b || !b.id) continue;
+const title = b.title || '未命名';
+const color = rdCoverColor(title);
+const pct = rdProgressPct(b);
+const ribs = (function () {
+let out = '';
+const spine = rdTogSpine(b);
+for (let k = 0; k < spine; k++) out += '<i></i>';
+return out;
+})();
+html += '<div class="rd-book rd-book-lg" data-id="' + rdEsc(b.id) + '">' +
+'<div class="rd-cover" style="background:' + color + '">' + rdEsc(title.slice(0, 1) || '书') +
+(ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
+'<div class="rd-book-lg-body">' +
+'<div class="rd-book-lg-title">' + rdEsc(title) + '</div>' +
+'<div class="rd-book-lg-meta">' + rdEsc(rdHeroMeta(b)) + '</div>' +
+'<div class="rd-book-lg-line"><i style="width:' + pct + '%"></i></div>' +
+'</div>' +
+'</div>';
+}
+grid.innerHTML = html;
+if (filterEmpty) filterEmpty.hidden = filtered.length > 0;
 const usage = document.getElementById('rd-usage');
 if (usage) {
 let bytes = 0;
 for (let i = 0; i < list.length; i++) bytes += ((list[i] && list[i].size) || 0);
 usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
-usage.hidden = list.length === 0;
+usage.hidden = false;
 }
 }
 function rdFindBook(id, list) {
@@ -4176,6 +4291,19 @@ return;
 }
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
 if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
+if (el.closest('#rd-hero-btn')) {
+e.preventDefault();
+const id = el.closest('#rd-hero-btn').getAttribute('data-id');
+if (id) rdOpenBook(id);
+return;
+}
+const sfBtn = el.closest('#rd-shelf-filter [data-filter]');
+if (sfBtn) {
+e.preventDefault();
+rdShelfFilter = sfBtn.getAttribute('data-filter') || 'all';
+rdRenderShelf();
+return;
+}
 if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
 if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
 if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); return; }

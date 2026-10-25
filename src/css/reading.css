@@ -1,11 +1,12 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-habit[hidden],.rd-shelf-head[hidden],.rd-shelf-filter[hidden],.rd-filter-empty[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:28px 16px 0}
+/* #1554b 重锚：两列大封面固定宽，居中。横向内边距下放给 hero/habit/shelf-head */
+.rd-grid{display:grid;grid-template-columns:repeat(2,164px);gap:16px;justify-content:center;padding:0}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
 .rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
@@ -427,3 +428,51 @@
 .rd-pop-cross{font-size:11px;opacity:.5;margin:2px 0 5px}
 .rd-pop-old{font-size:13px;line-height:1.6;opacity:.42;text-decoration:line-through;margin-bottom:6px;white-space:pre-wrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
+/* ---------- 继续阅读 hero 卡 ---------- */
+.rd-hero{padding:14px 16px 0}
+.rd-hero-card{position:relative;min-height:170px;padding:20px 18px;border-radius:16px;border:1px solid rgba(122,96,64,.14);background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);overflow:hidden;box-shadow:0 2px 10px rgba(122,96,64,.07)}
+.rd-hero-water{position:absolute;right:14px;bottom:-16px;font-size:120px;font-weight:700;line-height:1;opacity:.11;pointer-events:none;letter-spacing:-.05em}
+.rd-hero-body{position:relative;z-index:1;padding-right:76px}
+.rd-hero-sub{font-size:11px;letter-spacing:.08em;opacity:.4}
+.rd-hero-title{margin-top:5px;font-size:15px;font-weight:700;line-height:1.45;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-hero-meta{margin-top:6px;font-size:11.5px;opacity:.5}
+.rd-hero-btn{position:absolute;right:18px;bottom:17px;padding:8px 14px;font-size:12px;font-weight:600;border-radius:999px}
+
+/* ---------- 阅读概览三列卡（上叠 hero 12px） ---------- */
+.rd-habit{display:flex;align-items:stretch;margin:-12px 16px 0;padding:14px 0;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfaf5);border:1px solid rgba(122,96,64,.1);box-shadow:0 1px 6px rgba(122,96,64,.05);position:relative;z-index:2}
+.rd-habit-col{flex:1;text-align:center;padding:0 6px}
+.rd-habit-line{width:1px;background:rgba(0,0,0,.07)}
+.rd-habit-n{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.92}
+.rd-habit-l{margin-top:2px;font-size:9.5px;letter-spacing:.04em;opacity:.45}
+
+/* ---------- 书架区块头 + 筛选 ---------- */
+.rd-shelf-head{display:flex;align-items:center;justify-content:space-between;margin:22px 16px 0}
+.rd-shelf-head-t{font-size:14px;font-weight:700;letter-spacing:.01em}
+.rd-shelf-head-n{font-weight:400;opacity:.55;font-size:13px}
+.rd-shelf-sub{font-size:10.5px;opacity:.45}
+.rd-shelf-filter{display:flex;gap:8px;margin:10px 16px 0;align-items:center}
+.rd-sf{padding:6px 12px;font-size:11.5px;border-radius:999px;border:1px solid rgba(0,0,0,.16);background:rgba(244,182,194,.12);color:inherit;cursor:pointer;line-height:1;-webkit-tap-highlight-color:transparent}
+.rd-sf.on{background:rgba(244,182,194,.32);border-color:rgba(0,0,0,.28);font-weight:600}
+
+/* ---------- 两列大封面 ---------- */
+.rd-book-lg{width:164px}
+.rd-book-lg .rd-cover{border-radius:12px;font-size:33px;box-shadow:0 4px 16px rgba(0,0,0,.1),inset 0 0 0 1px rgba(255,255,255,.35),inset 0 -6px 12px rgba(0,0,0,.06)}
+.rd-book-lg .rd-book-lg-body{margin-top:10px}
+.rd-book-lg-title{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-book-lg-meta{margin-top:3px;font-size:10.5px;opacity:.55}
+.rd-book-lg-line{margin-top:6px;height:3px;border-radius:2px;background:rgba(0,0,0,.06);overflow:hidden}
+.rd-book-lg-line i{display:block;height:100%;background:currentColor;opacity:.6;border-radius:2px}
+.rd-book-lg:active{transform:scale(.985);transition:transform .08s ease}
+@media (prefers-reduced-motion: reduce){.rd-book-lg:active{transition:none}}
+
+/* ---------- 筛选空结果 ---------- */
+.rd-filter-empty{margin:20px 16px 0;padding:24px;border-radius:12px;text-align:center;font-size:12px;opacity:.55;background:rgba(122,96,64,.04)}
+
+/* ---------- 夜间覆盖 ---------- */
+[data-theme="dark"] .rd-hero-card{background:linear-gradient(160deg,#22201d 0%,#1d1a16 72%,#161411 100%);border-color:rgba(255,255,255,.1);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+[data-theme="dark"] .rd-habit{background:linear-gradient(180deg,#1f1c18,#1a1814);border-color:rgba(255,255,255,.08)}
+[data-theme="dark"] .rd-habit-line{background:rgba(255,255,255,.1)}
+[data-theme="dark"] .rd-sf{background:rgba(244,182,194,.08);border-color:rgba(255,255,255,.18)}
+[data-theme="dark"] .rd-sf.on{background:rgba(244,182,194,.22);border-color:rgba(255,255,255,.3)}
+[data-theme="dark"] .rd-book-lg .rd-cover{box-shadow:0 2px 10px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.1),inset 0 -4px 10px rgba(0,0,0,.2)}
+[data-theme="dark"] .rd-filter-empty{background:rgba(255,255,255,.04)}
