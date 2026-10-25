@@ -10106,7 +10106,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 [data-theme="dark"]{--w-bg:#161310;--w-ink:#e9e3d5;--w-card:#1d1a15;--w-mut:rgba(233,227,213,.55);--w-faint:rgba(233,227,213,.42);--w-hair:rgba(255,255,255,.1)}
 .rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden],.rd-detail[hidden]{display:none!important}
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-#rd-shelf{background:var(--w-bg,#faf9f5)}
+#rd-shelf{background:var(--w-bg,#faf9f5);font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
 #rd-shelf > .rd-head{justify-content:space-between;gap:0;padding:calc(8px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 18px 4px;background:var(--w-bg,#faf9f5);border-bottom:0;box-shadow:none;color:var(--w-ink,#1a1712)}
 #rd-shelf > .rd-head .rd-hl{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600}
 #rd-shelf > .rd-head .rd-hl .ch-back{width:auto;height:auto;border-radius:0;background:transparent;border:0;padding:0}
@@ -10872,7 +10872,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792934197327" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792937357039" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22669,4 +22669,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvnuq8nj -->
+<!-- __MOCHI_EOF__ mvnwlypb -->
