@@ -8,16 +8,8 @@
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-/* 书架页底色与顶栏按设计稿还原：通透无底栏、线条图标去圆形底、左侧箭头与标题 gap 8px、右侧图标 gap 14px */
+/* 书架页底色与字体按设计稿；顶栏沿用全局 chat-head 风格，与其它页面统一 */
 #rd-shelf{background:var(--w-bg,#faf9f5);font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
-#rd-shelf > .rd-head{justify-content:space-between;gap:0;padding:calc(8px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 18px 4px;background:var(--w-bg,#faf9f5);border-bottom:0;box-shadow:none;color:var(--w-ink,#1a1712)}
-#rd-shelf > .rd-head .rd-hl{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600}
-#rd-shelf > .rd-head .rd-hl .ch-back{width:auto;height:auto;border-radius:0;background:transparent;border:0;padding:0}
-#rd-shelf > .rd-head .rd-hl .ch-back svg{width:16px;height:16px}
-#rd-shelf > .rd-head .rd-hl .ch-name{flex:none;font-size:14.5px;font-weight:600;letter-spacing:0;color:inherit}
-#rd-shelf > .rd-head .rd-hr{display:flex;align-items:center;gap:14px;opacity:.72}
-#rd-shelf > .rd-head .rd-hr .ch-settings{width:auto;height:auto;border-radius:0;background:transparent;border:0;padding:0;color:inherit}
-#rd-shelf > .rd-head .rd-hr .ch-settings svg{width:17px;height:17px}
 .rd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px;padding:18px 16px 0}
 .rd-grid>*:nth-child(even){margin-top:22px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
