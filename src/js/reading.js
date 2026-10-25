@@ -23,6 +23,30 @@
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
+  // 分组：自定义分组；组本身只存 id/name/createdAt，书的归属由 book.gid 标记
+  const RD_GROUP_KEY = 'reading-groups';
+  const RD_DEFAULT_GROUP_ID = 'all';
+  // Hero 卡自定义 CSS / 共读手账底色自定义 CSS（白名单属性，防破坏布局）
+  const RD_HERO_CSS_KEY = 'reading-hero-css';
+  const RD_LEDGER_CSS_KEY = 'reading-ledger-css';
+  // Hero 预设：给「上次最近在读那本」的封面卡换底，允许 background / color / box-shadow 等观感属性
+  const RD_HERO_PRESETS = [
+    { id: 'ink',   label: '墨夜',   css: 'background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%);color:#f2e8d8;box-shadow:0 10px 28px rgba(47,41,32,.38)' },
+    { id: 'wine',  label: '酒红',   css: 'background:linear-gradient(145deg,#4a1a1f 0%,#2a0e12 80%);color:#f5dfe2;box-shadow:0 10px 28px rgba(74,26,31,.38)' },
+    { id: 'teal',  label: '青墨',   css: 'background:linear-gradient(155deg,#1d3a3a 0%,#0f2020 80%);color:#dceee8;box-shadow:0 10px 28px rgba(29,58,58,.38)' },
+    { id: 'blue',  label: '蓝夜',   css: 'background:linear-gradient(150deg,#1e2a4a 0%,#121830 80%);color:#dde3f5;box-shadow:0 10px 28px rgba(30,42,74,.38)' },
+    { id: 'paper', label: '纸感',   css: 'background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);color:#3d3426;box-shadow:0 4px 14px rgba(122,96,64,.12)' },
+    { id: 'custom',label: '自定义', css: '' }
+  ];
+  // 共读手账底色预设（浅色为主，避免压过浅色主题）
+  const RD_LEDGER_PRESETS = [
+    { id: 'cream', label: '奶油',   css: 'background:linear-gradient(180deg,#fdfbf6,#f8f3e9);border-color:rgba(122,96,64,.18)' },
+    { id: 'pink',  label: '薄粉',   css: 'background:rgba(244,182,194,.08);border-color:rgba(244,182,194,.24)' },
+    { id: 'blue',  label: '雾蓝',   css: 'background:rgba(120,147,173,.09);border-color:rgba(120,147,173,.22)' },
+    { id: 'grey',  label: '烟灰',   css: 'background:rgba(0,0,0,.035);border-color:rgba(0,0,0,.1)' },
+    { id: 'dark',  label: '夜间',   css: 'background:linear-gradient(180deg,#201e1a,#191714);border-color:rgba(255,255,255,.1)' },
+    { id: 'custom',label: '自定义', css: '' }
+  ];
   // IDB 键前缀：正文 / 目录 / 批注
   const RD_BODY_P = 'xy-home-v2:reading-body:';
   const RD_TOC_P = 'xy-home-v2:reading-toc:';
@@ -59,6 +83,98 @@
       rdToast('书架保存失败：' + ((e && e.message) || '本地存储写入没有完成'));
       return false;
     }
+  }
+
+  // ===== 分组存储 =====
+  function rdGroupLoad() {
+    try {
+      const raw = store.get(RD_GROUP_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(function (g) { return g && g.id && g.id !== RD_DEFAULT_GROUP_ID && typeof g.name === 'string'; });
+    } catch (e) { return []; }
+  }
+  function rdGroupSave(groups) {
+    try { store.set(RD_GROUP_KEY, JSON.stringify(Array.isArray(groups) ? groups : [])); return true; }
+    catch (e) { return false; }
+  }
+  function rdGroupById(groups, id) {
+    for (let i = 0; i < groups.length; i++) { if (groups[i] && groups[i].id === id) return groups[i]; }
+    return null;
+  }
+  function rdGroupId() { return 'grp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  // ===== CSS 属性白名单过滤 =====
+  // 只允许纯观感属性，position/margin/width/height/overflow/display/transform/z-index 等布局
+  // 相关一律拒绝，防止用户误写把 hero 卡/手账 撑破或盖住整个页面。
+  // 另：expression() / url() / @import / @charset / 大段选择器 {} 写法直接丢掉——
+  // 我们只接受「声明」（属性:值; 属性:值），不接受嵌套规则。
+  const RD_SAFE_CSS_PROPS = [
+    'background','background-color','background-image','background-size','background-position',
+    'background-repeat','background-attachment','background-blend-mode',
+    'color','border','border-color','border-style','border-width','border-radius',
+    'border-top','border-bottom','border-left','border-right',
+    'border-top-radius','border-bottom-radius','border-left-radius','border-right-radius',
+    'border-top-left-radius','border-top-right-radius','border-bottom-left-radius','border-bottom-right-radius',
+    'outline','outline-color','outline-style','outline-width','outline-offset',
+    'box-shadow','text-shadow','opacity','filter','mix-blend-mode',
+    'font-family','font-size','font-weight','font-style','font-variant','line-height','letter-spacing',
+    'text-align','text-transform','text-decoration','text-indent','white-space','word-break',
+    'border-top-color','border-bottom-color','border-left-color','border-right-color',
+    'border-top-width','border-bottom-width','border-left-width','border-right-width',
+    'border-top-style','border-bottom-style','border-left-style','border-right-style',
+    'border-image','border-image-source','border-image-slice','border-image-width','border-image-repeat',
+    '-webkit-background-clip','background-clip','-webkit-text-fill-color'
+  ];
+  function rdFilterSafeCss(raw, scopeLabel) {
+    scopeLabel = scopeLabel || '自定义样式';
+    if (!raw || typeof raw !== 'string') return { out: '', blocked: 0 };
+    // 1. 丢掉含选择器的大段规则（含 {}）——我们只接受声明
+    if (raw.indexOf('{') >= 0 || raw.indexOf('}') >= 0) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 只接受「声明」（如 background:#fff;color:#111），不接受选择器块' };
+    }
+    // 2. 丢掉 expression() / url(...)（防 XSS/外链）、@ 关键字（@import 等）
+    if (/expression\s*\(|url\s*\(|@[a-z]/i.test(raw)) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 不允许 url() / expression() / @ 指令' };
+    }
+    // 3. 按 ; 切声明，每个声明检查左边 prop 是否在白名单、右边值不含危险 token
+    const parts = raw.split(';');
+    const kept = [];
+    let blocked = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const seg = parts[i].trim();
+      if (!seg) continue;
+      const colon = seg.indexOf(':');
+      if (colon <= 0) { blocked++; continue; }
+      const prop = seg.slice(0, colon).trim().toLowerCase();
+      const val = seg.slice(colon + 1).trim();
+      if (!prop || !val) { blocked++; continue; }
+      if (RD_SAFE_CSS_PROPS.indexOf(prop) < 0) { blocked++; continue; }
+      // 值里也再卡一次危险 token：url/expression/javascript
+      if (/url\s*\(|expression\s*\(|javascript\s*:/i.test(val)) { blocked++; continue; }
+      kept.push(prop + ':' + val);
+    }
+    return { out: kept.join(';'), blocked: blocked };
+  }
+  // 应用 hero 卡自定义 CSS：注入 <style id="rd-hero-style">，只选 .rd-hero-card，作用域钉死
+  function rdApplyHeroCss(cssText) {
+    const old = document.getElementById('rd-hero-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-hero-style';
+    st.textContent = '.rd-hero-card{' + cssText + '}';
+    document.head.appendChild(st);
+  }
+  function rdApplyLedgerCss(cssText) {
+    const old = document.getElementById('rd-ledger-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-ledger-style';
+    st.textContent = '.rd-ledger{' + cssText + '}';
+    document.head.appendChild(st);
   }
 
   // ===== 正文 / 目录 / 批注读写 =====
@@ -288,43 +404,43 @@
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
           '</button>' +
         '</div>' +
+        '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
         '<div class="rd-hero" id="rd-hero" hidden>' +
-          '<div class="rd-hero-card" id="rd-hero-card">' +
-            '<div class="rd-hero-water" id="rd-hero-water"></div>' +
-            '<div class="rd-hero-body">' +
-              '<div class="rd-hero-sub">继续阅读</div>' +
-              '<div class="rd-hero-title" id="rd-hero-title"></div>' +
-              '<div class="rd-hero-meta" id="rd-hero-meta"></div>' +
+          '<div class="rd-hero-card">' +
+            '<span class="rd-hero-mark" aria-hidden="true"></span>' +
+            '<div class="rd-hero-head">' +
+              '<div class="rd-hero-date" id="rd-hero-date"></div>' +
+              '<div class="rd-hero-pct" id="rd-hero-pct"></div>' +
             '</div>' +
-            '<button class="rd-btn rd-btn-primary rd-hero-btn" id="rd-hero-btn" type="button">继续读</button>' +
+            '<div class="rd-hero-title" id="rd-hero-title"></div>' +
+            '<div class="rd-hero-tags">' +
+              '<span class="rd-hero-tag" id="rd-hero-txt" hidden>TXT</span>' +
+              '<span class="rd-hero-tag" id="rd-hero-coop" hidden></span>' +
+            '</div>' +
+            '<div class="rd-hero-bar"><i id="rd-hero-bar-fill"></i></div>' +
+            '<div class="rd-hero-foot">' +
+              '<button class="rd-hero-go" id="rd-hero-go" type="button">继续读 →</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="rd-habit" id="rd-habit" hidden>' +
-          '<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-today">0</div><div class="rd-habit-l">今天 / 分钟</div></div>' +
-          '<div class="rd-habit-line"></div>' +
-          '<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-week">0</div><div class="rd-habit-l">近 7 天 / 小时</div></div>' +
-          '<div class="rd-habit-line"></div>' +
-          '<div class="rd-habit-col"><div class="rd-habit-n" id="rd-habit-done">0</div><div class="rd-habit-l">读完 / 本</div></div>' +
+        '<div class="rd-stat" id="rd-stat" hidden>' +
+          '<div class="rd-stat-label">阅读记录 /</div>' +
+          '<div class="rd-stat-h" id="rd-stat-h">今天读了 0 分钟</div>' +
+          '<div class="rd-stat-nums">' +
+            '<span class="rd-sg">今日 <b id="rd-stat-pages">0</b> 页</span>' +
+            '<span class="rd-sg">近 7 天 <b id="rd-stat-week">0</b> 小时</span>' +
+            '<span class="rd-sg">读完 <b id="rd-stat-done">0</b> 本</span>' +
+          '</div>' +
         '</div>' +
         '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
-        '<div class="rd-empty" id="rd-empty" hidden>' +
-          '<div class="rd-empty-art" aria-hidden="true"><i class="rd-empty-book"></i><i class="rd-empty-mark"></i></div>' +
-          '<div class="rd-empty-t">书架还是空的</div>' +
-          '<div class="rd-empty-sub">导入一本 TXT，从第一页开始读。</div>' +
-          '<button class="rd-btn rd-btn-primary rd-empty-go" id="rd-empty-import" type="button">导入一本书</button>' +
-          '<div class="rd-empty-hint">支持 .txt，单本 20MB 以内</div>' +
-        '</div>' +
-        '<div class="rd-shelf-head" id="rd-shelf-head" hidden>' +
-          '<div class="rd-shelf-head-t">我的书架<span class="rd-shelf-head-n" id="rd-shelf-count"> · 0 本</span></div>' +
-          '<div class="rd-shelf-sub">按最近阅读</div>' +
-        '</div>' +
-        '<div class="rd-shelf-filter" id="rd-shelf-filter" hidden>' +
-          '<button class="rd-sf on" data-filter="all" type="button">全部</button>' +
-          '<button class="rd-sf" data-filter="reading" type="button">在读</button>' +
-          '<button class="rd-sf" data-filter="done" type="button">读完</button>' +
+        '<div class="rd-groups-block" id="rd-groups-block" hidden>' +
+          '<div class="rd-groups-head">' +
+            '<div><div class="rd-glabel">书库 /</div><div class="rd-gtitle">我的分组</div></div>' +
+            '<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
+          '</div>' +
+          '<div class="rd-ggrid" id="rd-ggrid"></div>' +
         '</div>' +
         '<div class="rd-grid" id="rd-grid"></div>' +
-        '<div class="rd-filter-empty" id="rd-filter-empty" hidden>这个筛选下还没有书</div>' +
         '<div class="rd-usage" id="rd-usage"></div>' +
         '<div class="rd-import" id="rd-import-panel" hidden>' +
           '<div class="rd-import-main" id="rd-import-main">' +
@@ -505,10 +621,16 @@
         '<span class="ch-name">阅读设置</span>' +
       '</div>' +
       '<div class="rd-set-body">' +
-        '<div class="them-tabs rd-set-tabs" id="rd-set-tabs">' +
-          '<button class="them-tab active" data-tab="beautify" type="button">美化</button>' +
-          '<button class="them-tab" data-tab="function" type="button">功能</button>' +
-          '<button class="them-tab" data-tab="data" type="button">数据</button>' +
+        '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
+          '<span class="rd-live-entry-t">' +
+            '<span class="rd-live-entry-name">边看边调</span>' +
+            '<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
+          '</span>' +
+          '<span class="rd-live-entry-go">点击开启 ›</span>' +
+        '</button>' +
+        '<div class="rd-set-preview" id="rd-set-preview">' +
+          '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
+          '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
         '</div>' +
         '<div class="them-sec" data-sec="beautify">' +
           '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
@@ -570,29 +692,26 @@
             '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="them-sec" data-sec="function" hidden>' +
-          '<div class="gs-title">共读</div>' +
-          '<div class="set-group glass">' +
-            '<div class="rd-set-row rd-set-toggle">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
-                '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
-              '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
-            '</div>' +
-            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
-                '<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
-              '<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
-            '</div>' +
-            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
-                '<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
-              '<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
-            '</div>' +
-            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
-                '<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
-              '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
-            '</div>' +
+        '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+        '<div class="gs-title">书架首页</div>' +
+        '<div class="set-group glass">' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
+            '<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
+            '<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
+          '</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
+            '<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
+            '<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="gs-title">共读</div>' +
+        '<div class="set-group glass">' +
+          '<div class="rd-set-row rd-set-toggle">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
           '</div>' +
         '</div>' +
         '<div class="them-sec" data-sec="data" hidden>' +
@@ -628,60 +747,100 @@
     if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
     const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
     if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
+
+    // Hero / Ledger 预设色块渲染
+    function rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl) {
+      const box = settingsPage.querySelector('#' + containerId);
+      if (!box) return;
+      let saved = '';
+      try { saved = store.get(cssKey) || ''; } catch (e) {}
+      let selectedId = '';
+      for (let i = 0; i < presets.length; i++) {
+        const p = presets[i];
+        if (p.id !== 'custom' && saved === p.css) { selectedId = p.id; break; }
+      }
+      let h = '';
+      for (let i = 0; i < presets.length; i++) {
+        const p = presets[i];
+        const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+        h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+          '<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+          '<span>' + rdEsc(p.label) + '</span></button>';
+      }
+      box.innerHTML = h;
+      if (valLabelEl) {
+        if (!saved) valLabelEl.textContent = '默认';
+        else {
+          const sel = presets.filter(function (x) { return x.id === selectedId; })[0];
+          valLabelEl.textContent = sel ? sel.label : '自定义';
+        }
+      }
+      box.addEventListener('click', function (e) {
+        const btn = e.target.closest('.rd-preset-chip');
+        if (!btn) return;
+        const pid = btn.getAttribute('data-pid');
+        const pcss = btn.getAttribute('data-css') || '';
+        if (pid === 'custom') {
+          rdOpenCustomCssModal(cssKey, presets[0].id === 'ink' ? 'Hero 封面卡' : '共读手账底色', applyFn);
+        } else {
+          store.set(cssKey, pcss);
+          applyFn(pcss);
+          rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl);
+          rdRenderShelf();
+        }
+      });
+    }
+    rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'));
+    rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'));
+    // 自定义 CSS 按钮 → 打开输入框
+    const heroCustom = settingsPage.querySelector('#rd-hero-custom');
+    if (heroCustom) heroCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_HERO_CSS_KEY, 'Hero 封面卡', rdApplyHeroCss); });
+    const ledgerCustom = settingsPage.querySelector('#rd-ledger-custom');
+    if (ledgerCustom) ledgerCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_LEDGER_CSS_KEY, '共读手账底色', rdApplyLedgerCss); });
+
     rdRenderPrefsActive();
     return settingsPage;
   }
-  // 设置页页签：只切 hidden，不复建控件，切页不丢字号/行距/开关状态
-  function initReadingSettingsTabs() {
-    if (!settingsPage) return;
-    const tabsEl = settingsPage.querySelector('#rd-set-tabs');
-    const tabs = tabsEl ? tabsEl.querySelectorAll('.them-tab') : [];
-    const secs = settingsPage.querySelectorAll('.them-sec');
-    if (!tabs.length || !secs.length) return;
-    function show(name) {
-      secs.forEach(function (s) { s.hidden = (s.getAttribute('data-sec') !== name); });
-      tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
-      if (name === 'data') rdRenderDataOverview();
-    }
-    tabs.forEach(function (t) {
-      t.addEventListener('click', function () {
-        show(t.getAttribute('data-tab'));
-        const body = settingsPage.querySelector('.rd-set-body');
-        if (body) body.scrollTop = 0;
-      });
+  function rdOpenCustomCssModal(cssKey, label, applyFn) {
+    let cur = '';
+    try { cur = store.get(cssKey) || ''; } catch (e) {}
+    const safeHint = '只允许 background / color / border / box-shadow / filter / opacity 等观感属性。position / margin / width / display / url() / 选择器块 {} 一律拒绝。';
+    window.openModal('自定义 ' + label, '' +
+      '<div class="sm-fld-hint" style="margin-bottom:8px">' + safeHint + '</div>' +
+      '<textarea id="rd-custom-css-input" class="tc-input" rows="5" placeholder="background:#1a1a1a;color:#eee;border-radius:16px"></textarea>' +
+      '<div class="mail-actions"><button class="cc-tool" id="rd-custom-css-clear">清空</button><button class="cc-tool" id="rd-custom-css-ok">应用</button>');
+    const ta = document.getElementById('rd-custom-css-input');
+    if (ta) ta.value = cur;
+    document.getElementById('rd-custom-css-clear').addEventListener('click', function () {
+      store.remove(cssKey);
+      document.getElementById('tc-mask').hidden = true;
+      applyFn('');
+      rdRenderShelf();
+      rdToast('已恢复默认');
     });
-    show('beautify');
-  }
-  // 数据栏只读概览：全部从书架索引汇总，不为统计去读正文
-  function rdDataOverview() {
-    const list = readIndex();
-    let words = 0, bytes = 0, marks = 0, annos = 0;
-    for (let i = 0; i < list.length; i++) {
-      const b = list[i] || {};
-      let w = 0;
-      if (Array.isArray(b.chWords)) {
-        for (let j = 0; j < b.chWords.length; j++) w += Number(b.chWords[j]) || 0;
-      } else {
-        w = Number(b.words) || 0;
+    document.getElementById('rd-custom-css-ok').addEventListener('click', function () {
+      let v = '';
+      try { v = ta.value || ''; } catch (e) { v = ''; }
+      const res = rdFilterSafeCss(v, label);
+      if (res.reason) { rdToast(res.reason); return; }
+      if (res.blocked > 0 && !res.out) {
+        rdToast('有 ' + res.blocked + ' 条属性被拦截，请检查');
+        return;
       }
-      words += w;
-      bytes += Number(b.size) || (w * 3);
-      marks += Array.isArray(b.marks) ? b.marks.length : 0;
-      annos += Number(b.annoCount) || 0;
-    }
-    return { books: list.length, words: words, bytes: bytes, marks: marks, annos: annos };
-  }
-  function rdRenderDataOverview() {
-    const d = rdDataOverview();
-    function set(id, text) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = text;
-    }
-    set('rd-set-data-books', d.books + ' 本');
-    set('rd-set-data-words', '约 ' + (d.words / 10000).toFixed(1) + ' 万字');
-    set('rd-set-data-size', '约 ' + rdMB(d.bytes) + ' MB');
-    set('rd-set-data-marks', d.marks + ' 条');
-    set('rd-set-data-annos', d.annos + ' 条');
+      if (!res.out) {
+        store.remove(cssKey);
+        applyFn('');
+        rdRenderShelf();
+        rdToast('已清空 ' + label);
+      } else {
+        store.set(cssKey, res.out);
+        applyFn(res.out);
+        rdRenderShelf();
+        if (res.blocked > 0) rdToast('应用成功 · 有 ' + res.blocked + ' 条被拦截');
+        else rdToast(label + ' 已应用');
+      }
+      document.getElementById('tc-mask').hidden = true;
+    });
   }
   function rdOpenSettings() {
     buildSettingsPage();
@@ -743,7 +902,16 @@
     handle.style.cursor = 'grab';
   }
   function buildLiveDrawer() {
-    if (liveDrawer) return liveDrawer;
+    if (liveDrawer) {
+      // 抽屉已存在：这次要换掉里面的 slider/bgrow，重新生成 body
+      const oldBody = liveDrawer.querySelector('#rd-live-body');
+      if (oldBody) oldBody.remove();
+      const body = document.createElement('div');
+      body.className = 'rd-live-body'; body.id = 'rd-live-body';
+      liveDrawer.appendChild(body);
+      rdBuildLiveBody(body);
+      return liveDrawer;
+    }
     liveDrawer = document.createElement('div');
     liveDrawer.id = 'rd-live-drawer';
     liveDrawer.hidden = true;
@@ -755,25 +923,38 @@
         '<button class="rd-live-mini" id="rd-live-fold" type="button">收起</button>' +
         '<button class="rd-live-mini" id="rd-live-close" type="button">✕</button>' +
       '</div>' +
-      '<div class="rd-live-body" id="rd-live-body">' +
-        '<div class="rd-set-slider rd-live-slider"><span>字号</span><input type="range" id="rd-live-fs-range" min="12" max="30" step="1" aria-label="字号"><span class="rd-live-val" id="rd-live-fs-val"></span></div>' +
-        '<div class="rd-set-slider rd-live-slider"><span>行距</span><input type="range" id="rd-live-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span class="rd-live-val" id="rd-live-lh-val"></span></div>' +
-        '<div class="rd-live-bgrow"><span>背景</span><div class="rd-live-bg">' +
-          '<button class="rd-live-bgopt" data-rd-bgopt="auto" type="button">跟随</button>' +
-          '<button class="rd-live-bgopt" data-rd-bgopt="eye" type="button">护眼</button>' +
-          '<button class="rd-live-bgopt" data-rd-bgopt="night" type="button">夜间</button>' +
-        '</div></div>' +
-        '<div class="rd-live-note">改动即时生效；关掉抽屉后保留。</div>' +
-      '</div>';
+      '<div class="rd-live-body" id="rd-live-body"></div>';
     document.body.appendChild(liveDrawer);
-    const fsRange = liveDrawer.querySelector('#rd-live-fs-range');
-    if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
-    const lhRange = liveDrawer.querySelector('#rd-live-lh-range');
-    if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+    const body = liveDrawer.querySelector('#rd-live-body');
+    rdBuildLiveBody(body);
     bindLiveDrag(liveDrawer.querySelector('.rd-live-grip'));
     bindLiveDrag(liveDrawer.querySelector('#rd-live-head'));
-    rdApplyBg();
     return liveDrawer;
+  }
+  function rdBuildLiveBody(body) {
+    function liveRow(presets, cssKey, applyFn, label) {
+      let h = '<div class="rd-live-row"><span class="rd-live-row-t">' + label + '</span><div class="rd-live-chips">';
+      for (let i = 0; i < presets.length - 1; i++) {
+        const p = presets[i];
+        h += '<button class="rd-live-chip" data-csskey="' + cssKey + '" data-css="' + rdEsc(p.css) + '" type="button" title="' + rdEsc(p.label) + '"><i style="' + p.css + '"></i></button>';
+      }
+      h += '</div></div>';
+      return h;
+    }
+    body.innerHTML =
+      liveRow(RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡') +
+      liveRow(RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色') +
+      '<div class="rd-live-note">点色块即时预览；「自定义」入口在设置页。</div>';
+    body.addEventListener('click', function (e) {
+      const chip = e.target.closest('.rd-live-chip');
+      if (!chip) return;
+      const cssKey = chip.getAttribute('data-csskey');
+      const pcss = chip.getAttribute('data-css') || '';
+      if (!cssKey) return;
+      if (cssKey === RD_HERO_CSS_KEY) { store.set(cssKey, pcss); rdApplyHeroCss(pcss); }
+      else if (cssKey === RD_LEDGER_CSS_KEY) { store.set(cssKey, pcss); rdApplyLedgerCss(pcss); }
+      rdRenderShelf();
+    });
   }
   function rdOpenLiveDrawer() {
     if (!settingsPage || settingsPage.hidden) return;
@@ -4050,157 +4231,144 @@
     const grid = document.getElementById('rd-grid');
     const empty = document.getElementById('rd-empty');
     const hero = document.getElementById('rd-hero');
-    const habit = document.getElementById('rd-habit');
-    const heroTitle = document.getElementById('rd-hero-title');
-    const heroMeta = document.getElementById('rd-hero-meta');
-    const heroWater = document.getElementById('rd-hero-water');
-    const heroBtn = document.getElementById('rd-hero-btn');
-    const shelfHead = document.getElementById('rd-shelf-head');
-    const shelfCount = document.getElementById('rd-shelf-count');
-    const shelfFilter = document.getElementById('rd-shelf-filter');
-    const filterEmpty = document.getElementById('rd-filter-empty');
-    const todayEl = document.getElementById('rd-habit-today');
-    const weekEl = document.getElementById('rd-habit-week');
-    const doneEl = document.getElementById('rd-habit-done');
+    const stat = document.getElementById('rd-stat');
+    const groupsBlock = document.getElementById('rd-groups-block');
+    const ggrid = document.getElementById('rd-ggrid');
     if (!grid) return;
-    // 顶栏收放跟着导入面板的开关走：从阅读器返回、重开本页时也靠这里同步回来
+    // 顶栏收放跟着导入面板的开关走
     const shelfEl = document.getElementById('rd-shelf');
     const impPanel = document.getElementById('rd-import-panel');
     if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
     const list = readIndex().slice();
     list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
-    // 空书架：hero/habit/shelf-head/filter/grid/filter-empty 全 hidden，空态顶到顶栏下
+
+    // ========== 空书架 ==========
     if (list.length === 0) {
       if (hero) hero.hidden = true;
-      if (habit) habit.hidden = true;
-      if (shelfHead) shelfHead.hidden = true;
-      if (shelfFilter) shelfFilter.hidden = true;
-      if (filterEmpty) filterEmpty.hidden = true;
+      if (stat) stat.hidden = true;
+      if (groupsBlock) groupsBlock.hidden = true;
       grid.innerHTML = '';
       if (empty) empty.hidden = false;
-      // 共读手账空书架时也应该空掉
       const ledger = document.getElementById('rd-ledger');
       if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
       const usage = document.getElementById('rd-usage');
       if (usage) { usage.hidden = true; usage.textContent = ''; }
+      rdApplyHeroCss(''); rdApplyLedgerCss('');
       return;
     }
-    // 有书：hero 用 lastOpenAt 最新的那本，继续阅读按钮存 heroBookId 到 dataset
+    if (empty) empty.hidden = true;
+
+    // ========== Hero 深色封面卡 ==========
     const heroBook = list[0];
-    if (hero && heroBook) {
+    if (heroBook && hero) {
       hero.hidden = false;
-      const title = heroBook.title || '未命名';
-      const color = rdCoverColor(title);
-      if (heroTitle) heroTitle.textContent = title;
-      if (heroMeta) heroMeta.textContent = rdHeroMeta(heroBook);
-      if (heroWater) {
-        heroWater.textContent = title.slice(0, 1) || '书';
-        heroWater.style.color = color;
+      const d = new Date();
+      const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      const pct = rdProgressPct(heroBook);
+      const hDate = document.getElementById('rd-hero-date');
+      if (hDate) hDate.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + wd[d.getDay()];
+      const hPct = document.getElementById('rd-hero-pct');
+      if (hPct) hPct.textContent = '上次读到 ' + pct + '%';
+      const hTitle = document.getElementById('rd-hero-title');
+      if (hTitle) hTitle.textContent = '《' + (heroBook.title || '未命名') + '》';
+      const hTxt = document.getElementById('rd-hero-txt');
+      if (hTxt) hTxt.hidden = false;
+      const hCoop = document.getElementById('rd-hero-coop');
+      if (hCoop) {
+        const tag = rdBadgeText(heroBook);
+        if (tag) { hCoop.textContent = tag; hCoop.hidden = false; }
+        else hCoop.hidden = true;
       }
-      if (heroBtn) heroBtn.setAttribute('data-id', rdEsc(heroBook.id));
+      const hBar = document.getElementById('rd-hero-bar-fill');
+      if (hBar) hBar.style.width = pct + '%';
+      const hGo = document.getElementById('rd-hero-go');
+      if (hGo) hGo.setAttribute('data-id', heroBook.id);
     } else if (hero) hero.hidden = true;
-    // 阅读习惯概览：今天 / 近 7 天 / 读完数
-    const habitData = rdHabitLoad();
-    const todayKey = rdTodayKey();
-    const todaySec = (habitData.me && habitData.me[todayKey] && habitData.me[todayKey].sec) || 0;
-    let weekSec = 0;
-    const me = habitData.me || {};
-    const keys = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
-    for (let i = 0; i < Math.min(7, keys.length); i++) weekSec += (me[keys[i]] && me[keys[i]].sec) || 0;
-    let doneN = 0;
-    for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
-    if (todayEl) todayEl.textContent = Math.round(todaySec / 60);
-    if (weekEl) weekEl.textContent = Math.round(weekSec / 3600 * 10) / 10;
-    if (doneEl) doneEl.textContent = doneN;
-    if (habit) habit.hidden = false;
-    // 共读手账：现有逻辑照搬
+
+    // ========== 阅读记录（去卡片化，无叙事句） ==========
+    if (stat) {
+      const hab = rdHabitLoad();
+      const todayKey = rdTodayKey();
+      const me = (hab && hab.me) || {};
+      const today = me[todayKey] || { sec: 0, pages: 0 };
+      const todayMin = Math.round((today.sec || 0) / 60);
+      const pageCount = today.pages || 0;
+      let weekSec = 0;
+      const sortedDays = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
+      for (let i = 0; i < Math.min(7, sortedDays.length); i++) {
+        const d = me[sortedDays[i]];
+        if (d && d.sec) weekSec += d.sec;
+      }
+      const weekHrs = Math.round((weekSec / 3600) * 10) / 10;
+      let doneN = 0;
+      for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
+      stat.hidden = false;
+      const stH = document.getElementById('rd-stat-h');
+      if (stH) stH.textContent = '今天读了 ' + todayMin + ' 分钟';
+      const stP = document.getElementById('rd-stat-pages');
+      if (stP) stP.textContent = pageCount;
+      const stW = document.getElementById('rd-stat-week');
+      if (stW) stW.textContent = weekHrs;
+      const stD = document.getElementById('rd-stat-done');
+      if (stD) stD.textContent = doneN;
+    }
+
+    // ========== 共读手账（原样保留） ==========
     const ledger = document.getElementById('rd-ledger');
     if (ledger) {
       if (!rdCoopOn()) {
         ledger.innerHTML = '';
         ledger.hidden = true;
       } else {
-      const now = Date.now();
-      const DAY = 86400000;
-      let led = '';
-      let dirty = false;
-      const drops = [];
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        if (!b || !Array.isArray(b.sealed) || !b.sealed.length) continue;
-        const keep = [];
-        for (let j = 0; j < b.sealed.length; j++) {
-          const s = b.sealed[j];
-          if (!s || !s.at) continue;
-          const age = now - s.at;
-          if (age >= RD_SEAL_DROP_DAYS * DAY) { drops.push({ id: b.id, s: s }); dirty = true; continue; }
-          keep.push(s);
-          const chNo = (Number(s.ch) || 0) + 1;
-          const days = Math.floor(age / DAY);
-          const sameDay = rdTodayKey(s.at) === rdTodayKey();
-          const noteState = days >= RD_SEAL_WAIT_DAYS ? 'waiting' : (sameDay ? 'today' : 'days');
-          const note = days >= RD_SEAL_WAIT_DAYS
-            ? '他还在等'
-            : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
-          led += '<div class="rd-ledger-row" data-state="' + noteState + '">' +
-            '<div class="rd-ledger-main">' +
-              '<span class="rd-ledger-book">《' + rdEsc(b.title || '未命名') + '》</span>' +
-              '<span class="rd-ledger-note">' + rdEsc(note) + '</span>' +
-            '</div>' +
-            '<span class="rd-ledger-ch">第 ' + chNo + ' 章</span>' +
-          '</div>';
+        const now = Date.now();
+        const DAY = 86400000;
+        let led = '';
+        let dirty = false;
+        const drops = [];
+        for (let i = 0; i < list.length; i++) {
+          const b = list[i];
+          if (!b || !Array.isArray(b.sealed) || !b.sealed.length) continue;
+          const keep = [];
+          for (let j = 0; j < b.sealed.length; j++) {
+            const s = b.sealed[j];
+            if (!s || !s.at) continue;
+            const age = now - s.at;
+            if (age >= RD_SEAL_DROP_DAYS * DAY) { drops.push({ id: b.id, s: s }); dirty = true; continue; }
+            keep.push(s);
+            const chNo = (Number(s.ch) || 0) + 1;
+            const days = Math.floor(age / DAY);
+            const sameDay = rdTodayKey(s.at) === rdTodayKey();
+            const line = days >= RD_SEAL_WAIT_DAYS
+              ? '他还在等'
+              : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
+            led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
+              '</span><span class="a">第 ' + chNo + ' 章</span></div>';
+          }
+          if (keep.length !== b.sealed.length) b.sealed = keep;
         }
-        if (keep.length !== b.sealed.length) b.sealed = keep;
-      }
-      if (dirty) saveIndex(list);
-      for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
-      ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
-      ledger.hidden = !led;
+        if (dirty) saveIndex(list);
+        for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
+        ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
+        ledger.hidden = !led;
       }
     }
-    // 区块头 + 筛选胶囊
-    if (shelfHead) {
-      shelfHead.hidden = false;
-      if (shelfCount) shelfCount.textContent = ' · ' + list.length + ' 本';
-    }
-    if (shelfFilter) {
-      shelfFilter.hidden = false;
-      const btns = shelfFilter.querySelectorAll('.rd-sf');
-      for (let i = 0; i < btns.length; i++) {
-        btns[i].classList.toggle('on', btns[i].getAttribute('data-filter') === rdShelfFilter);
+
+    // ========== 分组错落网格 ==========
+    if (groupsBlock && ggrid) {
+      const groups = rdGroupLoad();
+      let ghtml = rdGroupCardHtml({ id: RD_DEFAULT_GROUP_ID, name: '全部书籍' }, list);
+      groups.sort(function (a, b) { return ((a && a.createdAt) || 0) - ((b && b.createdAt) || 0); });
+      for (let i = 0; i < groups.length; i++) {
+        const g = groups[i];
+        if (!g || !g.id) continue;
+        const glist = list.filter(function (b) { return b && b.gid === g.id; });
+        ghtml += rdGroupCardHtml(g, glist);
       }
+      ggrid.innerHTML = ghtml;
+      groupsBlock.hidden = false;
     }
-    // 空态卡：有书时 hidden
-    if (empty) empty.hidden = true;
-    // 按筛选渲染两列大封面
-    const filtered = rdFilterList(list, rdShelfFilter);
-    let html = '';
-    for (let i = 0; i < filtered.length; i++) {
-      const b = filtered[i];
-      if (!b || !b.id) continue;
-      const title = b.title || '未命名';
-      const color = rdCoverColor(title);
-      const pct = rdProgressPct(b);
-      const ribs = (function () {
-        let out = '';
-        const spine = rdTogSpine(b);
-        for (let k = 0; k < spine; k++) out += '<i></i>';
-        return out;
-      })();
-      html += '<div class="rd-book rd-book-lg" data-id="' + rdEsc(b.id) + '">' +
-        '<div class="rd-cover" style="background:' + color + '">' + rdEsc(title.slice(0, 1) || '书') +
-          (ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
-        '<div class="rd-book-lg-body">' +
-          '<div class="rd-book-lg-title">' + rdEsc(title) + '</div>' +
-          '<div class="rd-book-lg-meta">' + rdEsc(rdHeroMeta(b)) + '</div>' +
-          '<div class="rd-book-lg-line"><i style="width:' + pct + '%"></i></div>' +
-        '</div>' +
-      '</div>';
-    }
-    grid.innerHTML = html;
-    // 筛选无结果：只在网格位置显示空态，0 本书用大空态卡
-    if (filterEmpty) filterEmpty.hidden = filtered.length > 0;
-    // 用量
+
+    // ========== 用量 ==========
     const usage = document.getElementById('rd-usage');
     if (usage) {
       let bytes = 0;
@@ -4208,6 +4376,49 @@
       usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
       usage.hidden = false;
     }
+
+    // ========== Hero / Ledger 自定义 CSS（每次渲染都重挂，钉死 .rd-hero-card / .rd-ledger） ==========
+    try { rdApplyHeroCss(store.get(RD_HERO_CSS_KEY) || ''); } catch (e) {}
+    try { rdApplyLedgerCss(store.get(RD_LEDGER_CSS_KEY) || ''); } catch (e) {}
+
+    // 首页模式下 rd-grid 留空（两列错落书卡在第二批组内页填充）
+    grid.innerHTML = '';
+  }
+  function rdGroupCardHtml(group, books) {
+    const name = (group && group.name) || '未命名';
+    const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+    const recent = sorted[0];
+    let stack = '';
+    const showN = Math.min(3, sorted.length);
+    for (let i = 0; i < showN; i++) {
+      const t = sorted[i].title || '未命名';
+      stack += '<span class="rd-gsb" style="background:' + rdCoverColor(t) + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
+    }
+    const subtitle = recent
+      ? ((rdProgressPct(recent) >= 100 ? '最近读完《' : '最近在读《') + rdEsc(recent.title || '未命名') + '》')
+      : '还没有书，长按书卡移进来';
+    return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
+      '<span class="rd-gn">' + books.length + ' 本</span>' +
+      '<div class="rd-gstack">' + stack + '</div>' +
+      '<div class="rd-gt">' + rdEsc(name) + '</div>' +
+      '<div class="rd-gs">' + subtitle + '</div>' +
+    '</div>';
+  }
+  function rdCreateGroup() {
+    window.openModal('新建分组', '', function (v) {
+      if (!v) return;
+      const name = String(v).trim();
+      if (!name) { rdToast('分组名不能为空'); return; }
+      if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+      const groups = rdGroupLoad();
+      for (let i = 0; i < groups.length; i++) {
+        if (groups[i] && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+      }
+      groups.push({ id: rdGroupId(), name: name, createdAt: Date.now() });
+      if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+      rdRenderShelf();
+      rdToast('已创建「' + name + '」');
+    });
   }
 
   // ===== 书目长按：改名 / 删除 =====
@@ -4639,6 +4850,21 @@
       const mp = document.getElementById('chat-more-panel');
       if (mp) mp.hidden = true;
       rdOpen();
+      return;
+    }
+    if (el.closest('#rd-hero-go')) {
+      e.preventDefault();
+      const btn = document.getElementById('rd-hero-go');
+      if (btn && btn.getAttribute('data-id')) rdOpenBook(btn.getAttribute('data-id'));
+      return;
+    }
+    if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
+    const gk = el.closest('.rd-gk[data-gid]');
+    if (gk) {
+      e.preventDefault();
+      const gid = gk.getAttribute('data-gid');
+      if (gid === RD_DEFAULT_GROUP_ID) rdToast('全部书籍 · 所有书都在这里');
+      else rdToast('组内页下一批做');
       return;
     }
     if (el.closest('#rd-shelf-back')) { rdClose(); return; }

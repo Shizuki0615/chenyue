@@ -1,12 +1,12 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-habit[hidden],.rd-shelf-head[hidden],.rd-shelf-filter[hidden],.rd-filter-empty[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-/* #1554b 重锚：两列大封面固定宽，居中。横向内边距下放给 hero/habit/shelf-head */
-.rd-grid{display:grid;grid-template-columns:repeat(2,164px);gap:16px;justify-content:center;padding:0}
+.rd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px;padding:18px 16px 0}
+.rd-grid>*:nth-child(even){margin-top:22px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
 .rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
@@ -428,51 +428,70 @@
 .rd-pop-cross{font-size:11px;opacity:.5;margin:2px 0 5px}
 .rd-pop-old{font-size:13px;line-height:1.6;opacity:.42;text-decoration:line-through;margin-bottom:6px;white-space:pre-wrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
-/* ---------- 继续阅读 hero 卡 ---------- */
+
+/* ---------- Hero 深色封面卡 ---------- */
 .rd-hero{padding:14px 16px 0}
-.rd-hero-card{position:relative;min-height:170px;padding:20px 18px;border-radius:16px;border:1px solid rgba(122,96,64,.14);background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);overflow:hidden;box-shadow:0 2px 10px rgba(122,96,64,.07)}
-.rd-hero-water{position:absolute;right:14px;bottom:-16px;font-size:120px;font-weight:700;line-height:1;opacity:.11;pointer-events:none;letter-spacing:-.05em}
-.rd-hero-body{position:relative;z-index:1;padding-right:76px}
-.rd-hero-sub{font-size:11px;letter-spacing:.08em;opacity:.4}
-.rd-hero-title{margin-top:5px;font-size:15px;font-weight:700;line-height:1.45;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rd-hero-meta{margin-top:6px;font-size:11.5px;opacity:.5}
-.rd-hero-btn{position:absolute;right:18px;bottom:17px;padding:8px 14px;font-size:12px;font-weight:600;border-radius:999px}
+.rd-hero-card{position:relative;padding:22px 20px 20px;border-radius:18px;background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%);color:#f2e8d8;overflow:hidden;box-shadow:0 10px 28px rgba(47,41,32,.38)}
+.rd-hero-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 18% 14%,rgba(255,240,210,.18),transparent 58%);pointer-events:none}
+.rd-hero-mark{position:absolute;top:0;right:22px;width:9px;height:22px;background:#f4b6c2;border-radius:0 0 3px 3px;box-shadow:0 2px 6px rgba(244,182,194,.4)}
+.rd-hero-head{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:10.5px;letter-spacing:.04em;opacity:.72}
+.rd-hero-title{position:relative;margin-top:14px;font-size:19px;font-weight:700;line-height:1.35;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-hero-tags{position:relative;margin-top:10px;display:flex;gap:8px;font-size:10px;letter-spacing:.05em;opacity:.75}
+.rd-hero-bar{position:relative;margin-top:16px;height:2px;background:rgba(255,255,255,.14);border-radius:1px;overflow:hidden}
+.rd-hero-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,rgba(244,182,194,.7),#f4b6c2);border-radius:1px;transition:width .25s ease}
+.rd-hero-foot{position:relative;margin-top:14px}
+.rd-hero-go{border:0;border-radius:999px;padding:8px 18px;font-size:12.5px;font-weight:600;font-family:inherit;background:#f6efdf;color:#221c14;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.rd-hero-go:active{opacity:.82}
 
-/* ---------- 阅读概览三列卡（上叠 hero 12px） ---------- */
-.rd-habit{display:flex;align-items:stretch;margin:-12px 16px 0;padding:14px 0;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfaf5);border:1px solid rgba(122,96,64,.1);box-shadow:0 1px 6px rgba(122,96,64,.05);position:relative;z-index:2}
-.rd-habit-col{flex:1;text-align:center;padding:0 6px}
-.rd-habit-line{width:1px;background:rgba(0,0,0,.07)}
-.rd-habit-n{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.92}
-.rd-habit-l{margin-top:2px;font-size:9.5px;letter-spacing:.04em;opacity:.45}
+/* ---------- 阅读记录（去卡片化） ---------- */
+.rd-stat{margin:22px 18px 0}
+.rd-stat-label{font-size:10px;letter-spacing:.14em;opacity:.5;text-transform:uppercase}
+.rd-stat-h{margin-top:6px;font-size:22px;font-weight:700;line-height:1.3}
+.rd-stat-nums{margin-top:12px;display:flex;gap:14px;font-size:10.5px;opacity:.55}
+.rd-sg{position:relative;padding-left:0}
+.rd-sg b{font-weight:600;color:var(--ink,#111);opacity:.9;font-variant-numeric:tabular-nums}
+.rd-sg + .rd-sg::before{content:'';position:absolute;left:-8px;top:2px;bottom:2px;width:1px;background:currentColor;opacity:.3}
 
-/* ---------- 书架区块头 + 筛选 ---------- */
-.rd-shelf-head{display:flex;align-items:center;justify-content:space-between;margin:22px 16px 0}
-.rd-shelf-head-t{font-size:14px;font-weight:700;letter-spacing:.01em}
-.rd-shelf-head-n{font-weight:400;opacity:.55;font-size:13px}
-.rd-shelf-sub{font-size:10.5px;opacity:.45}
-.rd-shelf-filter{display:flex;gap:8px;margin:10px 16px 0;align-items:center}
-.rd-sf{padding:6px 12px;font-size:11.5px;border-radius:999px;border:1px solid rgba(0,0,0,.16);background:rgba(244,182,194,.12);color:inherit;cursor:pointer;line-height:1;-webkit-tap-highlight-color:transparent}
-.rd-sf.on{background:rgba(244,182,194,.32);border-color:rgba(0,0,0,.28);font-weight:600}
-
-/* ---------- 两列大封面 ---------- */
-.rd-book-lg{width:164px}
-.rd-book-lg .rd-cover{border-radius:12px;font-size:33px;box-shadow:0 4px 16px rgba(0,0,0,.1),inset 0 0 0 1px rgba(255,255,255,.35),inset 0 -6px 12px rgba(0,0,0,.06)}
-.rd-book-lg .rd-book-lg-body{margin-top:10px}
-.rd-book-lg-title{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rd-book-lg-meta{margin-top:3px;font-size:10.5px;opacity:.55}
-.rd-book-lg-line{margin-top:6px;height:3px;border-radius:2px;background:rgba(0,0,0,.06);overflow:hidden}
-.rd-book-lg-line i{display:block;height:100%;background:currentColor;opacity:.6;border-radius:2px}
-.rd-book-lg:active{transform:scale(.985);transition:transform .08s ease}
-@media (prefers-reduced-motion: reduce){.rd-book-lg:active{transition:none}}
-
-/* ---------- 筛选空结果 ---------- */
-.rd-filter-empty{margin:20px 16px 0;padding:24px;border-radius:12px;text-align:center;font-size:12px;opacity:.55;background:rgba(122,96,64,.04)}
+/* ---------- 分组卡（错落两列） ---------- */
+.rd-groups-block{margin:24px 0 0}
+.rd-groups-head{display:flex;align-items:flex-end;justify-content:space-between;padding:0 18px}
+.rd-glabel{font-size:10px;letter-spacing:.14em;opacity:.5;text-transform:uppercase}
+.rd-gtitle{margin-top:2px;font-size:15px;font-weight:600}
+.rd-gnew{border:1px solid rgba(0,0,0,.16);background:transparent;color:inherit;font-family:inherit;font-size:11.5px;padding:6px 12px;border-radius:999px;cursor:pointer;opacity:.7;-webkit-tap-highlight-color:transparent}
+.rd-gnew:active{opacity:.45}
+.rd-ggrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px;padding:14px 16px 0}
+.rd-gk{position:relative;padding:14px 14px 13px;border-radius:14px;background:var(--card-bg,#fff);border:1px solid rgba(0,0,0,.06);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gk:active{opacity:.78}
+.rd-gn{position:absolute;top:10px;right:12px;font-size:10px;opacity:.45}
+.rd-gstack{margin-top:4px;display:flex;height:34px;align-items:flex-end}
+.rd-gsb{width:26px;height:34px;margin-left:-9px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.85);box-shadow:0 2px 5px rgba(0,0,0,.18);flex-shrink:0}
+.rd-gsb:first-child{margin-left:0}
+.rd-gt{margin-top:10px;font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-gs{margin-top:2px;font-size:10.5px;opacity:.5;line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-gk[data-gid="all"]{background:linear-gradient(150deg,var(--card-bg,#fff),rgba(0,0,0,.02));border-color:rgba(0,0,0,.09)}
 
 /* ---------- 夜间覆盖 ---------- */
-[data-theme="dark"] .rd-hero-card{background:linear-gradient(160deg,#22201d 0%,#1d1a16 72%,#161411 100%);border-color:rgba(255,255,255,.1);box-shadow:0 2px 10px rgba(0,0,0,.25)}
-[data-theme="dark"] .rd-habit{background:linear-gradient(180deg,#1f1c18,#1a1814);border-color:rgba(255,255,255,.08)}
-[data-theme="dark"] .rd-habit-line{background:rgba(255,255,255,.1)}
-[data-theme="dark"] .rd-sf{background:rgba(244,182,194,.08);border-color:rgba(255,255,255,.18)}
-[data-theme="dark"] .rd-sf.on{background:rgba(244,182,194,.22);border-color:rgba(255,255,255,.3)}
-[data-theme="dark"] .rd-book-lg .rd-cover{box-shadow:0 2px 10px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.1),inset 0 -4px 10px rgba(0,0,0,.2)}
-[data-theme="dark"] .rd-filter-empty{background:rgba(255,255,255,.04)}
+[data-theme="dark"] .rd-hero-card{background:linear-gradient(152deg,#2a2723 0%,#161411 80%);color:#e8ded0;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+[data-theme="dark"] .rd-hero-card::before{background:radial-gradient(ellipse at 18% 14%,rgba(255,240,210,.1),transparent 58%)}
+[data-theme="dark"] .rd-stat-h{color:#f0e6d6}
+[data-theme="dark"] .rd-sg b{color:#e8ded0}
+[data-theme="dark"] .rd-gk{background:#1d1a15;border-color:rgba(255,255,255,.08)}
+[data-theme="dark"] .rd-gk[data-gid="all"]{background:linear-gradient(150deg,#201d18,#1a1713);border-color:rgba(255,255,255,.11)}
+[data-theme="dark"] .rd-gnew{border-color:rgba(255,255,255,.18);color:#e8ded0}
+
+/* ---------- 设置页：预设色块 chip ---------- */
+.rd-preset-opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.rd-preset-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;border:1px solid transparent;background:transparent;border-radius:8px;cursor:pointer;font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.rd-preset-chip.on{border-color:currentColor}
+.rd-preset-swatch{width:28px;height:28px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.08)}
+.rd-preset-chip span{font-size:10px;opacity:.65;line-height:1}
+.rd-set-custom-btn{margin-top:8px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rd-set-custom-btn:active{opacity:.5}
+
+/* ---------- 边看边调：色块行 ---------- */
+.rd-live-row{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.rd-live-row-t{font-size:11px;opacity:.6;font-weight:500}
+.rd-live-chips{display:flex;gap:10px;flex-wrap:wrap}
+.rd-live-chip{width:32px;height:32px;padding:0;border:1.5px solid rgba(0,0,0,.12);border-radius:8px;background:var(--card-bg,#fff);cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.rd-live-chip:active{opacity:.7}
+.rd-live-chip i{width:24px;height:24px;border-radius:5px;display:block}
