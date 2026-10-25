@@ -10112,10 +10112,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-usage{margin:16px 0 22px;text-align:center;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42))}
 .rd-usage.rd-dd-foot{margin:14px 0 22px}
-.rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.rd-menu{position:fixed;left:12px;right:12px;bottom:calc(12px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));z-index:60;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;box-sizing:border-box;max-height:70vh;overflow-y:auto}
 .rd-menu-title{padding:10px 14px 6px;font-size:12px;opacity:.55;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
 .rd-menu-danger{color:#d9534f}
+.rd-menu-hint{padding:10px 14px;font-size:12px;line-height:1.5;opacity:.5}
 .rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
 .rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
 .rd-spine i{display:block;height:1px;background:rgba(255,255,255,.62);border-radius:1px}
@@ -10865,7 +10866,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792943276172" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792945442474" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22662,4 +22663,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvo04txo -->
+<!-- __MOCHI_EOF__ mvo1f9gq -->

@@ -3599,7 +3599,7 @@ const ftag0 = document.getElementById('rd-dd-ftag');
 if (ftag0) { ftag0.textContent = ''; ftag0.hidden = true; }
 const ft0 = document.getElementById('rd-dd-ft'); if (ft0) ft0.textContent = '';
 const fm0 = document.getElementById('rd-dd-fm'); if (fm0) fm0.textContent = '';
-const fcov0 = document.querySelector('.rd-dd-fcov'); if (fcov0) fcov0.onclick = null;
+const fcov0 = document.querySelector('.rd-dd-fcov'); if (fcov0) fcov0.removeAttribute('data-id');
 const flist0 = document.getElementById('rd-dd-flist'); if (flist0) flist0.innerHTML = '';
 const ddGrid0 = document.getElementById('rd-dd-grid');
 if (ddGrid0) ddGrid0.innerHTML = '<div class="rd-dd-none">这里还没有书</div>';
@@ -3621,7 +3621,9 @@ const pct = fc ? rdProgressPct(fc) : 0;
 fm.textContent = pct >= 100 ? '最近阅读 · 读完' : ('最近阅读 · ' + pct + '%');
 }
 const fcov = feat.querySelector('.rd-dd-fcov');
-if (fcov) { fcov.onclick = fc ? function () { rdOpenBook(fc.id); } : null; }
+if (fcov) {
+if (fc) fcov.setAttribute('data-id', fc.id); else fcov.removeAttribute('data-id');
+}
 const flist = document.getElementById('rd-dd-flist');
 let flhtml = '';
 for (let i = 1; i < Math.min(3, filtered.length); i++) {
@@ -3836,6 +3838,114 @@ if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
 rdRenderShelf();
 rdToast('已创建「' + name + '」');
 });
+}
+function rdCloseGroupMenu() {
+const ids = ['rd-group-menu', 'rd-book-group-menu'];
+for (let i = 0; i < ids.length; i++) {
+const m = document.getElementById(ids[i]);
+if (m && m.parentNode) m.parentNode.removeChild(m);
+}
+}
+function rdGroupFind(groups, gid) {
+for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i].id === gid) return groups[i];
+return null;
+}
+function rdOpenGroupMenu(gid) {
+if (!page) return;
+if (gid === RD_DEFAULT_GROUP_ID) { rdToast('「全部书籍」是默认分组，不能改名或删除'); return; }
+const g = rdGroupFind(rdGroupLoad(), gid);
+if (!g) return;
+rdCloseBookMenu(); rdCloseGroupMenu();
+const m = document.createElement('div');
+m.id = 'rd-group-menu';
+m.className = 'rd-menu';
+m.setAttribute('data-gid', gid);
+m.innerHTML =
+'<div class="rd-menu-title">' + rdEsc(g.name || '未命名') + '</div>' +
+'<button class="rd-menu-item" data-gact="rename" type="button">重命名分组</button>' +
+'<button class="rd-menu-item rd-menu-danger" data-gact="delete" type="button">删除分组</button>' +
+'<button class="rd-menu-item" data-gact="cancel" type="button">取消</button>';
+page.appendChild(m);
+}
+function rdRenameGroup(gid) {
+const groups = rdGroupLoad();
+const g = rdGroupFind(groups, gid);
+if (!g) return;
+if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+window.openModal('重命名分组', g.name || '', function (v) {
+const name = String(v == null ? '' : v).trim();
+if (!name) { rdToast('分组名不能为空'); return; }
+if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+for (let i = 0; i < groups.length; i++) {
+if (groups[i] && groups[i].id !== gid && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+}
+g.name = name;
+if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+rdRenderShelf();
+rdToast('分组名已改');
+});
+}
+function rdDeleteGroup(gid) {
+const groups = rdGroupLoad();
+const g = rdGroupFind(groups, gid);
+if (!g) return;
+if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+const list0 = readIndex();
+let n = 0;
+for (let i = 0; i < list0.length; i++) if (list0[i] && list0[i].gid === gid) n++;
+window.openModal('删除分组', '', function () {
+const rest = groups.filter(function (x) { return x && x.id !== gid; });
+if (!rdGroupSave(rest)) { rdToast('保存失败，再试一次？'); return; }
+if (n > 0) {
+const list = readIndex();
+let changed = false;
+for (let i = 0; i < list.length; i++) {
+if (list[i] && list[i].gid === gid) { list[i].gid = RD_DEFAULT_GROUP_ID; changed = true; }
+}
+if (changed) saveIndex(list);
+}
+if (rdViewGroupId === gid) { rdViewGroupId = null; rdViewGroupPill = 'all'; }
+rdRenderShelf();
+rdToast(n > 0 ? '已删除分组，' + n + ' 本书回到全部书籍' : '已删除分组');
+}, { noInput: true, staticText: '「' + (g.name || '') + '」' + (n > 0 ? ' · ' + n + ' 本书会回到全部书籍' : ''), warn: true });
+}
+function rdOpenBookGroupMenu(bookId) {
+if (!page) return;
+const book = rdFindBook(bookId, readIndex());
+if (!book) return;
+rdCloseBookMenu(); rdCloseGroupMenu();
+const groups = rdGroupLoad();
+const cur = book.gid || RD_DEFAULT_GROUP_ID;
+let html = '<div class="rd-menu-title">' + rdEsc(book.title || '未命名') + '</div>';
+if (cur !== RD_DEFAULT_GROUP_ID) {
+html += '<button class="rd-menu-item" data-gact="move" data-to="' + RD_DEFAULT_GROUP_ID + '" type="button">移出分组</button>';
+}
+let others = 0;
+for (let i = 0; i < groups.length; i++) {
+const g = groups[i];
+if (!g || !g.id || g.id === cur) continue;
+others++;
+html += '<button class="rd-menu-item" data-gact="move" data-to="' + rdEsc(g.id) + '" type="button">移进「' + rdEsc(g.name || '未命名') + '」</button>';
+}
+if (cur === RD_DEFAULT_GROUP_ID && others === 0) {
+html += '<div class="rd-menu-hint">还没有分组，回首页点「＋ 新建分组」</div>';
+}
+html += '<button class="rd-menu-item" data-gact="cancel" type="button">取消</button>';
+const m = document.createElement('div');
+m.id = 'rd-book-group-menu';
+m.className = 'rd-menu';
+m.setAttribute('data-id', bookId);
+m.innerHTML = html;
+page.appendChild(m);
+}
+function rdMoveBookToGroup(bookId, toGid) {
+const list = readIndex();
+const book = rdFindBook(bookId, list);
+if (!book) return;
+book.gid = toGid || RD_DEFAULT_GROUP_ID;
+if (!saveIndex(list)) return;
+rdRenderShelf();
+rdToast(toGid === RD_DEFAULT_GROUP_ID ? '已移出分组' : '已移进分组');
 }
 function rdFindBook(id, list) {
 for (let i = 0; i < list.length; i++) { if (list[i] && list[i].id === id) return list[i]; }
@@ -4119,16 +4229,23 @@ function rdCancelPress() { if (rdPressTimer) { clearTimeout(rdPressTimer); rdPre
 document.addEventListener('pointerdown', function (e) {
 const el = e.target;
 if (!el || !el.closest) return;
+if (el.closest('.rd-gnew')) return;
 const card = el.closest('#rd-grid .rd-book');
-if (!card) return;
+const gk = card ? null : el.closest('.rd-gk[data-gid]');
+const bgCard = (card || gk) ? null
+: (el.closest('.rd-dd-gi[data-id]') || el.closest('.rd-dd-frow[data-id]') || el.closest('.rd-dd-fcov[data-id]'));
+if (!card && !gk && !bgCard) return;
 rdCancelPress();
 rdPressX = e.clientX; rdPressY = e.clientY;
-const id = card.getAttribute('data-id');
+const id = card ? card.getAttribute('data-id') : (bgCard ? bgCard.getAttribute('data-id') : '');
+const gid = gk ? gk.getAttribute('data-gid') : '';
 rdPressTimer = setTimeout(function () {
 rdPressTimer = 0;
 rdPressAt = Date.now();
 try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
-rdOpenBookMenu(id);
+if (card) rdOpenBookMenu(id);
+else if (gk) rdOpenGroupMenu(gid);
+else rdOpenBookGroupMenu(id);
 }, 450);
 }, true);
 document.addEventListener('pointermove', function (e) {
@@ -4140,7 +4257,8 @@ document.addEventListener('pointercancel', rdCancelPress, true);
 document.addEventListener('contextmenu', function (e) {
 const el = e.target;
 if (el && el.closest && (el.closest('#rd-grid .rd-book') || el.closest('#rd-body') ||
-el.closest('#rd-pop-list .rd-pop-item'))) e.preventDefault();
+el.closest('#rd-pop-list .rd-pop-item') || el.closest('.rd-gk[data-gid]') ||
+el.closest('.rd-dd-gi[data-id]') || el.closest('.rd-dd-frow[data-id]') || el.closest('.rd-dd-fcov[data-id]'))) e.preventDefault();
 }, true);
 let rdPopTimer = 0, rdPopX = 0, rdPopY = 0;
 function rdCancelPopPress() { if (rdPopTimer) { clearTimeout(rdPopTimer); rdPopTimer = 0; } }
@@ -4178,9 +4296,36 @@ if (act === 'rename') rdRenameBook(mid);
 else if (act === 'delete') rdDeleteBook(mid);
 return;
 }
+const gMenuItem = el.closest('#rd-group-menu [data-gact]');
+if (gMenuItem) {
+e.preventDefault();
+const menu = document.getElementById('rd-group-menu');
+const gid = menu ? menu.getAttribute('data-gid') : '';
+const act = gMenuItem.getAttribute('data-gact');
+rdCloseGroupMenu();
+if (act === 'rename') rdRenameGroup(gid);
+else if (act === 'delete') rdDeleteGroup(gid);
+return;
+}
+const bgMenuItem = el.closest('#rd-book-group-menu [data-gact]');
+if (bgMenuItem) {
+e.preventDefault();
+const menu = document.getElementById('rd-book-group-menu');
+const bid = menu ? menu.getAttribute('data-id') : '';
+const act = bgMenuItem.getAttribute('data-gact');
+rdCloseGroupMenu();
+if (act === 'move') rdMoveBookToGroup(bid, bgMenuItem.getAttribute('data-to'));
+return;
+}
 if (document.getElementById('rd-book-menu') && !el.closest('#rd-book-menu')) {
 e.preventDefault();
 rdCloseBookMenu();
+return;
+}
+if ((document.getElementById('rd-group-menu') || document.getElementById('rd-book-group-menu')) &&
+!el.closest('#rd-group-menu') && !el.closest('#rd-book-group-menu')) {
+e.preventDefault();
+rdCloseGroupMenu();
 return;
 }
 const opBtn = el.closest('#rd-anno-ops [data-act]');
@@ -4249,6 +4394,7 @@ if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
 const gk = el.closest('.rd-gk[data-gid]');
 if (gk) {
 e.preventDefault();
+if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
 const gid = gk.getAttribute('data-gid');
 rdViewGroupId = gid;
 rdViewGroupPill = 'all';
@@ -4262,10 +4408,27 @@ rdViewGroupPill = ddPill.getAttribute('data-pill') || 'all';
 rdRenderShelf();
 return;
 }
+const ddFcov = el.closest('.rd-dd-fcov[data-id]');
+if (ddFcov) {
+e.preventDefault();
+if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+rdOpenBook(ddFcov.getAttribute('data-id'));
+return;
+}
 const ddFrow = el.closest('.rd-dd-frow[data-id]');
-if (ddFrow) { rdOpenBook(ddFrow.getAttribute('data-id')); return; }
+if (ddFrow) {
+e.preventDefault();
+if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+rdOpenBook(ddFrow.getAttribute('data-id'));
+return;
+}
 const ddGi = el.closest('.rd-dd-gi[data-id]');
-if (ddGi) { rdOpenBook(ddGi.getAttribute('data-id')); return; }
+if (ddGi) {
+e.preventDefault();
+if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+rdOpenBook(ddGi.getAttribute('data-id'));
+return;
+}
 if (el.closest('#rd-shelf-back')) {
 if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
 rdClose(); return;
