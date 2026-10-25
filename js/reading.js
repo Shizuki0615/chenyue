@@ -11,6 +11,7 @@ const RD_LAMP_KEY = 'reading-lamp';
 const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_PRIMARY_KEY = 'reading-primary';
+const RD_PRIMARY_INK_KEY = 'reading-primary-ink';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_BODY_P = 'xy-home-v2:reading-body:';
@@ -473,7 +474,21 @@ settingsPage.innerHTML =
 '<button class="rd-primary-opt" data-rd-primary="blue" type="button" aria-pressed="false"><i></i><span>雾蓝</span></button>' +
 '<button class="rd-primary-opt" data-rd-primary="brown" type="button" aria-pressed="false"><i></i><span>暖棕</span></button>' +
 '</div>' +
-'<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；选完立即生效。</div>' +
+'<div class="rd-primary-custom-row">' +
+'<button class="rd-primary-custom" id="rd-primary-custom" type="button">' +
+'<i id="rd-primary-custom-sw"></i><span>自定义颜色</span><span class="rd-primary-hex" id="rd-set-primary-hex">#111111</span>' +
+'</button>' +
+'<button class="rd-primary-reset" id="rd-primary-reset" type="button">恢复默认</button>' +
+'</div>' +
+'<div class="rd-primary-inkrow">' +
+'<span class="rd-primary-ink-label">按钮文字</span>' +
+'<div class="rd-primary-inkopts">' +
+'<button class="rd-primary-ink on" data-rd-ink="auto" type="button" aria-pressed="true">自动</button>' +
+'<button class="rd-primary-ink" data-rd-ink="dark" type="button" aria-pressed="false">深色字</button>' +
+'<button class="rd-primary-ink" data-rd-ink="light" type="button" aria-pressed="false">浅色字</button>' +
+'</div>' +
+'</div>' +
+'<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；文字颜色默认按底色自动选黑或白，也可以手动指定。</div>' +
 '</div>' +
 '</div>' +
 '</div>' +
@@ -3089,45 +3104,141 @@ rdRenderPage();
 }
 rdRenderPrefsActive();
 }
-const RD_PRIMARY_DEFAULT = 'ink';
-const RD_PRIMARY_PRESETS = {
-ink: { name: '墨黑', v: '#111111', ink: '#ffffff' },
-pink: { name: '阅读粉', v: '#d97a8c', ink: '#ffffff' },
-blue: { name: '雾蓝', v: '#7893ad', ink: '#ffffff' },
-brown: { name: '暖棕', v: '#8b6a4b', ink: '#ffffff' }
-};
+const RD_PRIMARY_DEFAULT = '#111111';
+const RD_PRIMARY_PRESETS = [
+{ key: 'ink', name: '墨黑', color: '#111111' },
+{ key: 'pink', name: '阅读粉', color: '#d97a8c' },
+{ key: 'blue', name: '雾蓝', color: '#7893ad' },
+{ key: 'brown', name: '暖棕', color: '#8b6a4b' }
+];
+const RD_PRIMARY_BY_KEY = {};
+RD_PRIMARY_PRESETS.forEach(function (p) { RD_PRIMARY_BY_KEY[p.key] = p; });
+const RD_PRIMARY_LEGACY = { ink: '#111111', pink: '#d97a8c', blue: '#7893ad', brown: '#8b6a4b' };
+function rdNormHex(v) {
+let c = String(v == null ? '' : v).trim().toLowerCase();
+if (c && c.charAt(0) !== '#') c = '#' + c;
+return /^#[0-9a-f]{6}$/.test(c) ? c : '';
+}
+function rdRelLum(hex) {
+const c = rdNormHex(hex);
+if (!c) return 0;
+const v = [1, 3, 5].map(function (i) {
+const x = parseInt(c.slice(i, i + 2), 16) / 255;
+return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+});
+return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+}
 function rdReadPrimary() {
 try {
-const v = String(store.get(RD_PRIMARY_KEY) || '');
-return RD_PRIMARY_PRESETS[v] ? v : RD_PRIMARY_DEFAULT;
+const raw = String(store.get(RD_PRIMARY_KEY) || '').trim();
+if (RD_PRIMARY_LEGACY[raw]) return RD_PRIMARY_LEGACY[raw];
+return rdNormHex(raw) || RD_PRIMARY_DEFAULT;
 } catch (e) { return RD_PRIMARY_DEFAULT; }
 }
+function rdReadPrimaryInk() {
+try {
+const v = String(store.get(RD_PRIMARY_INK_KEY) || '');
+return (v === 'dark' || v === 'light') ? v : 'auto';
+} catch (e) { return 'auto'; }
+}
+function rdPrimaryInk(hex) {
+const mode = rdReadPrimaryInk();
+if (mode === 'dark') return '#111111';
+if (mode === 'light') return '#ffffff';
+const L = rdRelLum(hex);
+const darkL = rdRelLum('#111111');
+const cDark = (L + 0.05) / (darkL + 0.05);
+const cLight = 1.05 / (L + 0.05);
+return cLight > cDark ? '#ffffff' : '#111111';
+}
+function rdPrimaryPresetOf(hex) {
+for (let i = 0; i < RD_PRIMARY_PRESETS.length; i++) {
+if (RD_PRIMARY_PRESETS[i].color === hex) return RD_PRIMARY_PRESETS[i];
+}
+return null;
+}
 function rdApplyPrimary() {
-const key = rdReadPrimary();
-const preset = RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT];
+const hex = rdReadPrimary();
+const ink = rdPrimaryInk(hex);
 ['page-reading', 'page-reading-settings'].forEach(function (id) {
 const el = document.getElementById(id);
 if (!el) return;
-el.style.setProperty('--rd-primary', preset.v);
-el.style.setProperty('--rd-primary-ink', preset.ink);
+el.style.setProperty('--rd-primary', hex);
+el.style.setProperty('--rd-primary-ink', ink);
 });
-rdRenderPrimaryActive();
+rdRenderPrimaryActive(hex);
 }
-function rdRenderPrimaryActive() {
-const key = rdReadPrimary();
+function rdRenderPrimaryActive(hex) {
+const cur = hex || rdReadPrimary();
 document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
-const on = btn.getAttribute('data-rd-primary') === key;
+const p = RD_PRIMARY_BY_KEY[btn.getAttribute('data-rd-primary')];
+const on = !!(p && p.color === cur);
 btn.classList.toggle('on', on);
 btn.setAttribute('aria-pressed', on ? 'true' : 'false');
 });
+const preset = rdPrimaryPresetOf(cur);
 const val = document.getElementById('rd-set-primary-val');
-if (val) val.textContent = (RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT]).name;
+if (val) val.textContent = preset ? preset.name : '自定义';
+const hexEl = document.getElementById('rd-set-primary-hex');
+if (hexEl) hexEl.textContent = cur.toUpperCase();
+const sw = document.getElementById('rd-primary-custom-sw');
+if (sw) sw.style.background = cur;
+const mode = rdReadPrimaryInk();
+document.querySelectorAll('[data-rd-ink]').forEach(function (btn) {
+const on = btn.getAttribute('data-rd-ink') === mode;
+btn.classList.toggle('on', on);
+btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
 }
-function rdSetPrimary(key) {
-if (!RD_PRIMARY_PRESETS[key]) return;
-try { store.set(RD_PRIMARY_KEY, key); }
+function rdSetPrimary(color) {
+const hex = rdNormHex(color);
+if (!hex) return;
+try { store.set(RD_PRIMARY_KEY, hex); }
 catch (e) { rdToast('主按钮颜色没保存上'); }
 rdApplyPrimary();
+}
+function rdSetPrimaryInk(mode) {
+if (mode !== 'dark' && mode !== 'light') mode = 'auto';
+try { store.set(RD_PRIMARY_INK_KEY, mode); } catch (e) {}
+rdApplyPrimary();
+}
+function rdResetPrimary() {
+try { store.remove(RD_PRIMARY_KEY); store.remove(RD_PRIMARY_INK_KEY); } catch (e) {}
+rdApplyPrimary();
+rdToast('主按钮颜色已恢复默认');
+}
+function rdOpenPrimaryHex(cur) {
+if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+const ctl = window.openModal('手输主按钮色值', String(cur || '').toUpperCase(), function (v) {
+const hex = rdNormHex(v);
+if (!hex) { ctl.hint('格式不对：# + 6 位十六进制（0-9 / a-f），如 #e05555'); ctl.stay(); return; }
+rdSetPrimary(hex);
+rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
+}, { maxlength: 7, placeholder: '#RRGGBB，如 #e05555' });
+}
+function rdOpenPrimaryPicker() {
+if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+const cur = rdReadPrimary();
+window.openModal('主按钮颜色', '', function (v) {
+if (typeof v === 'number') {
+const p = RD_PRIMARY_PRESETS[v];
+if (p) rdSetPrimary(p.color);
+return;
+}
+if (v === '__hex__') { rdOpenPrimaryHex(cur); return; }
+const hex = rdNormHex(v);
+if (!hex) return;
+rdSetPrimary(hex);
+rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
+}, {
+noInput: true,
+colorPicker: true,
+color: cur,
+swatches: RD_PRIMARY_PRESETS.map(function (p) { return { color: p.color, label: p.name }; }),
+pills: [{ label: '手输色值', value: '__hex__' }],
+pillSubmit: true,
+staticText: '点色块快速选；「自定义颜色」调起系统取色器；取色器打不开的手机点「手输色值」填 #RRGGBB。'
+});
 }
 function rdRenderPrefsActive() {
 const p = rdReadPrefs();
@@ -4059,7 +4170,16 @@ if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); retur
 const bgOpt = el.closest('[data-rd-bgopt]');
 if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
 const primaryOpt = el.closest('[data-rd-primary]');
-if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
+if (primaryOpt) {
+e.preventDefault();
+const preset = RD_PRIMARY_BY_KEY[primaryOpt.getAttribute('data-rd-primary')];
+if (preset) rdSetPrimary(preset.color);
+return;
+}
+if (el.closest('#rd-primary-custom')) { e.preventDefault(); rdOpenPrimaryPicker(); return; }
+if (el.closest('#rd-primary-reset')) { e.preventDefault(); rdResetPrimary(); return; }
+const inkOpt = el.closest('[data-rd-ink]');
+if (inkOpt) { e.preventDefault(); rdSetPrimaryInk(inkOpt.getAttribute('data-rd-ink')); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }

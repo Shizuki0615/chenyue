@@ -10292,6 +10292,18 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-primary-opt.on{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
 .rd-primary-opt span{display:block;white-space:nowrap}
 [data-theme="dark"] .rd-primary-opt{background:#242424;border-color:#3a3a3a}
+.rd-primary-custom-row{display:flex;align-items:center;gap:10px}
+.rd-primary-custom{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:12px;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-custom i{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.rd-primary-hex{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rd-primary-reset{flex:none;padding:6px 2px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-reset:active{opacity:.5}
+.rd-primary-inkrow{display:flex;align-items:center;gap:10px}
+.rd-primary-ink-label{flex:none;font-size:11.5px;color:var(--muted)}
+.rd-primary-inkopts{display:flex;gap:6px;flex:1;min-width:0}
+.rd-primary-ink{flex:1;min-width:0;padding:5px 6px;border:1px solid var(--line,#e6e6e6);border-radius:8px;background:var(--bg,#fff);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-ink.on{border-color:currentColor;color:var(--ink);box-shadow:inset 0 0 0 1px currentColor}
+[data-theme="dark"] .rd-primary-custom,[data-theme="dark"] .rd-primary-ink{background:#242424;border-color:#3a3a3a}
 .rd-set-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
 .rd-set-stat:last-child{border-bottom:none}
 .rd-set-stat span{font-size:14px}
@@ -10798,7 +10810,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792903288835" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792904960131" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22595,4 +22607,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvncbrib -->
+<!-- __MOCHI_EOF__ mvndbl37 -->

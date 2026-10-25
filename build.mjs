@@ -6665,6 +6665,8 @@ const FIX_SENTINELS = [
   // ==== 2026-10-25 #1558 阅读设置页改美化/功能/数据三栏 + 主按钮颜色 ====
   { name: '#1558a 主按钮颜色同时写到书架页与设置页（删＝设置页选色后导入/确认主按钮不变）', file: 'js/reading.js', needle: "['page-reading', 'page-reading-settings'].forEach(function (id) {" },
   { name: '#1558b 数据栏直接从书架索引汇总，不为统计读正文（删＝打开设置页要把全书正文读一遍）', file: 'js/reading.js', needle: 'bytes += Number(b.size) || (w * 3);' },
+  { name: '#1558c 主按钮文字按底色对比度自动选黑/白（删＝浅色底仍配白字看不清）', file: 'js/reading.js', needle: "return cLight > cDark ? '#ffffff' : '#111111';" },
+  { name: '#1558d 旧的预设键仍映射到色值（删＝升级后原来的阅读粉/雾蓝设置失效）', file: 'js/reading.js', needle: 'if (RD_PRIMARY_LEGACY[raw]) return RD_PRIMARY_LEGACY[raw];' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
