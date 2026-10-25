@@ -12,6 +12,8 @@ const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
+const RD_GROUP_KEY = 'reading-groups';
+const RD_DEFAULT_GROUP_ID = 'all';
 const RD_BODY_P = 'xy-home-v2:reading-body:';
 const RD_TOC_P = 'xy-home-v2:reading-toc:';
 const RD_ANNO_P = 'xy-home-v2:reading-anno:';
@@ -42,6 +44,24 @@ rdToast('书架保存失败：' + ((e && e.message) || '本地存储写入没有
 return false;
 }
 }
+function rdGroupLoad() {
+try {
+const raw = store.get(RD_GROUP_KEY);
+if (!raw) return [];
+const arr = JSON.parse(raw);
+if (!Array.isArray(arr)) return [];
+return arr.filter(function (g) { return g && g.id && g.id !== RD_DEFAULT_GROUP_ID && typeof g.name === 'string'; });
+} catch (e) { return []; }
+}
+function rdGroupSave(groups) {
+try { store.set(RD_GROUP_KEY, JSON.stringify(Array.isArray(groups) ? groups : [])); return true; }
+catch (e) { return false; }
+}
+function rdGroupById(groups, id) {
+for (let i = 0; i < groups.length; i++) { if (groups[i] && groups[i].id === id) return groups[i]; }
+return null;
+}
+function rdGroupId() { return 'grp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function rdWriteFail(what) {
 const err = new Error((what || '保存失败') + '：磁盘写入没有完成，请重试');
 err.rdWrite = true;
@@ -245,8 +265,42 @@ page.innerHTML =
 '</button>' +
 '</div>' +
 '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
-'<div class="rd-grid" id="rd-grid"></div>' +
+'<div class="rd-hero" id="rd-hero" hidden>' +
+'<div class="rd-hero-card">' +
+'<div class="rd-hero-top">' +
+'<i class="rd-hero-mark" aria-hidden="true"></i>' +
+'<div class="rd-hero-date"><b id="rd-hero-date"></b><span id="rd-hero-pct"></span></div>' +
+'</div>' +
+'<div class="rd-hero-title" id="rd-hero-title"></div>' +
+'<div class="rd-hero-tags">' +
+'<span class="rd-hero-tag" id="rd-hero-txt" hidden>TXT</span>' +
+'<span class="rd-hero-tag" id="rd-hero-coop" hidden></span>' +
+'</div>' +
+'<div class="rd-hero-bar"><i id="rd-hero-bar-fill"></i></div>' +
+'<div class="rd-hero-foot">' +
+'<button class="rd-hero-go" id="rd-hero-go" type="button">继续读 →</button>' +
+'</div>' +
+'</div>' +
+'</div>' +
+'<div class="rd-stat" id="rd-stat" hidden>' +
+'<div class="rd-stat-label">阅读记录 /</div>' +
+'<div class="rd-stat-h" id="rd-stat-h">今天读了 0 分钟</div>' +
+'<div class="rd-stat-s" id="rd-stat-s"></div>' +
+'<div class="rd-stat-nums">' +
+'<span class="rd-sg">今日 <b id="rd-stat-pages">0</b> 页</span>' +
+'<span class="rd-sg">近 7 天 <b id="rd-stat-week">0</b> 小时</span>' +
+'<span class="rd-sg">读完 <b id="rd-stat-done">0</b> 本</span>' +
+'</div>' +
+'</div>' +
 '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
+'<div class="rd-groups-block" id="rd-groups-block" hidden>' +
+'<div class="rd-groups-head">' +
+'<div><div class="rd-glabel">书库 /</div><div class="rd-gtitle">我的分组</div></div>' +
+'<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
+'</div>' +
+'<div class="rd-ggrid" id="rd-ggrid"></div>' +
+'</div>' +
+'<div class="rd-grid" id="rd-grid"></div>' +
 '<div class="rd-usage" id="rd-usage"></div>' +
 '<div class="rd-import" id="rd-import-panel" hidden>' +
 '<div class="rd-import-main" id="rd-import-main">' +
@@ -427,7 +481,7 @@ settingsPage.innerHTML =
 '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
 '<span class="rd-live-entry-t">' +
 '<span class="rd-live-entry-name">边看边调</span>' +
-'<span class="rd-live-entry-sub">打开调色条：预览在上、控件在下，改哪看哪、即时生效</span>' +
+'<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
 '</span>' +
 '<span class="rd-live-entry-go">点击开启 ›</span>' +
 '</button>' +
@@ -3444,31 +3498,88 @@ return '共读中';
 function rdRenderShelf() {
 const grid = document.getElementById('rd-grid');
 const empty = document.getElementById('rd-empty');
+const hero = document.getElementById('rd-hero');
+const stat = document.getElementById('rd-stat');
+const groupsBlock = document.getElementById('rd-groups-block');
+const ggrid = document.getElementById('rd-ggrid');
 if (!grid) return;
 const shelfEl = document.getElementById('rd-shelf');
 const impPanel = document.getElementById('rd-import-panel');
 if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
 const list = readIndex().slice();
 list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
-let html = '';
-for (let i = 0; i < list.length; i++) {
-const b = list[i];
-if (!b || !b.id) continue;
-const title = b.title || '未命名';
-const badge = rdBadgeText(b);
-const spine = rdTogSpine(b);
-let ribs = '';
-for (let k = 0; k < spine; k++) ribs += '<i></i>';
-html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-'<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
-(ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
-'<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
-'<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-(badge ? '<span class="rd-badge">' + rdEsc(badge) + '</span>' : '') +
-'</div>';
+if (list.length === 0) {
+if (hero) hero.hidden = true;
+if (stat) stat.hidden = true;
+if (groupsBlock) groupsBlock.hidden = true;
+grid.innerHTML = '';
+if (empty) empty.hidden = false;
+const ledger = document.getElementById('rd-ledger');
+if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+const usage = document.getElementById('rd-usage');
+if (usage) { usage.hidden = true; usage.textContent = ''; }
+return;
 }
-grid.innerHTML = html;
-if (empty) empty.hidden = list.length > 0;
+if (empty) empty.hidden = true;
+const heroBook = list[0];
+if (heroBook && hero) {
+hero.hidden = false;
+const d = new Date();
+const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const pct = rdProgressPct(heroBook);
+const hDate = document.getElementById('rd-hero-date');
+if (hDate) hDate.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + wd[d.getDay()];
+const hPct = document.getElementById('rd-hero-pct');
+if (hPct) hPct.textContent = '上次读到 ' + pct + '%';
+const hTitle = document.getElementById('rd-hero-title');
+if (hTitle) hTitle.textContent = '《' + (heroBook.title || '未命名') + '》';
+const hTxt = document.getElementById('rd-hero-txt');
+if (hTxt) hTxt.hidden = false;
+const hCoop = document.getElementById('rd-hero-coop');
+if (hCoop) {
+const on = rdCoopOn() && heroBook.buddy && heroBook.buddy.started;
+hCoop.textContent = on ? rdBadgeText(heroBook) : '';
+hCoop.hidden = !on;
+}
+const hBar = document.getElementById('rd-hero-bar-fill');
+if (hBar) hBar.style.width = pct + '%';
+const hGo = document.getElementById('rd-hero-go');
+if (hGo) hGo.setAttribute('data-id', heroBook.id);
+} else if (hero) hero.hidden = true;
+if (stat) {
+const hab = rdHabitLoad();
+const todayKey = rdTodayKey();
+const me = (hab && hab.me) || {};
+const today = me[todayKey] || { sec: 0, pages: 0 };
+const todayMin = Math.round((today.sec || 0) / 60);
+const pageCount = today.pages || 0;
+let weekSec = 0;
+const sortedDays = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
+for (let i = 0; i < Math.min(7, sortedDays.length); i++) {
+const d = me[sortedDays[i]];
+if (d && d.sec) weekSec += d.sec;
+}
+const weekHrs = Math.round((weekSec / 3600) * 10) / 10;
+let doneN = 0;
+for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
+stat.hidden = false;
+const stH = document.getElementById('rd-stat-h');
+if (stH) stH.textContent = '今天读了 ' + todayMin + ' 分钟';
+const stS = document.getElementById('rd-stat-s');
+if (stS) {
+const t = heroBook ? (heroBook.title || '未命名') : '';
+stS.textContent = !heroBook ? ''
+: (todayMin === 0 ? '《' + t + '》今天还没翻开。'
+: (rdProgressPct(heroBook) >= 100 ? '《' + t + '》已经读完了。'
+: '《' + t + '》还停在上次那一页。'));
+}
+const stP = document.getElementById('rd-stat-pages');
+if (stP) stP.textContent = pageCount;
+const stW = document.getElementById('rd-stat-week');
+if (stW) stW.textContent = weekHrs;
+const stD = document.getElementById('rd-stat-done');
+if (stD) stD.textContent = doneN;
+}
 const ledger = document.getElementById('rd-ledger');
 if (ledger) {
 if (!rdCoopOn()) {
@@ -3496,8 +3607,7 @@ const sameDay = rdTodayKey(s.at) === rdTodayKey();
 const line = days >= RD_SEAL_WAIT_DAYS
 ? '他还在等'
 : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
-led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
-'</span><span class="a">第 ' + chNo + ' 章</span></div>';
+led += '<div class="rd-ledger-row"><div class="rd-lmain"><span class="rd-lbook">《' + rdEsc(b.title || '未命名') + '》</span><span class="rd-lnote">' + rdEsc(line) + '</span></div><span class="rd-lch">第 ' + chNo + ' 章</span></div>';
 }
 if (keep.length !== b.sealed.length) b.sealed = keep;
 }
@@ -3507,12 +3617,63 @@ ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '
 ledger.hidden = !led;
 }
 }
+if (groupsBlock && ggrid) {
+const groups = rdGroupLoad();
+let ghtml = rdGroupCardHtml({ id: RD_DEFAULT_GROUP_ID, name: '全部书籍' }, list);
+groups.sort(function (a, b) { return ((a && a.createdAt) || 0) - ((b && b.createdAt) || 0); });
+for (let i = 0; i < groups.length; i++) {
+const g = groups[i];
+if (!g || !g.id) continue;
+const glist = list.filter(function (b) { return b && b.gid === g.id; });
+ghtml += rdGroupCardHtml(g, glist);
+}
+ggrid.innerHTML = ghtml;
+groupsBlock.hidden = false;
+}
 const usage = document.getElementById('rd-usage');
 if (usage) {
 let bytes = 0;
 for (let i = 0; i < list.length; i++) bytes += ((list[i] && list[i].size) || 0);
 usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
+usage.hidden = false;
 }
+grid.innerHTML = '';
+}
+function rdGroupCardHtml(group, books) {
+const name = (group && group.name) || '未命名';
+const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+const recent = sorted[0];
+let stack = '';
+const showN = Math.min(3, sorted.length);
+for (let i = 0; i < showN; i++) {
+const t = sorted[i].title || '未命名';
+stack += '<span class="rd-gsb" style="background:' + rdCoverColor(t) + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
+}
+const subtitle = recent
+? ((rdProgressPct(recent) >= 100 ? '最近读完《' : '最近在读《') + rdEsc(recent.title || '未命名') + '》')
+: '还没有书，长按书卡移进来';
+return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
+'<span class="rd-gn">' + books.length + ' 本</span>' +
+'<div class="rd-gstack">' + stack + '</div>' +
+'<div class="rd-gt">' + rdEsc(name) + '</div>' +
+'<div class="rd-gs">' + subtitle + '</div>' +
+'</div>';
+}
+function rdCreateGroup() {
+window.openModal('新建分组', '', function (v) {
+if (!v) return;
+const name = String(v).trim();
+if (!name) { rdToast('分组名不能为空'); return; }
+if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+const groups = rdGroupLoad();
+for (let i = 0; i < groups.length; i++) {
+if (groups[i] && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+}
+groups.push({ id: rdGroupId(), name: name, createdAt: Date.now() });
+if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+rdRenderShelf();
+rdToast('已创建「' + name + '」');
+});
 }
 function rdFindBook(id, list) {
 for (let i = 0; i < list.length; i++) { if (list[i] && list[i].id === id) return list[i]; }
@@ -3914,6 +4075,21 @@ e.preventDefault();
 const mp = document.getElementById('chat-more-panel');
 if (mp) mp.hidden = true;
 rdOpen();
+return;
+}
+if (el.closest('#rd-hero-go')) {
+e.preventDefault();
+const btn = document.getElementById('rd-hero-go');
+if (btn && btn.getAttribute('data-id')) rdOpenBook(btn.getAttribute('data-id'));
+return;
+}
+if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
+const gk = el.closest('.rd-gk[data-gid]');
+if (gk) {
+e.preventDefault();
+const gid = gk.getAttribute('data-gid');
+if (gid === RD_DEFAULT_GROUP_ID) rdToast('全部书籍 · 所有书都在这里');
+else rdToast('组内页下一批做');
 return;
 }
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
