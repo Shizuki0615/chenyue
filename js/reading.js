@@ -12,6 +12,26 @@ const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
+const RD_GROUP_KEY = 'reading-groups';
+const RD_DEFAULT_GROUP_ID = 'all';
+const RD_HERO_CSS_KEY = 'reading-hero-css';
+const RD_LEDGER_CSS_KEY = 'reading-ledger-css';
+const RD_HERO_PRESETS = [
+{ id: 'ink',   label: '墨夜',   css: 'background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%);color:#f2e8d8;box-shadow:0 10px 28px rgba(47,41,32,.38)' },
+{ id: 'wine',  label: '酒红',   css: 'background:linear-gradient(145deg,#4a1a1f 0%,#2a0e12 80%);color:#f5dfe2;box-shadow:0 10px 28px rgba(74,26,31,.38)' },
+{ id: 'teal',  label: '青墨',   css: 'background:linear-gradient(155deg,#1d3a3a 0%,#0f2020 80%);color:#dceee8;box-shadow:0 10px 28px rgba(29,58,58,.38)' },
+{ id: 'blue',  label: '蓝夜',   css: 'background:linear-gradient(150deg,#1e2a4a 0%,#121830 80%);color:#dde3f5;box-shadow:0 10px 28px rgba(30,42,74,.38)' },
+{ id: 'paper', label: '纸感',   css: 'background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);color:#3d3426;box-shadow:0 4px 14px rgba(122,96,64,.12)' },
+{ id: 'custom',label: '自定义', css: '' }
+];
+const RD_LEDGER_PRESETS = [
+{ id: 'cream', label: '奶油',   css: 'background:linear-gradient(180deg,#fdfbf6,#f8f3e9);border-color:rgba(122,96,64,.18)' },
+{ id: 'pink',  label: '薄粉',   css: 'background:rgba(244,182,194,.08);border-color:rgba(244,182,194,.24)' },
+{ id: 'blue',  label: '雾蓝',   css: 'background:rgba(120,147,173,.09);border-color:rgba(120,147,173,.22)' },
+{ id: 'grey',  label: '烟灰',   css: 'background:rgba(0,0,0,.035);border-color:rgba(0,0,0,.1)' },
+{ id: 'dark',  label: '夜间',   css: 'background:linear-gradient(180deg,#201e1a,#191714);border-color:rgba(255,255,255,.1)' },
+{ id: 'custom',label: '自定义', css: '' }
+];
 const RD_BODY_P = 'xy-home-v2:reading-body:';
 const RD_TOC_P = 'xy-home-v2:reading-toc:';
 const RD_ANNO_P = 'xy-home-v2:reading-anno:';
@@ -41,6 +61,85 @@ return true;
 rdToast('书架保存失败：' + ((e && e.message) || '本地存储写入没有完成'));
 return false;
 }
+}
+function rdGroupLoad() {
+try {
+const raw = store.get(RD_GROUP_KEY);
+if (!raw) return [];
+const arr = JSON.parse(raw);
+if (!Array.isArray(arr)) return [];
+return arr.filter(function (g) { return g && g.id && g.id !== RD_DEFAULT_GROUP_ID && typeof g.name === 'string'; });
+} catch (e) { return []; }
+}
+function rdGroupSave(groups) {
+try { store.set(RD_GROUP_KEY, JSON.stringify(Array.isArray(groups) ? groups : [])); return true; }
+catch (e) { return false; }
+}
+function rdGroupById(groups, id) {
+for (let i = 0; i < groups.length; i++) { if (groups[i] && groups[i].id === id) return groups[i]; }
+return null;
+}
+function rdGroupId() { return 'grp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+const RD_SAFE_CSS_PROPS = [
+'background','background-color','background-image','background-size','background-position',
+'background-repeat','background-attachment','background-blend-mode',
+'color','border','border-color','border-style','border-width','border-radius',
+'border-top','border-bottom','border-left','border-right',
+'border-top-radius','border-bottom-radius','border-left-radius','border-right-radius',
+'border-top-left-radius','border-top-right-radius','border-bottom-left-radius','border-bottom-right-radius',
+'outline','outline-color','outline-style','outline-width','outline-offset',
+'box-shadow','text-shadow','opacity','filter','mix-blend-mode',
+'font-family','font-size','font-weight','font-style','font-variant','line-height','letter-spacing',
+'text-align','text-transform','text-decoration','text-indent','white-space','word-break',
+'border-top-color','border-bottom-color','border-left-color','border-right-color',
+'border-top-width','border-bottom-width','border-left-width','border-right-width',
+'border-top-style','border-bottom-style','border-left-style','border-right-style',
+'border-image','border-image-source','border-image-slice','border-image-width','border-image-repeat',
+'-webkit-background-clip','background-clip','-webkit-text-fill-color'
+];
+function rdFilterSafeCss(raw, scopeLabel) {
+scopeLabel = scopeLabel || '自定义样式';
+if (!raw || typeof raw !== 'string') return { out: '', blocked: 0 };
+if (raw.indexOf('{') >= 0 || raw.indexOf('}') >= 0) {
+return { out: '', blocked: 1, reason: scopeLabel + ' 只接受「声明」（如 background:#fff;color:#111），不接受选择器块' };
+}
+if (/expression\s*\(|url\s*\(|@[a-z]/i.test(raw)) {
+return { out: '', blocked: 1, reason: scopeLabel + ' 不允许 url() / expression() / @ 指令' };
+}
+const parts = raw.split(';');
+const kept = [];
+let blocked = 0;
+for (let i = 0; i < parts.length; i++) {
+const seg = parts[i].trim();
+if (!seg) continue;
+const colon = seg.indexOf(':');
+if (colon <= 0) { blocked++; continue; }
+const prop = seg.slice(0, colon).trim().toLowerCase();
+const val = seg.slice(colon + 1).trim();
+if (!prop || !val) { blocked++; continue; }
+if (RD_SAFE_CSS_PROPS.indexOf(prop) < 0) { blocked++; continue; }
+if (/url\s*\(|expression\s*\(|javascript\s*:/i.test(val)) { blocked++; continue; }
+kept.push(prop + ':' + val);
+}
+return { out: kept.join(';'), blocked: blocked };
+}
+function rdApplyHeroCss(cssText) {
+const old = document.getElementById('rd-hero-style');
+if (old) old.remove();
+if (!cssText) return;
+const st = document.createElement('style');
+st.id = 'rd-hero-style';
+st.textContent = '.rd-hero-card{' + cssText + '}';
+document.head.appendChild(st);
+}
+function rdApplyLedgerCss(cssText) {
+const old = document.getElementById('rd-ledger-style');
+if (old) old.remove();
+if (!cssText) return;
+const st = document.createElement('style');
+st.id = 'rd-ledger-style';
+st.textContent = '.rd-ledger{' + cssText + '}';
+document.head.appendChild(st);
 }
 function rdWriteFail(what) {
 const err = new Error((what || '保存失败') + '：磁盘写入没有完成，请重试');
@@ -245,8 +344,42 @@ page.innerHTML =
 '</button>' +
 '</div>' +
 '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
-'<div class="rd-grid" id="rd-grid"></div>' +
+'<div class="rd-hero" id="rd-hero" hidden>' +
+'<div class="rd-hero-card">' +
+'<span class="rd-hero-mark" aria-hidden="true"></span>' +
+'<div class="rd-hero-head">' +
+'<div class="rd-hero-date" id="rd-hero-date"></div>' +
+'<div class="rd-hero-pct" id="rd-hero-pct"></div>' +
+'</div>' +
+'<div class="rd-hero-title" id="rd-hero-title"></div>' +
+'<div class="rd-hero-tags">' +
+'<span class="rd-hero-tag" id="rd-hero-txt" hidden>TXT</span>' +
+'<span class="rd-hero-tag" id="rd-hero-coop" hidden></span>' +
+'</div>' +
+'<div class="rd-hero-bar"><i id="rd-hero-bar-fill"></i></div>' +
+'<div class="rd-hero-foot">' +
+'<button class="rd-hero-go" id="rd-hero-go" type="button">继续读 →</button>' +
+'</div>' +
+'</div>' +
+'</div>' +
+'<div class="rd-stat" id="rd-stat" hidden>' +
+'<div class="rd-stat-label">阅读记录 /</div>' +
+'<div class="rd-stat-h" id="rd-stat-h">今天读了 0 分钟</div>' +
+'<div class="rd-stat-nums">' +
+'<span class="rd-sg">今日 <b id="rd-stat-pages">0</b> 页</span>' +
+'<span class="rd-sg">近 7 天 <b id="rd-stat-week">0</b> 小时</span>' +
+'<span class="rd-sg">读完 <b id="rd-stat-done">0</b> 本</span>' +
+'</div>' +
+'</div>' +
 '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
+'<div class="rd-groups-block" id="rd-groups-block" hidden>' +
+'<div class="rd-groups-head">' +
+'<div><div class="rd-glabel">书库 /</div><div class="rd-gtitle">我的分组</div></div>' +
+'<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
+'</div>' +
+'<div class="rd-ggrid" id="rd-ggrid"></div>' +
+'</div>' +
+'<div class="rd-grid" id="rd-grid"></div>' +
 '<div class="rd-usage" id="rd-usage"></div>' +
 '<div class="rd-import" id="rd-import-panel" hidden>' +
 '<div class="rd-import-main" id="rd-import-main">' +
@@ -427,7 +560,7 @@ settingsPage.innerHTML =
 '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
 '<span class="rd-live-entry-t">' +
 '<span class="rd-live-entry-name">边看边调</span>' +
-'<span class="rd-live-entry-sub">打开调色条：预览在上、控件在下，改哪看哪、即时生效</span>' +
+'<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
 '</span>' +
 '<span class="rd-live-entry-go">点击开启 ›</span>' +
 '</button>' +
@@ -455,6 +588,19 @@ settingsPage.innerHTML =
 '</div>' +
 '</div>' +
 '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+'<div class="gs-title">书架首页</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
+'<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
+'<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
+'</div>' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
+'<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
+'<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+'</div>' +
+'</div>' +
 '<div class="gs-title">共读</div>' +
 '<div class="set-group glass">' +
 '<div class="rd-set-row rd-set-toggle">' +
@@ -493,8 +639,96 @@ const bmToggle = settingsPage.querySelector('#rd-bookmark-toggle');
 if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
 const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
 if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
+function rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl) {
+const box = settingsPage.querySelector('#' + containerId);
+if (!box) return;
+let saved = '';
+try { saved = store.get(cssKey) || ''; } catch (e) {}
+let selectedId = '';
+for (let i = 0; i < presets.length; i++) {
+const p = presets[i];
+if (p.id !== 'custom' && saved === p.css) { selectedId = p.id; break; }
+}
+let h = '';
+for (let i = 0; i < presets.length; i++) {
+const p = presets[i];
+const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+'<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+'<span>' + rdEsc(p.label) + '</span></button>';
+}
+box.innerHTML = h;
+if (valLabelEl) {
+if (!saved) valLabelEl.textContent = '默认';
+else {
+const sel = presets.filter(function (x) { return x.id === selectedId; })[0];
+valLabelEl.textContent = sel ? sel.label : '自定义';
+}
+}
+box.addEventListener('click', function (e) {
+const btn = e.target.closest('.rd-preset-chip');
+if (!btn) return;
+const pid = btn.getAttribute('data-pid');
+const pcss = btn.getAttribute('data-css') || '';
+if (pid === 'custom') {
+rdOpenCustomCssModal(cssKey, presets[0].id === 'ink' ? 'Hero 封面卡' : '共读手账底色', applyFn);
+} else {
+store.set(cssKey, pcss);
+applyFn(pcss);
+rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl);
+rdRenderShelf();
+}
+});
+}
+rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'));
+rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'));
+const heroCustom = settingsPage.querySelector('#rd-hero-custom');
+if (heroCustom) heroCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_HERO_CSS_KEY, 'Hero 封面卡', rdApplyHeroCss); });
+const ledgerCustom = settingsPage.querySelector('#rd-ledger-custom');
+if (ledgerCustom) ledgerCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_LEDGER_CSS_KEY, '共读手账底色', rdApplyLedgerCss); });
 rdRenderPrefsActive();
 return settingsPage;
+}
+function rdOpenCustomCssModal(cssKey, label, applyFn) {
+let cur = '';
+try { cur = store.get(cssKey) || ''; } catch (e) {}
+const safeHint = '只允许 background / color / border / box-shadow / filter / opacity 等观感属性。position / margin / width / display / url() / 选择器块 {} 一律拒绝。';
+window.openModal('自定义 ' + label, '' +
+'<div class="sm-fld-hint" style="margin-bottom:8px">' + safeHint + '</div>' +
+'<textarea id="rd-custom-css-input" class="tc-input" rows="5" placeholder="background:#1a1a1a;color:#eee;border-radius:16px"></textarea>' +
+'<div class="mail-actions"><button class="cc-tool" id="rd-custom-css-clear">清空</button><button class="cc-tool" id="rd-custom-css-ok">应用</button>');
+const ta = document.getElementById('rd-custom-css-input');
+if (ta) ta.value = cur;
+document.getElementById('rd-custom-css-clear').addEventListener('click', function () {
+store.remove(cssKey);
+document.getElementById('tc-mask').hidden = true;
+applyFn('');
+rdRenderShelf();
+rdToast('已恢复默认');
+});
+document.getElementById('rd-custom-css-ok').addEventListener('click', function () {
+let v = '';
+try { v = ta.value || ''; } catch (e) { v = ''; }
+const res = rdFilterSafeCss(v, label);
+if (res.reason) { rdToast(res.reason); return; }
+if (res.blocked > 0 && !res.out) {
+rdToast('有 ' + res.blocked + ' 条属性被拦截，请检查');
+return;
+}
+if (!res.out) {
+store.remove(cssKey);
+applyFn('');
+rdRenderShelf();
+rdToast('已清空 ' + label);
+} else {
+store.set(cssKey, res.out);
+applyFn(res.out);
+rdRenderShelf();
+if (res.blocked > 0) rdToast('应用成功 · 有 ' + res.blocked + ' 条被拦截');
+else rdToast(label + ' 已应用');
+}
+document.getElementById('tc-mask').hidden = true;
+});
 }
 function rdOpenSettings() {
 buildSettingsPage();
@@ -552,7 +786,15 @@ handle.addEventListener('pointercancel', up);
 handle.style.cursor = 'grab';
 }
 function buildLiveDrawer() {
-if (liveDrawer) return liveDrawer;
+if (liveDrawer) {
+const oldBody = liveDrawer.querySelector('#rd-live-body');
+if (oldBody) oldBody.remove();
+const body = document.createElement('div');
+body.className = 'rd-live-body'; body.id = 'rd-live-body';
+liveDrawer.appendChild(body);
+rdBuildLiveBody(body);
+return liveDrawer;
+}
 liveDrawer = document.createElement('div');
 liveDrawer.id = 'rd-live-drawer';
 liveDrawer.hidden = true;
@@ -564,25 +806,38 @@ liveDrawer.innerHTML =
 '<button class="rd-live-mini" id="rd-live-fold" type="button">收起</button>' +
 '<button class="rd-live-mini" id="rd-live-close" type="button">✕</button>' +
 '</div>' +
-'<div class="rd-live-body" id="rd-live-body">' +
-'<div class="rd-set-slider rd-live-slider"><span>字号</span><input type="range" id="rd-live-fs-range" min="12" max="30" step="1" aria-label="字号"><span class="rd-live-val" id="rd-live-fs-val"></span></div>' +
-'<div class="rd-set-slider rd-live-slider"><span>行距</span><input type="range" id="rd-live-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span class="rd-live-val" id="rd-live-lh-val"></span></div>' +
-'<div class="rd-live-bgrow"><span>背景</span><div class="rd-live-bg">' +
-'<button class="rd-live-bgopt" data-rd-bgopt="auto" type="button">跟随</button>' +
-'<button class="rd-live-bgopt" data-rd-bgopt="eye" type="button">护眼</button>' +
-'<button class="rd-live-bgopt" data-rd-bgopt="night" type="button">夜间</button>' +
-'</div></div>' +
-'<div class="rd-live-note">改动即时生效；关掉抽屉后保留。</div>' +
-'</div>';
+'<div class="rd-live-body" id="rd-live-body"></div>';
 document.body.appendChild(liveDrawer);
-const fsRange = liveDrawer.querySelector('#rd-live-fs-range');
-if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
-const lhRange = liveDrawer.querySelector('#rd-live-lh-range');
-if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+const body = liveDrawer.querySelector('#rd-live-body');
+rdBuildLiveBody(body);
 bindLiveDrag(liveDrawer.querySelector('.rd-live-grip'));
 bindLiveDrag(liveDrawer.querySelector('#rd-live-head'));
-rdApplyBg();
 return liveDrawer;
+}
+function rdBuildLiveBody(body) {
+function liveRow(presets, cssKey, applyFn, label) {
+let h = '<div class="rd-live-row"><span class="rd-live-row-t">' + label + '</span><div class="rd-live-chips">';
+for (let i = 0; i < presets.length - 1; i++) {
+const p = presets[i];
+h += '<button class="rd-live-chip" data-csskey="' + cssKey + '" data-css="' + rdEsc(p.css) + '" type="button" title="' + rdEsc(p.label) + '"><i style="' + p.css + '"></i></button>';
+}
+h += '</div></div>';
+return h;
+}
+body.innerHTML =
+liveRow(RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡') +
+liveRow(RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色') +
+'<div class="rd-live-note">点色块即时预览；「自定义」入口在设置页。</div>';
+body.addEventListener('click', function (e) {
+const chip = e.target.closest('.rd-live-chip');
+if (!chip) return;
+const cssKey = chip.getAttribute('data-csskey');
+const pcss = chip.getAttribute('data-css') || '';
+if (!cssKey) return;
+if (cssKey === RD_HERO_CSS_KEY) { store.set(cssKey, pcss); rdApplyHeroCss(pcss); }
+else if (cssKey === RD_LEDGER_CSS_KEY) { store.set(cssKey, pcss); rdApplyLedgerCss(pcss); }
+rdRenderShelf();
+});
 }
 function rdOpenLiveDrawer() {
 if (!settingsPage || settingsPage.hidden) return;
@@ -3444,31 +3699,81 @@ return '共读中';
 function rdRenderShelf() {
 const grid = document.getElementById('rd-grid');
 const empty = document.getElementById('rd-empty');
+const hero = document.getElementById('rd-hero');
+const stat = document.getElementById('rd-stat');
+const groupsBlock = document.getElementById('rd-groups-block');
+const ggrid = document.getElementById('rd-ggrid');
 if (!grid) return;
 const shelfEl = document.getElementById('rd-shelf');
 const impPanel = document.getElementById('rd-import-panel');
 if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
 const list = readIndex().slice();
 list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
-let html = '';
-for (let i = 0; i < list.length; i++) {
-const b = list[i];
-if (!b || !b.id) continue;
-const title = b.title || '未命名';
-const badge = rdBadgeText(b);
-const spine = rdTogSpine(b);
-let ribs = '';
-for (let k = 0; k < spine; k++) ribs += '<i></i>';
-html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-'<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
-(ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
-'<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
-'<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-(badge ? '<span class="rd-badge">' + rdEsc(badge) + '</span>' : '') +
-'</div>';
+if (list.length === 0) {
+if (hero) hero.hidden = true;
+if (stat) stat.hidden = true;
+if (groupsBlock) groupsBlock.hidden = true;
+grid.innerHTML = '';
+if (empty) empty.hidden = false;
+const ledger = document.getElementById('rd-ledger');
+if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+const usage = document.getElementById('rd-usage');
+if (usage) { usage.hidden = true; usage.textContent = ''; }
+rdApplyHeroCss(''); rdApplyLedgerCss('');
+return;
 }
-grid.innerHTML = html;
-if (empty) empty.hidden = list.length > 0;
+if (empty) empty.hidden = true;
+const heroBook = list[0];
+if (heroBook && hero) {
+hero.hidden = false;
+const d = new Date();
+const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const pct = rdProgressPct(heroBook);
+const hDate = document.getElementById('rd-hero-date');
+if (hDate) hDate.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + wd[d.getDay()];
+const hPct = document.getElementById('rd-hero-pct');
+if (hPct) hPct.textContent = '上次读到 ' + pct + '%';
+const hTitle = document.getElementById('rd-hero-title');
+if (hTitle) hTitle.textContent = '《' + (heroBook.title || '未命名') + '》';
+const hTxt = document.getElementById('rd-hero-txt');
+if (hTxt) hTxt.hidden = false;
+const hCoop = document.getElementById('rd-hero-coop');
+if (hCoop) {
+const tag = rdBadgeText(heroBook);
+if (tag) { hCoop.textContent = tag; hCoop.hidden = false; }
+else hCoop.hidden = true;
+}
+const hBar = document.getElementById('rd-hero-bar-fill');
+if (hBar) hBar.style.width = pct + '%';
+const hGo = document.getElementById('rd-hero-go');
+if (hGo) hGo.setAttribute('data-id', heroBook.id);
+} else if (hero) hero.hidden = true;
+if (stat) {
+const hab = rdHabitLoad();
+const todayKey = rdTodayKey();
+const me = (hab && hab.me) || {};
+const today = me[todayKey] || { sec: 0, pages: 0 };
+const todayMin = Math.round((today.sec || 0) / 60);
+const pageCount = today.pages || 0;
+let weekSec = 0;
+const sortedDays = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
+for (let i = 0; i < Math.min(7, sortedDays.length); i++) {
+const d = me[sortedDays[i]];
+if (d && d.sec) weekSec += d.sec;
+}
+const weekHrs = Math.round((weekSec / 3600) * 10) / 10;
+let doneN = 0;
+for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
+stat.hidden = false;
+const stH = document.getElementById('rd-stat-h');
+if (stH) stH.textContent = '今天读了 ' + todayMin + ' 分钟';
+const stP = document.getElementById('rd-stat-pages');
+if (stP) stP.textContent = pageCount;
+const stW = document.getElementById('rd-stat-week');
+if (stW) stW.textContent = weekHrs;
+const stD = document.getElementById('rd-stat-done');
+if (stD) stD.textContent = doneN;
+}
 const ledger = document.getElementById('rd-ledger');
 if (ledger) {
 if (!rdCoopOn()) {
@@ -3507,12 +3812,65 @@ ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '
 ledger.hidden = !led;
 }
 }
+if (groupsBlock && ggrid) {
+const groups = rdGroupLoad();
+let ghtml = rdGroupCardHtml({ id: RD_DEFAULT_GROUP_ID, name: '全部书籍' }, list);
+groups.sort(function (a, b) { return ((a && a.createdAt) || 0) - ((b && b.createdAt) || 0); });
+for (let i = 0; i < groups.length; i++) {
+const g = groups[i];
+if (!g || !g.id) continue;
+const glist = list.filter(function (b) { return b && b.gid === g.id; });
+ghtml += rdGroupCardHtml(g, glist);
+}
+ggrid.innerHTML = ghtml;
+groupsBlock.hidden = false;
+}
 const usage = document.getElementById('rd-usage');
 if (usage) {
 let bytes = 0;
 for (let i = 0; i < list.length; i++) bytes += ((list[i] && list[i].size) || 0);
 usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
+usage.hidden = false;
 }
+try { rdApplyHeroCss(store.get(RD_HERO_CSS_KEY) || ''); } catch (e) {}
+try { rdApplyLedgerCss(store.get(RD_LEDGER_CSS_KEY) || ''); } catch (e) {}
+grid.innerHTML = '';
+}
+function rdGroupCardHtml(group, books) {
+const name = (group && group.name) || '未命名';
+const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+const recent = sorted[0];
+let stack = '';
+const showN = Math.min(3, sorted.length);
+for (let i = 0; i < showN; i++) {
+const t = sorted[i].title || '未命名';
+stack += '<span class="rd-gsb" style="background:' + rdCoverColor(t) + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
+}
+const subtitle = recent
+? ((rdProgressPct(recent) >= 100 ? '最近读完《' : '最近在读《') + rdEsc(recent.title || '未命名') + '》')
+: '还没有书，长按书卡移进来';
+return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
+'<span class="rd-gn">' + books.length + ' 本</span>' +
+'<div class="rd-gstack">' + stack + '</div>' +
+'<div class="rd-gt">' + rdEsc(name) + '</div>' +
+'<div class="rd-gs">' + subtitle + '</div>' +
+'</div>';
+}
+function rdCreateGroup() {
+window.openModal('新建分组', '', function (v) {
+if (!v) return;
+const name = String(v).trim();
+if (!name) { rdToast('分组名不能为空'); return; }
+if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+const groups = rdGroupLoad();
+for (let i = 0; i < groups.length; i++) {
+if (groups[i] && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+}
+groups.push({ id: rdGroupId(), name: name, createdAt: Date.now() });
+if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+rdRenderShelf();
+rdToast('已创建「' + name + '」');
+});
 }
 function rdFindBook(id, list) {
 for (let i = 0; i < list.length; i++) { if (list[i] && list[i].id === id) return list[i]; }
@@ -3914,6 +4272,21 @@ e.preventDefault();
 const mp = document.getElementById('chat-more-panel');
 if (mp) mp.hidden = true;
 rdOpen();
+return;
+}
+if (el.closest('#rd-hero-go')) {
+e.preventDefault();
+const btn = document.getElementById('rd-hero-go');
+if (btn && btn.getAttribute('data-id')) rdOpenBook(btn.getAttribute('data-id'));
+return;
+}
+if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
+const gk = el.closest('.rd-gk[data-gid]');
+if (gk) {
+e.preventDefault();
+const gid = gk.getAttribute('data-gid');
+if (gid === RD_DEFAULT_GROUP_ID) rdToast('全部书籍 · 所有书都在这里');
+else rdToast('组内页下一批做');
 return;
 }
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
