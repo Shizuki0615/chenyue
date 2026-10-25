@@ -300,8 +300,9 @@ page.innerHTML =
 '</div>' +
 '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
 '<div class="rd-groups-block" id="rd-groups-block" hidden>' +
+'<div class="rd-glabel">书库 /</div>' +
 '<div class="rd-groups-head">' +
-'<div><div class="rd-glabel">书库 /</div><div class="rd-gtitle">我的分组</div></div>' +
+'<div class="rd-gtitle">我的分组</div>' +
 '<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
 '</div>' +
 '<div class="rd-ggrid" id="rd-ggrid"></div>' +
@@ -3484,17 +3485,31 @@ if (saveIndex(fresh)) { rdToast('已删除书签'); rdMarkRenderList(); rdMarkUp
 if (!window.openModal) { doDel(); return; }
 window.openModal('删除这个书签', '', doDel, { noInput: true, staticText: '「' + (m.q || '这一页') + '」', warn: true });
 }
-const RD_COLORS = ['#f4b6c2', '#c9d8f0', '#cfe8d5', '#f3e0b5', '#e2cdf0', '#f5cdb8', '#c8e4e8', '#ddd7f0'];
+const RD_COVER_PAIRS = [
+['#e9d9d2', '#c9aca4'],
+['#dee5e0', '#adbbb2'],
+['#e7e0cd', '#c4b795'],
+['#e4ded2', '#bcb19a'],
+['#efe5d6', '#d8c9b0'],
+['#e6dfe8', '#b6aabd']
+];
+const RD_COVER_DEEP_BG = '#2f2920';
+const RD_COVER_DEEP_INK = '#f3ecdd';
 function rdEsc(s) {
 return String(s == null ? '' : s)
 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function rdCoverColor(title) {
-const s = String(title || '');
-let n = 0;
-for (let i = 0; i < s.length; i++) n += s.charCodeAt(i);
-return RD_COLORS[n % RD_COLORS.length];
+function rdCoverAt(idx) {
+const n = RD_COVER_PAIRS.length;
+return RD_COVER_PAIRS[((idx % n) + n) % n];
+}
+function rdCoverColor(idx) {
+return rdCoverAt(idx)[1];
+}
+function rdCoverGrad(idx) {
+const p = rdCoverAt(idx);
+return 'linear-gradient(150deg,' + p[0] + ',' + p[1] + ')';
 }
 function rdProgressPct(book) {
 const ch = (book.progress && book.progress.ch) || 0;
@@ -3624,7 +3639,7 @@ for (let i = 3; i < filtered.length; i++) {
 const b = filtered[i];
 const pct = rdProgressPct(b);
 const pctText = pct >= 100 ? '读完' : (pct + '%');
-const tc = rdCoverColor(b.title || '书');
+const tc = rdCoverGrad(i);
 ghtml += '<div class="rd-dd-gi" data-id="' + rdEsc(b.id) + '">' +
 '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) + '</div>' +
 '<div class="rd-dd-gt">' + rdEsc(b.title || '未命名') + '</div>' +
@@ -3766,17 +3781,34 @@ if (detailEl2) detailEl2.hidden = true;
 }
 function rdGroupCardHtml(group, books) {
 const name = (group && group.name) || '未命名';
+const isDefault = !!(group && group.id === RD_DEFAULT_GROUP_ID);
 const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
 const recent = sorted[0];
+let start = 0;
+if (!isDefault) {
+const gn = String(name);
+for (let k = 0; k < gn.length; k++) start += gn.charCodeAt(k);
+start = start % RD_COVER_PAIRS.length;
+}
 let stack = '';
 const showN = Math.min(3, sorted.length);
 for (let i = 0; i < showN; i++) {
 const t = sorted[i].title || '未命名';
-stack += '<span class="rd-gsb" style="background:' + rdCoverColor(t) + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
+const deep = isDefault && i === 0;
+const bg = deep ? RD_COVER_DEEP_BG : rdCoverColor(isDefault ? i - 1 : start + i);
+stack += '<span class="rd-gsb" style="background:' + bg +
+(deep ? ';color:' + RD_COVER_DEEP_INK : '') + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
 }
-const subtitle = recent
-? ((rdProgressPct(recent) >= 100 ? '最近读完《' : '最近在读《') + rdEsc(recent.title || '未命名') + '》')
-: '还没有书，长按书卡移进来';
+let subtitle;
+if (!recent) {
+subtitle = '还没有书，长按书卡移进来';
+} else {
+const rt = rdEsc(recent.title || '未命名');
+const pct = rdProgressPct(recent);
+subtitle = pct >= 100 ? '最近读完《' + rt + '》'
+: (pct > 0 ? '最近在读《' + rt + '》' : '《' + rt + '》还没翻开');
+if (isDefault) subtitle = '默认分组 · ' + subtitle;
+}
 return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
 '<span class="rd-gn">' + books.length + ' 本</span>' +
 '<div class="rd-gstack">' + stack + '</div>' +
