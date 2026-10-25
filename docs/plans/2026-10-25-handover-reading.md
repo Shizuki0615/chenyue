@@ -420,7 +420,7 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 
 | 键 | 内容 | 备注 |
 | --- | --- | --- |
-| `reading-prefs` | `{ fs: 17, lh: 1.8 }` | 字号/行距；代码注释明确说**不进备份白名单** |
+| `reading-prefs` | `{ fs: 17, lh: 1.8 }` | 字号/行距；源文件注释写「不进备份」，但当前 `data-backup.js` 的完整备份实际会带上所有小键（只额外跳过正文），以实际导出为准 |
 | `reading-bg` | `'auto' \| 'eye' \| 'night'` | 阅读背景 |
 | `reading-coop` | 共读总开关 | 关闭后冻结他的推进 |
 | `reading-lamp` | 夜间留灯子开关 | 仅共读开时可用 |
@@ -437,8 +437,9 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 | `xy-home-v2:reading-toc:<bookId>` | 目录数组 `[{t, n}]` |
 | `xy-home-v2:reading-anno:<bookId>:<ch>` | 该章批注数组 |
 
-正文/目录/批注都只在**本机 IndexedDB**，不进备份；换机恢复后书本显示
-「待重新导入」，重新导入同一个 TXT 可按原文重新定位批注。
+正文、目录、批注都在本机 IndexedDB；备份时只跳过正文
+（`src/js/data-backup.js` 里的 `reading-body` 整键跳过），目录与批注会随备份走。
+换机恢复后正文缺失，书本显示「待重新导入」；重新导入同一个 TXT 可按原文重新定位批注。
 
 ### 6.3 书架索引 `reading-books` 单本字段
 
@@ -560,8 +561,10 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
   - 页面初始化
   - 设置页打开
   - 用户点选颜色
-- 注意 `reading-prefs` 按现状**不进备份**；如果主按钮颜色沿用独立小键，
-  也默认不进备份。若用户希望换机保留，需要和备份白名单一起改，先问。
+- 注意 `reading-prefs` 的源文件注释写「不进备份」，但当前
+  `data-backup.js` 的完整备份实际会导出所有小键（只额外跳过 `reading-body`）。
+  主按钮颜色如果独立存 `reading-primary`，也会随完整备份走。
+  改「换机保留」相关文案前，先复核 `data-backup.js` 的 skip 逻辑。
 
 ### 7.5 数据栏（只读，不做删除）
 
@@ -571,8 +574,8 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 - `正文约 X 万字`（`chWords` 求和，最省事且准确）
 - 可选：`书签 M 条`、`批注 K 条`（`book.marks.length` / `book.annoCount` 求和）
 - 存储说明：
-  - 「正文、目录、批注只存在本机 IndexedDB，不随备份走。」
-  - 「书架索引、书签、阅读习惯会随备份走；换机恢复后正文需要重新导入。」
+  - 「正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。」
+  - 「换机恢复后正文需要重新导入，批注会按原文重新定位。」
 - 不要做「清空 / 删除 / 导出」按钮（本批不做）。
 - 如需显示 MB：不要为了统计把所有正文读一遍。
   推荐在导入时把 `rdUtf8Size` 的结果存进 `book.bytes`（`rdStartImport` 里已经算过
@@ -678,9 +681,10 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 ### 9.7 数据与备份
 
 - 正文只在本机 IDB，不进备份。
-- 书签在 `reading-books` 索引里，随备份走。
-- `reading-prefs` 按注释不进备份；主按钮颜色如果独立存 `reading-primary`，
-  默认同口径。
+- 书签在 `reading-books` 索引里，随备份走；目录、批注也在备份里。
+- `reading-prefs` 的注释与 `data-backup.js` 实际行为不一致（完整备份会带上小键）；
+  写数据页文案时以 `data-backup.js` 的 skip 逻辑为准。主按钮颜色如果独立存
+  `reading-primary`，也会随完整备份走。
 - 删除书时会按前缀清正文/目录/批注；书签随索引条目一起删。
 
 ---
