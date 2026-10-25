@@ -11,7 +11,7 @@
 cd /workspace
 git branch --show-current          # 如果显示 trae/agent-HyW2zB，先看下面的警告
 git checkout main
-git log -1 --oneline                # 应为 docs: 读书模块交接文档...
+git log --oneline -5                # 应能看到 14dec36、14ab4cc 和 docs 交接文档提交
 git status -sb                      # 工作区应为干净
 git rev-list --count origin/main..main   # 应 ≥ 3（两批功能 + 交接文档）
 node build.mjs --allow-revert       # 应看到：哨兵 4483/4483、sw 16/16
@@ -731,6 +731,7 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 ## 11. 提交记录
 
 ```text
+4491a68 ...                     Merge branch 'trae/agent-HyW2zB'（-s ours：只同步分支，测试截图不进 main）
 14dec36 2026-10-25 11:51 +0800  feat(reading): 目录改右侧抽屉，加进度/他在章节/批注气泡/搜索/书签
 14ab4cc 2026-10-25 10:51 +0800  feat(reading): 重做导入页与确认分章页，修卷标误切
 a112dd4 2026-10-25 09:48 +0800  Merge branch 'trae/agent-HyW2zB'
@@ -738,7 +739,8 @@ db02a22 ...                     feat: update workspace（旧分支 tip，不含�
 ...                             docs: 读书模块交接文档（分支/构建/已完成/下一批/排错）
 ```
 
-- `main` 的最新提交是交接文档，功能代码停在 `14dec36`，工作区干净。
+- `main` 的最新提交可能是交接文档或同步分支的 merge；功能代码停在 `14dec36`，工作区干净。
+- 合并用了 `-s ours`：代理分支唯一的新提交只加了两张测试截图，没有进 main。
 - `origin/main` = `a112dd4`；`main` 本地领先 3 个以上提交。
 - 换号/部署前如需推送：先征得用户同意，再用原账号 `git push origin main`。
 
@@ -746,7 +748,7 @@ db02a22 ...                     feat: update workspace（旧分支 tip，不含�
 
 ## 12. 建议的恢复顺序（一句话版）
 
-1. `git checkout main`，确认最新提交是交接文档。
+1. `git checkout main`，确认工作区里有本文档。
 2. `node build.mjs --allow-revert`，确认 4483/4483、16/16。
 3. 起本地服务，打开读书 → 导入一本短书，过一遍导入/确认/目录/书签。
 4. 按第 7 节做设置页三栏。
