@@ -90,6 +90,7 @@ let ok = false;
 try { ok = await window.idbSet(RD_ANNO_P + id + ':' + ch, JSON.stringify(list || [])); }
 catch (e) { rdWriteFail('批注没保存上'); }
 if (!ok) rdWriteFail('批注没保存上');
+if (typeof rdTocBadgeDirty === 'function') rdTocBadgeDirty(id, ch);
 return true;
 }
 async function delBookData(id) {
@@ -306,6 +307,9 @@ page.innerHTML =
 '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
 '</button>' +
 '<span class="ch-name" id="rd-book-title"></span>' +
+'<button class="ch-settings rd-mark-btn" id="rd-mark-btn" type="button" aria-label="书签当前页" aria-pressed="false" title="书签当前页">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5A1.5 1.5 0 017.5 3h9A1.5 1.5 0 0118 4.5V21l-6-4.2L6 21V4.5z"/></svg>' +
+'</button>' +
 '<button class="ch-settings" id="rd-toc-btn" type="button" aria-label="目录" title="目录">' +
 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>' +
 '</button>' +
@@ -332,11 +336,34 @@ page.innerHTML =
 '</div>' +
 '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-buddy-jump" type="button" hidden>去他那里</button></div>' +
 '</div>' +
-'<div class="rd-toc" id="rd-toc" hidden>' +
-'<div class="rd-import-head"><div class="rd-import-title">目录</div>' +
-'<button class="rd-back" id="rd-toc-close" type="button">关闭</button></div>' +
-'<div class="rd-toc-list" id="rd-toc-list"></div>' +
+'<div class="rd-toc-mask" id="rd-toc-mask" hidden></div>' +
+'<aside class="rd-toc" id="rd-toc" role="dialog" aria-label="目录" hidden>' +
+'<div class="rd-toc-head">' +
+'<div class="rd-toc-head-row">' +
+'<span class="rd-toc-title">目录</span>' +
+'<button class="rd-toc-x" id="rd-toc-close" type="button" aria-label="关闭目录">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+'</button>' +
 '</div>' +
+'<div class="rd-toc-prog">' +
+'<div class="rd-toc-cur" id="rd-toc-cur"></div>' +
+'<div class="rd-toc-meta"><span id="rd-toc-pos"></span><span id="rd-toc-pct"></span></div>' +
+'<div class="rd-toc-bar"><span id="rd-toc-bar-fill"></span></div>' +
+'</div>' +
+'<div class="rd-toc-tabs" id="rd-toc-tabs">' +
+'<button class="rd-toc-tab on" data-rtab="toc" type="button">目录</button>' +
+'<button class="rd-toc-tab" data-rtab="marks" type="button">书签<span class="rd-toc-tab-n" id="rd-mark-tab-n" hidden></span></button>' +
+'</div>' +
+'<input class="rd-toc-search" id="rd-toc-search" type="text" placeholder="搜索章节标题">' +
+'</div>' +
+'<div class="rd-toc-pane" id="rd-toc-pane-toc">' +
+'<div class="rd-toc-list" id="rd-toc-list"></div>' +
+'<button class="rd-toc-now" id="rd-toc-now" type="button" hidden>回到当前章</button>' +
+'</div>' +
+'<div class="rd-toc-pane" id="rd-toc-pane-marks" hidden>' +
+'<div class="rd-mark-list" id="rd-mark-list"></div>' +
+'</div>' +
+'</aside>' +
 '<div class="rd-selbar" id="rd-selbar" hidden>' +
 '<button class="rd-selbar-btn" data-act="anno" type="button">批注</button>' +
 '<button class="rd-selbar-btn" data-act="copy" type="button">复制</button>' +
@@ -633,7 +660,7 @@ rdBmClearWait();
 rdTogWatchStop();
 rdWriteProgress();
 rdHabitEndSession();
-closeToc();
+closeToc(true);
 rdClearSel(false);
 rdCloseSheet();
 rdClosePreview();
@@ -696,6 +723,7 @@ id: id, toc: toc, ch: ch, off: off,
 cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
 lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
 };
+rdMarkUpdateBtn();
 rdBookmarkPlayed = false;
 rdBmClearWait();
 rdHabitStartSession();
@@ -857,6 +885,7 @@ if (!body) return;
 const no = document.getElementById('rd-page-no');
 if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
 rdUpdateBar();
+rdMarkUpdateBtn();
 rdSaveProgress();
 rdHabitTouchPage();
 rdScheduleHisAnno();
@@ -2728,7 +2757,7 @@ return '<div class="rd-lost-item">' +
 }).join('');
 }
 function rdOpenLost() {
-closeToc();
+closeToc(true);
 rdRenderLost();
 const el = document.getElementById('rd-lost');
 if (el) el.hidden = false;
@@ -3025,48 +3054,353 @@ syncSub('rd-bookmark-toggle', rdBookmarkOn());
 syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
 rdApplyBg();
 }
-function rdRenderToc() {
+let rdTocBadgeBook = '';
+let rdTocBadgeCache = {};
+let rdTocBadgePending = {};
+let rdTocBadgeObs = null;
+let rdTocCloseTimer = 0;
+const RD_MARK_MAX = 100;
+function rdTocPaintProgress(book) {
+const b = rdBook;
+if (!b) return;
+const p = (b.pages && b.pages[b.pageIdx]) || { s: 0, e: 0 };
+const title = (b.toc[b.ch] && b.toc[b.ch].t) || ('第 ' + (b.ch + 1) + ' 章');
+const pct = book ? Math.round(rdPosPct(book, b.ch, p.s)) : 0;
+const cur = document.getElementById('rd-toc-cur');
+if (cur) cur.textContent = title;
+const pos = document.getElementById('rd-toc-pos');
+if (pos) pos.textContent = '第 ' + (b.ch + 1) + ' / ' + b.toc.length + ' 章';
+const pctEl = document.getElementById('rd-toc-pct');
+if (pctEl) pctEl.textContent = pct + '%';
+const bar = document.getElementById('rd-toc-bar-fill');
+if (bar) bar.style.width = pct + '%';
+}
+function rdTocHisCh(book) {
+if (!rdCoopOn() || !book || !book.buddy || !rdBook) return -1;
+const bd = book.buddy;
+if (!bd.started) return -1;
+if (bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now())) return -1;
+const n = Number(bd.ch);
+if (!(n >= 0) || n >= rdBook.toc.length) return -1;
+return n;
+}
+function rdTocBadgePaint(ch, n) {
+const row = document.querySelector('#rd-toc-list .rd-toc-row[data-ch="' + ch + '"]');
+if (!row) return;
+const el = row.querySelector('.rd-toc-badge');
+if (!el) return;
+if (n > 0) { el.textContent = n > 99 ? '99+' : String(n); el.hidden = false; }
+else { el.textContent = ''; el.hidden = true; }
+}
+function rdTocBadgeFetch(ch) {
+const b = rdBook;
+if (!b) return;
+if (rdTocBadgeCache[ch] !== undefined || rdTocBadgePending[ch]) return;
+rdTocBadgePending[ch] = true;
+getAnnos(b.id, ch).then(function (arr) {
+rdTocBadgePending[ch] = false;
+if (!rdBook || rdBook.id !== b.id) return;
+const list = Array.isArray(arr) ? arr : [];
+let me = 0;
+for (let i = 0; i < list.length; i++) if (list[i] && list[i].by === 'me') me++;
+const rec = { me: me, all: list.length };
+rdTocBadgeCache[ch] = rec;
+rdTocBadgePaint(ch, rdCoopOn() ? rec.all : rec.me);
+}).catch(function () { rdTocBadgePending[ch] = false; });
+}
+function rdTocBadgesBind() {
+const list = document.getElementById('rd-toc-list');
+if (!list) return;
+if (rdTocBadgeObs) { rdTocBadgeObs.disconnect(); rdTocBadgeObs = null; }
+const rows = list.querySelectorAll('.rd-toc-row[data-ch]');
+for (let i = 0; i < rows.length; i++) {
+const ch = parseInt(rows[i].getAttribute('data-ch'), 10);
+const rec = rdTocBadgeCache[ch];
+if (rec) rdTocBadgePaint(ch, rdCoopOn() ? rec.all : rec.me);
+}
+if (!window.IntersectionObserver) return;
+rdTocBadgeObs = new IntersectionObserver(function (entries) {
+for (let i = 0; i < entries.length; i++) {
+if (!entries[i].isIntersecting) continue;
+const row = entries[i].target;
+rdTocBadgeObs.unobserve(row);
+const ch = parseInt(row.getAttribute('data-ch'), 10);
+if (!isNaN(ch)) rdTocBadgeFetch(ch);
+}
+}, { root: list, rootMargin: '120px 0px' });
+for (let i = 0; i < rows.length; i++) {
+const ch = parseInt(rows[i].getAttribute('data-ch'), 10);
+if (isNaN(ch) || rdTocBadgeCache[ch] !== undefined) continue;
+rdTocBadgeObs.observe(rows[i]);
+}
+}
+function rdTocBadgeDirty(id, ch) {
+if (!rdBook || rdBook.id !== id) return;
+delete rdTocBadgeCache[ch];
+delete rdTocBadgePending[ch];
+const toc = document.getElementById('rd-toc');
+if (toc && !toc.hidden) rdTocBadgeFetch(ch);
+}
+function rdRenderToc(scrollCur) {
 const list = document.getElementById('rd-toc-list');
 if (!list) return;
 const b = rdBook;
+const book = b ? rdFindBook(b.id, readIndex()) : null;
+rdTocPaintProgress(book);
 let html = '';
 if (b) {
+const q = String((document.getElementById('rd-toc-search') || {}).value || '').trim().toLowerCase();
+const hisCh = rdTocHisCh(book);
+let shown = 0;
 for (let i = 0; i < b.toc.length; i++) {
 const t = b.toc[i] || {};
-html += '<button class="rd-toc-row' + (i === b.ch ? ' on' : '') + '" data-ch="' + i + '" type="button">' +
+const title = t.t || ('第 ' + (i + 1) + ' 章');
+if (q && title.toLowerCase().indexOf(q) < 0 && String(i + 1).indexOf(q) < 0) continue;
+shown++;
+html += '<button class="rd-toc-row' + (i === b.ch ? ' on' : '') + (i < b.ch ? ' is-read' : '') + '" data-ch="' + i + '" type="button">' +
 '<span class="rd-toc-n">' + (i + 1) + '</span>' +
-'<span class="rd-toc-t">' + rdEsc(t.t || ('第 ' + (i + 1) + ' 章')) + '</span></button>';
+'<span class="rd-toc-t">' + rdEsc(title) + '</span>' +
+'<span class="rd-toc-flags">' +
+(i === hisCh ? '<span class="rd-toc-him" title="他在这一章">他</span>' : '') +
+'<span class="rd-toc-badge" data-badge="' + i + '" hidden></span>' +
+'</span></button>';
 }
-const book = rdFindBook(b.id, readIndex());
+if (!shown) html += '<div class="rd-toc-none">没有匹配的章节</div>';
+if (!q) {
 const lost = book && Array.isArray(book.lostAnnos) ? book.lostAnnos.length : 0;
 if (lost) {
 html += '<button class="rd-toc-row rd-toc-lost" data-lost="1" type="button">未定位批注（' + lost + '）</button>';
 }
 }
+}
 list.innerHTML = html;
+if (scrollCur) {
 const cur = list.querySelector('.rd-toc-row.on');
 if (cur && cur.scrollIntoView) { try { cur.scrollIntoView({ block: 'center' }); } catch (e) {} }
 }
+rdTocBadgesBind();
+rdTocUpdateNow();
+}
+function rdTocUpdateNow() {
+const list = document.getElementById('rd-toc-list');
+const btn = document.getElementById('rd-toc-now');
+if (!list || !btn) return;
+const search = document.getElementById('rd-toc-search');
+if (search && String(search.value || '').trim()) { btn.hidden = true; return; }
+const cur = list.querySelector('.rd-toc-row.on');
+if (!cur) { btn.hidden = true; return; }
+const lr = list.getBoundingClientRect();
+const cr = cur.getBoundingClientRect();
+btn.hidden = !(cr.bottom < lr.top + 6 || cr.top > lr.bottom - 6);
+}
+function rdTocShowTab(name) {
+const tabs = document.querySelectorAll('#rd-toc-tabs .rd-toc-tab');
+for (let i = 0; i < tabs.length; i++) {
+tabs[i].classList.toggle('on', tabs[i].getAttribute('data-rtab') === name);
+}
+const pt = document.getElementById('rd-toc-pane-toc');
+const pm = document.getElementById('rd-toc-pane-marks');
+if (pt) pt.hidden = name !== 'toc';
+if (pm) pm.hidden = name !== 'marks';
+const search = document.getElementById('rd-toc-search');
+if (search) search.hidden = name !== 'toc';
+if (name === 'marks') rdMarkRenderList();
+}
 function openToc() {
 const toc = document.getElementById('rd-toc');
-if (!toc) return;
+const mask = document.getElementById('rd-toc-mask');
+if (!toc || !mask || !rdBook) return;
 rdCloseBuddyCard();
-rdRenderToc();
-toc.hidden = false;
+if (rdTocCloseTimer) { clearTimeout(rdTocCloseTimer); rdTocCloseTimer = 0; }
+if (rdTocBadgeBook !== rdBook.id) {
+rdTocBadgeBook = rdBook.id;
+rdTocBadgeCache = {};
+rdTocBadgePending = {};
 }
-function closeToc() {
+toc.classList.remove('rd-toc-out');
+mask.classList.remove('rd-toc-out');
+toc.hidden = false;
+mask.hidden = false;
+const listEl = document.getElementById('rd-toc-list');
+if (listEl && !listEl.__rdScrollBound) {
+listEl.__rdScrollBound = true;
+listEl.addEventListener('scroll', rdTocUpdateNow, { passive: true });
+}
+const search = document.getElementById('rd-toc-search');
+if (search) search.value = '';
+rdTocShowTab('toc');
+rdRenderToc(true);
+rdMarkRenderList();
+}
+function closeToc(instant) {
 const toc = document.getElementById('rd-toc');
-if (toc) toc.hidden = true;
+const mask = document.getElementById('rd-toc-mask');
+if (!toc || toc.hidden) return;
+if (instant) {
+if (rdTocCloseTimer) { clearTimeout(rdTocCloseTimer); rdTocCloseTimer = 0; }
+toc.hidden = true;
+toc.classList.remove('rd-toc-out');
+if (mask) { mask.hidden = true; mask.classList.remove('rd-toc-out'); }
+return;
+}
+toc.classList.add('rd-toc-out');
+if (mask) mask.classList.add('rd-toc-out');
+if (rdTocCloseTimer) clearTimeout(rdTocCloseTimer);
+rdTocCloseTimer = setTimeout(function () {
+rdTocCloseTimer = 0;
+toc.hidden = true;
+toc.classList.remove('rd-toc-out');
+if (mask) { mask.hidden = true; mask.classList.remove('rd-toc-out'); }
+}, 170);
 }
 function rdJumpChapter(i) {
 const b = rdBook;
 if (!b) return;
 const n = parseInt(i, 10);
 if (!(n >= 0 && n < b.toc.length)) return;
-closeToc();
+closeToc(true);
 b.ch = n;
 b.off = 0;
 rdEnsureChapter('first');
+}
+function rdMarkSnippet(b, p) {
+const text = String((b && b.text) || '');
+let q = text.slice(p.s, Math.min(p.e, p.s + 36)).replace(/\s+/g, ' ').trim();
+const title = (b && b.toc && b.toc[b.ch] && b.toc[b.ch].t) || '';
+if (title && q.indexOf(title) === 0) q = q.slice(title.length).trim();
+if (q) return q;
+return title || '这一页';
+}
+function rdMarkSorted(book) {
+const marks = book && Array.isArray(book.marks) ? book.marks.slice() : [];
+marks.sort(function (a, c) {
+return (Number(a.ch) || 0) - (Number(c.ch) || 0) || (Number(a.off) || 0) - (Number(c.off) || 0);
+});
+return marks;
+}
+function rdMarkTime(ts) {
+const d = new Date(Number(ts) || 0);
+if (isNaN(d.getTime())) return '';
+const now = new Date();
+const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) {
+return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+return (d.getMonth() + 1) + '/' + d.getDate();
+}
+function rdMarkCurPageHit(book, b) {
+const p = b && b.pages && b.pages[b.pageIdx];
+if (!book || !p) return -1;
+const marks = Array.isArray(book.marks) ? book.marks : [];
+const end = String((b && b.text) || '').length;
+for (let i = 0; i < marks.length; i++) {
+const m = marks[i];
+if (!m || Number(m.ch) !== b.ch) continue;
+const off = Number(m.off) || 0;
+if (off >= p.s && (off < p.e || (p.e >= end && off <= p.e))) return i;
+}
+return -1;
+}
+function rdMarkUpdateBtn() {
+const btn = document.getElementById('rd-mark-btn');
+if (!btn) return;
+const b = rdBook;
+let on = false;
+if (b) {
+const book = rdFindBook(b.id, readIndex());
+on = rdMarkCurPageHit(book, b) >= 0;
+}
+btn.classList.toggle('on', on);
+btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+btn.title = on ? '取消这个书签' : '书签当前页';
+}
+function rdMarkToggle() {
+const b = rdBook;
+if (!b) return;
+const list = readIndex();
+const book = rdFindBook(b.id, list);
+const p = b.pages[b.pageIdx];
+if (!book || !p) return;
+const hit = rdMarkCurPageHit(book, b);
+const marks = Array.isArray(book.marks) ? book.marks.slice() : [];
+if (hit >= 0) {
+marks.splice(hit, 1);
+book.marks = marks;
+if (saveIndex(list)) rdToast('已取消这个书签');
+} else {
+if (marks.length >= RD_MARK_MAX) { rdToast('一本书最多 ' + RD_MARK_MAX + ' 个书签'); return; }
+marks.push({ ch: b.ch, off: p.s, q: rdMarkSnippet(b, p), at: Date.now() });
+marks.sort(function (a, c) {
+return (Number(a.ch) || 0) - (Number(c.ch) || 0) || (Number(a.off) || 0) - (Number(c.off) || 0);
+});
+book.marks = marks;
+if (saveIndex(list)) rdToast('已加书签，在目录的「书签」里');
+}
+rdMarkUpdateBtn();
+const toc = document.getElementById('rd-toc');
+if (toc && !toc.hidden) rdMarkRenderList();
+}
+function rdMarkRenderList() {
+const listEl = document.getElementById('rd-mark-list');
+if (!listEl) return;
+const b = rdBook;
+const book = b ? rdFindBook(b.id, readIndex()) : null;
+const marks = rdMarkSorted(book);
+const tabN = document.getElementById('rd-mark-tab-n');
+if (tabN) { tabN.textContent = marks.length ? String(marks.length) : ''; tabN.hidden = !marks.length; }
+if (!b || !marks.length) {
+listEl.innerHTML = '<div class="rd-mark-empty">还没有书签<br>阅读时点右上角的书签图标，收下当前这页</div>';
+return;
+}
+let html = '';
+for (let i = 0; i < marks.length; i++) {
+const m = marks[i];
+const ch = Math.max(0, Math.min(Number(m.ch) || 0, b.toc.length - 1));
+const t = (b.toc[ch] && b.toc[ch].t) || ('第 ' + (ch + 1) + ' 章');
+const pct = Math.round(rdPosPct(book, ch, Number(m.off) || 0));
+html += '<div class="rd-mark-row">' +
+'<button class="rd-mark-main" data-mark="' + i + '" type="button">' +
+'<span class="rd-mark-ch">' + rdEsc(t) + '</span>' +
+'<span class="rd-mark-q">' + rdEsc(m.q || '这一页') + '</span>' +
+'<span class="rd-mark-meta">' + pct + '% · ' + rdMarkTime(m.at) + '</span>' +
+'</button>' +
+'<button class="rd-mark-del" data-mark-del="' + i + '" type="button" aria-label="删除书签">✕</button>' +
+'</div>';
+}
+listEl.innerHTML = html;
+}
+function rdMarkJump(i) {
+const b = rdBook;
+if (!b) return;
+const marks = rdMarkSorted(rdFindBook(b.id, readIndex()));
+const m = marks[parseInt(i, 10)];
+if (!m) return;
+closeToc(true);
+b.ch = Math.max(0, Math.min(Number(m.ch) || 0, b.toc.length - 1));
+b.off = Math.max(0, Number(m.off) || 0);
+rdEnsureChapter('offset');
+}
+function rdMarkDelete(i) {
+const b = rdBook;
+if (!b) return;
+const m = rdMarkSorted(rdFindBook(b.id, readIndex()))[parseInt(i, 10)];
+if (!m) return;
+const doDel = function () {
+const fresh = readIndex();
+const fb = rdFindBook(b.id, fresh);
+if (!fb || !Array.isArray(fb.marks)) return;
+let removed = false;
+fb.marks = fb.marks.filter(function (x) {
+if (!removed && Number(x.ch) === Number(m.ch) && Number(x.off) === Number(m.off) && Number(x.at) === Number(m.at)) {
+removed = true;
+return false;
+}
+return true;
+});
+if (saveIndex(fresh)) { rdToast('已删除书签'); rdMarkRenderList(); rdMarkUpdateBtn(); }
+};
+if (!window.openModal) { doDel(); return; }
+window.openModal('删除这个书签', '', doDel, { noInput: true, staticText: '「' + (m.q || '这一页') + '」', warn: true });
 }
 const RD_COLORS = ['#f4b6c2', '#c9d8f0', '#cfe8d5', '#f3e0b5', '#e2cdf0', '#f5cdb8', '#c8e4e8', '#ddd7f0'];
 function rdEsc(s) {
@@ -3597,8 +3931,26 @@ if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); ret
 const bMode = el.closest('#rd-buddy-modes [data-bmode]');
 if (bMode) { e.preventDefault(); rdBuddySetMode(bMode.getAttribute('data-bmode')); return; }
 if (el.closest('#rd-buddy-jump')) { e.preventDefault(); rdJumpToBuddy(); return; }
+if (el.closest('#rd-mark-btn')) { e.preventDefault(); rdMarkToggle(); return; }
 if (el.closest('#rd-toc-btn')) { e.preventDefault(); openToc(); return; }
 if (el.closest('#rd-toc-close')) { e.preventDefault(); closeToc(); return; }
+if (el.closest('#rd-toc-mask')) { e.preventDefault(); closeToc(); return; }
+const rtab = el.closest('#rd-toc-tabs .rd-toc-tab');
+if (rtab) { e.preventDefault(); rdTocShowTab(rtab.getAttribute('data-rtab')); return; }
+if (el.closest('#rd-toc-now')) {
+e.preventDefault();
+const curRow = document.querySelector('#rd-toc-list .rd-toc-row.on');
+if (curRow && curRow.scrollIntoView) {
+try { curRow.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+catch (err) { try { curRow.scrollIntoView({ block: 'center' }); } catch (err2) {} }
+}
+rdTocUpdateNow();
+return;
+}
+const markDel = el.closest('[data-mark-del]');
+if (markDel) { e.preventDefault(); rdMarkDelete(markDel.getAttribute('data-mark-del')); return; }
+const markMain = el.closest('[data-mark]');
+if (markMain) { e.preventDefault(); rdMarkJump(markMain.getAttribute('data-mark')); return; }
 const tocRow = el.closest('#rd-toc-list [data-ch]');
 if (tocRow) { e.preventDefault(); rdJumpChapter(tocRow.getAttribute('data-ch')); return; }
 if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdOpenLost(); return; }
@@ -3668,6 +4020,7 @@ rdSetPasteCount(rdImp.text.trim() ? rdImp.text.length : 0);
 document.addEventListener('input', function (e) {
 const el = e.target;
 if (el && el.id === 'rd-anno-search') rdRenderCards(el.value || '');
+if (el && el.id === 'rd-toc-search') rdRenderToc(false);
 });
 window.__readingProbe = {
 version: 2,

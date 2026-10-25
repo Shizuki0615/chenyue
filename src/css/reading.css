@@ -1,6 +1,6 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
@@ -26,6 +26,8 @@
 .rd-reader{position:absolute;inset:0;display:flex;flex-direction:column}
 /* 阅读器顶栏复用全局 chat-head：返回/目录改成 button 后补一条原生样式复位 */
 .rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
+#rd-mark-btn.on{color:#d9534f}
+#rd-mark-btn.on svg{fill:currentColor}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
 /* 正文区的纸感只由背景承担；顶部留出呼吸位，分页高度会把这段内边距扣掉 */
@@ -50,6 +52,13 @@
 .rd-reader[data-rd-bg="night"] .rd-buddy-dot{border-color:#1b1916}
 .rd-reader[data-rd-bg="night"] #rd-buddy.rd-buddy-same-text,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-tog,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-pace{color:#ff9b92}
 .rd-reader[data-rd-bg="night"] .rd-toc-row.on{color:#ff9b92}
+.rd-reader[data-rd-bg="night"] .rd-toc-prog{border-color:rgba(255,155,146,.18);background:rgba(255,155,146,.09)}
+.rd-reader[data-rd-bg="night"] .rd-toc-bar{background:rgba(255,255,255,.1)}
+.rd-reader[data-rd-bg="night"] .rd-toc-him{background:rgba(255,155,146,.24);color:#ffb3ad}
+.rd-reader[data-rd-bg="night"] .rd-toc-badge{background:rgba(255,155,146,.2);color:#ffb3ad}
+.rd-reader[data-rd-bg="night"] .rd-toc-now{background:rgba(48,48,48,.95);color:#f0f0f0}
+.rd-reader[data-rd-bg="night"] .rd-toc-search{background:rgba(255,255,255,.05)}
+.rd-reader[data-rd-bg="night"] #rd-mark-btn.on{color:#ff9b92}
 /* 阅读背景覆盖到模拟状态栏：护眼/夜间时修掉「黑状态栏 + 浅顶栏」的断层 */
 .phone.rd-chrome-eye .statusbar{background:rgba(255,255,255,.92);color:#111111}
 .phone.rd-chrome-night .statusbar{background:rgba(30,30,30,.92);color:#f0f0f0}
@@ -225,12 +234,62 @@
 .rd-live-note{font-size:10.5px;line-height:1.5;color:var(--muted);padding:2px 0 0}
 
 /* ---------- 目录 ---------- */
-.rd-toc{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
-.rd-toc-list{flex:1;min-height:0;overflow-y:auto}
-.rd-toc-row{display:flex;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line,#eee);font-size:14px}
+/* 目录改成右侧抽屉：点遮罩关闭，滑入不打断阅读画面 */
+.rd-toc-mask{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.34);animation:rdTocMaskIn .18s ease}
+.rd-toc{position:absolute;top:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;width:min(80%,328px);padding:calc(12px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 0 calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));background:var(--bg,#fff);border-radius:16px 0 0 16px;box-shadow:-10px 0 30px rgba(0,0,0,.18);overflow:hidden;animation:rdTocIn .22s cubic-bezier(.2,.8,.3,1)}
+.rd-toc.rd-toc-out{animation:rdTocOut .16s ease forwards}
+.rd-toc-mask.rd-toc-out{animation:rdTocMaskOut .16s ease forwards}
+@keyframes rdTocIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes rdTocOut{from{transform:translateX(0)}to{transform:translateX(100%)}}
+@keyframes rdTocMaskIn{from{opacity:0}to{opacity:1}}
+@keyframes rdTocMaskOut{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion: reduce){.rd-toc,.rd-toc-mask{animation:none!important}}
+.rd-toc-head{flex:none;padding:0 18px 2px}
+.rd-toc-head-row{display:flex;align-items:center;justify-content:space-between}
+.rd-toc-title{font-size:15px;font-weight:600;letter-spacing:.3px}
+.rd-toc-x{width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;margin-right:-8px;opacity:.55}
+.rd-toc-x svg{width:16px;height:16px}
+.rd-toc-x:active{opacity:1}
+.rd-toc-prog{padding:12px 14px;border-radius:12px;border:1px solid rgba(244,182,194,.18);background:rgba(244,182,194,.09)}
+.rd-toc-cur{font-size:14px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px;font-size:11px;color:var(--muted,#8a8a8a);font-variant-numeric:tabular-nums}
+.rd-toc-bar{height:3px;margin-top:8px;border-radius:2px;background:rgba(0,0,0,.07);overflow:hidden}
+.rd-toc-bar span{display:block;width:0;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);transition:width .2s ease}
+.rd-toc-tabs{display:flex;gap:18px;margin-top:12px;border-bottom:1px solid var(--line,#eee)}
+.rd-toc-tab{position:relative;border:0;background:transparent;color:inherit;font-family:inherit;font-size:13px;padding:0 0 9px;opacity:.5}
+.rd-toc-tab.on{opacity:1;font-weight:600}
+.rd-toc-tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:currentColor}
+.rd-toc-tab-n{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;margin-left:5px;padding:0 4px;border-radius:8px;background:rgba(244,182,194,.3);color:#b06070;font-size:9.5px;line-height:1;vertical-align:1px}
+.rd-toc-search{display:block;width:100%;box-sizing:border-box;height:36px;line-height:34px;margin-top:10px;padding:0 12px;border:1px solid var(--line,#e5e5e5);border-radius:10px;background:rgba(0,0,0,.025);color:inherit;font-family:inherit;font-size:13px;outline:none}
+.rd-toc-search:focus{border-color:rgba(244,182,194,.7);background:transparent}
+.rd-toc-search::placeholder{opacity:.45}
+.rd-toc-pane{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;margin-top:8px}
+.rd-toc-list{flex:1;min-height:0;overflow-y:auto;padding:0 10px 12px}
+.rd-toc-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 8px;border-bottom:1px solid var(--line,#eee);font-size:14px}
+.rd-toc-row:active{background:rgba(0,0,0,.03)}
 .rd-toc-row.on{color:#d9534f}
-.rd-toc-n{opacity:.5;min-width:22px}
-.rd-toc-t{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-row.on .rd-toc-t{font-weight:600}
+.rd-toc-row.is-read .rd-toc-t{opacity:.38}
+.rd-toc-row.is-read .rd-toc-n{opacity:.22}
+.rd-toc-n{flex:none;min-width:20px;opacity:.42;font-size:11.5px;font-variant-numeric:tabular-nums}
+.rd-toc-t{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-flags{flex:none;display:flex;align-items:center;gap:6px}
+.rd-toc-him{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(244,182,194,.3);color:#a4555f;font-size:9px;line-height:1}
+.rd-toc-badge{display:inline-block;box-sizing:border-box;min-width:18px;height:16px;padding:0 5px;border-radius:8px;background:rgba(244,182,194,.24);color:#b06070;font-size:9.5px;line-height:16px;text-align:center}
+.rd-toc-none{padding:28px 8px;text-align:center;font-size:12px;color:var(--muted,#8a8a8a)}
+.rd-toc-lost{color:var(--muted,#8a8a8a);font-size:12px}
+.rd-toc-now{position:absolute;left:50%;bottom:12px;z-index:2;display:flex;align-items:center;gap:4px;transform:translateX(-50%);border:0;border-radius:16px;padding:8px 14px;background:rgba(255,255,255,.95);color:var(--ink,#111);font-family:inherit;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.16)}
+/* 书签页 */
+.rd-mark-list{flex:1;min-height:0;overflow-y:auto;padding:2px 14px 12px}
+.rd-mark-row{display:flex;align-items:flex-start;gap:4px;padding:2px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-mark-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 4px;border:0;background:transparent;color:inherit;text-align:left;font-family:inherit}
+.rd-mark-main:active{opacity:.6}
+.rd-mark-ch{font-size:13px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-mark-q{display:-webkit-box;font-size:12px;line-height:1.55;opacity:.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.rd-mark-meta{font-size:10.5px;opacity:.42;font-variant-numeric:tabular-nums}
+.rd-mark-del{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;margin-top:9px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font-family:inherit;font-size:12px;opacity:.28}
+.rd-mark-del:active{opacity:.8}
+.rd-mark-empty{padding:54px 18px;text-align:center;font-size:12px;line-height:1.9;color:var(--muted,#8a8a8a)}
 
 /* ---------- 选句与批注 ---------- */
 /* 正文的选中由我们自己的长按接管，关掉系统选择才不会同时冒出系统菜单 */

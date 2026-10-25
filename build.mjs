@@ -6657,6 +6657,11 @@ const FIX_SENTINELS = [
   { name: '#1556j 回应锚在同一条批注上（删＝回应跑偏到别句，replyTo 链断掉）', file: 'js/reading.js', needle: 'replyTo: id' },
   { name: '#1556k 同一页只扫一次批注（删＝每翻一页都整章读一遍批注）', file: 'js/reading.js', needle: 'if (rdCrossKey === key) return; // 同一页只扫一次，别每翻一页都整章读批注' },
   { name: '#1556l 打开书时接进串行链（删＝和封存/回应并发写同一章批注，互相覆盖）', file: 'js/reading.js', needle: 'return rdCrossOldAnnos(book).catch(function () {});' },
+  // ==== 2026-10-25 #1557 目录右侧抽屉 + 章批注气泡 + 我的书签 ====
+  { name: '#1557a 目录列表滚动监听在抽屉打开时补绑（删＝滚出当前章后「回到当前章」浮标不出现）', file: 'js/reading.js', needle: "listEl.addEventListener('scroll', rdTocUpdateNow, { passive: true });" },
+  { name: '#1557b 共读关闭时不显示他所在的章节（删＝关了共读目录里还挂着他的位置）', file: 'js/reading.js', needle: 'if (!rdCoopOn() || !book || !book.buddy || !rdBook) return -1;' },
+  { name: '#1557c 批注气泡只对可视行取数（删＝打开目录就把全书每章批注都读一遍）', file: 'js/reading.js', needle: 'rdTocBadgeObs.observe(rows[i]);' },
+  { name: '#1557d 书签按章 + 字符偏移保存（删＝换字号/换屏后页码书签落错位置）', file: 'js/reading.js', needle: 'marks.push({ ch: b.ch, off: p.s, q: rdMarkSnippet(b, p), at: Date.now() });' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
