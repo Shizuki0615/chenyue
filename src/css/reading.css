@@ -401,7 +401,7 @@
 .rd-hero-date span{opacity:.42;font-variant-numeric:tabular-nums}
 .rd-hero-title{position:relative;margin-top:13px;width:202px;font-size:19px;font-weight:700;line-height:1.45;letter-spacing:.02em}
 .rd-hero-tags{position:relative;display:flex;gap:6px;margin-top:11px}
-.rd-hero-tag{font-size:9px;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid rgba(243,236,221,.3);opacity:.9;white-space:nowrap}
+.rd-hero-tag{font-size:9px;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid rgba(243,236,221,.3);opacity:.9}
 .rd-hero-bar{position:relative;margin-top:15px;height:2px;border-radius:2px;background:rgba(243,236,221,.16)}
 .rd-hero-bar i{display:block;height:100%;width:0;border-radius:2px;background:#f4b6c2;transition:width .25s ease}
 .rd-hero-foot{position:relative;display:flex;justify-content:flex-end;margin-top:13px}
@@ -409,7 +409,7 @@
 .rd-hero-go:active{opacity:.82}
 
 /* ---------- 阅读记录（按设计稿 1:1 还原） ---------- */
-.rd-stat{margin:22px 18px 0}
+.rd-stat{margin:22px 18px 0;color:var(--w-ink,#1a1712)}
 .rd-stat-label{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
 .rd-stat-h{margin-top:9px;font-size:22px;font-weight:700;letter-spacing:.01em;color:var(--w-ink,#1a1712)}
 .rd-stat-s{margin-top:7px;font-size:11.5px;line-height:1.6;color:var(--w-mut,rgba(26,23,18,.52))}
@@ -419,21 +419,21 @@
 .rd-sg b{font-weight:600;color:var(--w-mut,rgba(26,23,18,.52));font-variant-numeric:tabular-nums}
 
 /* ---------- 分组卡（按设计稿 1:1 还原） ---------- */
-.rd-groups-block{margin:24px 18px 0}
-.rd-groups-head{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px}
+.rd-groups-block{margin:24px 18px 0;color:var(--w-ink,#1a1712)}
+.rd-groups-head{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
 .rd-glabel{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
-.rd-gtitle{font-size:15.5px;font-weight:700;color:var(--w-ink,#1a1712)}
+.rd-gtitle{font-size:15.5px;font-weight:700}
 .rd-gnew{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-gnew:active{opacity:.6}
 .rd-ggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 15px 0}
 .rd-ggrid>*:nth-child(even){margin-top:20px}
-.rd-gk{position:relative;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gk{position:relative;min-width:0;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-gk:active{opacity:.78}
 .rd-gn{position:absolute;top:12px;right:12px;font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 .rd-gstack{display:flex;min-height:36px}
 .rd-gsb{width:26px;aspect-ratio:3/4;border-radius:4px;margin-left:-9px;font-size:10px;font-weight:700;color:rgba(56,45,32,.6);box-shadow:0 2px 6px rgba(0,0,0,.16);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .rd-gsb:first-child{margin-left:0}
-.rd-gt{margin-top:11px;font-size:12.5px;font-weight:700;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-gt{margin-top:11px;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-gs{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 
