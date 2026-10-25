@@ -3,7 +3,7 @@
 :root{--w-bg:#faf9f5;--w-ink:#1a1712;--w-card:#ffffff;--w-mut:rgba(26,23,18,.52);--w-faint:rgba(26,23,18,.42);--w-hair:rgba(26,23,18,.09);--w-pink:#f4b6c2;--w-cink:#f3ecdd}
 [data-theme="dark"]{--w-bg:#161310;--w-ink:#e9e3d5;--w-card:#1d1a15;--w-mut:rgba(233,227,213,.55);--w-faint:rgba(233,227,213,.42);--w-hair:rgba(255,255,255,.1)}
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden],.rd-detail[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden],.rd-detail[hidden],.rd-dd-gridwrap[hidden],.rd-dd-ftag[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
@@ -459,6 +459,8 @@
 .rd-dd-fch{color:var(--w-faint,rgba(26,23,18,.42));font-size:15px;line-height:1}
 .rd-dd-gridwrap{position:relative;margin:16px 15px 0;height:272px;overflow:hidden}
 .rd-dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* 筛选后没有书时的空态：跨满两列 */
+.rd-dd-none{grid-column:1/-1;padding:28px 0;text-align:center;font-size:12px;color:var(--w-faint,rgba(26,23,18,.42))}
 .rd-dd-grid>*:nth-child(even){margin-top:24px}
 .rd-dd-gi{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-dd-gi:active{opacity:.78}

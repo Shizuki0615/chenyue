@@ -354,13 +354,13 @@
           '<div class="rd-dd-head">' +
             '<div class="rd-dd-label">书库 /</div>' +
             '<div class="rd-dd-row"><div class="rd-dd-t" id="rd-dd-t"></div><div class="rd-dd-sub">按最近阅读</div></div>' +
-            '<div class="rd-dd-pills">' +
+            '<div class="rd-dd-pills" id="rd-dd-pills">' +
               '<span class="rd-dd-pill on" data-pill="all">全部</span>' +
               '<span class="rd-dd-pill" data-pill="reading">在读</span>' +
               '<span class="rd-dd-pill" data-pill="done">读完</span>' +
             '</div>' +
           '</div>' +
-          '<div class="rd-dd-feat">' +
+          '<div class="rd-dd-feat" id="rd-dd-feat">' +
             '<div class="rd-dd-fcov">' +
               '<div class="rd-dd-ftop"><span class="rd-dd-fnum">01</span><span class="rd-dd-ftag" id="rd-dd-ftag"></span></div>' +
               '<div><div class="rd-dd-ft" id="rd-dd-ft"></div><div class="rd-dd-fm" id="rd-dd-fm"></div></div>' +
@@ -3918,8 +3918,16 @@
       }
       if (filtered.length === 0) {
         detail.hidden = false;
-        const feat = document.getElementById('rd-dd-feat'); if (feat) feat.innerHTML = '';
-        const gridw = document.getElementById('rd-dd-gridwrap'); if (gridw) gridw.innerHTML = '<div style="padding:24px 0;text-align:center;font-size:12px;opacity:.5">这里还没有书</div>';
+        // 只清内容、不删结构：切回「全部」时还能重新填回来
+        const ftag0 = document.getElementById('rd-dd-ftag');
+        if (ftag0) { ftag0.textContent = ''; ftag0.hidden = true; }
+        const ft0 = document.getElementById('rd-dd-ft'); if (ft0) ft0.textContent = '';
+        const fm0 = document.getElementById('rd-dd-fm'); if (fm0) fm0.textContent = '';
+        const fcov0 = document.querySelector('.rd-dd-fcov'); if (fcov0) fcov0.onclick = null;
+        const flist0 = document.getElementById('rd-dd-flist'); if (flist0) flist0.innerHTML = '';
+        const ddGrid0 = document.getElementById('rd-dd-grid');
+        if (ddGrid0) ddGrid0.innerHTML = '<div class="rd-dd-none">这里还没有书</div>';
+        const gridw0 = document.getElementById('rd-dd-gridwrap'); if (gridw0) gridw0.hidden = false;
         const usage = document.getElementById('rd-usage'); if (usage) usage.hidden = true;
         return;
       }
@@ -3930,7 +3938,7 @@
         const tagHtml = fc && rdCoopOn() && fc.buddy && fc.buddy.started
           ? '<span class="rd-dd-ftag">共读中</span>'
           : '';
-        const ftag = document.getElementById('rd-dd-ftag'); if (ftag) { ftag.innerHTML = tagHtml; ftag.hidden = !tagHtml; }
+        const ftag = document.getElementById('rd-dd-ftag'); if (ftag) { ftag.textContent = tagHtml ? '共读中' : ''; ftag.hidden = !tagHtml; }
         const ft = document.getElementById('rd-dd-ft'); if (ft) ft.textContent = fc ? (fc.title || '未命名') : '';
         const fm = document.getElementById('rd-dd-fm');
         if (fm) {
@@ -3956,6 +3964,9 @@
       }
       // 错落书架网格
       const ddGrid = document.getElementById('rd-dd-grid');
+      // 书不足 4 本时网格区没有内容，收起 272px 的留白
+      const ddGridWrap = document.getElementById('rd-dd-gridwrap');
+      if (ddGridWrap) ddGridWrap.hidden = filtered.length <= 3;
       if (ddGrid) {
         let ghtml = '';
         for (let i = 3; i < filtered.length; i++) {
