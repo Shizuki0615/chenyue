@@ -5,7 +5,7 @@
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:28px 16px 0}
+.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
 .rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
@@ -56,26 +56,26 @@
 .phone.rd-chrome-night .statusbar .icons{filter:invert(1)}
 .rd-foot{padding:8px 18px 14px}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
-.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
-.rd-buddy-dot{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#f4b6c2;border:1.5px solid #fff;z-index:2;transition:left .18s ease}
+.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);opacity:.8;border-radius:1px;box-shadow:0 0 6px rgba(244,182,194,.25)}
+.rd-buddy-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:2;transition:left .18s ease}
 /* 他在我前面：60% 不透明；同页：贴在我这一页末端外侧 6px */
 .rd-buddy-dot.rd-buddy-ahead{opacity:.6}
-.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28)}
+.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28),0 1px 4px rgba(0,0,0,.1)}
 /* 折角书签：圆点滑回我这一页时短暂亮一圈 */
-.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4)}
-.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;opacity:.65;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#rd-page-no{flex:0 0 auto}
+.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}
+.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#rd-page-no{flex:0 0 auto;opacity:.42}
 /* 夜间留灯：两盏很小的小灯，我那盏常亮，他那盏按状态亮 */
 .rd-lamp{display:inline-flex;align-items:center;gap:3px;margin-right:6px;flex:0 0 auto}
-.rd-lamp-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
-.rd-lamp-me{opacity:.55}
-.rd-lamp-him.on{opacity:.55;background:#f4b6c2;box-shadow:0 0 5px rgba(244,182,194,.85)}
-#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
+.rd-lamp-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.2}
+.rd-lamp-me{opacity:.4}
+.rd-lamp-him.on{opacity:.62;background:#f4b6c2;box-shadow:0 0 6px rgba(244,182,194,.75)}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.68}
+#rd-buddy.rd-buddy-same-text{opacity:.88;color:#d9534f}
 /* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
 #rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
 /* 翻页被看见：章末那一页给出这章的节奏感想 */
-#rd-buddy.rd-pace{opacity:1;color:#d9534f}
+#rd-buddy.rd-pace{opacity:.58;color:#c26e69}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -231,11 +231,11 @@
 .rd-prev-text{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-y:auto}
 .rd-pop-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-pop-who{font-size:11px;opacity:.55;margin-bottom:4px}
+.rd-pop-who{font-size:10px;opacity:.42;margin-bottom:3px;letter-spacing:.2px}
 .rd-pop-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
 /* 我是实心点，他是空心圈；他的回应缩进一层 */
-.rd-pop-mine .rd-pop-who::before{content:'●';font-size:9px;margin-right:4px;vertical-align:1px}
-.rd-pop-his .rd-pop-who::before{content:'○';font-size:9px;margin-right:4px;vertical-align:1px}
+.rd-pop-mine .rd-pop-who::before{content:'●';font-size:8px;margin-right:3px;vertical-align:1px}
+.rd-pop-his .rd-pop-who::before{content:'○';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-reply{margin-left:20px}
 .rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
 
