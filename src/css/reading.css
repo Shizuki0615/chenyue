@@ -406,12 +406,20 @@
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
 /* 共读手账：封存一句的书架条目，只给章序号，不给内容 */
-.rd-ledger{margin:14px 16px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+.rd-ledger{margin:16px 16px 0;padding:12px 14px 10px;border-radius:14px;border:1px solid rgba(244,182,194,.24);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%);box-shadow:0 2px 10px rgba(122,96,64,.05)}
 .rd-ledger[hidden]{display:none!important}
-.rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
-.rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
-.rd-ledger-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
-.rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
+.rd-ledger-t{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.1em;opacity:.55;margin-bottom:2px}
+.rd-ledger-t::before{content:'';width:12px;height:1px;background:#f4b6c2}
+.rd-ledger-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(122,96,64,.1)}
+.rd-ledger-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rd-ledger-book{font-size:12px;line-height:1.45;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-ledger-note{font-size:10.5px;line-height:1.5;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-ledger-row[data-state="today"] .rd-ledger-note::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#f4b6c2;margin-right:5px;vertical-align:1px}
+.rd-ledger-row[data-state="waiting"] .rd-ledger-note{opacity:.42;font-style:italic}
+.rd-ledger-ch{flex:none;font-size:10px;line-height:1;padding:4px 7px;border-radius:999px;border:1px solid rgba(0,0,0,.08);opacity:.55;font-variant-numeric:tabular-nums}
+[data-theme="dark"] .rd-ledger{background:linear-gradient(180deg,#201e1a 0%,#191714 100%);border-color:rgba(244,182,194,.18);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+[data-theme="dark"] .rd-ledger-row{border-top-color:rgba(255,255,255,.1)}
+[data-theme="dark"] .rd-ledger-ch{border-color:rgba(255,255,255,.14)}
 /* 封存纸条展开后，浮层末尾那行「你终于读到这了」 */
 .rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
 /* 错过七天：旧句被划掉留成淡字，点一下他有概率接一句 */

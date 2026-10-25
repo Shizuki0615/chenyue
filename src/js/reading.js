@@ -4057,11 +4057,17 @@
           const chNo = (Number(s.ch) || 0) + 1;
           const days = Math.floor(age / DAY);
           const sameDay = rdTodayKey(s.at) === rdTodayKey();
-          const line = days >= RD_SEAL_WAIT_DAYS
+          const noteState = days >= RD_SEAL_WAIT_DAYS ? 'waiting' : (sameDay ? 'today' : 'days');
+          const note = days >= RD_SEAL_WAIT_DAYS
             ? '他还在等'
             : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
-          led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
-            '</span><span class="a">第 ' + chNo + ' 章</span></div>';
+          led += '<div class="rd-ledger-row" data-state="' + noteState + '">' +
+            '<div class="rd-ledger-main">' +
+              '<span class="rd-ledger-book">《' + rdEsc(b.title || '未命名') + '》</span>' +
+              '<span class="rd-ledger-note">' + rdEsc(note) + '</span>' +
+            '</div>' +
+            '<span class="rd-ledger-ch">第 ' + chNo + ' 章</span>' +
+          '</div>';
         }
         if (keep.length !== b.sealed.length) b.sealed = keep;
       }

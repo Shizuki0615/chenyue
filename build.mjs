@@ -6597,7 +6597,7 @@ const FIX_SENTINELS = [
   { name: '#1551d 封存每本同时最多三条（删＝纸条无限堆积）', file: 'js/reading.js', needle: 'const RD_SEAL_PER_BOOK = 3;' },
   { name: '#1551e 封存只挑他已读、我未读的句子（删＝可能挑到他也没读到的内容）', file: 'js/reading.js', needle: 'const limit = ch < hisCh ? text.length : Math.min(hisOff, text.length);' },
   { name: '#1551f 封存纸条带 sealed 标记（删＝和普通纸条一样立刻出现在正文里）', file: 'js/reading.js', needle: 'sealed: true' },
-  { name: '#1551g 书架手账只给书名与章序号（删＝把句子内容写在书架上，没翻就剧透）', file: 'js/reading.js', needle: "led += '<div class=\"rd-ledger-row\">" },
+  { name: '#1551g 书架手账只给书名与章序号（删＝把句子内容写在书架上，没翻就剧透）', file: 'js/reading.js', needle: "led += '<div class=\"rd-ledger-row\" data-state=\"' + noteState + '\">' +" },
   { name: '#1551h 七天没读到改口「他还在等」（删＝一直显示「今天折的」，时间感失真）', file: 'js/reading.js', needle: "? '他还在等'" },
   { name: '#1551i 十四天收回封存纸条（删＝永远占着章内批注条数）', file: 'js/reading.js', needle: 'rdDropSealedAnno(drops[i].id, drops[i].s)' },
   { name: '#1551j 解锁后浮层末尾给「你终于读到这了」（删＝展开后只是普通纸条，等过的那段时间没有回音）', file: 'js/reading.js', needle: 'rd-pop-unsealed' },
