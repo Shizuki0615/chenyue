@@ -246,7 +246,13 @@ page.innerHTML =
 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
 '</button>' +
 '</div>' +
-'<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
+'<div class="rd-empty" id="rd-empty">' +
+'<div class="rd-empty-art" aria-hidden="true"><i class="rd-empty-book"></i><i class="rd-empty-mark"></i></div>' +
+'<div class="rd-empty-t">书架还是空的</div>' +
+'<div class="rd-empty-sub">导入一本 TXT，从第一页开始读。</div>' +
+'<button class="rd-btn rd-btn-primary rd-empty-go" id="rd-empty-import" type="button">导入一本书</button>' +
+'<div class="rd-empty-hint">支持 .txt，单本 20MB 以内</div>' +
+'</div>' +
 '<div class="rd-grid" id="rd-grid"></div>' +
 '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
 '<div class="rd-usage" id="rd-usage"></div>' +
@@ -3757,6 +3763,7 @@ if (usage) {
 let bytes = 0;
 for (let i = 0; i < list.length; i++) bytes += ((list[i] && list[i].size) || 0);
 usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
+usage.hidden = list.length === 0;
 }
 }
 function rdFindBook(id, list) {
@@ -4213,6 +4220,7 @@ if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdOpenLost(); 
 if (el.closest('#rd-lost-close')) { e.preventDefault(); rdCloseLost(); return; }
 const lostDel = el.closest('#rd-lost-list [data-del]');
 if (lostDel) { e.preventDefault(); rdDeleteLost(lostDel.getAttribute('data-del')); return; }
+if (el.closest('#rd-empty-import')) { e.preventDefault(); rdOpenImport(); return; }
 if (el.closest('#rd-import')) { e.preventDefault(); rdOpenImport(); return; }
 if (el.closest('#rd-import-close')) { e.preventDefault(); rdCloseImport(); return; }
 if (el.closest('#rd-import-go')) { e.preventDefault(); rdStartImport(); return; }

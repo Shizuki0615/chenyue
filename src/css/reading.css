@@ -30,6 +30,19 @@
 #rd-mark-btn.on svg{fill:currentColor}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
+/* 空书架：纸感引导卡。.rd-empty 仍留给字卡/未定位批注等列表的空文案，不改它 */
+#rd-empty{margin:10px 16px 0;padding:28px 22px 24px;border-radius:18px;border:1px dashed rgba(122,96,64,.18);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%);text-align:center;opacity:1}
+[data-theme="dark"] #rd-empty{background:linear-gradient(180deg,#201e1a,#191714);border-color:rgba(255,255,255,.14)}
+.rd-empty-art{position:relative;width:64px;height:80px;margin:0 auto 16px}
+.rd-empty-book{position:absolute;inset:0;border-radius:7px;background:linear-gradient(150deg,#ffffff,#f2ebdf);border:1px solid rgba(122,96,64,.16);box-shadow:0 6px 18px rgba(122,96,64,.1)}
+.rd-empty-book:before{content:'';position:absolute;left:13px;right:13px;top:20px;height:1px;background:rgba(122,96,64,.16);box-shadow:0 9px 0 rgba(122,96,64,.16),0 18px 0 rgba(122,96,64,.16),0 27px 0 rgba(122,96,64,.16)}
+.rd-empty-mark{position:absolute;right:11px;top:-1px;width:9px;height:24px;background:#f4b6c2;border-radius:0 0 3px 3px;box-shadow:0 1px 3px rgba(244,182,194,.35)}
+[data-theme="dark"] .rd-empty-book{background:linear-gradient(150deg,#2a2723,#221f1b);border-color:rgba(255,255,255,.12);box-shadow:0 6px 18px rgba(0,0,0,.25)}
+[data-theme="dark"] .rd-empty-book:before{background:rgba(255,255,255,.12);box-shadow:0 9px 0 rgba(255,255,255,.12),0 18px 0 rgba(255,255,255,.12),0 27px 0 rgba(255,255,255,.12)}
+.rd-empty-t{font-size:16px;font-weight:600;letter-spacing:.01em}
+.rd-empty-sub{margin-top:7px;font-size:12px;line-height:1.7;opacity:.6}
+.rd-empty-go{margin-top:18px;min-width:190px;padding:11px 24px;font-size:13.5px;font-weight:600}
+.rd-empty-hint{margin-top:14px;font-size:10.5px;letter-spacing:.02em;opacity:.45}
 /* 正文区的纸感只由背景承担；顶部留出呼吸位，分页高度会把这段内边距扣掉 */
 .rd-body{flex:1;overflow:hidden;padding:18px 18px 0;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
