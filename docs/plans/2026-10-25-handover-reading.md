@@ -11,9 +11,9 @@
 cd /workspace
 git branch --show-current          # 如果显示 trae/agent-HyW2zB，先看下面的警告
 git checkout main
-git log -1 --oneline                # 必须是 14dec36
+git log -1 --oneline                # 应为 docs: 读书模块交接文档...
 git status -sb                      # 工作区应为干净
-git rev-list --count origin/main..main   # 应为 2
+git rev-list --count origin/main..main   # 应 ≥ 3（两批功能 + 交接文档）
 node build.mjs --allow-revert       # 应看到：哨兵 4483/4483、sw 16/16
 ```
 
@@ -32,10 +32,11 @@ cd /workspace && python3 -m http.server 16451 --bind 127.0.0.1
    任何编辑、构建、截图之前，先确认 `git branch --show-current` 是 `main`。
    如果环境中途把分支切回去，重新 `git checkout main` 并重新构建，不要惊慌。
 
-2. **最近两个提交只在本地，尚未推到 GitHub。**
-   `origin/main` 还停在 `a112dd4`；`main` 领先 2 个提交（`14ab4cc`、`14dec36`）。
+2. **最近两批功能提交只在本地，尚未推到 GitHub。**
+   `origin/main` 还停在 `a112dd4`；`main` 领先 3 个以上提交
+   （`14ab4cc`、`14dec36`，以及其后的交接文档提交）。
    如果换号后要发布 / 用 GitHub Pages 部署，必须先用**原账号**
-   `git push origin main`（推之前征求用户同意）。新号 clone 仓库是拿不到这两批的。
+   `git push origin main`（推之前征求用户同意）。新号 clone 仓库是拿不到这些成果的。
 
 3. **不要直接改构建产物。**
    `index.html`、`js/reading.js`、`sw.js`、`version.json` 都是
@@ -730,17 +731,18 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 14ab4cc 2026-10-25 10:51 +0800  feat(reading): 重做导入页与确认分章页，修卷标误切
 a112dd4 2026-10-25 09:48 +0800  Merge branch 'trae/agent-HyW2zB'
 db02a22 ...                     feat: update workspace（旧分支 tip，不含最近两批）
+...                             docs: 读书模块交接文档（分支/构建/已完成/下一批/排错）
 ```
 
-- `main` = `14dec36`，工作区干净。
-- `origin/main` = `a112dd4`；`main` 本地领先 2 个提交。
+- `main` 的最新提交是交接文档，功能代码停在 `14dec36`，工作区干净。
+- `origin/main` = `a112dd4`；`main` 本地领先 3 个以上提交。
 - 换号/部署前如需推送：先征得用户同意，再用原账号 `git push origin main`。
 
 ---
 
 ## 12. 建议的恢复顺序（一句话版）
 
-1. `git checkout main`，确认 `14dec36`。
+1. `git checkout main`，确认最新提交是交接文档。
 2. `node build.mjs --allow-revert`，确认 4483/4483、16/16。
 3. 起本地服务，打开读书 → 导入一本短书，过一遍导入/确认/目录/书签。
 4. 按第 7 节做设置页三栏。
