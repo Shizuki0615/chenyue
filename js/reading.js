@@ -142,7 +142,7 @@ if (c > 32) total++;
 }
 return { text: text, bad: total ? bad / total : 0 };
 }
-const RD_CH_TITLE_RE = /^\s*(?:(?:上|中|下)(?:卷|部|篇)|第[0-9零一二三四五六七八九十百千万]+[章回节卷]|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
+const RD_CH_TITLE_RE = /^\s*(?:(?:上|中|下)(?:卷|部|篇)(?=$|[\s：:·、，,—-]|第[0-9零一二三四五六七八九十百千万]+[章回卷节])|第[0-9零一二三四五六七八九十百千万]+[章回节卷](?!的)|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
 function splitChapters(text) {
 const src = String(text == null ? '' : text);
 const n = src.length;
@@ -249,26 +249,54 @@ page.innerHTML =
 '<div class="rd-usage" id="rd-usage"></div>' +
 '<div class="rd-import" id="rd-import-panel" hidden>' +
 '<div class="rd-import-main" id="rd-import-main">' +
-'<div class="rd-import-head"><div class="rd-import-title">导入一本书</div>' +
-'<button class="rd-back" id="rd-import-close" type="button">关闭</button></div>' +
-'<input class="rd-imp-name" id="rd-imp-name" type="text" maxlength="40" placeholder="书名（可留空；留空时用文件名或「粘贴的书」）">' +
-'<label class="rd-file-label" for="rd-file">选择 TXT 文件</label>' +
-'<input type="file" id="rd-file" accept=".txt,text/plain">' +
+'<div class="rd-import-head">' +
+'<button class="ch-back rd-import-back" id="rd-import-close" type="button" aria-label="返回书架">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+'</button>' +
+'<span class="ch-name">导入一本书</span>' +
+'</div>' +
+'<div class="rd-import-form" id="rd-import-form">' +
+'<div class="rd-imp-label">书名 <span>可选</span></div>' +
+'<input class="rd-imp-name" id="rd-imp-name" type="text" maxlength="40" placeholder="留空时用文件名或「粘贴的书」">' +
+'<div class="rd-import-sec-title">从 TXT 文件导入</div>' +
+'<label class="rd-file-label" for="rd-file">' +
+'<span class="rd-file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span>' +
+'<span class="rd-file-t">选择 TXT 文件</span>' +
+'<span class="rd-file-sub">支持 .txt，单本 20MB 以内</span>' +
+'</label>' +
+'<input type="file" id="rd-file" class="rd-file-native" accept=".txt,text/plain">' +
 '<div class="rd-file-info" id="rd-file-info" hidden></div>' +
 '<div class="rd-gbk-row" id="rd-gbk-row" hidden>' +
 '<span>这段文字里乱码不少，可能不是 UTF-8</span>' +
 '<button class="rd-btn" id="rd-gbk" type="button">按 GBK 重新解码</button>' +
 '</div>' +
-'<textarea id="rd-paste" placeholder="也可以把整本书粘贴到这里"></textarea>' +
-'<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-import-go" type="button">开始导入</button></div>' +
+'<div class="rd-import-or"><span>或者</span></div>' +
+'<div class="rd-imp-label" id="rd-paste-label">粘贴正文</div>' +
+'<textarea id="rd-paste" rows="5" placeholder="把整本书粘贴到这里"></textarea>' +
+'</div>' +
+'<div class="rd-import-foot rd-import-foot-main">' +
+'<button class="rd-btn rd-btn-primary rd-btn-block" id="rd-import-go" type="button">开始导入</button>' +
+'</div>' +
 '</div>' +
 '<div class="rd-confirm" id="rd-confirm" hidden>' +
-'<div class="rd-import-head"><button class="rd-back" id="rd-confirm-back" type="button">返回</button>' +
-'<div class="rd-import-title">确认分章</div>' +
-'<button class="rd-back" id="rd-confirm-merge-all" type="button">全部合并</button></div>' +
-'<div class="rd-confirm-bar"><button class="rd-btn rd-btn-mini" id="rd-confirm-reset" type="button">恢复自动分章</button></div>' +
+'<div class="rd-import-head">' +
+'<button class="ch-back rd-import-back" id="rd-confirm-back" type="button" aria-label="返回导入">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+'</button>' +
+'<span class="ch-name">确认分章</span>' +
+'</div>' +
+'<div class="rd-confirm-sum">' +
+'<div class="rd-confirm-sum-t" id="rd-confirm-sum-t">共 0 章 · 0 字</div>' +
+'<div class="rd-confirm-sum-h">点章节标题可改名；合并/拆分只影响这次导入</div>' +
+'</div>' +
+'<div class="rd-confirm-bar">' +
+'<button class="rd-btn rd-btn-mini rd-btn-text" id="rd-confirm-reset" type="button">恢复自动分章</button>' +
+'<button class="rd-btn rd-btn-mini rd-btn-text" id="rd-confirm-merge-all" type="button">全部合并</button>' +
+'</div>' +
 '<div class="rd-confirm-list" id="rd-confirm-list"></div>' +
-'<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-confirm-go" type="button">确认导入</button></div>' +
+'<div class="rd-import-foot rd-import-foot-main">' +
+'<button class="rd-btn rd-btn-primary rd-btn-block" id="rd-confirm-go" type="button">确认导入</button>' +
+'</div>' +
 '</div>' +
 '</div>' +
 '</div>' +
@@ -3224,6 +3252,11 @@ if (!txt) { info.hidden = true; info.textContent = ''; return; }
 info.hidden = false;
 info.textContent = txt;
 }
+function rdSetPasteCount(n) {
+const el = document.getElementById('rd-paste-label');
+if (!el) return;
+el.textContent = n > 0 ? '粘贴正文 · ' + n + ' 字' : '粘贴正文';
+}
 function rdOpenImport() {
 if (!page) return;
 rdImp.buf = null; rdImp.name = ''; rdImp.text = ''; rdImp.source = ''; rdImp.chapters = null; rdImp.bad = 0;
@@ -3237,6 +3270,7 @@ if (file) { try { file.value = ''; } catch (e) {} }
 if (paste) paste.value = '';
 if (nameEl) nameEl.value = '';
 rdSetFileInfo('');
+rdSetPasteCount(0);
 const gbk = document.getElementById('rd-gbk-row');
 if (gbk) gbk.hidden = true;
 if (main) main.hidden = false;
@@ -3265,8 +3299,10 @@ const gbk = document.getElementById('rd-gbk-row');
 if (gbk) gbk.hidden = !(rdImp.source === 'file' && d.bad > RD_BAD_RATIO);
 if (rdImp.source === 'file') {
 rdSetFileInfo(rdImp.name + ' · ' + rdImp.text.length + ' 字' + (d.bad > RD_BAD_RATIO ? '（疑似非 UTF-8）' : ''));
+rdSetPasteCount(0);
 } else {
-rdSetFileInfo(rdImp.text.trim() ? '粘贴内容 · ' + rdImp.text.length + ' 字' : '');
+rdSetFileInfo('');
+rdSetPasteCount(rdImp.text.trim() ? rdImp.text.length : 0);
 }
 }
 function rdStartImport() {
@@ -3295,16 +3331,23 @@ function rdRenderConfirm() {
 const list = document.getElementById('rd-confirm-list');
 if (!list) return;
 const chs = rdImp.chapters || [];
+const sum = document.getElementById('rd-confirm-sum-t');
+if (sum) sum.textContent = '共 ' + chs.length + ' 章 · ' + String(rdImp.text || '').length + ' 字';
 let html = '';
 for (let i = 0; i < chs.length; i++) {
 const c = chs[i];
+const idx = i + 1 < 10 ? '0' + (i + 1) : String(i + 1);
 html += '<div class="rd-cf-row" data-i="' + i + '">' +
+'<div class="rd-cf-top">' +
+'<span class="rd-cf-idx">' + idx + '</span>' +
 '<button class="rd-cf-title" data-act="rename" type="button">' + rdEsc(c.t || ('第 ' + (i + 1) + ' 节')) + '</button>' +
-'<div class="rd-cf-n">' + (c.e - c.s) + ' 字</div>' +
+'<span class="rd-cf-n">' + (c.e - c.s) + ' 字</span>' +
+'</div>' +
 '<div class="rd-cf-ops">' +
-(i < chs.length - 1 ? '<button class="rd-btn rd-btn-mini" data-act="merge" type="button">与下一章合并</button>' : '') +
-'<button class="rd-btn rd-btn-mini" data-act="split" type="button">在此拆分</button>' +
-'</div></div>';
+(i < chs.length - 1 ? '<button class="rd-btn rd-btn-mini rd-btn-text" data-act="merge" type="button">合并到下一章</button>' : '') +
+'<button class="rd-btn rd-btn-mini rd-btn-text" data-act="split" type="button">在此拆分</button>' +
+'</div>' +
+'</div>';
 }
 list.innerHTML = html;
 }
@@ -3605,6 +3648,8 @@ rdImp.buf = buf;
 rdImp.name = file.name || '未命名.txt';
 rdImp.source = 'file';
 rdImp.chapters = null;
+const pasteEl = document.getElementById('rd-paste');
+if (pasteEl) pasteEl.value = '';
 rdUseDecoded(rdDecode(buf, 'utf-8'));
 });
 document.addEventListener('input', function (e) {
@@ -3617,7 +3662,8 @@ rdImp.text = el.value || '';
 rdImp.chapters = null;
 const gbk = document.getElementById('rd-gbk-row');
 if (gbk) gbk.hidden = true;
-rdSetFileInfo(rdImp.text.trim() ? '粘贴内容 · ' + rdImp.text.length + ' 字' : '');
+rdSetFileInfo('');
+rdSetPasteCount(rdImp.text.trim() ? rdImp.text.length : 0);
 });
 document.addEventListener('input', function (e) {
 const el = e.target;
