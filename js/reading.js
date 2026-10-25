@@ -10,8 +10,6 @@ const RD_COOP_KEY = 'reading-coop';
 const RD_LAMP_KEY = 'reading-lamp';
 const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
-const RD_PRIMARY_KEY = 'reading-primary';
-const RD_PRIMARY_INK_KEY = 'reading-primary-ink';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_GROUP_KEY = 'reading-groups';
@@ -462,7 +460,6 @@ const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(page);
 rdApplyPrefs(rdReadPrefs());
 rdApplyBg();
-rdApplyPrimary();
 return page;
 }
 let settingsPage = null;
@@ -482,12 +479,6 @@ settingsPage.innerHTML =
 '<span class="ch-name">阅读设置</span>' +
 '</div>' +
 '<div class="rd-set-body">' +
-'<div class="them-tabs rd-set-tabs" id="rd-set-tabs">' +
-'<button class="them-tab active" data-tab="beautify" type="button">美化</button>' +
-'<button class="them-tab" data-tab="function" type="button">功能</button>' +
-'<button class="them-tab" data-tab="data" type="button">数据</button>' +
-'</div>' +
-'<div class="them-sec" data-sec="beautify">' +
 '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
 '<span class="rd-live-entry-t">' +
 '<span class="rd-live-entry-name">边看边调</span>' +
@@ -542,28 +533,9 @@ settingsPage.innerHTML =
 '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
 '</div>' +
 '</div>' +
-'</div>' +
-'<div class="them-sec" data-sec="data" hidden>' +
-'<div class="gs-title">书架概览</div>' +
-'<div class="set-group glass">' +
-'<div class="rd-set-stat"><span>书架</span><b id="rd-set-data-books">0 本</b></div>' +
-'<div class="rd-set-stat"><span>正文</span><b id="rd-set-data-words">约 0.0 万字</b></div>' +
-'<div class="rd-set-stat"><span>占用</span><b id="rd-set-data-size">约 0.0 MB</b></div>' +
-'<div class="rd-set-stat"><span>书签</span><b id="rd-set-data-marks">0 条</b></div>' +
-'<div class="rd-set-stat"><span>批注</span><b id="rd-set-data-annos">0 条</b></div>' +
-'</div>' +
-'<div class="gs-title">存储与备份</div>' +
-'<div class="set-group glass">' +
-'<div class="rd-set-row"><div class="rd-set-row-desc">正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。</div></div>' +
-'<div class="rd-set-row"><div class="rd-set-row-desc">换机恢复后正文需要重新导入，批注会按原文重新定位。</div></div>' +
-'</div>' +
-'<div class="rd-set-note">这一页只做只读概览，数字在每次打开设置页时刷新。</div>' +
-'</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(settingsPage);
-initReadingSettingsTabs();
-rdApplyPrimary();
 const fsRange = settingsPage.querySelector('#rd-set-fs-range');
 if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
 const lhRange = settingsPage.querySelector('#rd-set-lh-range');
@@ -588,8 +560,6 @@ rdApplyChrome();
 settingsPage.hidden = false;
 settingsPage.classList.add('full');
 rdRenderPrefsActive();
-rdApplyPrimary();
-rdRenderDataOverview();
 const body = settingsPage.querySelector('.rd-set-body');
 if (body) body.scrollTop = 0;
 }
@@ -3080,142 +3050,6 @@ rdRenderPage();
 }
 rdRenderPrefsActive();
 }
-const RD_PRIMARY_DEFAULT = '#111111';
-const RD_PRIMARY_PRESETS = [
-{ key: 'ink', name: '墨黑', color: '#111111' },
-{ key: 'pink', name: '阅读粉', color: '#d97a8c' },
-{ key: 'blue', name: '雾蓝', color: '#7893ad' },
-{ key: 'brown', name: '暖棕', color: '#8b6a4b' }
-];
-const RD_PRIMARY_BY_KEY = {};
-RD_PRIMARY_PRESETS.forEach(function (p) { RD_PRIMARY_BY_KEY[p.key] = p; });
-const RD_PRIMARY_LEGACY = { ink: '#111111', pink: '#d97a8c', blue: '#7893ad', brown: '#8b6a4b' };
-function rdNormHex(v) {
-let c = String(v == null ? '' : v).trim().toLowerCase();
-if (c && c.charAt(0) !== '#') c = '#' + c;
-return /^#[0-9a-f]{6}$/.test(c) ? c : '';
-}
-function rdRelLum(hex) {
-const c = rdNormHex(hex);
-if (!c) return 0;
-const v = [1, 3, 5].map(function (i) {
-const x = parseInt(c.slice(i, i + 2), 16) / 255;
-return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-});
-return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
-}
-function rdReadPrimary() {
-try {
-const raw = String(store.get(RD_PRIMARY_KEY) || '').trim();
-if (RD_PRIMARY_LEGACY[raw]) return RD_PRIMARY_LEGACY[raw];
-return rdNormHex(raw) || RD_PRIMARY_DEFAULT;
-} catch (e) { return RD_PRIMARY_DEFAULT; }
-}
-function rdReadPrimaryInk() {
-try {
-const v = String(store.get(RD_PRIMARY_INK_KEY) || '');
-return (v === 'dark' || v === 'light') ? v : 'auto';
-} catch (e) { return 'auto'; }
-}
-function rdPrimaryInk(hex) {
-const mode = rdReadPrimaryInk();
-if (mode === 'dark') return '#111111';
-if (mode === 'light') return '#ffffff';
-const L = rdRelLum(hex);
-const darkL = rdRelLum('#111111');
-const cDark = (L + 0.05) / (darkL + 0.05);
-const cLight = 1.05 / (L + 0.05);
-return cLight > cDark ? '#ffffff' : '#111111';
-}
-function rdPrimaryPresetOf(hex) {
-for (let i = 0; i < RD_PRIMARY_PRESETS.length; i++) {
-if (RD_PRIMARY_PRESETS[i].color === hex) return RD_PRIMARY_PRESETS[i];
-}
-return null;
-}
-function rdApplyPrimary() {
-const hex = rdReadPrimary();
-const ink = rdPrimaryInk(hex);
-['page-reading', 'page-reading-settings'].forEach(function (id) {
-const el = document.getElementById(id);
-if (!el) return;
-el.style.setProperty('--rd-primary', hex);
-el.style.setProperty('--rd-primary-ink', ink);
-});
-rdRenderPrimaryActive(hex);
-}
-function rdRenderPrimaryActive(hex) {
-const cur = hex || rdReadPrimary();
-document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
-const p = RD_PRIMARY_BY_KEY[btn.getAttribute('data-rd-primary')];
-const on = !!(p && p.color === cur);
-btn.classList.toggle('on', on);
-btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-});
-const preset = rdPrimaryPresetOf(cur);
-const val = document.getElementById('rd-set-primary-val');
-if (val) val.textContent = preset ? preset.name : '自定义';
-const hexEl = document.getElementById('rd-set-primary-hex');
-if (hexEl) hexEl.textContent = cur.toUpperCase();
-const sw = document.getElementById('rd-primary-custom-sw');
-if (sw) sw.style.background = cur;
-const mode = rdReadPrimaryInk();
-document.querySelectorAll('[data-rd-ink]').forEach(function (btn) {
-const on = btn.getAttribute('data-rd-ink') === mode;
-btn.classList.toggle('on', on);
-btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-});
-}
-function rdSetPrimary(color) {
-const hex = rdNormHex(color);
-if (!hex) return;
-try { store.set(RD_PRIMARY_KEY, hex); }
-catch (e) { rdToast('主按钮颜色没保存上'); }
-rdApplyPrimary();
-}
-function rdSetPrimaryInk(mode) {
-if (mode !== 'dark' && mode !== 'light') mode = 'auto';
-try { store.set(RD_PRIMARY_INK_KEY, mode); } catch (e) {}
-rdApplyPrimary();
-}
-function rdResetPrimary() {
-try { store.remove(RD_PRIMARY_KEY); store.remove(RD_PRIMARY_INK_KEY); } catch (e) {}
-rdApplyPrimary();
-rdToast('主按钮颜色已恢复默认');
-}
-function rdOpenPrimaryHex(cur) {
-if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
-const ctl = window.openModal('手输主按钮色值', String(cur || '').toUpperCase(), function (v) {
-const hex = rdNormHex(v);
-if (!hex) { ctl.hint('格式不对：# + 6 位十六进制（0-9 / a-f），如 #e05555'); ctl.stay(); return; }
-rdSetPrimary(hex);
-rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
-}, { maxlength: 7, placeholder: '#RRGGBB，如 #e05555' });
-}
-function rdOpenPrimaryPicker() {
-if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
-const cur = rdReadPrimary();
-window.openModal('主按钮颜色', '', function (v) {
-if (typeof v === 'number') {
-const p = RD_PRIMARY_PRESETS[v];
-if (p) rdSetPrimary(p.color);
-return;
-}
-if (v === '__hex__') { rdOpenPrimaryHex(cur); return; }
-const hex = rdNormHex(v);
-if (!hex) return;
-rdSetPrimary(hex);
-rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
-}, {
-noInput: true,
-colorPicker: true,
-color: cur,
-swatches: RD_PRIMARY_PRESETS.map(function (p) { return { color: p.color, label: p.name }; }),
-pills: [{ label: '手输色值', value: '__hex__' }],
-pillSubmit: true,
-staticText: '点色块快速选；「自定义颜色」调起系统取色器；取色器打不开的手机点「手输色值」填 #RRGGBB。'
-});
-}
 function rdRenderPrefsActive() {
 const p = rdReadPrefs();
 const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
@@ -3662,21 +3496,6 @@ if (st === 'skip') return '今天不读';
 if (st === 'none') return '未开始';
 return '共读中';
 }
-let rdShelfFilter = 'all';
-function rdHeroMeta(b) {
-if (!b) return '';
-if (b.missing) return '待重新导入';
-const pct = rdProgressPct(b);
-if (pct >= 100) return '读完';
-const ch = Math.max(1, ((b.progress && b.progress.ch) || 0) + 1);
-return '第 ' + ch + ' 章 · ' + pct + '%';
-}
-function rdFilterList(list, f) {
-if (!list) return [];
-if (f === 'done') return list.filter(function (b) { return b && rdProgressPct(b) >= 100; });
-if (f === 'reading') return list.filter(function (b) { return b && !b.missing && rdProgressPct(b) < 100; });
-return list.slice();
-}
 function rdRenderShelf() {
 const grid = document.getElementById('rd-grid');
 const empty = document.getElementById('rd-empty');
@@ -3786,17 +3605,11 @@ keep.push(s);
 const chNo = (Number(s.ch) || 0) + 1;
 const days = Math.floor(age / DAY);
 const sameDay = rdTodayKey(s.at) === rdTodayKey();
-const noteState = days >= RD_SEAL_WAIT_DAYS ? 'waiting' : (sameDay ? 'today' : 'days');
-const note = days >= RD_SEAL_WAIT_DAYS
+const line = days >= RD_SEAL_WAIT_DAYS
 ? '他还在等'
 : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
-led += '<div class="rd-ledger-row" data-state="' + noteState + '">' +
-'<div class="rd-ledger-main">' +
-'<span class="rd-ledger-book">《' + rdEsc(b.title || '未命名') + '》</span>' +
-'<span class="rd-ledger-note">' + rdEsc(note) + '</span>' +
-'</div>' +
-'<span class="rd-ledger-ch">第 ' + chNo + ' 章</span>' +
-'</div>';
+led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
+'</span><span class="a">第 ' + chNo + ' 章</span></div>';
 }
 if (keep.length !== b.sealed.length) b.sealed = keep;
 }
@@ -4283,36 +4096,12 @@ return;
 }
 if (el.closest('#rd-shelf-back')) { rdClose(); return; }
 if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
-if (el.closest('#rd-hero-btn')) {
-e.preventDefault();
-const id = el.closest('#rd-hero-btn').getAttribute('data-id');
-if (id) rdOpenBook(id);
-return;
-}
-const sfBtn = el.closest('#rd-shelf-filter [data-filter]');
-if (sfBtn) {
-e.preventDefault();
-rdShelfFilter = sfBtn.getAttribute('data-filter') || 'all';
-rdRenderShelf();
-return;
-}
 if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
 if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
 if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); return; }
 if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
 const bgOpt = el.closest('[data-rd-bgopt]');
 if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
-const primaryOpt = el.closest('[data-rd-primary]');
-if (primaryOpt) {
-e.preventDefault();
-const preset = RD_PRIMARY_BY_KEY[primaryOpt.getAttribute('data-rd-primary')];
-if (preset) rdSetPrimary(preset.color);
-return;
-}
-if (el.closest('#rd-primary-custom')) { e.preventDefault(); rdOpenPrimaryPicker(); return; }
-if (el.closest('#rd-primary-reset')) { e.preventDefault(); rdResetPrimary(); return; }
-const inkOpt = el.closest('[data-rd-ink]');
-if (inkOpt) { e.preventDefault(); rdSetPrimaryInk(inkOpt.getAttribute('data-rd-ink')); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
@@ -4346,7 +4135,6 @@ if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdOpenLost(); 
 if (el.closest('#rd-lost-close')) { e.preventDefault(); rdCloseLost(); return; }
 const lostDel = el.closest('#rd-lost-list [data-del]');
 if (lostDel) { e.preventDefault(); rdDeleteLost(lostDel.getAttribute('data-del')); return; }
-if (el.closest('#rd-empty-import')) { e.preventDefault(); rdOpenImport(); return; }
 if (el.closest('#rd-import')) { e.preventDefault(); rdOpenImport(); return; }
 if (el.closest('#rd-import-close')) { e.preventDefault(); rdCloseImport(); return; }
 if (el.closest('#rd-import-go')) { e.preventDefault(); rdStartImport(); return; }

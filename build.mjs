@@ -6597,7 +6597,7 @@ const FIX_SENTINELS = [
   { name: '#1551d 封存每本同时最多三条（删＝纸条无限堆积）', file: 'js/reading.js', needle: 'const RD_SEAL_PER_BOOK = 3;' },
   { name: '#1551e 封存只挑他已读、我未读的句子（删＝可能挑到他也没读到的内容）', file: 'js/reading.js', needle: 'const limit = ch < hisCh ? text.length : Math.min(hisOff, text.length);' },
   { name: '#1551f 封存纸条带 sealed 标记（删＝和普通纸条一样立刻出现在正文里）', file: 'js/reading.js', needle: 'sealed: true' },
-  { name: '#1551g 书架手账只给书名与章序号（删＝把句子内容写在书架上，没翻就剧透）', file: 'js/reading.js', needle: "led += '<div class=\"rd-ledger-row\" data-state=\"' + noteState + '\">' +" },
+  { name: '#1551g 书架手账只给书名与章序号（删＝把句子内容写在书架上，没翻就剧透）', file: 'js/reading.js', needle: "led += '<div class=\"rd-ledger-row\">" },
   { name: '#1551h 七天没读到改口「他还在等」（删＝一直显示「今天折的」，时间感失真）', file: 'js/reading.js', needle: "? '他还在等'" },
   { name: '#1551i 十四天收回封存纸条（删＝永远占着章内批注条数）', file: 'js/reading.js', needle: 'rdDropSealedAnno(drops[i].id, drops[i].s)' },
   { name: '#1551j 解锁后浮层末尾给「你终于读到这了」（删＝展开后只是普通纸条，等过的那段时间没有回音）', file: 'js/reading.js', needle: 'rd-pop-unsealed' },
@@ -6611,7 +6611,7 @@ const FIX_SENTINELS = [
   { name: '#1553d 停在同页读够十分钟也要亮（删＝只有翻页那一刻才重新判定，静读永不触发）', file: 'js/reading.js', needle: 'rdTogTimer = setInterval(function () {' },
   { name: '#1553e 页脚换成「此刻 · 同读」（删＝判定成立但界面没有任何反馈）', file: 'js/reading.js', needle: "line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));" },
   { name: '#1553f 书脊每累计三次同读多一道细纹（删＝累计计数存了但书架上永远看不见）', file: 'js/reading.js', needle: 'return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));' },
-  { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:2px;top:10%;bottom:10%;width:7px;' },
+  { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:3px;' },
   { name: '#1553h 小卡头像同读时亮呼吸光（删＝小卡里看不出此刻正在一起读）', file: 'js/reading.js', needle: "if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));" },
   { name: '#1553i 减少动态效果时呼吸光转静态（删＝关掉系统动效后小卡仍一直呼吸）', file: 'css/reading.css', needle: '@media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}' },
   { name: '#1553j 翻章前把上一章末尾那句留下来（删＝翻了章才取句，锚到新章开头、语义错位）', file: 'js/reading.js', needle: 'rdTogChapterNote(b); b.ch++;' },
@@ -6662,11 +6662,6 @@ const FIX_SENTINELS = [
   { name: '#1557b 共读关闭时不显示他所在的章节（删＝关了共读目录里还挂着他的位置）', file: 'js/reading.js', needle: 'if (!rdCoopOn() || !book || !book.buddy || !rdBook) return -1;' },
   { name: '#1557c 批注气泡只对可视行取数（删＝打开目录就把全书每章批注都读一遍）', file: 'js/reading.js', needle: 'rdTocBadgeObs.observe(rows[i]);' },
   { name: '#1557d 书签按章 + 字符偏移保存（删＝换字号/换屏后页码书签落错位置）', file: 'js/reading.js', needle: 'marks.push({ ch: b.ch, off: p.s, q: rdMarkSnippet(b, p), at: Date.now() });' },
-  // ==== 2026-10-25 #1558 阅读设置页改美化/功能/数据三栏 + 主按钮颜色 ====
-  { name: '#1558a 主按钮颜色同时写到书架页与设置页（删＝设置页选色后导入/确认主按钮不变）', file: 'js/reading.js', needle: "['page-reading', 'page-reading-settings'].forEach(function (id) {" },
-  { name: '#1558b 数据栏直接从书架索引汇总，不为统计读正文（删＝打开设置页要把全书正文读一遍）', file: 'js/reading.js', needle: 'bytes += Number(b.size) || (w * 3);' },
-  { name: '#1558c 主按钮文字按底色对比度自动选黑/白（删＝浅色底仍配白字看不清）', file: 'js/reading.js', needle: "return cLight > cDark ? '#ffffff' : '#111111';" },
-  { name: '#1558d 旧的预设键仍映射到色值（删＝升级后原来的阅读粉/雾蓝设置失效）', file: 'js/reading.js', needle: 'if (RD_PRIMARY_LEGACY[raw]) return RD_PRIMARY_LEGACY[raw];' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

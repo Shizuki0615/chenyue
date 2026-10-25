@@ -15,9 +15,8 @@
 .rd-menu-danger{color:#d9534f}
 .rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
 /* 书脊：累计同读每满三次多一道细纹，最多五道 */
-.rd-spine{position:absolute;right:2px;top:10%;bottom:10%;width:7px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgba(0,0,0,.02),rgba(0,0,0,.08));box-shadow:inset 1px 0 0 rgba(255,255,255,.22)}
-.rd-spine i{display:block;width:100%;height:1px;background:rgba(255,255,255,.58);border-radius:1px;box-shadow:0 1px 0 rgba(0,0,0,.05)}
-.rd-spine i:nth-child(even){width:72%;align-self:flex-end}
+.rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
+.rd-spine i{display:block;height:1px;background:rgba(255,255,255,.62);border-radius:1px}
 .rd-line{height:2px;background:var(--line,#e5e5e5)}
 .rd-line i{display:block;height:100%;background:currentColor;opacity:.45}
 .rd-book-title{margin-top:6px;font-size:12px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -32,19 +31,6 @@
 #rd-mark-btn.on svg{fill:currentColor}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
 .rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
-/* 空书架：纸感引导卡。.rd-empty 仍留给字卡/未定位批注等列表的空文案，不改它 */
-#rd-empty{margin:10px 16px 0;padding:28px 22px 24px;border-radius:18px;border:1px dashed rgba(122,96,64,.18);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%);text-align:center;opacity:1}
-[data-theme="dark"] #rd-empty{background:linear-gradient(180deg,#201e1a,#191714);border-color:rgba(255,255,255,.14)}
-.rd-empty-art{position:relative;width:64px;height:80px;margin:0 auto 16px}
-.rd-empty-book{position:absolute;inset:0;border-radius:7px;background:linear-gradient(150deg,#ffffff,#f2ebdf);border:1px solid rgba(122,96,64,.16);box-shadow:0 6px 18px rgba(122,96,64,.1)}
-.rd-empty-book:before{content:'';position:absolute;left:13px;right:13px;top:20px;height:1px;background:rgba(122,96,64,.16);box-shadow:0 9px 0 rgba(122,96,64,.16),0 18px 0 rgba(122,96,64,.16),0 27px 0 rgba(122,96,64,.16)}
-.rd-empty-mark{position:absolute;right:11px;top:-1px;width:9px;height:24px;background:#f4b6c2;border-radius:0 0 3px 3px;box-shadow:0 1px 3px rgba(244,182,194,.35)}
-[data-theme="dark"] .rd-empty-book{background:linear-gradient(150deg,#2a2723,#221f1b);border-color:rgba(255,255,255,.12);box-shadow:0 6px 18px rgba(0,0,0,.25)}
-[data-theme="dark"] .rd-empty-book:before{background:rgba(255,255,255,.12);box-shadow:0 9px 0 rgba(255,255,255,.12),0 18px 0 rgba(255,255,255,.12),0 27px 0 rgba(255,255,255,.12)}
-.rd-empty-t{font-size:16px;font-weight:600;letter-spacing:.01em}
-.rd-empty-sub{margin-top:7px;font-size:12px;line-height:1.7;opacity:.6}
-.rd-empty-go{margin-top:18px;min-width:190px;padding:11px 24px;font-size:13.5px;font-weight:600}
-.rd-empty-hint{margin-top:14px;font-size:10.5px;letter-spacing:.02em;opacity:.45}
 /* 正文区的纸感只由背景承担；顶部留出呼吸位，分页高度会把这段内边距扣掉 */
 .rd-body{flex:1;overflow:hidden;padding:18px 18px 0;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
@@ -88,18 +74,18 @@
 /* 折角书签：圆点滑回我这一页时短暂亮一圈 */
 .rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}
 .rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#rd-page-no{flex:0 0 auto;font-size:10.5px;letter-spacing:.02em;opacity:.38;font-variant-numeric:tabular-nums}
+#rd-page-no{flex:0 0 auto;opacity:.42}
 /* 夜间留灯：两盏很小的小灯，我那盏常亮，他那盏按状态亮 */
 .rd-lamp{display:inline-flex;align-items:center;gap:3px;margin-right:6px;flex:0 0 auto}
 .rd-lamp-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.2}
 .rd-lamp-me{opacity:.4}
 .rd-lamp-him.on{opacity:.62;background:#f4b6c2;box-shadow:0 0 6px rgba(244,182,194,.75)}
-#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;line-height:1.4;letter-spacing:.01em;opacity:.62;transition:color .18s ease,opacity .18s ease}
-#rd-buddy.rd-buddy-same-text{opacity:.9;color:#d9534f;font-weight:500}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.68}
+#rd-buddy.rd-buddy-same-text{opacity:.88;color:#d9534f}
 /* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
-#rd-buddy.rd-tog{opacity:1;color:#d9534f;font-weight:600;letter-spacing:.6px}
-/* 翻页被看见：章末那一页给出这章的节奏感想，语气比「他在哪」更轻 */
-#rd-buddy.rd-pace{opacity:.5;color:inherit;font-style:italic;letter-spacing:.02em}
+#rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
+/* 翻页被看见：章末那一页给出这章的节奏感想 */
+#rd-buddy.rd-pace{opacity:.58;color:#c26e69}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -219,40 +205,6 @@
 .rd-bg-sw.night{background:linear-gradient(180deg,#201e1a,#141311)}
 [data-theme="dark"] .rd-bg-opt{background:#242424;border-color:#3a3a3a}
 [data-theme="dark"] .rd-bg-sw{border-color:rgba(255,255,255,.12)}
-/* 设置页三栏：页签贴边吸顶（沿用 .them-tabs 的 sticky 与底色），只补负边距和按钮字体 */
-.rd-set-tabs{margin:0 -16px}
-.rd-set-tabs .them-tab{border-top:0;border-left:0;border-right:0;font-family:inherit;-webkit-tap-highlight-color:transparent}
-/* 主按钮颜色：四个色块，选中描边跟随正文色，深浅主题都看得见 */
-.rd-primary-opts{display:flex;gap:8px}
-.rd-primary-opt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.rd-primary-opt i{display:block;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-.rd-primary-opt[data-rd-primary="ink"] i{background:#111111}
-.rd-primary-opt[data-rd-primary="pink"] i{background:#d97a8c}
-.rd-primary-opt[data-rd-primary="blue"] i{background:#7893ad}
-.rd-primary-opt[data-rd-primary="brown"] i{background:#8b6a4b}
-.rd-primary-opt.on{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
-.rd-primary-opt span{display:block;white-space:nowrap}
-[data-theme="dark"] .rd-primary-opt{background:#242424;border-color:#3a3a3a}
-/* 自定义色值入口 + 恢复默认 */
-.rd-primary-custom-row{display:flex;align-items:center;gap:10px}
-.rd-primary-custom{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:12px;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.rd-primary-custom i{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
-.rd-primary-hex{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.rd-primary-reset{flex:none;padding:6px 2px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.rd-primary-reset:active{opacity:.5}
-/* 按钮文字：自动 / 深色 / 浅色 */
-.rd-primary-inkrow{display:flex;align-items:center;gap:10px}
-.rd-primary-ink-label{flex:none;font-size:11.5px;color:var(--muted)}
-.rd-primary-inkopts{display:flex;gap:6px;flex:1;min-width:0}
-.rd-primary-ink{flex:1;min-width:0;padding:5px 6px;border:1px solid var(--line,#e6e6e6);border-radius:8px;background:var(--bg,#fff);color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.rd-primary-ink.on{border-color:currentColor;color:var(--ink);box-shadow:inset 0 0 0 1px currentColor}
-[data-theme="dark"] .rd-primary-custom,[data-theme="dark"] .rd-primary-ink{background:#242424;border-color:#3a3a3a}
-/* 数据栏只读统计行 */
-.rd-set-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
-.rd-set-stat:last-child{border-bottom:none}
-.rd-set-stat span{font-size:14px}
-.rd-set-stat b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-[data-theme="dark"] .rd-set-stat{border-bottom-color:rgba(255,255,255,.08)}
 
 /* ---------- 边看边调抽屉 ---------- */
 #rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}
@@ -392,9 +344,9 @@
 .rd-buddy-row{display:flex;align-items:center;gap:9px}
 .rd-buddy-row .rd-buddy-state{flex:1;min-width:0}
 /* 小卡头像：同读时浮一圈很轻的呼吸光；减少动态效果时只留静态光圈 */
-.rd-buddy-av{position:relative;flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(244,182,194,.32);background:radial-gradient(circle at 50% 36%,rgba(244,182,194,.9) 0 4.5px,transparent 5px),radial-gradient(ellipse 13px 8px at 50% 78%,rgba(244,182,194,.62) 0 60%,transparent 63%),linear-gradient(180deg,rgba(244,182,194,.1),rgba(244,182,194,.2));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
-.rd-buddy-av::after{content:'';position:absolute;inset:-1px;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
-[data-theme="dark"] .rd-buddy-av{border-color:rgba(244,182,194,.26);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.rd-buddy-av{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:rgba(244,182,194,.3);display:flex;align-items:center;justify-content:center}
+.rd-buddy-av::before{content:'';display:block;width:12px;height:12px;border-radius:50%;background:rgba(244,182,194,.85)}
+.rd-buddy-av::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
 .rd-buddy-av.on::after{animation:rdTogBreath 2.8s ease-in-out infinite}
 @keyframes rdTogBreath{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.62;transform:scale(1.18)}}
 @media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}
@@ -408,20 +360,12 @@
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
 /* 共读手账：封存一句的书架条目，只给章序号，不给内容 */
-.rd-ledger{margin:16px 16px 0;padding:12px 14px 10px;border-radius:14px;border:1px solid rgba(244,182,194,.24);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%);box-shadow:0 2px 10px rgba(122,96,64,.05)}
+.rd-ledger{margin:14px 16px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
 .rd-ledger[hidden]{display:none!important}
-.rd-ledger-t{display:flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.1em;opacity:.55;margin-bottom:2px}
-.rd-ledger-t::before{content:'';width:12px;height:1px;background:#f4b6c2}
-.rd-ledger-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(122,96,64,.1)}
-.rd-ledger-main{display:flex;flex-direction:column;gap:1px;min-width:0}
-.rd-ledger-book{font-size:12px;line-height:1.45;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd-ledger-note{font-size:10.5px;line-height:1.5;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rd-ledger-row[data-state="today"] .rd-ledger-note::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#f4b6c2;margin-right:5px;vertical-align:1px}
-.rd-ledger-row[data-state="waiting"] .rd-ledger-note{opacity:.42;font-style:italic}
-.rd-ledger-ch{flex:none;font-size:10px;line-height:1;padding:4px 7px;border-radius:999px;border:1px solid rgba(0,0,0,.08);opacity:.55;font-variant-numeric:tabular-nums}
-[data-theme="dark"] .rd-ledger{background:linear-gradient(180deg,#201e1a 0%,#191714 100%);border-color:rgba(244,182,194,.18);box-shadow:0 2px 10px rgba(0,0,0,.18)}
-[data-theme="dark"] .rd-ledger-row{border-top-color:rgba(255,255,255,.1)}
-[data-theme="dark"] .rd-ledger-ch{border-color:rgba(255,255,255,.14)}
+.rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
+.rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
+.rd-ledger-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
+.rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
 /* 封存纸条展开后，浮层末尾那行「你终于读到这了」 */
 .rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
 /* 错过七天：旧句被划掉留成淡字，点一下他有概率接一句 */

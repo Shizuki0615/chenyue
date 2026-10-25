@@ -17,9 +17,6 @@
   const RD_LAMP_KEY = 'reading-lamp';
   const RD_BOOKMARK_KEY = 'reading-bookmark';
   const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
-  // 主按钮颜色：存实际色值；文字颜色另有 auto/dark/light 三档
-  const RD_PRIMARY_KEY = 'reading-primary';
-  const RD_PRIMARY_INK_KEY = 'reading-primary-ink';
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
@@ -507,7 +504,6 @@
     (phone || document.body).appendChild(page);
     rdApplyPrefs(rdReadPrefs());
     rdApplyBg();
-    rdApplyPrimary();
     return page;
   }
 
@@ -540,63 +536,22 @@
           '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
           '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
         '</div>' +
-        '<div class="them-sec" data-sec="beautify">' +
-          '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
-            '<span class="rd-live-entry-t">' +
-              '<span class="rd-live-entry-name">边看边调</span>' +
-              '<span class="rd-live-entry-sub">打开调色条：预览在上、控件在下，改哪看哪、即时生效</span>' +
-            '</span>' +
-            '<span class="rd-live-entry-go">点击开启 ›</span>' +
-          '</button>' +
-          '<div class="rd-set-preview" id="rd-set-preview">' +
-            '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
-            '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
+        '<div class="gs-title">阅读显示</div>' +
+        '<div class="set-group glass">' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
+            '<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
           '</div>' +
-          '<div class="gs-title">阅读显示</div>' +
-          '<div class="set-group glass">' +
-            '<div class="rd-set-row">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
-              '<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
-            '</div>' +
-            '<div class="rd-set-row">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
-              '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
-            '</div>' +
-            '<div class="rd-set-row">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
-              '<div class="rd-bg-opts">' +
-                '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
-                '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
-                '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
-              '</div>' +
-            '</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
+            '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
           '</div>' +
-          '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
-          '<div class="gs-title">按钮</div>' +
-          '<div class="set-group glass">' +
-            '<div class="rd-set-row">' +
-              '<div class="rd-set-row-h"><span class="rd-set-row-t">主按钮颜色</span><span class="rd-set-row-v" id="rd-set-primary-val">墨黑</span></div>' +
-              '<div class="rd-primary-opts">' +
-                '<button class="rd-primary-opt" data-rd-primary="ink" type="button" aria-pressed="false"><i></i><span>墨黑</span></button>' +
-                '<button class="rd-primary-opt" data-rd-primary="pink" type="button" aria-pressed="false"><i></i><span>阅读粉</span></button>' +
-                '<button class="rd-primary-opt" data-rd-primary="blue" type="button" aria-pressed="false"><i></i><span>雾蓝</span></button>' +
-                '<button class="rd-primary-opt" data-rd-primary="brown" type="button" aria-pressed="false"><i></i><span>暖棕</span></button>' +
-              '</div>' +
-              '<div class="rd-primary-custom-row">' +
-                '<button class="rd-primary-custom" id="rd-primary-custom" type="button">' +
-                  '<i id="rd-primary-custom-sw"></i><span>自定义颜色</span><span class="rd-primary-hex" id="rd-set-primary-hex">#111111</span>' +
-                '</button>' +
-                '<button class="rd-primary-reset" id="rd-primary-reset" type="button">恢复默认</button>' +
-              '</div>' +
-              '<div class="rd-primary-inkrow">' +
-                '<span class="rd-primary-ink-label">按钮文字</span>' +
-                '<div class="rd-primary-inkopts">' +
-                  '<button class="rd-primary-ink on" data-rd-ink="auto" type="button" aria-pressed="true">自动</button>' +
-                  '<button class="rd-primary-ink" data-rd-ink="dark" type="button" aria-pressed="false">深色字</button>' +
-                  '<button class="rd-primary-ink" data-rd-ink="light" type="button" aria-pressed="false">浅色字</button>' +
-                '</div>' +
-              '</div>' +
-              '<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；文字颜色默认按底色自动选黑或白，也可以手动指定。</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
+            '<div class="rd-bg-opts">' +
+              '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
+              '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
+              '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -608,28 +563,25 @@
               '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
             '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="them-sec" data-sec="data" hidden>' +
-          '<div class="gs-title">书架概览</div>' +
-          '<div class="set-group glass">' +
-            '<div class="rd-set-stat"><span>书架</span><b id="rd-set-data-books">0 本</b></div>' +
-            '<div class="rd-set-stat"><span>正文</span><b id="rd-set-data-words">约 0.0 万字</b></div>' +
-            '<div class="rd-set-stat"><span>占用</span><b id="rd-set-data-size">约 0.0 MB</b></div>' +
-            '<div class="rd-set-stat"><span>书签</span><b id="rd-set-data-marks">0 条</b></div>' +
-            '<div class="rd-set-stat"><span>批注</span><b id="rd-set-data-annos">0 条</b></div>' +
+          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
           '</div>' +
-          '<div class="gs-title">存储与备份</div>' +
-          '<div class="set-group glass">' +
-            '<div class="rd-set-row"><div class="rd-set-row-desc">正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。</div></div>' +
-            '<div class="rd-set-row"><div class="rd-set-row-desc">换机恢复后正文需要重新导入，批注会按原文重新定位。</div></div>' +
+          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
           '</div>' +
-          '<div class="rd-set-note">这一页只做只读概览，数字在每次打开设置页时刷新。</div>' +
+          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
+          '</div>' +
         '</div>' +
       '</div>';
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(settingsPage);
-    initReadingSettingsTabs();
-    rdApplyPrimary();
     const fsRange = settingsPage.querySelector('#rd-set-fs-range');
     if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
     const lhRange = settingsPage.querySelector('#rd-set-lh-range');
@@ -655,8 +607,6 @@
     settingsPage.hidden = false;
     settingsPage.classList.add('full');
     rdRenderPrefsActive();
-    rdApplyPrimary();
-    rdRenderDataOverview();
     const body = settingsPage.querySelector('.rd-set-body');
     if (body) body.scrollTop = 0;
   }
@@ -3395,146 +3345,6 @@
     }
     rdRenderPrefsActive();
   }
-  // ===== 主按钮颜色：四档预设 + 任意色值，文字颜色自动/手动 =====
-  const RD_PRIMARY_DEFAULT = '#111111';
-  const RD_PRIMARY_PRESETS = [
-    { key: 'ink', name: '墨黑', color: '#111111' },
-    { key: 'pink', name: '阅读粉', color: '#d97a8c' },
-    { key: 'blue', name: '雾蓝', color: '#7893ad' },
-    { key: 'brown', name: '暖棕', color: '#8b6a4b' }
-  ];
-  const RD_PRIMARY_BY_KEY = {};
-  RD_PRIMARY_PRESETS.forEach(function (p) { RD_PRIMARY_BY_KEY[p.key] = p; });
-  // 旧版存的是预设键；保留映射，升级后原来的选择继续生效
-  const RD_PRIMARY_LEGACY = { ink: '#111111', pink: '#d97a8c', blue: '#7893ad', brown: '#8b6a4b' };
-  function rdNormHex(v) {
-    let c = String(v == null ? '' : v).trim().toLowerCase();
-    if (c && c.charAt(0) !== '#') c = '#' + c;
-    return /^#[0-9a-f]{6}$/.test(c) ? c : '';
-  }
-  function rdRelLum(hex) {
-    const c = rdNormHex(hex);
-    if (!c) return 0;
-    const v = [1, 3, 5].map(function (i) {
-      const x = parseInt(c.slice(i, i + 2), 16) / 255;
-      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
-  }
-  function rdReadPrimary() {
-    try {
-      const raw = String(store.get(RD_PRIMARY_KEY) || '').trim();
-      if (RD_PRIMARY_LEGACY[raw]) return RD_PRIMARY_LEGACY[raw];
-      return rdNormHex(raw) || RD_PRIMARY_DEFAULT;
-    } catch (e) { return RD_PRIMARY_DEFAULT; }
-  }
-  function rdReadPrimaryInk() {
-    try {
-      const v = String(store.get(RD_PRIMARY_INK_KEY) || '');
-      return (v === 'dark' || v === 'light') ? v : 'auto';
-    } catch (e) { return 'auto'; }
-  }
-  // 自动：按 WCAG 相对亮度分别算黑/白对比度，取更高的那个
-  function rdPrimaryInk(hex) {
-    const mode = rdReadPrimaryInk();
-    if (mode === 'dark') return '#111111';
-    if (mode === 'light') return '#ffffff';
-    const L = rdRelLum(hex);
-    const darkL = rdRelLum('#111111');
-    const cDark = (L + 0.05) / (darkL + 0.05);
-    const cLight = 1.05 / (L + 0.05);
-    return cLight > cDark ? '#ffffff' : '#111111';
-  }
-  function rdPrimaryPresetOf(hex) {
-    for (let i = 0; i < RD_PRIMARY_PRESETS.length; i++) {
-      if (RD_PRIMARY_PRESETS[i].color === hex) return RD_PRIMARY_PRESETS[i];
-    }
-    return null;
-  }
-  function rdApplyPrimary() {
-    const hex = rdReadPrimary();
-    const ink = rdPrimaryInk(hex);
-    // 设置页是 .phone 的兄弟页面，不在 #page-reading 里，两个根节点都要写
-    ['page-reading', 'page-reading-settings'].forEach(function (id) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.style.setProperty('--rd-primary', hex);
-      el.style.setProperty('--rd-primary-ink', ink);
-    });
-    rdRenderPrimaryActive(hex);
-  }
-  function rdRenderPrimaryActive(hex) {
-    const cur = hex || rdReadPrimary();
-    document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
-      const p = RD_PRIMARY_BY_KEY[btn.getAttribute('data-rd-primary')];
-      const on = !!(p && p.color === cur);
-      btn.classList.toggle('on', on);
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-    const preset = rdPrimaryPresetOf(cur);
-    const val = document.getElementById('rd-set-primary-val');
-    if (val) val.textContent = preset ? preset.name : '自定义';
-    const hexEl = document.getElementById('rd-set-primary-hex');
-    if (hexEl) hexEl.textContent = cur.toUpperCase();
-    const sw = document.getElementById('rd-primary-custom-sw');
-    if (sw) sw.style.background = cur;
-    const mode = rdReadPrimaryInk();
-    document.querySelectorAll('[data-rd-ink]').forEach(function (btn) {
-      const on = btn.getAttribute('data-rd-ink') === mode;
-      btn.classList.toggle('on', on);
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-  }
-  function rdSetPrimary(color) {
-    const hex = rdNormHex(color);
-    if (!hex) return;
-    try { store.set(RD_PRIMARY_KEY, hex); }
-    catch (e) { rdToast('主按钮颜色没保存上'); }
-    rdApplyPrimary();
-  }
-  function rdSetPrimaryInk(mode) {
-    if (mode !== 'dark' && mode !== 'light') mode = 'auto';
-    try { store.set(RD_PRIMARY_INK_KEY, mode); } catch (e) {}
-    rdApplyPrimary();
-  }
-  function rdResetPrimary() {
-    try { store.remove(RD_PRIMARY_KEY); store.remove(RD_PRIMARY_INK_KEY); } catch (e) {}
-    rdApplyPrimary();
-    rdToast('主按钮颜色已恢复默认');
-  }
-  function rdOpenPrimaryHex(cur) {
-    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
-    const ctl = window.openModal('手输主按钮色值', String(cur || '').toUpperCase(), function (v) {
-      const hex = rdNormHex(v);
-      if (!hex) { ctl.hint('格式不对：# + 6 位十六进制（0-9 / a-f），如 #e05555'); ctl.stay(); return; }
-      rdSetPrimary(hex);
-      rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
-    }, { maxlength: 7, placeholder: '#RRGGBB，如 #e05555' });
-  }
-  function rdOpenPrimaryPicker() {
-    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
-    const cur = rdReadPrimary();
-    window.openModal('主按钮颜色', '', function (v) {
-      if (typeof v === 'number') {
-        const p = RD_PRIMARY_PRESETS[v];
-        if (p) rdSetPrimary(p.color);
-        return;
-      }
-      if (v === '__hex__') { rdOpenPrimaryHex(cur); return; }
-      const hex = rdNormHex(v);
-      if (!hex) return;
-      rdSetPrimary(hex);
-      rdToast('主按钮颜色已设为 ' + hex.toUpperCase());
-    }, {
-      noInput: true,
-      colorPicker: true,
-      color: cur,
-      swatches: RD_PRIMARY_PRESETS.map(function (p) { return { color: p.color, label: p.name }; }),
-      pills: [{ label: '手输色值', value: '__hex__' }],
-      pillSubmit: true,
-      staticText: '点色块快速选；「自定义颜色」调起系统取色器；取色器打不开的手机点「手输色值」填 #RRGGBB。'
-    });
-  }
   function rdRenderPrefsActive() {
     const p = rdReadPrefs();
     const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
@@ -3992,22 +3802,6 @@
     if (st === 'skip') return '今天不读';
     if (st === 'none') return '未开始';
     return '共读中';
-  }
-  // 书架筛选：全部 / 在读 / 读完，只存内存，不新增 localStorage 键；刷新回「全部」
-  let rdShelfFilter = 'all';
-  function rdHeroMeta(b) {
-    if (!b) return '';
-    if (b.missing) return '待重新导入';
-    const pct = rdProgressPct(b);
-    if (pct >= 100) return '读完';
-    const ch = Math.max(1, ((b.progress && b.progress.ch) || 0) + 1);
-    return '第 ' + ch + ' 章 · ' + pct + '%';
-  }
-  function rdFilterList(list, f) {
-    if (!list) return [];
-    if (f === 'done') return list.filter(function (b) { return b && rdProgressPct(b) >= 100; });
-    if (f === 'reading') return list.filter(function (b) { return b && !b.missing && rdProgressPct(b) < 100; });
-    return list.slice();
   }
   function rdRenderShelf() {
     const grid = document.getElementById('rd-grid');
@@ -4654,36 +4448,12 @@
     }
     if (el.closest('#rd-shelf-back')) { rdClose(); return; }
     if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
-    if (el.closest('#rd-hero-btn')) {
-      e.preventDefault();
-      const id = el.closest('#rd-hero-btn').getAttribute('data-id');
-      if (id) rdOpenBook(id);
-      return;
-    }
-    const sfBtn = el.closest('#rd-shelf-filter [data-filter]');
-    if (sfBtn) {
-      e.preventDefault();
-      rdShelfFilter = sfBtn.getAttribute('data-filter') || 'all';
-      rdRenderShelf();
-      return;
-    }
     if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
     if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
     if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); return; }
     if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
     const bgOpt = el.closest('[data-rd-bgopt]');
     if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
-    const primaryOpt = el.closest('[data-rd-primary]');
-    if (primaryOpt) {
-      e.preventDefault();
-      const preset = RD_PRIMARY_BY_KEY[primaryOpt.getAttribute('data-rd-primary')];
-      if (preset) rdSetPrimary(preset.color);
-      return;
-    }
-    if (el.closest('#rd-primary-custom')) { e.preventDefault(); rdOpenPrimaryPicker(); return; }
-    if (el.closest('#rd-primary-reset')) { e.preventDefault(); rdResetPrimary(); return; }
-    const inkOpt = el.closest('[data-rd-ink]');
-    if (inkOpt) { e.preventDefault(); rdSetPrimaryInk(inkOpt.getAttribute('data-rd-ink')); return; }
     if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
@@ -4718,7 +4488,6 @@
     if (el.closest('#rd-lost-close')) { e.preventDefault(); rdCloseLost(); return; }
     const lostDel = el.closest('#rd-lost-list [data-del]');
     if (lostDel) { e.preventDefault(); rdDeleteLost(lostDel.getAttribute('data-del')); return; }
-    if (el.closest('#rd-empty-import')) { e.preventDefault(); rdOpenImport(); return; }
     if (el.closest('#rd-import')) { e.preventDefault(); rdOpenImport(); return; }
     if (el.closest('#rd-import-close')) { e.preventDefault(); rdCloseImport(); return; }
     if (el.closest('#rd-import-go')) { e.preventDefault(); rdStartImport(); return; }
