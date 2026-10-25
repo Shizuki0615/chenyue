@@ -14,8 +14,9 @@
 .rd-menu-danger{color:#d9534f}
 .rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
 /* 书脊：累计同读每满三次多一道细纹，最多五道 */
-.rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
-.rd-spine i{display:block;height:1px;background:rgba(255,255,255,.62);border-radius:1px}
+.rd-spine{position:absolute;right:2px;top:10%;bottom:10%;width:7px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgba(0,0,0,.02),rgba(0,0,0,.08));box-shadow:inset 1px 0 0 rgba(255,255,255,.22)}
+.rd-spine i{display:block;width:100%;height:1px;background:rgba(255,255,255,.58);border-radius:1px;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.rd-spine i:nth-child(even){width:72%;align-self:flex-end}
 .rd-line{height:2px;background:var(--line,#e5e5e5)}
 .rd-line i{display:block;height:100%;background:currentColor;opacity:.45}
 .rd-book-title{margin-top:6px;font-size:12px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -86,18 +87,18 @@
 /* 折角书签：圆点滑回我这一页时短暂亮一圈 */
 .rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}
 .rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#rd-page-no{flex:0 0 auto;opacity:.42}
+#rd-page-no{flex:0 0 auto;font-size:10.5px;letter-spacing:.02em;opacity:.38;font-variant-numeric:tabular-nums}
 /* 夜间留灯：两盏很小的小灯，我那盏常亮，他那盏按状态亮 */
 .rd-lamp{display:inline-flex;align-items:center;gap:3px;margin-right:6px;flex:0 0 auto}
 .rd-lamp-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.2}
 .rd-lamp-me{opacity:.4}
 .rd-lamp-him.on{opacity:.62;background:#f4b6c2;box-shadow:0 0 6px rgba(244,182,194,.75)}
-#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.68}
-#rd-buddy.rd-buddy-same-text{opacity:.88;color:#d9534f}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;line-height:1.4;letter-spacing:.01em;opacity:.62;transition:color .18s ease,opacity .18s ease}
+#rd-buddy.rd-buddy-same-text{opacity:.9;color:#d9534f;font-weight:500}
 /* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
-#rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
-/* 翻页被看见：章末那一页给出这章的节奏感想 */
-#rd-buddy.rd-pace{opacity:.58;color:#c26e69}
+#rd-buddy.rd-tog{opacity:1;color:#d9534f;font-weight:600;letter-spacing:.6px}
+/* 翻页被看见：章末那一页给出这章的节奏感想，语气比「他在哪」更轻 */
+#rd-buddy.rd-pace{opacity:.5;color:inherit;font-style:italic;letter-spacing:.02em}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -390,9 +391,9 @@
 .rd-buddy-row{display:flex;align-items:center;gap:9px}
 .rd-buddy-row .rd-buddy-state{flex:1;min-width:0}
 /* 小卡头像：同读时浮一圈很轻的呼吸光；减少动态效果时只留静态光圈 */
-.rd-buddy-av{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:rgba(244,182,194,.3);display:flex;align-items:center;justify-content:center}
-.rd-buddy-av::before{content:'';display:block;width:12px;height:12px;border-radius:50%;background:rgba(244,182,194,.85)}
-.rd-buddy-av::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
+.rd-buddy-av{position:relative;flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(244,182,194,.32);background:radial-gradient(circle at 50% 36%,rgba(244,182,194,.9) 0 4.5px,transparent 5px),radial-gradient(ellipse 13px 8px at 50% 78%,rgba(244,182,194,.62) 0 60%,transparent 63%),linear-gradient(180deg,rgba(244,182,194,.1),rgba(244,182,194,.2));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.rd-buddy-av::after{content:'';position:absolute;inset:-1px;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
+[data-theme="dark"] .rd-buddy-av{border-color:rgba(244,182,194,.26);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .rd-buddy-av.on::after{animation:rdTogBreath 2.8s ease-in-out infinite}
 @keyframes rdTogBreath{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.62;transform:scale(1.18)}}
 @media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}

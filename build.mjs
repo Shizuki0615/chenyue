@@ -6611,7 +6611,7 @@ const FIX_SENTINELS = [
   { name: '#1553d 停在同页读够十分钟也要亮（删＝只有翻页那一刻才重新判定，静读永不触发）', file: 'js/reading.js', needle: 'rdTogTimer = setInterval(function () {' },
   { name: '#1553e 页脚换成「此刻 · 同读」（删＝判定成立但界面没有任何反馈）', file: 'js/reading.js', needle: "line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));" },
   { name: '#1553f 书脊每累计三次同读多一道细纹（删＝累计计数存了但书架上永远看不见）', file: 'js/reading.js', needle: 'return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));' },
-  { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:3px;' },
+  { name: '#1553g 书脊细纹封顶五道（删＝读得多的人书脊被细纹画花）', file: 'css/reading.css', needle: '.rd-spine{position:absolute;right:2px;top:10%;bottom:10%;width:7px;' },
   { name: '#1553h 小卡头像同读时亮呼吸光（删＝小卡里看不出此刻正在一起读）', file: 'js/reading.js', needle: "if (avEl) avEl.classList.toggle('on', rdTogetherOn(book));" },
   { name: '#1553i 减少动态效果时呼吸光转静态（删＝关掉系统动效后小卡仍一直呼吸）', file: 'css/reading.css', needle: '@media (prefers-reduced-motion: reduce){.rd-buddy-av.on::after{animation:none;opacity:.45}}' },
   { name: '#1553j 翻章前把上一章末尾那句留下来（删＝翻了章才取句，锚到新章开头、语义错位）', file: 'js/reading.js', needle: 'rdTogChapterNote(b); b.ch++;' },
