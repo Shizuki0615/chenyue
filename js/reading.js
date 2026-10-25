@@ -10,6 +10,7 @@ const RD_COOP_KEY = 'reading-coop';
 const RD_LAMP_KEY = 'reading-lamp';
 const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
+const RD_PRIMARY_KEY = 'reading-primary';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_BODY_P = 'xy-home-v2:reading-body:';
@@ -405,6 +406,7 @@ const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(page);
 rdApplyPrefs(rdReadPrefs());
 rdApplyBg();
+rdApplyPrimary();
 return page;
 }
 let settingsPage = null;
@@ -424,6 +426,12 @@ settingsPage.innerHTML =
 '<span class="ch-name">阅读设置</span>' +
 '</div>' +
 '<div class="rd-set-body">' +
+'<div class="them-tabs rd-set-tabs" id="rd-set-tabs">' +
+'<button class="them-tab active" data-tab="beautify" type="button">美化</button>' +
+'<button class="them-tab" data-tab="function" type="button">功能</button>' +
+'<button class="them-tab" data-tab="data" type="button">数据</button>' +
+'</div>' +
+'<div class="them-sec" data-sec="beautify">' +
 '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
 '<span class="rd-live-entry-t">' +
 '<span class="rd-live-entry-name">边看边调</span>' +
@@ -455,6 +463,21 @@ settingsPage.innerHTML =
 '</div>' +
 '</div>' +
 '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+'<div class="gs-title">按钮</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">主按钮颜色</span><span class="rd-set-row-v" id="rd-set-primary-val">墨黑</span></div>' +
+'<div class="rd-primary-opts">' +
+'<button class="rd-primary-opt" data-rd-primary="ink" type="button" aria-pressed="false"><i></i><span>墨黑</span></button>' +
+'<button class="rd-primary-opt" data-rd-primary="pink" type="button" aria-pressed="false"><i></i><span>阅读粉</span></button>' +
+'<button class="rd-primary-opt" data-rd-primary="blue" type="button" aria-pressed="false"><i></i><span>雾蓝</span></button>' +
+'<button class="rd-primary-opt" data-rd-primary="brown" type="button" aria-pressed="false"><i></i><span>暖棕</span></button>' +
+'</div>' +
+'<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；选完立即生效。</div>' +
+'</div>' +
+'</div>' +
+'</div>' +
+'<div class="them-sec" data-sec="function" hidden>' +
 '<div class="gs-title">共读</div>' +
 '<div class="set-group glass">' +
 '<div class="rd-set-row rd-set-toggle">' +
@@ -478,9 +501,28 @@ settingsPage.innerHTML =
 '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
 '</div>' +
 '</div>' +
+'</div>' +
+'<div class="them-sec" data-sec="data" hidden>' +
+'<div class="gs-title">书架概览</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-stat"><span>书架</span><b id="rd-set-data-books">0 本</b></div>' +
+'<div class="rd-set-stat"><span>正文</span><b id="rd-set-data-words">约 0.0 万字</b></div>' +
+'<div class="rd-set-stat"><span>占用</span><b id="rd-set-data-size">约 0.0 MB</b></div>' +
+'<div class="rd-set-stat"><span>书签</span><b id="rd-set-data-marks">0 条</b></div>' +
+'<div class="rd-set-stat"><span>批注</span><b id="rd-set-data-annos">0 条</b></div>' +
+'</div>' +
+'<div class="gs-title">存储与备份</div>' +
+'<div class="set-group glass">' +
+'<div class="rd-set-row"><div class="rd-set-row-desc">正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。</div></div>' +
+'<div class="rd-set-row"><div class="rd-set-row-desc">换机恢复后正文需要重新导入，批注会按原文重新定位。</div></div>' +
+'</div>' +
+'<div class="rd-set-note">这一页只做只读概览，数字在每次打开设置页时刷新。</div>' +
+'</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
 (phone || document.body).appendChild(settingsPage);
+initReadingSettingsTabs();
+rdApplyPrimary();
 const fsRange = settingsPage.querySelector('#rd-set-fs-range');
 if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
 const lhRange = settingsPage.querySelector('#rd-set-lh-range');
@@ -496,6 +538,56 @@ if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabit
 rdRenderPrefsActive();
 return settingsPage;
 }
+function initReadingSettingsTabs() {
+if (!settingsPage) return;
+const tabsEl = settingsPage.querySelector('#rd-set-tabs');
+const tabs = tabsEl ? tabsEl.querySelectorAll('.them-tab') : [];
+const secs = settingsPage.querySelectorAll('.them-sec');
+if (!tabs.length || !secs.length) return;
+function show(name) {
+secs.forEach(function (s) { s.hidden = (s.getAttribute('data-sec') !== name); });
+tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
+if (name === 'data') rdRenderDataOverview();
+}
+tabs.forEach(function (t) {
+t.addEventListener('click', function () {
+show(t.getAttribute('data-tab'));
+const body = settingsPage.querySelector('.rd-set-body');
+if (body) body.scrollTop = 0;
+});
+});
+show('beautify');
+}
+function rdDataOverview() {
+const list = readIndex();
+let words = 0, bytes = 0, marks = 0, annos = 0;
+for (let i = 0; i < list.length; i++) {
+const b = list[i] || {};
+let w = 0;
+if (Array.isArray(b.chWords)) {
+for (let j = 0; j < b.chWords.length; j++) w += Number(b.chWords[j]) || 0;
+} else {
+w = Number(b.words) || 0;
+}
+words += w;
+bytes += Number(b.size) || (w * 3);
+marks += Array.isArray(b.marks) ? b.marks.length : 0;
+annos += Number(b.annoCount) || 0;
+}
+return { books: list.length, words: words, bytes: bytes, marks: marks, annos: annos };
+}
+function rdRenderDataOverview() {
+const d = rdDataOverview();
+function set(id, text) {
+const el = document.getElementById(id);
+if (el) el.textContent = text;
+}
+set('rd-set-data-books', d.books + ' 本');
+set('rd-set-data-words', '约 ' + (d.words / 10000).toFixed(1) + ' 万字');
+set('rd-set-data-size', '约 ' + rdMB(d.bytes) + ' MB');
+set('rd-set-data-marks', d.marks + ' 条');
+set('rd-set-data-annos', d.annos + ' 条');
+}
 function rdOpenSettings() {
 buildSettingsPage();
 if (!page || !settingsPage) return;
@@ -505,6 +597,8 @@ rdApplyChrome();
 settingsPage.hidden = false;
 settingsPage.classList.add('full');
 rdRenderPrefsActive();
+rdApplyPrimary();
+rdRenderDataOverview();
 const body = settingsPage.querySelector('.rd-set-body');
 if (body) body.scrollTop = 0;
 }
@@ -2995,6 +3089,46 @@ rdRenderPage();
 }
 rdRenderPrefsActive();
 }
+const RD_PRIMARY_DEFAULT = 'ink';
+const RD_PRIMARY_PRESETS = {
+ink: { name: '墨黑', v: '#111111', ink: '#ffffff' },
+pink: { name: '阅读粉', v: '#d97a8c', ink: '#ffffff' },
+blue: { name: '雾蓝', v: '#7893ad', ink: '#ffffff' },
+brown: { name: '暖棕', v: '#8b6a4b', ink: '#ffffff' }
+};
+function rdReadPrimary() {
+try {
+const v = String(store.get(RD_PRIMARY_KEY) || '');
+return RD_PRIMARY_PRESETS[v] ? v : RD_PRIMARY_DEFAULT;
+} catch (e) { return RD_PRIMARY_DEFAULT; }
+}
+function rdApplyPrimary() {
+const key = rdReadPrimary();
+const preset = RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT];
+['page-reading', 'page-reading-settings'].forEach(function (id) {
+const el = document.getElementById(id);
+if (!el) return;
+el.style.setProperty('--rd-primary', preset.v);
+el.style.setProperty('--rd-primary-ink', preset.ink);
+});
+rdRenderPrimaryActive();
+}
+function rdRenderPrimaryActive() {
+const key = rdReadPrimary();
+document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
+const on = btn.getAttribute('data-rd-primary') === key;
+btn.classList.toggle('on', on);
+btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+});
+const val = document.getElementById('rd-set-primary-val');
+if (val) val.textContent = (RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT]).name;
+}
+function rdSetPrimary(key) {
+if (!RD_PRIMARY_PRESETS[key]) return;
+try { store.set(RD_PRIMARY_KEY, key); }
+catch (e) { rdToast('主按钮颜色没保存上'); }
+rdApplyPrimary();
+}
 function rdRenderPrefsActive() {
 const p = rdReadPrefs();
 const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
@@ -3924,6 +4058,8 @@ if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); ret
 if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
 const bgOpt = el.closest('[data-rd-bgopt]');
 if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
+const primaryOpt = el.closest('[data-rd-primary]');
+if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }

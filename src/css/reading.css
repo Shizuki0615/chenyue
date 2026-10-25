@@ -204,6 +204,26 @@
 .rd-bg-sw.night{background:linear-gradient(180deg,#201e1a,#141311)}
 [data-theme="dark"] .rd-bg-opt{background:#242424;border-color:#3a3a3a}
 [data-theme="dark"] .rd-bg-sw{border-color:rgba(255,255,255,.12)}
+/* 设置页三栏：页签贴边吸顶（沿用 .them-tabs 的 sticky 与底色），只补负边距和按钮字体 */
+.rd-set-tabs{margin:0 -16px}
+.rd-set-tabs .them-tab{border-top:0;border-left:0;border-right:0;font-family:inherit;-webkit-tap-highlight-color:transparent}
+/* 主按钮颜色：四个色块，选中描边跟随正文色，深浅主题都看得见 */
+.rd-primary-opts{display:flex;gap:8px}
+.rd-primary-opt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-opt i{display:block;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.rd-primary-opt[data-rd-primary="ink"] i{background:#111111}
+.rd-primary-opt[data-rd-primary="pink"] i{background:#d97a8c}
+.rd-primary-opt[data-rd-primary="blue"] i{background:#7893ad}
+.rd-primary-opt[data-rd-primary="brown"] i{background:#8b6a4b}
+.rd-primary-opt.on{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
+.rd-primary-opt span{display:block;white-space:nowrap}
+[data-theme="dark"] .rd-primary-opt{background:#242424;border-color:#3a3a3a}
+/* 数据栏只读统计行 */
+.rd-set-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-stat:last-child{border-bottom:none}
+.rd-set-stat span{font-size:14px}
+.rd-set-stat b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+[data-theme="dark"] .rd-set-stat{border-bottom-color:rgba(255,255,255,.08)}
 
 /* ---------- 边看边调抽屉 ---------- */
 #rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}
