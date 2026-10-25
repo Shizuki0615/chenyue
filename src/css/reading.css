@@ -3,7 +3,7 @@
 :root{--w-bg:#faf9f5;--w-ink:#1a1712;--w-card:#ffffff;--w-mut:rgba(26,23,18,.52);--w-faint:rgba(26,23,18,.42);--w-hair:rgba(26,23,18,.09);--w-pink:#f4b6c2;--w-cink:#f3ecdd}
 [data-theme="dark"]{--w-bg:#161310;--w-ink:#e9e3d5;--w-card:#1d1a15;--w-mut:rgba(233,227,213,.55);--w-faint:rgba(233,227,213,.42);--w-hair:rgba(255,255,255,.1)}
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden],.rd-detail[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
@@ -424,3 +424,41 @@
 .rd-gt{margin-top:11px;font-size:12.5px;font-weight:700;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-gs{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+
+/* ---------- 分组详情页（按设计稿 1:1 还原） ---------- */
+.rd-detail{display:flex;flex-direction:column}
+.rd-dd-head{margin:16px 18px 0;color:var(--w-ink,#1a1712)}
+.rd-dd-label{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-dd-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+.rd-dd-t{font-size:15.5px;font-weight:700}
+.rd-dd-t span{font-weight:400;font-size:12.5px;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-dd-sub{font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));padding-bottom:2px}
+.rd-dd-pills{display:flex;gap:8px;margin-top:13px}
+.rd-dd-pill{font-size:10.5px;padding:5.5px 13px;border-radius:999px;border:1px solid rgba(26,23,18,.25);color:var(--w-ink,#1a1712);line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+[data-theme="dark"] .rd-dd-pill{border-color:rgba(255,255,255,.22)}
+.rd-dd-pill.on{background:var(--w-ink,#1a1712);color:var(--w-bg,#faf9f5);border-color:var(--w-ink,#1a1712);font-weight:600}
+.rd-dd-feat{display:flex;gap:12px;margin:15px 15px 0}
+.rd-dd-fcov{position:relative;width:56%;aspect-ratio:3/4;border-radius:15px;padding:13px;color:var(--w-cink,#f3ecdd);background:linear-gradient(150deg,#352e23 0%,#1e1a13 100%);box-shadow:0 8px 22px rgba(0,0,0,.14);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-fcov::after{content:'';position:absolute;inset:0;background:radial-gradient(110% 80% at 90% -10%,rgba(255,235,200,.1),transparent 55%)}
+.rd-dd-ftop{position:relative;display:flex;justify-content:space-between;align-items:flex-start}
+.rd-dd-fnum{font-size:15px;font-weight:300;opacity:.5;line-height:1}
+.rd-dd-ftag{font-size:8.5px;letter-spacing:.06em;padding:2px 7px;border-radius:999px;border:1px solid rgba(243,236,221,.3);opacity:.85}
+.rd-dd-ft{position:relative;font-size:12.5px;font-weight:700;line-height:1.5}
+.rd-dd-fm{position:relative;margin-top:5px;font-size:9.5px;opacity:.5;font-variant-numeric:tabular-nums}
+.rd-dd-flist{flex:1;display:flex;flex-direction:column;min-width:0}
+.rd-dd-frow{flex:1;display:flex;align-items:center;gap:9px;border-top:1px solid var(--w-hair,rgba(26,23,18,.09));padding:6px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-frow:first-child{border-top:0}
+.rd-dd-fn{font-size:16px;font-weight:300;color:var(--w-faint,rgba(26,23,18,.42));line-height:1}
+.rd-dd-fi{flex:1;min-width:0}
+.rd-dd-fit{font-size:11.5px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-dd-fim{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+.rd-dd-fch{color:var(--w-faint,rgba(26,23,18,.42));font-size:15px;line-height:1}
+.rd-dd-gridwrap{position:relative;margin:16px 15px 0;height:272px;overflow:hidden}
+.rd-dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rd-dd-grid>*:nth-child(even){margin-top:24px}
+.rd-dd-gi{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-gi:active{opacity:.78}
+.rd-dd-gc{aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+.rd-dd-fade{position:absolute;left:-2px;right:-2px;bottom:0;height:64px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5))}

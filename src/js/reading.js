@@ -288,6 +288,10 @@
 
   // ===== 页面骨架 =====
   let page = null;
+  // 分组详情页状态：null = 首页模式；字符串 gid = 详情模式（全部书籍用 RD_DEFAULT_GROUP_ID）
+  let rdViewGroupId = null;
+  // 详情页胶囊筛选：'all' / 'reading' / 'done'
+  let rdViewGroupPill = 'all';
   function buildPage() {
     if (page) return page;
     page = document.createElement('div');
@@ -345,6 +349,28 @@
           '<div class="rd-ggrid" id="rd-ggrid"></div>' +
         '</div>' +
         '<div class="rd-grid" id="rd-grid"></div>' +
+        '<div class="rd-detail" id="rd-detail" hidden>' +
+          '<div class="rd-dd-head">' +
+            '<div class="rd-dd-label">书库 /</div>' +
+            '<div class="rd-dd-row"><div class="rd-dd-t" id="rd-dd-t"></div><div class="rd-dd-sub">按最近阅读</div></div>' +
+            '<div class="rd-dd-pills">' +
+              '<span class="rd-dd-pill on" data-pill="all">全部</span>' +
+              '<span class="rd-dd-pill" data-pill="reading">在读</span>' +
+              '<span class="rd-dd-pill" data-pill="done">读完</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-dd-feat">' +
+            '<div class="rd-dd-fcov">' +
+              '<div class="rd-dd-ftop"><span class="rd-dd-fnum">01</span><span class="rd-dd-ftag" id="rd-dd-ftag"></span></div>' +
+              '<div><div class="rd-dd-ft" id="rd-dd-ft"></div><div class="rd-dd-fm" id="rd-dd-fm"></div></div>' +
+            '</div>' +
+            '<div class="rd-dd-flist" id="rd-dd-flist"></div>' +
+          '</div>' +
+          '<div class="rd-dd-gridwrap" id="rd-dd-gridwrap">' +
+            '<div class="rd-dd-grid" id="rd-dd-grid"></div>' +
+            '<div class="rd-dd-fade"></div>' +
+          '</div>' +
+        '</div>' +
         '<div class="rd-usage" id="rd-usage"></div>' +
         '<div class="rd-import" id="rd-import-panel" hidden>' +
           '<div class="rd-import-main" id="rd-import-main">' +
@@ -3828,9 +3854,112 @@
       if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
       const usage = document.getElementById('rd-usage');
       if (usage) { usage.hidden = true; usage.textContent = ''; }
+      const detailEl = document.getElementById('rd-detail');
+      if (detailEl) detailEl.hidden = true;
+      rdViewGroupId = null;
       return;
     }
     if (empty) empty.hidden = true;
+
+    // ========== 分组详情页 ==========
+    const detail = document.getElementById('rd-detail');
+    if (rdViewGroupId !== null && detail) {
+      hero && (hero.hidden = true);
+      stat && (stat.hidden = true);
+      groupsBlock && (groupsBlock.hidden = true);
+      grid && (grid.innerHTML = '');
+      const ledger = document.getElementById('rd-ledger');
+      if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+      const allBooks = list.slice();
+      const inGroup = rdViewGroupId === RD_DEFAULT_GROUP_ID
+        ? allBooks
+        : allBooks.filter(function (b) { return b && b.gid === rdViewGroupId; });
+      // 胶囊筛选
+      let filtered = inGroup;
+      if (rdViewGroupPill === 'reading') {
+        filtered = inGroup.filter(function (b) { return b && rdProgressPct(b) > 0 && rdProgressPct(b) < 100; });
+      } else if (rdViewGroupPill === 'done') {
+        filtered = inGroup.filter(function (b) { return b && rdProgressPct(b) >= 100; });
+      }
+      filtered.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+      // 组名
+      let gname = '全部书籍';
+      if (rdViewGroupId !== RD_DEFAULT_GROUP_ID) {
+        const groups = rdGroupLoad();
+        for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i].id === rdViewGroupId) { gname = groups[i].name || '未命名'; break; }
+      }
+      const ddT = document.getElementById('rd-dd-t');
+      if (ddT) ddT.innerHTML = rdEsc(gname) + ' <span>· ' + filtered.length + ' 本</span>';
+      // 胶囊 active
+      const pills = document.querySelectorAll('#rd-dd-pills .rd-dd-pill');
+      for (let i = 0; i < pills.length; i++) {
+        pills[i].classList.toggle('on', pills[i].getAttribute('data-pill') === rdViewGroupPill);
+      }
+      if (filtered.length === 0) {
+        detail.hidden = false;
+        const feat = document.getElementById('rd-dd-feat'); if (feat) feat.innerHTML = '';
+        const gridw = document.getElementById('rd-dd-gridwrap'); if (gridw) gridw.innerHTML = '<div style="padding:24px 0;text-align:center;font-size:12px;opacity:.5">这里还没有书</div>';
+        const usage = document.getElementById('rd-usage'); if (usage) usage.hidden = true;
+        return;
+      }
+      // 特色大卡
+      const feat = document.getElementById('rd-dd-feat');
+      if (feat) {
+        const fc = filtered[0];
+        const tagHtml = fc && rdCoopOn() && fc.buddy && fc.buddy.started
+          ? '<span class="rd-dd-ftag">共读中</span>'
+          : '';
+        const ftag = document.getElementById('rd-dd-ftag'); if (ftag) { ftag.innerHTML = tagHtml; ftag.hidden = !tagHtml; }
+        const ft = document.getElementById('rd-dd-ft'); if (ft) ft.textContent = fc ? (fc.title || '未命名') : '';
+        const fm = document.getElementById('rd-dd-fm');
+        if (fm) {
+          const pct = fc ? rdProgressPct(fc) : 0;
+          fm.textContent = pct >= 100 ? '最近阅读 · 读完' : ('最近阅读 · ' + pct + '%');
+        }
+        // 封面点击：打开第一本书
+        const fcov = feat.querySelector('.rd-dd-fcov');
+        if (fcov) { fcov.onclick = fc ? function () { rdOpenBook(fc.id); } : null; }
+        // 右侧列表
+        const flist = document.getElementById('rd-dd-flist');
+        let flhtml = '';
+        for (let i = 1; i < Math.min(3, filtered.length); i++) {
+          const b = filtered[i];
+          const pct = rdProgressPct(b);
+          const pctText = pct >= 100 ? '读完' : (pct + '%');
+          flhtml += '<div class="rd-dd-frow" data-id="' + rdEsc(b.id) + '">' +
+            '<span class="rd-dd-fn">' + (i + 1 < 10 ? '0' + (i + 1) : (i + 1)) + '</span>' +
+            '<div class="rd-dd-fi"><div class="rd-dd-fit">' + rdEsc(b.title || '未命名') + '</div>' +
+            '<div class="rd-dd-fim">' + pctText + '</div></div><span class="rd-dd-fch">›</span></div>';
+        }
+        if (flist) flist.innerHTML = flhtml;
+      }
+      // 错落书架网格
+      const ddGrid = document.getElementById('rd-dd-grid');
+      if (ddGrid) {
+        let ghtml = '';
+        for (let i = 3; i < filtered.length; i++) {
+          const b = filtered[i];
+          const pct = rdProgressPct(b);
+          const pctText = pct >= 100 ? '读完' : (pct + '%');
+          const tc = rdCoverColor(b.title || '书');
+          ghtml += '<div class="rd-dd-gi" data-id="' + rdEsc(b.id) + '">' +
+            '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) + '</div>' +
+            '<div class="rd-dd-gt">' + rdEsc(b.title || '未命名') + '</div>' +
+            '<div class="rd-dd-gm">' + pctText + '</div></div>';
+        }
+        ddGrid.innerHTML = ghtml;
+      }
+      detail.hidden = false;
+      // 用量
+      const usage = document.getElementById('rd-usage');
+      if (usage) {
+        let bytes = 0;
+        for (let i = 0; i < allBooks.length; i++) bytes += ((allBooks[i] && allBooks[i].size) || 0);
+        usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + allBooks.length + ' 本';
+        usage.hidden = false;
+      }
+      return;
+    }
 
     // ========== Hero 深色封面卡 ==========
     const heroBook = list[0];
@@ -3960,6 +4089,8 @@
 
     // 首页模式下 rd-grid 留空（两列错落书卡在第二批组内页填充）
     grid.innerHTML = '';
+    const detailEl2 = document.getElementById('rd-detail');
+    if (detailEl2) detailEl2.hidden = true;
   }
   function rdGroupCardHtml(group, books) {
     const name = (group && group.name) || '未命名';
@@ -4440,11 +4571,26 @@
     if (gk) {
       e.preventDefault();
       const gid = gk.getAttribute('data-gid');
-      if (gid === RD_DEFAULT_GROUP_ID) rdToast('全部书籍 · 所有书都在这里');
-      else rdToast('组内页下一批做');
+      rdViewGroupId = gid;
+      rdViewGroupPill = 'all';
+      rdRenderShelf();
       return;
     }
-    if (el.closest('#rd-shelf-back')) { rdClose(); return; }
+    const ddPill = el.closest('.rd-dd-pill');
+    if (ddPill) {
+      e.preventDefault();
+      rdViewGroupPill = ddPill.getAttribute('data-pill') || 'all';
+      rdRenderShelf();
+      return;
+    }
+    const ddFrow = el.closest('.rd-dd-frow[data-id]');
+    if (ddFrow) { rdOpenBook(ddFrow.getAttribute('data-id')); return; }
+    const ddGi = el.closest('.rd-dd-gi[data-id]');
+    if (ddGi) { rdOpenBook(ddGi.getAttribute('data-id')); return; }
+    if (el.closest('#rd-shelf-back')) {
+      if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
+      rdClose(); return;
+    }
     if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
     if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
     if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
