@@ -3131,15 +3131,10 @@ if (!item || item.dataset.idx === undefined) return;
 const idx = Number(item.dataset.idx);
 const rec = msgs[idx];
 if (!rec) return;
-if (card.classList.contains('answered') && (rec.special === 'ask' || rec.special === 'invite')) { e.stopPropagation(); return; }
+if (card.classList.contains('answered')) { e.stopPropagation(); return; }
 const hadFav = card.classList.contains('show-fav');
 body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav').forEach(c => c.classList.remove('show-fav'));
 if (!hadFav) card.classList.add('show-fav');
-if (card.classList.contains('answered')) {
-e.stopPropagation();
-if (rec.special === 'ask-card' || rec.special === 'ask-choose') askToggleAnsweredOpts(card, rec);
-return;
-}
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
 let type = null;
 if (rec.special === 'ask-choose') type = 'choose';
@@ -4505,37 +4500,6 @@ btn.textContent = open ? ('查看选项（' + activeOpts.length + '）') : '收�
 });
 });
 root.querySelectorAll('.ask-opt-static').forEach(el => el.addEventListener('click', (e) => e.stopPropagation()));
-}
-function askAnsweredOptsList(rec) {
-if (!rec) return [];
-if (rec.special === 'ask-choose') return Array.isArray(rec.choiceOptions) ? rec.choiceOptions : [];
-if (rec.special === 'ask-card' || rec.special === 'ask') return Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec.options) ? rec.options : []);
-return [];
-}
-function askToggleAnsweredOpts(card, rec) {
-if (!card) return;
-const old = card.querySelector('.msg-ask-opts.ask-opts-answered');
-if (old) { old.remove(); return; }
-const opts = askAnsweredOptsList(rec);
-if (!opts.length) return;
-const answer = String(rec.choiceAnswer != null ? rec.choiceAnswer : (rec.askAnswer != null ? rec.askAnswer : ''));
-let rows = '';
-opts.forEach(o => {
-const t = String((o && o.t) || '');
-const hit = window.mochiAnswerHits ? window.mochiAnswerHits(t, answer) : (!!answer && t === answer);
-const rl = askOptReplyList(o);
-const rt = rl.length ? (rl.length > 1 ? rl[0] + ' 等' + rl.length + '条' : rl[0]) : '';
-rows += '<div class="ask-opt-row ask-opt-view' + (hit ? ' on' : ' off') + '">' +
-'<span class="ask-opt-t">' + escTxt(t) + '</span>' +
-(rt ? '<span class="ask-opt-reply">' + escTxt(rt) + '</span>' : '') +
-'</div>';
-});
-const box = document.createElement('div');
-box.className = 'msg-ask-opts ask-opts-answered';
-box.innerHTML = rows;
-box.querySelectorAll('.ask-opt-view').forEach(el => el.addEventListener('click', (e) => e.stopPropagation()));
-const heart = card.querySelector('.msg-fav-heart');
-if (heart && heart.parentNode === card) card.insertBefore(box, heart); else card.appendChild(box);
 }
 function askBubbleAfterRender(root, rec, idx) {
 askBubbleFillAvatar(root, rec);
