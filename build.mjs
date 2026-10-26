@@ -6540,7 +6540,7 @@ const FIX_SENTINELS = [
   { name: '#1547f 跟随只追不拽（删＝他往回退，把我拽回他停下的位置）', file: 'js/reading.js', needle: 'if (gap <= RD_BUDDY_STICK) {' },
   { name: '#1547g 他超到我前面就停下来等（删＝他继续往前读，读到我还没读的章＝剧透）', file: 'js/reading.js', needle: 'bd.waiting = his > mine;' },
   { name: '#1547h 独立推进单次最多补 30 分钟（删＝隔夜打开一口气读完整本）', file: 'js/reading.js', needle: 'Math.min(now - prevAt, RD_CATCHUP_MAX_MS)' },
-  { name: '#1547i 独立推进按 420 字/分钟（删＝他原地不动或跳得太快）', file: 'js/reading.js', needle: 'his + units * RD_CHARS_PER_MIN' },
+  { name: '#1547i 独立推进按 420 字/分钟（删＝他原地不动或跳得太快）', file: 'js/reading.js', needle: 'his + Math.round(units * RD_CHARS_PER_MIN * speed)' },
   { name: '#1547j 今天不读跨天自动恢复原模式（删＝永远停在「今天不读」，第二天也不翻书）', file: 'js/reading.js', needle: "bd.mode = bd.prevMode === 'solo' ? 'solo' : 'follow';" },
   { name: '#1547k 他的批注只在我读到的字符区间里浮现（删＝屏幕外/后文批注一起冒出来＝剧透）', file: 'js/reading.js', needle: 'return a.e > pageStart && a.e <= pageEnd;' },
   { name: '#1547l 每章最多 3 条他的批注（删＝一章堆满纸条）', file: 'js/reading.js', needle: 'if (hisArr.length >= RD_HIS_PER_CH) return;' },
