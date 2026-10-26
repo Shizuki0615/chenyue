@@ -1309,6 +1309,21 @@ box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;poi
 'font-size:' + fs + 'px;line-height:' + lh + 'px;';
 if (ff) box.style.fontFamily = ff;
 document.body.appendChild(box);
+const indents = Array.from(rdFindParaStarts(src));
+function measure(a, z) {
+if (!indents.length) { box.textContent = src.slice(a, z); return; }
+let lo2 = 0, hi2 = indents.length - 1;
+while (lo2 <= hi2) {
+const m2 = (lo2 + hi2) >> 1;
+if (indents[m2] < a) lo2 = m2 + 1; else hi2 = m2 - 1;
+}
+let out = '', cur = a;
+for (let i = lo2; i < indents.length && indents[i] < z; i++) {
+out += src.slice(cur, indents[i]) + RD_INDENT;
+cur = indents[i];
+}
+box.textContent = out + src.slice(cur, z);
+}
 const pages = [];
 let s = 0;
 const cap = n > RD_BIG_TEXT ? 3000 : n;
@@ -1318,7 +1333,7 @@ let hi = Math.min(n, s + cap);
 let best = lo;
 while (lo <= hi) {
 const mid = (lo + hi) >> 1;
-box.textContent = src.slice(s, mid);
+measure(s, mid);
 if (box.scrollHeight <= h + 1) { best = mid; lo = mid + 1; }
 else hi = mid - 1;
 }
@@ -2884,6 +2899,30 @@ try { store.set('reading-device-id', id); } catch (e) {}
 }
 return id;
 }
+const RD_INDENT = '\u3000\u3000';
+function rdFindParaStarts(text) {
+const src = String(text == null ? '' : text);
+const set = new Set();
+let p = 0, lineNo = 0;
+while (p < src.length) {
+let e = src.indexOf('\n', p);
+if (e < 0) e = src.length;
+const raw = src.slice(p, e).replace(/\r$/, '');
+const t = raw.trim();
+if (t && lineNo > 0 && raw === t && !RD_CH_TITLE_RE.test(t)) set.add(p);
+lineNo++;
+p = e + 1;
+}
+return set;
+}
+let rdIndentCache = { key: '', set: null };
+function rdParaStarts(b) {
+const text = b && b.text ? String(b.text) : '';
+const key = (b && b.id) + '|' + (b && b.ch) + '|' + text.length;
+if (rdIndentCache.key === key) return rdIndentCache.set;
+rdIndentCache = { key: key, set: rdFindParaStarts(text) };
+return rdIndentCache.set;
+}
 function rdPaintPage() {
 const b = rdBook;
 const body = document.getElementById('rd-body');
@@ -2899,6 +2938,7 @@ const book = rdFindBook(b.id, idx);
 if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
 }
 const sents = b.sents || [];
+const indents = rdParaStarts(b);
 const traces = {};
 if (hisOff > start) {
 const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
@@ -2946,10 +2986,11 @@ const sel = rdSel && rdSel.e > start && rdSel.s < end
 ? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
 function emit(a, z) {
 if (z <= a) return '';
-if (!sel || z <= sel.s || a >= sel.e) return rdEsc(b.text.slice(a, z));
+const ind = indents.has(a) ? '<span class="rd-ind"></span>' : '';
+if (!sel || z <= sel.s || a >= sel.e) return ind + rdEsc(b.text.slice(a, z));
 const s1 = Math.max(a, sel.s);
 const e1 = Math.min(z, sel.e);
-return rdEsc(b.text.slice(a, s1)) +
+return ind + rdEsc(b.text.slice(a, s1)) +
 '<span class="rd-sel">' + rdEsc(b.text.slice(s1, e1)) + '</span>' +
 rdEsc(b.text.slice(e1, z));
 }
