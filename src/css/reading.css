@@ -22,6 +22,14 @@
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
 .rd-menu-danger{color:#d9534f}
 .rd-menu-hint{padding:10px 14px;font-size:12px;line-height:1.5;opacity:.5}
+/* 书架首页美化：预设色块 + 自定义 CSS 入口 */
+.rd-preset-opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.rd-preset-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;border:1px solid transparent;background:transparent;border-radius:8px;cursor:pointer;font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.rd-preset-chip.on{border-color:currentColor}
+.rd-preset-swatch{width:28px;height:28px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.08)}
+.rd-preset-chip span{font-size:10px;opacity:.65;line-height:1}
+.rd-set-custom-btn{margin-top:8px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rd-set-custom-btn:active{opacity:.5}
 .rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
 /* 书脊：累计同读每满三次多一道细纹，最多五道 */
 .rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
@@ -459,7 +467,9 @@
 .rd-dd-fit{font-size:11.5px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-fim{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 .rd-dd-fch{color:var(--w-faint,rgba(26,23,18,.42));font-size:15px;line-height:1}
-.rd-dd-gridwrap{position:relative;margin:16px 15px 0;height:272px;overflow:hidden}
+.rd-dd-gridwrap{position:relative;margin:16px 15px 0;height:272px}
+/* 网格区可自由滚动 */
+.rd-dd-gridscroll{height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:8px;box-sizing:border-box}
 .rd-dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 /* 筛选后没有书时的空态：跨满两列 */
 .rd-dd-none{grid-column:1/-1;padding:28px 0;text-align:center;font-size:12px;color:var(--w-faint,rgba(26,23,18,.42))}
@@ -469,4 +479,5 @@
 .rd-dd-gc{aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
-.rd-dd-fade{position:absolute;left:-2px;right:-2px;bottom:0;height:64px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5))}
+/* 底部渐隐：纯视觉，pointer-events:none 不拦书卡点击；滚到底时淡出，最后一排不被遮 */
+.rd-dd-fade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5));pointer-events:none;transition:opacity .18s ease}

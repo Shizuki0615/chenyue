@@ -23,6 +23,27 @@
   // 分组：自定义分组；组本身只存 id/name/createdAt，书的归属由 book.gid 标记
   const RD_GROUP_KEY = 'reading-groups';
   const RD_DEFAULT_GROUP_ID = 'all';
+  // Hero 卡 / 共读手账 的自定义底色（白名单属性，防破坏布局）
+  const RD_HERO_CSS_KEY = 'reading-hero-css';
+  const RD_LEDGER_CSS_KEY = 'reading-ledger-css';
+  // Hero 预设：只换底色；浅底预设额外带文字反色，不塞 box-shadow（保留设计稿阴影）
+  const RD_HERO_PRESETS = [
+    { id: 'ink',   label: '墨夜', css: 'background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%)' },
+    { id: 'wine',  label: '酒红', css: 'background:linear-gradient(145deg,#4a1a1f 0%,#2a0e12 80%);color:#f5dfe2' },
+    { id: 'teal',  label: '青墨', css: 'background:linear-gradient(155deg,#1d3a3a 0%,#0f2020 80%);color:#dceee8' },
+    { id: 'blue',  label: '蓝夜', css: 'background:linear-gradient(150deg,#1e2a4a 0%,#121830 80%);color:#dde3f5' },
+    { id: 'paper', label: '纸感', css: 'background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);color:#3d3426' },
+    { id: 'custom', label: '自定义', css: '' }
+  ];
+  // 共读手账底色预设：只换底色，边框保持设计稿的粉色
+  const RD_LEDGER_PRESETS = [
+    { id: 'cream', label: '奶油', css: 'background:linear-gradient(180deg,#fdfbf6,#f8f3e9)' },
+    { id: 'pink',  label: '薄粉', css: 'background:rgba(244,182,194,.08)' },
+    { id: 'blue',  label: '雾蓝', css: 'background:rgba(120,147,173,.09)' },
+    { id: 'grey',  label: '烟灰', css: 'background:rgba(0,0,0,.035)' },
+    { id: 'dark',  label: '夜间', css: 'background:linear-gradient(180deg,#201e1a,#191714)' },
+    { id: 'custom', label: '自定义', css: '' }
+  ];
   // IDB 键前缀：正文 / 目录 / 批注
   const RD_BODY_P = 'xy-home-v2:reading-body:';
   const RD_TOC_P = 'xy-home-v2:reading-toc:';
@@ -41,6 +62,72 @@
     t.className = 'cc-toast'; void t.offsetWidth; t.className = 'cc-toast show';
     clearTimeout(t._timer);
     t._timer = setTimeout(function () { t.className = 'cc-toast'; }, 2200);
+  }
+
+  // ===== CSS 属性白名单过滤 =====
+  // 只允许纯观感属性，position/margin/width/height/overflow/display/transform/z-index 等布局
+  // 相关一律拒绝，防止误写把 hero 卡或手账撑破、盖住整个页面。
+  // 另：expression() / url() / @import / 带 {} 的选择器块直接丢掉——只接受「声明」。
+  const RD_SAFE_CSS_PROPS = [
+    'background','background-color','background-image','background-size','background-position',
+    'background-repeat','background-attachment','background-blend-mode',
+    'color','border','border-color','border-style','border-width','border-radius',
+    'border-top','border-bottom','border-left','border-right',
+    'border-top-left-radius','border-top-right-radius','border-bottom-left-radius','border-bottom-right-radius',
+    'outline','outline-color','outline-style','outline-width','outline-offset',
+    'box-shadow','text-shadow','opacity','filter','mix-blend-mode',
+    'font-family','font-size','font-weight','font-style','font-variant','line-height','letter-spacing',
+    'text-align','text-transform','text-decoration','text-indent','white-space','word-break',
+    'border-top-color','border-bottom-color','border-left-color','border-right-color',
+    'border-top-width','border-bottom-width','border-left-width','border-right-width',
+    'border-top-style','border-bottom-style','border-left-style','border-right-style',
+    'border-image','border-image-source','border-image-slice','border-image-width','border-image-repeat',
+    '-webkit-background-clip','background-clip','-webkit-text-fill-color'
+  ];
+  function rdFilterSafeCss(raw, scopeLabel) {
+    scopeLabel = scopeLabel || '自定义样式';
+    if (!raw || typeof raw !== 'string') return { out: '', blocked: 0 };
+    if (raw.indexOf('{') >= 0 || raw.indexOf('}') >= 0) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 只接受「声明」（如 background:#fff;color:#111），不接受选择器块' };
+    }
+    if (/expression\s*\(|url\s*\(|@[a-z]/i.test(raw)) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 不允许 url() / expression() / @ 指令' };
+    }
+    const parts = raw.split(';');
+    const kept = [];
+    let blocked = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const seg = parts[i].trim();
+      if (!seg) continue;
+      const colon = seg.indexOf(':');
+      if (colon <= 0) { blocked++; continue; }
+      const prop = seg.slice(0, colon).trim().toLowerCase();
+      const val = seg.slice(colon + 1).trim();
+      if (!prop || !val) { blocked++; continue; }
+      if (RD_SAFE_CSS_PROPS.indexOf(prop) < 0) { blocked++; continue; }
+      if (/url\s*\(|expression\s*\(|javascript\s*:/i.test(val)) { blocked++; continue; }
+      kept.push(prop + ':' + val);
+    }
+    return { out: kept.join(';'), blocked: blocked };
+  }
+  // 注入 <style>，作用域钉死在 hero 卡 / 手账上
+  function rdApplyHeroCss(cssText) {
+    const old = document.getElementById('rd-hero-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-hero-style';
+    st.textContent = '.rd-hero-card{' + cssText + '}';
+    document.head.appendChild(st);
+  }
+  function rdApplyLedgerCss(cssText) {
+    const old = document.getElementById('rd-ledger-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-ledger-style';
+    st.textContent = '.rd-ledger{' + cssText + '}';
+    document.head.appendChild(st);
   }
 
   // ===== 书架索引 =====
@@ -368,7 +455,9 @@
             '<div class="rd-dd-flist" id="rd-dd-flist"></div>' +
           '</div>' +
           '<div class="rd-dd-gridwrap" id="rd-dd-gridwrap">' +
-            '<div class="rd-dd-grid" id="rd-dd-grid"></div>' +
+            '<div class="rd-dd-gridscroll">' +
+              '<div class="rd-dd-grid" id="rd-dd-grid"></div>' +
+            '</div>' +
             '<div class="rd-dd-fade"></div>' +
           '</div>' +
         '</div>' +
@@ -554,7 +643,7 @@
         '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
           '<span class="rd-live-entry-t">' +
             '<span class="rd-live-entry-name">边看边调</span>' +
-            '<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
+            '<span class="rd-live-entry-sub">打开调色条：字号 / 行距 / 阅读背景实时预览</span>' +
           '</span>' +
           '<span class="rd-live-entry-go">点击开启 ›</span>' +
         '</button>' +
@@ -582,6 +671,20 @@
           '</div>' +
         '</div>' +
         '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+        '<div class="gs-title">书架首页</div>' +
+        '<div class="set-group glass">' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
+            '<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
+            '<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
+          '</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
+            '<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
+            '<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="rd-set-note">只换底色，不改卡片里的书签、标签、进度线和按钮。自定义只接受观感属性（background / color / border / box-shadow 等），布局类属性会被拦掉。</div>' +
         '<div class="gs-title">共读</div>' +
         '<div class="set-group glass">' +
           '<div class="rd-set-row rd-set-toggle">' +
@@ -621,8 +724,90 @@
     const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
     if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
 
+    // Hero / 手账 预设色块
+    rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'), 'Hero 封面卡');
+    rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'), '共读手账底色');
+    const heroCustom = settingsPage.querySelector('#rd-hero-custom');
+    if (heroCustom) heroCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_HERO_CSS_KEY, 'Hero 封面卡', rdApplyHeroCss); });
+    const ledgerCustom = settingsPage.querySelector('#rd-ledger-custom');
+    if (ledgerCustom) ledgerCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_LEDGER_CSS_KEY, '共读手账底色', rdApplyLedgerCss); });
+
     rdRenderPrefsActive();
     return settingsPage;
+  }
+  function rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl, scopeLabel) {
+    const box = settingsPage && settingsPage.querySelector('#' + containerId);
+    if (!box) return;
+    let saved = '';
+    try { saved = store.get(cssKey) || ''; } catch (e) {}
+    let selectedId = '';
+    for (let i = 0; i < presets.length; i++) {
+      if (presets[i].id !== 'custom' && saved && saved === presets[i].css) { selectedId = presets[i].id; break; }
+    }
+    let h = '';
+    for (let i = 0; i < presets.length; i++) {
+      const p = presets[i];
+      const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+      h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+        '<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+        '<span>' + rdEsc(p.label) + '</span></button>';
+    }
+    box.innerHTML = h;
+    if (valLabelEl) {
+      if (!saved) valLabelEl.textContent = '默认';
+      else {
+        const sel = presets.filter(function (x) { return x.id === selectedId; })[0];
+        valLabelEl.textContent = sel ? sel.label : '自定义';
+      }
+    }
+    if (box.__rdPresetBound) return;
+    box.__rdPresetBound = true;
+    box.addEventListener('click', function (e) {
+      const btn = e.target.closest && e.target.closest('.rd-preset-chip');
+      if (!btn) return;
+      e.preventDefault();
+      const pid = btn.getAttribute('data-pid');
+      const pcss = btn.getAttribute('data-css') || '';
+      if (pid === 'custom') {
+        rdOpenCustomCssModal(cssKey, scopeLabel || '自定义', applyFn);
+        return;
+      }
+      try { store.set(cssKey, pcss); } catch (err) {}
+      applyFn(pcss);
+      rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl, scopeLabel);
+      rdRenderShelf();
+    });
+  }
+  function rdRefreshPresetOpts(cssKey) {
+    if (!settingsPage) return;
+    if (cssKey === RD_HERO_CSS_KEY) {
+      rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'), 'Hero 封面卡');
+    } else {
+      rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'), '共读手账底色');
+    }
+  }
+  function rdOpenCustomCssModal(cssKey, label, applyFn) {
+    let cur = '';
+    try { cur = store.get(cssKey) || ''; } catch (e) {}
+    const safeHint = '只允许 background / color / border / box-shadow / filter / opacity 等观感属性。position / margin / width / display / url() / 选择器块 {} 一律拒绝。留空表示恢复默认。';
+    window.openModal('自定义 ' + label, cur, function (v) {
+      const res = rdFilterSafeCss(String(v == null ? '' : v), label);
+      if (res.reason) { rdToast(res.reason); return; }
+      if (res.blocked > 0 && !res.out) { rdToast('有 ' + res.blocked + ' 条属性被拦截，请检查'); return; }
+      if (!res.out) {
+        try { store.remove(cssKey); } catch (e) {}
+        applyFn('');
+        rdRenderShelf();
+        rdRefreshPresetOpts(cssKey);
+        rdToast('已恢复默认');
+      } else {
+        try { store.set(cssKey, res.out); } catch (e) {}
+        applyFn(res.out);
+        rdRenderShelf();
+        rdRefreshPresetOpts(cssKey);
+        rdToast(res.blocked > 0 ? ('应用成功 · 有 ' + res.blocked + ' 条被拦截') : (label + ' 已应用'));
+      }
+    }, { textarea: true, textareaRows: 5, textareaPlaceholder: 'background:#1a1a1a;color:#eee;border-radius:16px', staticText: safeHint });
   }
   function rdOpenSettings() {
     buildSettingsPage();
@@ -756,6 +941,9 @@
   function rdOpen() {
     buildPage();
     rdCloseLiveDrawer();
+    // 恢复上次保存的 hero / 手账底色
+    try { rdApplyHeroCss(store.get(RD_HERO_CSS_KEY) || ''); } catch (e) {}
+    try { rdApplyLedgerCss(store.get(RD_LEDGER_CSS_KEY) || ''); } catch (e) {}
     rdRenderShelf();
     rdRetryPendingDelete();
     document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
@@ -3982,6 +4170,21 @@
             '<div class="rd-dd-gm">' + pctText + '</div></div>';
         }
         ddGrid.innerHTML = ghtml;
+      }
+      // 渐隐只在「还有更多」时出现；滚到底淡出，最后一排完整可见
+      const ddScroll = document.querySelector('.rd-dd-gridscroll');
+      const ddFade = document.querySelector('.rd-dd-fade');
+      if (ddScroll && ddFade) {
+        const syncFade = function () {
+          const atBottom = ddScroll.scrollTop + ddScroll.clientHeight >= ddScroll.scrollHeight - 2;
+          const noMore = ddScroll.scrollHeight <= ddScroll.clientHeight + 2;
+          ddFade.style.opacity = (atBottom || noMore) ? '0' : '1';
+        };
+        if (!ddScroll.__rdFadeBound) {
+          ddScroll.__rdFadeBound = true;
+          ddScroll.addEventListener('scroll', syncFade, { passive: true });
+        }
+        syncFade();
       }
       detail.hidden = false;
       // 用量
