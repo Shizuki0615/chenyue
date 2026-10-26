@@ -4488,6 +4488,8 @@
     const groups = rdGroupLoad();
     const cur = book.gid || RD_DEFAULT_GROUP_ID;
     let html = '<div class="rd-menu-title">' + rdEsc(book.title || '未命名') + '</div>';
+    // 首页书卡网格已留空，改书名和删书的入口收在这里
+    html += '<button class="rd-menu-item" data-gact="rename" type="button">修改书名</button>';
     if (cur !== RD_DEFAULT_GROUP_ID) {
       html += '<button class="rd-menu-item" data-gact="move" data-to="' + RD_DEFAULT_GROUP_ID + '" type="button">移出分组</button>';
     }
@@ -4501,6 +4503,7 @@
     if (cur === RD_DEFAULT_GROUP_ID && others === 0) {
       html += '<div class="rd-menu-hint">还没有分组，回首页点「＋ 新建分组」</div>';
     }
+    html += '<button class="rd-menu-item rd-menu-danger" data-gact="delete" type="button">删除这本书</button>';
     html += '<button class="rd-menu-item" data-gact="cancel" type="button">取消</button>';
     const m = document.createElement('div');
     m.id = 'rd-book-group-menu';
@@ -4908,6 +4911,8 @@
       const act = bgMenuItem.getAttribute('data-gact');
       rdCloseGroupMenu();
       if (act === 'move') rdMoveBookToGroup(bid, bgMenuItem.getAttribute('data-to'));
+      else if (act === 'rename') rdRenameBook(bid);
+      else if (act === 'delete') rdDeleteBook(bid);
       return;
     }
     // 菜单开着时点空白处只关菜单，不再顺手打开下面那张书卡
