@@ -6685,6 +6685,12 @@ const FIX_SENTINELS = [
   { name: '#1562d 选项超过 6 个折叠（删＝选项多时整卡无限长）', file: 'js/chat.js', needle: "btn.textContent = open ? '展开全部（' + activeOpts.length + '）' : '收起选项';" },
   { name: '#1562e 长问题超过 4 行折叠加展开（删＝长问题整卡铺满屏）', file: 'css/chat-main.css', needle: '.msg-ask-q.ask-q-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4;' },
   { name: '#1562f 直接铺开的选项卡不再弹旧「点卡展开」区（删＝点卡片会在卡上再叠一层旧选项）', file: 'js/chat.js', needle: "if ((type === 'ask' || type === 'choose') && card.querySelector('.msg-ask-opts')) return;" },
+  // ==== 2026-10-26 #1563 已答显示：你/他两行 + 点卡回看完整选项 ====
+  { name: '#1563a 已答统一「你：/ 他：」两行且无对勾（删＝回到 ✓ 已回答/你选择了 的旧文案）', file: 'js/chat.js', needle: 'function askAnsweredLinesHtml(youText, taText) {' },
+  { name: '#1563b 已答卡点卡展开/收起完整选项（删＝答完只能看两句，选项回看消失）', file: 'js/chat.js', needle: 'function askToggleAnsweredOpts(card, rec) {' },
+  { name: '#1563c 已答卡点卡回看接入卡点击（删＝函数在但点卡不触发）', file: 'js/chat.js', needle: "if (rec.special === 'ask' || rec.special === 'ask-card' || rec.special === 'ask-choose') askToggleAnsweredOpts(card, rec);" },
+  { name: '#1563d 已答/问题/选项统一左对齐（删＝卡片又回到居中排版）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-choose-card { text-align:left; }' },
+  { name: '#1563e 模块作用域禁止引用 renderMsg 内的局部 T()（2026-10-26 实锤：长问题折叠里写 T(\'展开\') 抛 ReferenceError，选项绑定整段被打断，双方都答不了）', file: 'js/chat.js', needle: "btn.textContent = '展开';" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
