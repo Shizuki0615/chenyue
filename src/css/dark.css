@@ -587,6 +587,7 @@
 [data-theme="dark"] .msg-moods { border-top-color:rgba(255,255,255,.14); }
 [data-theme="dark"] .msg-mood .msg-mood-tag { background:rgba(255,255,255,.1); }
 [data-theme="dark"] .msg-fav-heart { background:rgba(255,255,255,.07); }
+[data-theme="dark"] .msg-fav-heart.is-fav { background:rgba(255,77,106,.18); color:#ff6b82; }
 [data-theme="dark"] .msg-inplace .ip-opt,
 [data-theme="dark"] .msg-inplace .ip-chip { border-color:var(--dark-border-12); background:var(--dark-card); }
 [data-theme="dark"] .msg-inplace .ip-opt:active,
