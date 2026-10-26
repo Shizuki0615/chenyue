@@ -432,6 +432,13 @@
 .rd-gtitle{font-size:15.5px;font-weight:700}
 .rd-gnew{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-gnew:active{opacity:.6}
+.rd-ghead-r{display:flex;align-items:center;gap:12px}
+.rd-gsort{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gsort:active{opacity:.6}
+/* 排序模式：分组卡可拖，默认分组固定 */
+#rd-shelf.rd-sorting .rd-gk[data-gid]{cursor:grab;outline:1px dashed rgba(26,23,18,.22);outline-offset:2px}
+#rd-shelf.rd-sorting .rd-gk[data-gid="all"]{cursor:default;outline-color:transparent}
+.rd-gk-drag{opacity:.65;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.18)!important}
 .rd-ggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 15px 0}
 .rd-ggrid>*:nth-child(even){margin-top:20px}
 .rd-gk{position:relative;min-width:0;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
