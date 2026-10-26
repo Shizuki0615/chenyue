@@ -3064,44 +3064,13 @@ return;
 const rpCard = e.target.closest('.msg-rp-card');
 if (rpCard) {
 e.stopPropagation();
-const rejectHit = e.target.closest('.msg-rp-reject');
-const openHit = e.target.closest('.msg-rp-open');
-if (!rejectHit && !openHit) return; // 2026-10-26：点卡身不再领取，只认「领取/拒收」两枚图标
 const rpItem = rpCard.closest('.msg-rp');
 if (!rpItem || rpItem.dataset.idx === undefined) return;
 const rpShownEl = rpItem.querySelector('.msg-rp-status');
 const rpShown = rpShownEl ? rpShownEl.textContent : '';
 const rpHit = msgRecFromEl(rpItem, function (m) { return rpStatusText(m) === rpShown; }); // #1477：旧下标会把同屏别的消息当成这张卡；同身份多份时取「与卡片显示一致」那份
 if (!rpHit) return;
-const rpIdx = rpHit.idx;
-const rpRec = rpHit.rec;
-if (!rpRec || rpRec.special !== 'redpacket') return;
-if ((rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return;
-const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
-if (rejectHit) {
-const doReject = () => {
-rpRec.rpStatus = 'returned';
-const w = rpWalletGet();
-w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
-rpWalletSet(w);
-saveMsgsNow();
-if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true);
-setTimeout(() => addIn('你拒收了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
-setTimeout(() => rpRejectFeedback(), randInt(900, 1600));
-};
-if (!window.openModal) { doReject(); return; }
-window.openModal('拒收这个红包？', '', doReject, { noInput: true, staticText: '拒收后，这个红包会退回给' + chatPartnerName() + '。', okText: '拒收', cancelText: '取消' });
-return;
-}
-rpRec.rpStatus = 'received';
-rpRec.rpOpenedAt = Date.now();
-const wallet = rpWalletGet();
-wallet.myBalance += Math.round((rpRec.rpAmount || 0) * 100);
-rpWalletSet(wallet);
-saveMsgsNow();
-if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-setTimeout(() => addIn('你领取了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(400, 1000));
-setTimeout(() => rpCollectFeedback('in'), randInt(1100, 2200));
+if (rpHit.rec && rpHit.rec.special === 'redpacket') openRpOpen(rpHit.rec, rpHit.idx);
 return;
 }
 if (e.target.closest('.msg-inplace')) return;
@@ -4713,16 +4682,15 @@ m.className = 'msg-rp ' + (rec.side === 'out' ? 'msg-rp-out' : 'msg-rp-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const cls = rpStatusCls(rec);
 const rpIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9c3 2 6 3 9 3s6-1 9-3"/><circle cx="12" cy="9" r="1.4"/></svg>';
-const canAct = (rec.rpStatus || 'pending') === 'pending' && rec.side !== 'out';
-const rejectBtn = '<button type="button" class="msg-rp-act msg-rp-reject" aria-label="拒收" title="拒收"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
-const claimBtn = '<button type="button" class="msg-rp-act msg-rp-open" aria-label="领取" title="领取"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>';
+const rpPending = (rec.rpStatus || 'pending') === 'pending';
+const rpHint = rpPending && rec.side !== 'out' ? '点击拆开' : '点击查看';
 const cardHtml = '<div class="msg-rp-card' + (cls ? ' ' + cls : '') + '">' +
 '<div class="msg-rp-top"><span class="msg-rp-ico">' + rpIco + '</span><span class="msg-rp-label">红包 · 心意币</span></div>' +
 '<div class="msg-rp-amt">¥' + escTxt(Number(rec.rpAmount || 0).toFixed(2)) + '</div>' +
 '<div class="msg-rp-wish">' + escTxt(rec.rpWish || '心意') + '</div>' +
-'<div class="msg-rp-foot' + (canAct ? ' has-act' : '') + '">' +
+'<div class="msg-rp-foot">' +
 '<span class="msg-rp-status">' + escTxt(rpStatusText(rec)) + '</span>' +
-(canAct ? '<span class="msg-rp-acts">' + rejectBtn + claimBtn + '</span>' : '') +
+'<span class="msg-rp-hint">' + rpHint + '<span class="msg-rp-chev">\u203A</span></span>' +
 '</div>' +
 '</div>';
 m.innerHTML = askBubbleHtml(rec, cardHtml);
@@ -8352,6 +8320,123 @@ if (st === 'received') return 'opened';
 if (st === 'expired' || st === 'returned') return 'expired';
 return '';
 }
+let rpOpenCur = null;
+function rpOpenEl(id) { return document.getElementById(id); }
+function rpClaimIncoming(rpIdx, rpRec) {
+if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return false;
+const i = (rpIdx >= 0 && msgs[rpIdx] === rpRec) ? rpIdx : msgs.indexOf(rpRec);
+if (i < 0) return false;
+rpIdx = i;
+rpRec.rpStatus = 'received';
+rpRec.rpOpenedAt = Date.now();
+const wallet = rpWalletGet();
+wallet.myBalance += Math.round((rpRec.rpAmount || 0) * 100);
+rpWalletSet(wallet);
+saveMsgsNow();
+const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
+if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true); // FIX 2026-09-07 #230 状态流转不整窗重建（闪屏）
+setTimeout(() => addIn('你领取了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(400, 1000));
+setTimeout(() => rpCollectFeedback('in'), randInt(1100, 2200));
+return true;
+}
+function rpRejectIncoming(rpIdx, rpRec) {
+if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return false;
+const i = (rpIdx >= 0 && msgs[rpIdx] === rpRec) ? rpIdx : msgs.indexOf(rpRec);
+if (i < 0) return false;
+rpRec.rpStatus = 'returned';
+const w = rpWalletGet();
+w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
+rpWalletSet(w);
+saveMsgsNow();
+const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
+if (!rpPatchStatusInPlace(i)) renderWindow(true, true);
+setTimeout(() => addIn('你拒收了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
+setTimeout(() => rpRejectFeedback(), randInt(900, 1600));
+return true;
+}
+function rpOpenSetStage(stage) {
+const btns = rpOpenEl('rp-open-btns');
+const cfm = rpOpenEl('rp-open-confirm');
+const st = rpOpenEl('rp-open-status');
+const done = rpOpenEl('rp-open-done');
+const note = rpOpenEl('rp-open-note');
+if (!btns || !cfm || !st || !done || !note) return;
+btns.hidden = stage !== 'view';
+cfm.hidden = stage !== 'confirm';
+st.hidden = stage !== 'done';
+done.hidden = stage !== 'done';
+note.hidden = stage === 'done';
+if (stage === 'view') note.textContent = '领取后心意币会存入你的余额；拒收会退回给' + chatPartnerName() + '。';
+if (stage === 'confirm') note.textContent = '确定拒收这个红包？拒收后会退回给' + chatPartnerName() + '。';
+}
+function rpOpenShowDone(title, sub, doneLabel) {
+const st = rpOpenEl('rp-open-status');
+if (st) st.innerHTML = escTxt(title) + (sub ? '<span class="rp-open-status-sub">' + escTxt(sub) + '</span>' : '');
+const done = rpOpenEl('rp-open-done');
+if (done) { done.textContent = doneLabel || '知道了'; done.hidden = false; }
+rpOpenSetStage('done');
+}
+function openRpOpen(rec, idx) {
+if (!rec || rec.special !== 'redpacket') return;
+rpOpenCur = { rec: rec, idx: idx };
+rpOpenBind();
+const from = rpOpenEl('rp-open-from');
+if (from) from.textContent = rec.side === 'out' ? '你发出的红包' : '来自 ' + chatPartnerName();
+const amt = rpOpenEl('rp-open-amt');
+if (amt) amt.textContent = '¥' + Number(rec.rpAmount || 0).toFixed(2);
+const wish = rpOpenEl('rp-open-wish');
+if (wish) wish.textContent = rec.rpWish || '心意';
+const ta = window.taFit ? window.taFit('他') : '他';
+const st = rec.rpStatus || 'pending';
+if (st === 'pending' && rec.side !== 'out') {
+rpOpenSetStage('view');
+} else if (st === 'pending') {
+rpOpenShowDone('等待 ' + ta + ' 领取', '红包已发出，等对方处理。', '知道了');
+} else if (st === 'received') {
+rpOpenShowDone(rec.side === 'out' ? (ta + ' 已领取') : '已领取', rec.side === 'out' ? '心意币已转给对方。' : '心意币已存入你的余额。', '收下');
+} else if (st === 'returned') {
+rpOpenShowDone(rec.side === 'out' ? (ta + ' 已拒收') : '已拒收', rec.side === 'out' ? '心意币已退回给你。' : '心意币已退回给' + chatPartnerName() + '。', '知道了');
+} else if (st === 'expired') {
+rpOpenShowDone('已过期', '这个红包已经过期了。', '知道了');
+} else {
+rpOpenShowDone(rpStatusText(rec), '', '知道了');
+}
+const mask = rpOpenEl('rp-open-mask');
+if (mask) {
+mask.hidden = false;
+const box = mask.querySelector('.rp-open-box');
+if (box) { box.style.animation = 'none'; void box.offsetWidth; box.style.animation = ''; }
+}
+}
+function rpOpenClose() {
+const mask = rpOpenEl('rp-open-mask');
+if (mask) mask.hidden = true;
+rpOpenCur = null;
+}
+function rpOpenBind() {
+const mask = rpOpenEl('rp-open-mask');
+if (!mask || mask.__rpOpenBound) return;
+mask.__rpOpenBound = true;
+mask.addEventListener('click', (e) => { if (e.target === mask) rpOpenClose(); });
+const bind = (id, fn) => { const el = rpOpenEl(id); if (el) el.addEventListener('click', fn); };
+bind('rp-open-close', rpOpenClose);
+bind('rp-open-done', rpOpenClose);
+bind('rp-open-reject', () => rpOpenSetStage('confirm'));
+bind('rp-open-cancel', () => rpOpenSetStage('view'));
+bind('rp-open-claim', () => {
+if (!rpOpenCur) return;
+const rec = rpOpenCur.rec, idx = rpOpenCur.idx;
+if (!rpClaimIncoming(idx, rec)) return;
+rpOpenShowDone('已领取', '心意币已存入你的余额。', '收下');
+});
+bind('rp-open-sure', () => {
+if (!rpOpenCur) return;
+const rec = rpOpenCur.rec, idx = rpOpenCur.idx;
+if (!rpRejectIncoming(idx, rec)) return;
+rpOpenShowDone('已拒收', '心意币已退回给' + chatPartnerName() + '。', '知道了');
+});
+}
+rpOpenBind();
 function rpPatchStatusInPlace(idx) {
 const rec = msgs[idx];
 if (!rec || rec.special !== 'redpacket') return false;
@@ -8365,10 +8450,8 @@ const cls = rpStatusCls(rec);
 if (cls) card.classList.add(cls);
 const st = card.querySelector('.msg-rp-status');
 if (st) st.textContent = rpStatusText(rec);
-const acts = card.querySelector('.msg-rp-acts');
-if (acts) acts.remove();
-const foot = card.querySelector('.msg-rp-foot');
-if (foot) foot.classList.remove('has-act');
+const hint = card.querySelector('.msg-rp-hint');
+if (hint) hint.innerHTML = '点击查看<span class="msg-rp-chev">\u203A</span>';
 return true;
 }
 function rpDailyMax() {

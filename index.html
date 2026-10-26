@@ -3208,15 +3208,15 @@ cursor:pointer; font-family:inherit; margin-top:4px;
 -webkit-tap-highlight-color:transparent;
 }
 .rp-send:active { opacity:.85; }
-.msg-rp { align-self:center; width:100%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
+.msg-rp { align-self:center; width:85%; max-width:85%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
 .msg-rp.msg-rp-in { align-self:flex-start; justify-content:flex-start; }
 .msg-rp.msg-rp-out { align-self:flex-end; justify-content:flex-end; }
 .msg-rp-card {
-flex:0 1 auto; max-width:78%; min-width:0; text-align:center;
+flex:1 1 auto; max-width:100%; min-width:0; text-align:center;
 background:#fff; border:1px solid rgba(0,0,0,.1);
 border-radius:16px; padding:14px 18px;
 box-shadow:0 2px 8px rgba(0,0,0,.05);
-cursor:default; position:relative; overflow:hidden;
+cursor:pointer; position:relative; overflow:hidden;
 }
 .msg-rp-card.has-cover { background-size:cover; background-position:center; }
 .msg-rp-card.has-cover > * { position:relative; z-index:1; }
@@ -3231,26 +3231,81 @@ background:rgba(255,255,255,.78); z-index:0;
 .msg-rp-amt { font-size:24px; font-weight:800; color:var(--msg-event-ink, var(--ink)); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
 .msg-rp-wish { font-size:13px; color:var(--msg-event-ink, var(--ink)); margin-bottom:10px; }
 .msg-rp-foot {
-display:flex; justify-content:center; align-items:center; gap:8px;
+display:flex; justify-content:space-between; align-items:center; gap:8px;
 font-size:11px; color:var(--msg-event-ink, var(--muted));
 padding-top:8px; border-top:1px dashed rgba(0,0,0,.1);
 }
-.msg-rp-foot.has-act { justify-content:space-between; }
-.msg-rp-acts { display:inline-flex; align-items:center; gap:8px; }
-.msg-rp-act {
-width:32px; height:32px; padding:0; border:none; border-radius:50%;
-display:flex; align-items:center; justify-content:center;
-cursor:pointer; -webkit-tap-highlight-color:transparent;
-}
-.msg-rp-act svg { width:16px; height:16px; }
-.msg-rp-reject { background:rgba(0,0,0,.06); color:#777; }
-.msg-rp-open { background:#e05656; color:#fff; }
-.msg-rp-act:active { opacity:.8; transform:scale(.96); }
 .msg-rp-status { font-weight:600; }
+.msg-rp-hint { display:inline-flex; align-items:center; gap:2px; opacity:.72; white-space:nowrap; }
+.msg-rp-chev { font-size:12px; line-height:1; transform:translateY(-.5px); }
 .msg-rp-card.opened .msg-rp-status { color:var(--msg-event-ink, var(--ink)); }
 .msg-rp-card.opened { border-color:rgba(0,0,0,.18); }
 .msg-rp-card.expired { opacity:.6; }
 .msg-rp-card.expired .msg-rp-status { color:var(--msg-event-ink, var(--muted)); }
+.rp-open-mask {
+position:absolute; inset:0; z-index:92;
+background:rgba(0,0,0,.5);
+display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.rp-open-mask[hidden] { display:none; }
+.rp-open-box {
+position:relative; overflow:hidden;
+width:min(320px, 86vw); padding:26px 22px 20px;
+border-radius:24px; text-align:center; color:#fff;
+background:radial-gradient(120% 80% at 50% -10%, #ff8a7a 0%, transparent 55%), linear-gradient(160deg, #e35d5d 0%, #c0392b 100%);
+box-shadow:0 24px 64px rgba(0,0,0,.38);
+animation:rpOpenIn .22s ease both;
+}
+@keyframes rpOpenIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
+.rp-open-box::before {
+content:''; position:absolute; left:-20%; right:-20%; top:-60%; height:70%;
+background:radial-gradient(closest-side, rgba(255,255,255,.28), transparent);
+pointer-events:none;
+}
+.rp-open-close {
+position:absolute; right:10px; top:10px; z-index:2;
+width:28px; height:28px; padding:0; border:none; border-radius:50%;
+background:rgba(255,255,255,.16); color:#fff;
+display:flex; align-items:center; justify-content:center; cursor:pointer;
+-webkit-tap-highlight-color:transparent;
+}
+.rp-open-close svg { width:14px; height:14px; }
+.rp-open-close:active { background:rgba(255,255,255,.28); }
+.rp-open-ico { width:66px; height:66px; margin:2px auto 8px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.18)); }
+.rp-open-ico svg { width:100%; height:100%; }
+.rp-open-from { font-size:12px; opacity:.82; letter-spacing:.5px; }
+.rp-open-amt {
+font-size:36px; font-weight:800; letter-spacing:-.5px; margin:6px 0 2px;
+font-variant-numeric:tabular-nums; text-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+.rp-open-wish { font-size:13px; opacity:.92; line-height:1.5; word-break:break-word; }
+.rp-open-note { font-size:11px; opacity:.7; line-height:1.5; margin:10px 0 16px; }
+.rp-open-btns, .rp-open-confirm { display:flex; gap:10px; }
+.rp-open-btns[hidden], .rp-open-confirm[hidden], .rp-open-status[hidden], .rp-open-done[hidden] { display:none !important; }
+.rp-open-btns button, .rp-open-confirm button {
+flex:1; height:44px; border-radius:999px; font-family:inherit; font-size:14px; font-weight:700;
+cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+-webkit-tap-highlight-color:transparent;
+}
+.rp-open-btns svg { width:18px; height:18px; }
+.rp-open-reject { border:1px solid rgba(255,255,255,.38); background:rgba(255,255,255,.1); color:#fff; }
+.rp-open-reject:active { background:rgba(255,255,255,.2); }
+.rp-open-claim {
+border:none; background:linear-gradient(135deg, #ffe8a8 0%, #f3c55f 100%); color:#8a3b1f;
+box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+.rp-open-claim:active { transform:translateY(1px); }
+.rp-open-cancel { border:1px solid rgba(255,255,255,.34); background:rgba(255,255,255,.08); color:#fff; }
+.rp-open-sure { border:none; background:#fff; color:#b52f2f; }
+.rp-open-status { font-size:14px; font-weight:700; margin:0 0 16px; line-height:1.5; }
+.rp-open-status-sub { display:block; font-size:11px; font-weight:400; opacity:.7; margin-top:4px; }
+.rp-open-done {
+width:100%; height:42px; border-radius:999px;
+border:1px solid rgba(255,255,255,.36); background:rgba(255,255,255,.1);
+color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+-webkit-tap-highlight-color:transparent;
+}
+.rp-open-done:active { background:rgba(255,255,255,.2); }
 .msg-flower { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-flower-card {
 width:min(260px,82vw); padding:0 0 14px; border-radius:20px;
@@ -8955,8 +9010,6 @@ border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:var(
 [data-theme="dark"] .msg-rp-card.opened { border-color:var(--dark-border-12); }
 [data-theme="dark"] .msg-rp-card.has-cover::before { background:rgba(30,30,30,.8); }
 [data-theme="dark"] .msg-rp-foot { border-top-color:var(--dark-border-12); }
-[data-theme="dark"] .msg-rp-reject { background:rgba(255,255,255,.08); color:var(--ink); }
-[data-theme="dark"] .msg-rp-open { background:#e05656; color:#fff; }
 [data-theme="dark"] .rps-choice { background:var(--dark-card-92); border-color:var(--dark-border); }
 [data-theme="dark"] .rps-c-ico { background:rgba(255,255,255,.06); }
 [data-theme="dark"] .rps-c-ico svg { color:var(--dark-soft); }
@@ -11141,7 +11194,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793028311060" data-version="v8.57.3">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793029673234" data-version="v8.57.4">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -12124,6 +12177,43 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
+<!-- 红包拆开弹层（2026-10-26：点红包卡打开，领取/拒收都在这里） -->
+<div class="rp-open-mask" id="rp-open-mask" hidden>
+  <div class="rp-open-box" role="dialog" aria-modal="true" aria-labelledby="rp-open-from">
+    <button class="rp-open-close" id="rp-open-close" type="button" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
+    </button>
+    <div class="rp-open-ico" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="9" y="14" width="46" height="38" rx="9" fill="rgba(255,255,255,.14)"/>
+        <path d="M9 23c9 6 18 9 23 9s14-3 23-9" stroke="#f7d778" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="32" cy="32" r="7.5" fill="#f7d778"/>
+        <path d="M28.5 32h7M32 28.5v7" stroke="#a7741c" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="rp-open-from" id="rp-open-from">来自 他</div>
+    <div class="rp-open-amt" id="rp-open-amt">¥0.00</div>
+    <div class="rp-open-wish" id="rp-open-wish">心意</div>
+    <div class="rp-open-note" id="rp-open-note"></div>
+    <div class="rp-open-btns" id="rp-open-btns">
+      <button class="rp-open-reject" id="rp-open-reject" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 010 10h-3"/></svg>
+        <span>拒收</span>
+      </button>
+      <button class="rp-open-claim" id="rp-open-claim" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7M12 8.5v7"/></svg>
+        <span>领取</span>
+      </button>
+    </div>
+    <div class="rp-open-confirm" id="rp-open-confirm" hidden>
+      <button class="rp-open-cancel" id="rp-open-cancel" type="button">再想想</button>
+      <button class="rp-open-sure" id="rp-open-sure" type="button">确定拒收</button>
+    </div>
+    <div class="rp-open-status" id="rp-open-status" hidden></div>
+    <button class="rp-open-done" id="rp-open-done" type="button" hidden>知道了</button>
+  </div>
+</div>
+
 <!-- 通话弹层（来电/去电/通话中） -->
 <div class="call-mask" id="call-mask" hidden>
   <div class="call-panel" id="call-panel">
@@ -12710,7 +12800,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.57.3</div>
+          <div class="val" id="about-ver-val">v8.57.4</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -12801,7 +12891,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.57.3</div>
+      <div class="ver">Mochi 字卡传讯 v8.57.4</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13200,7 +13290,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.57.3</span>
+              <span class="lic-ver">v8.57.4</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -22943,4 +23033,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvperf9w -->
+<!-- __MOCHI_EOF__ mvpfkmc2 -->
