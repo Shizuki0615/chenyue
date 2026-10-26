@@ -8,8 +8,8 @@
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-/* 书架页底色与字体按设计稿；顶栏沿用全局 chat-head 风格，与其它页面统一 */
-#rd-shelf{background:var(--w-bg,#faf9f5);font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
+/* 书架页底色按设计稿；字体跟随全局系统字体，不做局部覆盖 */
+#rd-shelf{background:var(--w-bg,#faf9f5)}
 .rd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px;padding:18px 16px 0}
 .rd-grid>*:nth-child(even){margin-top:22px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
