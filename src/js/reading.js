@@ -4125,7 +4125,12 @@
       } else if (rdViewGroupPill === 'done') {
         filtered = inGroup.filter(function (b) { return b && rdProgressPct(b) >= 100; });
       }
-      filtered.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+      // 置顶的书固定排在最前，其余按最近阅读
+      filtered.sort(function (a, b) {
+        const pa = (a && a.pinned) ? 1 : 0, pb = (b && b.pinned) ? 1 : 0;
+        if (pa !== pb) return pb - pa;
+        return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0);
+      });
       // 组名
       let gname = '全部书籍';
       if (rdViewGroupId !== RD_DEFAULT_GROUP_ID) {
@@ -4172,6 +4177,7 @@
         const fcov = feat.querySelector('.rd-dd-fcov');
         if (fcov) {
           if (fc) fcov.setAttribute('data-id', fc.id); else fcov.removeAttribute('data-id');
+          fcov.classList.toggle('rd-fcov-pin', !!(fc && fc.pinned));
         }
         // 右侧列表
         const flist = document.getElementById('rd-dd-flist');
@@ -4200,7 +4206,8 @@
           const pctText = pct >= 100 ? '读完' : (pct + '%');
           const tc = rdCoverGrad(i);
           ghtml += '<div class="rd-dd-gi" data-id="' + rdEsc(b.id) + '">' +
-            '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) + '</div>' +
+            '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) +
+              (b.pinned ? '<i class="rd-dd-pin" aria-label="已置顶"></i>' : '') + '</div>' +
             '<div class="rd-dd-gt">' + rdEsc(b.title || '未命名') + '</div>' +
             '<div class="rd-dd-gm">' + pctText + '</div></div>';
         }
@@ -4495,6 +4502,8 @@
     let html = '<div class="rd-menu-title">' + rdEsc(book.title || '未命名') + '</div>';
     // 首页书卡网格已留空，改书名和删书的入口收在这里
     html += '<button class="rd-menu-item" data-gact="rename" type="button">修改书名</button>';
+    html += '<button class="rd-menu-item" data-gact="' + (book.pinned ? 'unpin' : 'pin') + '" type="button">' +
+      (book.pinned ? '取消置顶' : '置顶这本书') + '</button>';
     if (cur !== RD_DEFAULT_GROUP_ID) {
       html += '<button class="rd-menu-item" data-gact="move" data-to="' + RD_DEFAULT_GROUP_ID + '" type="button">移出分组</button>';
     }
@@ -4525,6 +4534,16 @@
     if (!saveIndex(list)) return;
     rdRenderShelf();
     rdToast(toGid === RD_DEFAULT_GROUP_ID ? '已移出分组' : '已移进分组');
+  }
+  // 置顶：只影响分组详情页的排序，不动首页 hero（hero 始终是最近在读那本）
+  function rdTogglePin(bookId) {
+    const list = readIndex();
+    const book = rdFindBook(bookId, list);
+    if (!book) return;
+    book.pinned = !book.pinned;
+    if (!saveIndex(list)) return;
+    rdRenderShelf();
+    rdToast(book.pinned ? '已置顶' : '已取消置顶');
   }
 
   // ===== 分组排序：点「排序」进拖动模式，松手落位并保存 =====
@@ -4990,6 +5009,7 @@
       if (act === 'move') rdMoveBookToGroup(bid, bgMenuItem.getAttribute('data-to'));
       else if (act === 'rename') rdRenameBook(bid);
       else if (act === 'delete') rdDeleteBook(bid);
+      else if (act === 'pin' || act === 'unpin') rdTogglePin(bid);
       return;
     }
     // 菜单开着时点空白处只关菜单，不再顺手打开下面那张书卡

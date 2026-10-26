@@ -10521,7 +10521,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-dd-grid>*:nth-child(even){margin-top:24px}
 .rd-dd-gi{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-dd-gi:active{opacity:.78}
-.rd-dd-gc{aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.rd-dd-gc{position:relative;aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.rd-dd-pin{position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
+.rd-dd-fcov.rd-fcov-pin::before{content:'';position:absolute;top:10px;left:10px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3);z-index:2}
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 .rd-dd-fade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5));pointer-events:none;transition:opacity .18s ease}
@@ -10886,7 +10888,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792983701484" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792983839764" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22683,4 +22685,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvoo7ab0 -->
+<!-- __MOCHI_EOF__ mvooa904 -->

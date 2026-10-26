@@ -494,7 +494,10 @@
 .rd-dd-grid>*:nth-child(even){margin-top:24px}
 .rd-dd-gi{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-dd-gi:active{opacity:.78}
-.rd-dd-gc{aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.rd-dd-gc{position:relative;aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+/* 置顶标记：封面上角一个小粉点 */
+.rd-dd-pin{position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
+.rd-dd-fcov.rd-fcov-pin::before{content:'';position:absolute;top:10px;left:10px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3);z-index:2}
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 /* 底部渐隐：纯视觉，pointer-events:none 不拦书卡点击；滚到底时淡出，最后一排不被遮 */
