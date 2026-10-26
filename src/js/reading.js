@@ -2075,6 +2075,12 @@
     const pos = rdPosFromFlat(book, Math.min(his, total));
     bd.ch = pos.ch;
     bd.off = pos.off;
+    // 落后了多久：用来在落后太久之后把文案降噪，不让他一直像在欠着什么
+    if (mine - his >= RD_BUDDY_STICK) {
+      if (!bd.behindSince) bd.behindSince = now;
+    } else {
+      bd.behindSince = 0;
+    }
     bd.updatedAt = now;
     book.status = his >= total ? 'done' : 'co';
     return bd;
@@ -2083,6 +2089,8 @@
   const RD_BUDDY_STICK = 480;
   // 他读得慢的日子，跟在我后面大约这么多字，不贴上来
   const RD_BUDDY_SLOW_GAP = 240;
+  // 落后超过这么久，文案换成不施压的说法
+  const RD_BUDDY_QUIET_MS = 10 * 60 * 1000;
   function rdBuddyState(book) {
     const bd = rdBuddyGet(book);
     if (!bd) return 'none';
@@ -2124,9 +2132,19 @@
     '他今天翻得慢，一页要停一会儿。',
     '他今天读得有点慢，你别等太久。'
   ];
+  // 落后太久时换成不施压的说法：他在后面是他自己的节奏，不是我欠的
+  const RD_BUDDY_QUIET_LINES = [
+    '他还在后面，你先读。',
+    '他在后面慢慢赶，不用等他。',
+    '他还在后面，读到哪算哪。'
+  ];
   function rdBuddyLine(book, state) {
+    const bd = rdBuddyGet(book);
+    const stuck = (state === 'behind' || state === 'far') && bd && bd.behindSince &&
+      (Date.now() - Number(bd.behindSince) >= RD_BUDDY_QUIET_MS);
     const slow = state === 'read' && rdBuddySpeedToday(book) < 1;
-    const pool = slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read);
+    const pool = stuck ? RD_BUDDY_QUIET_LINES
+      : (slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read));
     const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
     let h = 0;
     for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
@@ -4127,6 +4145,11 @@
     if (b.missing) return '待重新导入';
     if (!rdCoopOn()) return '';
     const st = rdBuddyState(b);
+    // 落后太久就别在书架上一直提醒了，退回普通「共读中」
+    const bd = rdBuddyGet(b);
+    const stuck = (st === 'behind' || st === 'far') && bd && bd.behindSince &&
+      (Date.now() - Number(bd.behindSince) >= RD_BUDDY_QUIET_MS);
+    if (stuck) return '共读中';
     if (st === 'done') return '他读完了';
     if (st === 'wait') return '等你';
     if (st === 'behind') return '在你后面';
