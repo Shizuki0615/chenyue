@@ -1225,10 +1225,11 @@ if (dot) {
 const show = st !== 'none' && st !== 'skip';
 dot.hidden = !show;
 if (show) {
-const isBehind = st === 'behind' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
+const isBehind = st === 'behind' || st === 'far' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
 dot.style.left = same ? 'calc(' + myPct + '% + 6px)' : rdPosPct(book, bd.ch, bd.off) + '%';
 dot.classList.toggle('rd-buddy-ahead', !same && !isBehind);
 dot.classList.toggle('rd-buddy-behind', !same && isBehind);
+dot.classList.toggle('rd-buddy-far', !same && st === 'far');
 dot.classList.toggle('rd-buddy-same', same);
 }
 }
@@ -1403,7 +1404,7 @@ const bd = rdBuddyGet(book);
 if (!bd || !bd.started || bd.mode !== 'follow') return;
 if (!rdCoopOn()) return;
 const st = rdBuddyState(book);
-if (st !== 'read' && st !== 'behind') return;
+if (st !== 'read' && st !== 'behind' && st !== 'far') return;
 rdBuddyAdvance(book, sec);
 rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
 }
@@ -1905,19 +1906,22 @@ const myCh = Number(prog.ch) || 0;
 const mine = rdFlatPos(book, myCh, Number(prog.off) || 0);
 if (his > mine) return 'wait';
 if (his < mine) {
+if (myCh - bd.ch >= 2) return 'far';
 if (bd.ch < myCh) return 'behind';
 if (mine - his >= RD_BUDDY_STICK) return 'behind';
 }
 return 'read';
 }
 const RD_BUDDY_STATE_TEXT = {
-none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面', done: '读完了', skip: '今天不读'
+none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面',
+far: '在很后面', done: '读完了', skip: '今天不读'
 };
 const RD_BUDDY_LINES = {
 none: ['还没翻开这本书。', '他把书放在那儿，等你一起。', '书还合着，他也没动。'],
 read: ['他在你旁边一页一页看。', '他刚翻过一页。', '他跟着你的速度往下读。'],
 wait: ['他停在前面等你。', '他先读到前面去了，正等着你。', '他在前面那页等你跟上来。'],
 behind: ['他在你后面慢慢跟着。', '他落后了几页，正一页页追。', '他在后面那几页，没催你。'],
+far: ['他还在很后面，慢慢读着。', '他落后好几章了，没追上来。', '他在后面很远的地方，不着急。'],
 done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
 skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
 };
@@ -3768,6 +3772,7 @@ const st = rdBuddyState(b);
 if (st === 'done') return '他读完了';
 if (st === 'wait') return '等你';
 if (st === 'behind') return '在你后面';
+if (st === 'far') return '还没追上来';
 if (st === 'skip') return '今天不读';
 if (st === 'none') return '未开始';
 return '共读中';
