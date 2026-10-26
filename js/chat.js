@@ -3126,9 +3126,7 @@ if (e.target.closest('.msg-inplace')) return;
 const surveyCard = e.target.closest('.msg-survey-card');
 if (surveyCard) {
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
-const sHadFav = surveyCard.classList.contains('show-fav');
-body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav, .msg-survey-card.show-fav').forEach(c => c.classList.remove('show-fav'));
-if (!sHadFav) surveyCard.classList.add('show-fav');
+if (!e.target.closest('.msg-survey-detail-btn')) return;
 const sItem = surveyCard.closest('.msg-survey');
 const sIdx = sItem && sItem.dataset.idx !== undefined ? Number(sItem.dataset.idx) : -1;
 const sRec = sIdx >= 0 ? msgs[sIdx] : null;
@@ -4236,21 +4234,24 @@ const qs = Array.isArray(rec.surveyQs) ? rec.surveyQs : [];
 const answers = Array.isArray(rec.surveyAnswers) ? rec.surveyAnswers : [];
 const done = rec.surveyStatus === 'done';
 const nDone = answers.filter(a => typeof a === 'string' && a.trim()).length;
+const showQs = qs.slice(0, 2);
+const moreN = Math.max(0, qs.length - showQs.length);
 let rows = '';
-qs.forEach((q, i) => {
+showQs.forEach((q, i) => {
 const a = answers[i] || '';
 rows += '<div class="msg-survey-item' + (a ? ' answered' : '') + '">' +
 '<div class="msg-survey-q">' + (i + 1) + '. ' + escTxt(q.text || '') + '</div>' +
-(Array.isArray(q.options) && q.options.length
-? '<div class="msg-survey-opts">' + q.options.map(o => '<span class="msg-survey-opt' + (window.mochiAnswerHits && window.mochiAnswerHits(o, a) ? ' sel' : '') + '">' + escTxt(o) + '</span>').join('') + '</div>'
-: '') +
 (a ? '<div class="msg-survey-a">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(a) : a) + '</div>' : '') +
 '</div>';
 });
-return '<div class="msg-survey-card' + (done ? ' done' : '') + '">' +
+const moreHtml = moreN > 0 ? '<div class="msg-survey-more">…还有 ' + moreN + ' 道题</div>' : '';
+return '<div class="msg-ask-card msg-survey-card' + (done ? ' done' : ' answered') + '">' +
 '<div class="msg-survey-head">你发出的问卷 · ' + qs.length + ' 题</div>' +
-'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + '</div>' +
-'<div class="msg-survey-tip">' + (done ? '已交卷 · 点击查看问卷详情' : '他 正在作答 · 已答 ' + nDone + '/' + qs.length + '，点击查看进度') + '<span class="msg-survey-chev">\u203A</span></div>' +
+'<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他 作答中 · 已答 ' + nDone + '/' + qs.length : '等待 他 作答')) + '</div>' +
+'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + moreHtml + '</div>' +
+'<div class="msg-survey-actions">' +
+'<button type="button" class="msg-survey-detail-btn" data-sv-detail="1">' + (done ? '查看问卷详情' : '查看作答进度') + '</button>' +
+'</div>' +
 favHeartHtml(rec) +
 '</div>';
 }
@@ -4263,7 +4264,10 @@ r.surveyStatus = status;
 r.surveyAnswers = Array.isArray(answers) ? answers : [];
 saveMsgs();
 const el = body.querySelector('.msg-survey[data-idx="' + i + '"]');
-if (el) el.innerHTML = surveyCardHtml(r);
+if (el) {
+el.innerHTML = askBubbleHtml(r, surveyCardHtml(r));
+askBubbleFillAvatar(el, r);
+}
 return;
 }
 }
@@ -4886,10 +4890,11 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-survey') {
-m.className = 'msg-ask msg-survey';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in') + ' msg-survey';
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
-m.innerHTML = surveyCardHtml(rec);
+m.innerHTML = askBubbleHtml(rec, surveyCardHtml(rec));
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }

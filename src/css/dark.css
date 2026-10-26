@@ -449,10 +449,11 @@
   color:var(--msg-in-bg, #2a2a2a);
 }
 [data-theme="dark"] .msg-choose-card { background:var(--dark-card-92); border-color:var(--dark-border); }
-/* v3.33.x #521：批量问卷长卡片（暗色适配，跨域改动见 WORKLOG；观感对齐单题 ask-card） */
-[data-theme="dark"] .msg-survey-card { background:var(--dark-card-92); border-color:var(--dark-border); }
-[data-theme="dark"] .msg-survey-opt { background:var(--dark-card); border-color:var(--dark-border-12); color:var(--ink); }
-[data-theme="dark"] .msg-survey-opt.sel { border-color:var(--ink); }
+/* 2026-10-26 B 版问卷摘要卡暗色适配（卡面已并入气泡，只补接收侧按钮/绿字对比） */
+[data-theme="dark"] .msg-ask.msg-ask-in .msg-survey-detail-btn {
+  border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:var(--ink);
+}
+[data-theme="dark"] .msg-ask.msg-ask-in .msg-survey-a { color:#7fd39a; }
 [data-theme="dark"] .call-minimize { background:var(--dark-card); border-color:var(--dark-border-12); color:var(--dark-soft); }
 [data-theme="dark"] .call-mini { background:var(--dark-card-92); border-color:var(--dark-border); }
 [data-theme="dark"] .msg-poke-seg { background:var(--dark-card); border-color:var(--dark-border-12); }

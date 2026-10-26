@@ -4241,12 +4241,8 @@ if (e.target.closest('.msg-inplace')) return;
 const surveyCard = e.target.closest('.msg-survey-card');
 if (surveyCard) {
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
-// #1005 收藏心形默认隐藏、点卡片才浮现（再点卡片外收起）——用户报「批量设置问卷后发送到聊天里
-// 的卡片直接显示了收藏的按钮」。与单题卡同一套 .show-fav 开关：先记本次点击前的状态，清掉别处
-// 已浮现的心形后按需加回本卡（＝点一下浮现、再点一下收起），随后照旧打开问卷详情。
-const sHadFav = surveyCard.classList.contains('show-fav');
-body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav, .msg-survey-card.show-fav').forEach(c => c.classList.remove('show-fav'));
-if (!sHadFav) surveyCard.classList.add('show-fav');
+// 2026-10-26 B 版：收藏心形常显；点整卡不再开详情/切收藏，只有「查看详情」按钮响应
+if (!e.target.closest('.msg-survey-detail-btn')) return;
 const sItem = surveyCard.closest('.msg-survey');
 const sIdx = sItem && sItem.dataset.idx !== undefined ? Number(sItem.dataset.idx) : -1;
 const sRec = sIdx >= 0 ? msgs[sIdx] : null;
@@ -5835,30 +5831,31 @@ return rec ? { rec: rec, idx: _i } : null;
 // 题列表/状态/答案全部以快照字段持久化在消息记录上（surveyQs/surveyStatus/surveyAnswers），
 // 作答进度由 ta-ask.js 经 chatSyncSurveyCard 回写；渲染只读 rec 字段，不依赖问卷实时状态
 // （撤回问卷重置为草稿后，历史卡片仍保留最后一次快照，合理）。
+// 2026-10-26 B 版：问卷摘要气泡（只露前 2 题，N 题收进详情，收藏常驻，查看详情独立按钮）
 function surveyCardHtml(rec) {
 const qs = Array.isArray(rec.surveyQs) ? rec.surveyQs : [];
 const answers = Array.isArray(rec.surveyAnswers) ? rec.surveyAnswers : [];
 const done = rec.surveyStatus === 'done';
 const nDone = answers.filter(a => typeof a === 'string' && a.trim()).length;
+const showQs = qs.slice(0, 2);
+const moreN = Math.max(0, qs.length - showQs.length);
 let rows = '';
-qs.forEach((q, i) => {
+showQs.forEach((q, i) => {
 const a = answers[i] || '';
 rows += '<div class="msg-survey-item' + (a ? ' answered' : '') + '">' +
 '<div class="msg-survey-q">' + (i + 1) + '. ' + escTxt(q.text || '') + '</div>' +
-(Array.isArray(q.options) && q.options.length
-// #1415：多选题的答案是「A、B」整串——原来拿它去和单个选项比全文，多选题永远一个都不亮
-? '<div class="msg-survey-opts">' + q.options.map(o => '<span class="msg-survey-opt' + (window.mochiAnswerHits && window.mochiAnswerHits(o, a) ? ' sel' : '') + '">' + escTxt(o) + '</span>').join('') + '</div>'
-: '') +
 (a ? '<div class="msg-survey-a">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(a) : a) + '</div>' : '') +
 '</div>';
 });
-return '<div class="msg-survey-card' + (done ? ' done' : '') + '">' +
+const moreHtml = moreN > 0 ? '<div class="msg-survey-more">…还有 ' + moreN + ' 道题</div>' : '';
+return '<div class="msg-ask-card msg-survey-card' + (done ? ' done' : ' answered') + '">' +
 '<div class="msg-survey-head">你发出的问卷 · ' + qs.length + ' 题</div>' +
-'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + '</div>' +
-// #1005 底部提示行尾加一枚右向箭头＝「整张卡片可点」的暗示（提示文案本就写着「点击查看…」，
-// 心形改为点卡片才浮现后，卡片得自己把「能点」摆出来）；收藏心形默认隐藏，由 body click 的
-// surveyCard 分支加 .show-fav 浮现
-'<div class="msg-survey-tip">' + (done ? '已交卷 · 点击查看问卷详情' : '他 正在作答 · 已答 ' + nDone + '/' + qs.length + '，点击查看进度') + '<span class="msg-survey-chev">\u203A</span></div>' +
+'<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他 作答中 · 已答 ' + nDone + '/' + qs.length : '等待 他 作答')) + '</div>' +
+'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + moreHtml + '</div>' +
+// 2026-10-26：查看详情独立小圆按钮，收藏心形常驻，整卡不再点出详情
+'<div class="msg-survey-actions">' +
+'<button type="button" class="msg-survey-detail-btn" data-sv-detail="1">' + (done ? '查看问卷详情' : '查看作答进度') + '</button>' +
+'</div>' +
 favHeartHtml(rec) +
 '</div>';
 }
@@ -5874,7 +5871,11 @@ r.surveyStatus = status;
 r.surveyAnswers = Array.isArray(answers) ? answers : [];
 saveMsgs();
 const el = body.querySelector('.msg-survey[data-idx="' + i + '"]');
-if (el) el.innerHTML = surveyCardHtml(r);
+if (el) {
+// 2026-10-26 B 版：行内已带头像/时间，重画必须连气泡骨架一起重建，不能只换卡面
+el.innerHTML = askBubbleHtml(r, surveyCardHtml(r));
+askBubbleFillAvatar(el, r);
+}
 return;
 }
 }
@@ -6574,10 +6575,12 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-survey') {
-m.className = 'msg-ask msg-survey';
+// 2026-10-26 B 版：问卷摘要卡并入问卡气泡骨架（右出站 + 头像/时间 + 固定宽度）
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in') + ' msg-survey';
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
-m.innerHTML = surveyCardHtml(rec);
+m.innerHTML = askBubbleHtml(rec, surveyCardHtml(rec));
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
