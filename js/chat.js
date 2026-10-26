@@ -8386,6 +8386,16 @@ const amt = rpOpenEl('rp-open-amt');
 if (amt) amt.textContent = '¥' + Number(rec.rpAmount || 0).toFixed(2);
 const wish = rpOpenEl('rp-open-wish');
 if (wish) wish.textContent = rec.rpWish || '心意';
+const box = rpOpenEl('rp-open-box');
+if (box) {
+box.classList.remove('has-cover');
+box.style.backgroundImage = '';
+const cover = rec.rpCover ? rpCoverGet(rec.side) : '';
+if (cover) {
+box.classList.add('has-cover');
+box.style.backgroundImage = 'url("' + cover + '")';
+}
+}
 const ta = window.taFit ? window.taFit('他') : '他';
 const st = rec.rpStatus || 'pending';
 if (st === 'pending' && rec.side !== 'out') {

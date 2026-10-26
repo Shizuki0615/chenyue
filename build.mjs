@@ -6727,6 +6727,8 @@ const FIX_SENTINELS = [
   { name: '#1569d 拆红包小窗拒收落库（删＝窗里点确定拒收不生效）', file: 'js/chat.js', needle: 'function rpRejectIncoming(rpIdx, rpRec) {' },
   { name: '#1569e 红包卡「点击拆开/点击查看」提示（删＝卡面看不出可点）', file: 'css/chat-main.css', needle: '.msg-rp-hint {' },
   { name: '#1569f 拆红包小窗打开/阶段切换（删＝点卡只渲染空窗，领取/拒收/确认阶段不显示）', file: 'js/chat.js', needle: 'function openRpOpen(rec, idx) {' },
+  { name: '#1569g 拆红包小窗复用红包封面（删＝有封面也不铺，退回固定白底/红底）', file: 'js/chat.js', needle: "box.classList.add('has-cover')" },
+  { name: '#1569h 领取按钮金币四角星图标（删＝领取图标退回圆圈加号）', file: 'template.html', needle: 'M12 5.5l1.4 5.1L18.5 12' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
