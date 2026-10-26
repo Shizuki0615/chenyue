@@ -3475,13 +3475,99 @@ body._rdBounce = 1;
 setTimeout(function () { body.classList.remove(cls); body._rdBounce = 0; }, 200);
 }
 let rdTurnBusyUntil = 0;
+const RD_CURL_SEGS = 12;
+const RD_CURL_DEG = 92;
+function rdCurlTurn(dir, body, reader, mutate) {
+const br = body.getBoundingClientRect();
+const rr = reader.getBoundingClientRect();
+const W = Math.max(1, br.width);
+const H = Math.max(1, br.height);
+const N = RD_CURL_SEGS;
+const sw = W / N;
+const perDeg = RD_CURL_DEG / N;
+const isPrev = dir < 0;
+if (isPrev) mutate();
+const html = body.innerHTML;
+const fs = body.style.fontSize;
+const lh = body.style.lineHeight;
+const left = (br.left - rr.left) + 'px';
+const top = (br.top - rr.top) + 'px';
+const root = document.createElement('div');
+root.className = 'rd-curl';
+if (isPrev) root.classList.add('is-prev');
+root.style.left = left;
+root.style.top = top;
+root.style.width = W + 'px';
+root.style.height = H + 'px';
+const segs = [];
+let parent = root;
+for (let i = 0; i < N; i++) {
+const seg = document.createElement('div');
+seg.className = 'rd-curl-seg';
+seg.style.left = (i === 0 ? 0 : sw) + 'px';
+seg.style.width = sw + 'px';
+seg.style.height = H + 'px';
+seg.style.transform = 'rotateY(' + (isPrev ? -perDeg : 0) + 'deg)';
+seg.style.transition = 'none';
+const slice = document.createElement('div');
+slice.className = 'rd-curl-slice';
+slice.style.setProperty('--shade', (0.01 + 0.13 * (i / Math.max(1, N - 1))).toFixed(3));
+const page = document.createElement('div');
+page.className = 'rd-body rd-curl-page';
+page.style.left = (-i * sw) + 'px';
+page.style.width = W + 'px';
+page.style.height = H + 'px';
+if (fs) page.style.fontSize = fs;
+if (lh) page.style.lineHeight = lh;
+page.innerHTML = html;
+slice.appendChild(page);
+seg.appendChild(slice);
+parent.appendChild(seg);
+parent = seg;
+segs.push(seg);
+}
+const cast = document.createElement('div');
+cast.className = 'rd-turn-cast';
+cast.style.left = left;
+cast.style.top = top;
+cast.style.width = W + 'px';
+cast.style.height = H + 'px';
+cast.style.boxSizing = 'border-box';
+cast.style.zIndex = '4';
+if (isPrev) cast.classList.add('is-prev');
+reader.appendChild(cast);
+reader.appendChild(root);
+const flash = document.createElement('div');
+flash.className = 'rd-curl-flash';
+flash.style.left = left;
+flash.style.top = top;
+flash.style.width = W + 'px';
+flash.style.height = H + 'px';
+reader.appendChild(flash);
+if (!isPrev) mutate();
+void root.getBoundingClientRect();
+for (let i = 0; i < N; i++) {
+const seg = segs[i];
+const delay = (N - 1 - i) * 8;
+seg.style.transition = 'transform 320ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
+seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
+}
+const dur = 320 + (N - 1) * 8 + 60;
+rdTurnBusyUntil = Date.now() + 400;
+setTimeout(function () {
+[root, cast, flash].forEach(function (el) {
+if (el && el.parentNode) el.parentNode.removeChild(el);
+});
+}, dur);
+}
 function rdAnimateTurn(dir, mutate) {
 const body = document.getElementById('rd-body');
 const reader = document.getElementById('rd-reader');
 const mode = rdTurnMode();
 const now = Date.now();
 if (!body || !reader || mode === 'off' || now < rdTurnBusyUntil) { mutate(); return; }
-const dur = mode === 'paper' ? 360 : 200;
+if (mode === 'paper') { rdCurlTurn(dir, body, reader, mutate); return; }
+const dur = 200;
 rdTurnBusyUntil = now + dur - 60;
 const br = body.getBoundingClientRect();
 const rr = reader.getBoundingClientRect();
@@ -3496,18 +3582,6 @@ sheet.style.width = br.width + 'px';
 sheet.style.height = br.height + 'px';
 sheet.style.zIndex = '5';
 sheet.style.pointerEvents = 'none';
-let cast = null;
-if (mode === 'paper') {
-cast = document.createElement('div');
-cast.className = 'rd-turn-cast';
-cast.style.left = sheet.style.left;
-cast.style.top = sheet.style.top;
-cast.style.width = sheet.style.width;
-cast.style.height = sheet.style.height;
-cast.style.boxSizing = 'border-box';
-if (dir < 0) cast.classList.add('is-prev');
-reader.appendChild(cast);
-}
 if (dir > 0) {
 sheet.innerHTML = body.innerHTML;
 reader.appendChild(sheet);
@@ -3521,7 +3595,6 @@ sheet.classList.add('rd-turn-prev-' + mode);
 }
 function done() {
 if (sheet.parentNode) sheet.parentNode.removeChild(sheet);
-if (cast && cast.parentNode) cast.parentNode.removeChild(cast);
 }
 sheet.addEventListener('animationend', done);
 setTimeout(done, dur + 80);

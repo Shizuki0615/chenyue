@@ -262,31 +262,37 @@
 [data-theme="dark"] .rd-turn-sw.paper{background:linear-gradient(105deg,#2a2723 0 58%,#1c1a17 58% 63%,#252220 63% 100%)}
 [data-theme="dark"] .rd-turn-sw.slide{background:linear-gradient(90deg,#2a2723 0 46%,#1c1a17 46% 54%,#2a2723 54% 100%)}
 
-/* ---------- 翻页动画：盖在正文上的那一张纸 ----------
-   纸页绕左缘掀起：右边缘朝观察者抬起（负角度），再往后仰一点点，不是刚性旋转。
-   光扫、纸背受光、下方投影三层一起给「掀起来」的体积感，全部是纯 CSS。 */
-.rd-turn-sheet{overflow:hidden;pointer-events:none;backface-visibility:hidden;will-change:transform,opacity;transform-origin:left center;border-radius:0 4px 4px 0}
-/* 掀起时一道柔光从右往左掠过纸面 */
-.rd-turn-sheet::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.42) 47%,rgba(255,255,255,.06) 58%,transparent 68%)}
-/* 纸背受光：掀起的右半边先暗下去，靠书脊的一侧留一点亮 */
-.rd-turn-sheet::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to left,rgba(0,0,0,.17),rgba(0,0,0,.03) 46%,rgba(255,255,255,.05) 78%,transparent 100%)}
+/* ---------- 翻页动画 ----------
+   paper：正文横向切 12 条，每段相对父段再转一点，累积成一道弧，是真卷曲不是单层斜切。
+   每段内放一份整页内容并按段偏移裁出对应竖条，所以文字和底纸都是连续的。
+   slide：单层滑出/滑入，成本最低。 */
+.rd-curl{position:absolute;z-index:5;pointer-events:none;perspective:1200px;transform-style:preserve-3d}
+.rd-curl-seg{position:absolute;top:0;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
+.rd-curl-slice{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;background:#fbf8f1}
+/* 越靠掀起的右端越暗：纸背背光。暗度在掀起过程中渐显，翻页第一帧不会整页发暗 */
+.rd-curl-slice::after{content:'';position:absolute;inset:0;pointer-events:none;background:rgba(0,0,0,var(--shade,0));animation:rdCurlShadeIn .42s ease-out forwards}
+.rd-curl.is-prev .rd-curl-slice::after{animation-name:rdCurlShadeOut}
+@keyframes rdCurlShadeIn{from{opacity:0}to{opacity:1}}
+@keyframes rdCurlShadeOut{from{opacity:1}to{opacity:0}}
+.rd-curl-page{position:absolute;top:0;box-sizing:border-box;flex:none;overflow:visible}
+/* 掠过纸面的那道光，短促扫过，不跟着卷曲 */
+.rd-curl-flash{position:absolute;z-index:6;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.38) 46%,rgba(255,255,255,.04) 58%,transparent 70%);animation:rdCurlFlash .46s ease-out}
+@keyframes rdCurlFlash{0%{opacity:0;transform:translateX(-30%)}18%{opacity:.85}100%{opacity:0;transform:translateX(34%)}}
 /* 纸页抬起来时在新页上留下的投影，随掀开淡掉 */
-.rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast .36s ease-out forwards}
+.rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast .46s ease-out forwards}
 .rd-turn-cast.is-prev{transform:scaleX(-1)}
 @keyframes rdTurnCast{from{opacity:1}to{opacity:0}}
-@keyframes rdTurnSheenNext{0%{opacity:0;transform:translateX(-38%)}22%{opacity:.85}100%{opacity:0;transform:translateX(44%)}}
-@keyframes rdTurnSheenPrev{0%{opacity:0;transform:translateX(44%)}30%{opacity:.7}100%{opacity:0;transform:translateX(-38%)}}
-@keyframes rdTurnNextPaper{from{transform:perspective(1200px) rotateY(0deg) rotateX(0deg)}to{transform:perspective(1200px) rotateY(-92deg) rotateX(1.2deg)}}
-@keyframes rdTurnPrevPaper{from{transform:perspective(1200px) rotateY(-92deg) rotateX(1.2deg)}to{transform:perspective(1200px) rotateY(0deg) rotateX(0deg)}}
+/* 轻滑用的单层纸 */
+.rd-turn-sheet{overflow:hidden;pointer-events:none;backface-visibility:hidden;will-change:transform,opacity;transform-origin:left center;border-radius:0 4px 4px 0}
+.rd-turn-sheet::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to left,rgba(0,0,0,.14),rgba(0,0,0,.03) 46%,transparent 72%)}
 @keyframes rdTurnNextSlide{from{transform:translateX(0);opacity:1}to{transform:translateX(-22%);opacity:0}}
 @keyframes rdTurnPrevSlide{from{transform:translateX(10%);opacity:0}to{transform:translateX(0);opacity:1}}
-.rd-turn-next-paper{animation:rdTurnNextPaper .36s cubic-bezier(.18,.72,.28,1) forwards}
-.rd-turn-prev-paper{animation:rdTurnPrevPaper .36s cubic-bezier(.18,.72,.28,1) forwards}
-.rd-turn-next-paper::before{animation:rdTurnSheenNext .36s ease-out}
-.rd-turn-prev-paper::before{animation:rdTurnSheenPrev .36s ease-out}
 .rd-turn-next-slide{animation:rdTurnNextSlide .2s ease forwards}
 .rd-turn-prev-slide{animation:rdTurnPrevSlide .2s ease forwards}
-[data-theme="dark"] .rd-turn-sheet::before{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.16) 47%,rgba(255,255,255,.03) 58%,transparent 68%)}
+[data-theme="dark"] .rd-curl-slice{background:#1b1916}
+[data-theme="dark"] .rd-curl-flash{background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.02) 58%,transparent 70%)}
+.rd-reader[data-rd-bg="eye"] .rd-curl-slice{background:#fbf8f1}
+.rd-reader[data-rd-bg="night"] .rd-curl-slice{background:#1b1916}
 
 /* ---------- 边看边调抽屉 ---------- */
 #rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}
