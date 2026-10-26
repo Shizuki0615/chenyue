@@ -399,7 +399,11 @@
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
           '</button>' +
         '</div>' +
-        '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
+        '<div class="rd-empty" id="rd-empty">' +
+          '<svg class="rd-empty-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.6 5 8.2 4.6 5 5.1v13.2c3.2-.5 5.6-.1 7 1.4"/><path d="M12 6.5c1.4-1.5 3.8-1.9 7-1.4v13.2c-3.2-.5-5.6-.1-7 1.4"/><path d="M12 6.5v13.2"/></svg>' +
+          '<div class="rd-empty-t">书架还是空的</div>' +
+          '<div class="rd-empty-s">点右上角导入一本，或者从聊天里粘贴一段文字</div>' +
+        '</div>' +
         '<div class="rd-hero" id="rd-hero" hidden>' +
           '<div class="rd-hero-card">' +
             '<div class="rd-hero-top">' +
@@ -3230,12 +3234,11 @@
       return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
         (a.replyTo ? ' rd-pop-reply' : '') + '"' +
         ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
-        '<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
         (old
           ? '<div class="rd-pop-cross">' + oldDays + ' 天前写下这句，后来划掉了</div>' +
             '<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
           : '') +
-        '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div>' +
+        '<div class="rd-pop-text"><span class="rd-pop-who">' + (mine ? '我' : '他') + '</span>' + rdEsc(a.text || '') + '</div>' +
         (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
         '</div>';
     }).join('');
