@@ -41,7 +41,7 @@
 
 /* ---------- 阅读器骨架 ---------- */
 #page-reading{position:relative}
-.rd-reader{position:absolute;inset:0;display:flex;flex-direction:column}
+.rd-reader{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 /* 阅读器顶栏复用全局 chat-head：返回/目录改成 button 后补一条原生样式复位 */
 .rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
 #rd-mark-btn.on{color:#d9534f}
@@ -266,7 +266,8 @@
    paper：正文横向切 12 条，每段相对父段再转一点，累积成一道弧，是真卷曲不是单层斜切。
    每段内放一份整页内容并按段偏移裁出对应竖条，所以文字和底纸都是连续的。
    slide：单层滑出/滑入，成本最低。 */
-.rd-curl{position:absolute;z-index:5;pointer-events:none;perspective:1200px;transform-style:preserve-3d}
+/* 整页绕最左缘（书脊）翻出去；每段只叠一点点角度做末端弧度 */
+.rd-curl{position:absolute;z-index:5;pointer-events:none;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
 .rd-curl-seg{position:absolute;top:0;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
 /* 每段右侧多出半像素与下一段重叠，消掉 3D 抗锯齿留下的接缝 */
 .rd-curl-slice{position:absolute;top:0;left:0;width:calc(100% + .5px);height:100%;overflow:hidden;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
@@ -280,9 +281,6 @@
 .rd-curl-page{position:absolute;top:0;box-sizing:border-box;flex:none;overflow:visible;animation:rdCurlPageBlank .07s linear forwards}
 .rd-curl.is-prev .rd-curl-page{animation:none}
 @keyframes rdCurlPageBlank{from{opacity:1}to{opacity:0}}
-/* 掠过纸面的那道光，短促扫过，不跟着卷曲 */
-.rd-curl-flash{position:absolute;z-index:6;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.38) 46%,rgba(255,255,255,.04) 58%,transparent 70%);animation:rdCurlFlash .46s ease-out}
-@keyframes rdCurlFlash{0%{opacity:0;transform:translateX(-30%)}18%{opacity:.85}100%{opacity:0;transform:translateX(34%)}}
 /* 纸页抬起来时在新页上留下的投影，随掀开淡掉 */
 .rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast .46s ease-out forwards}
 .rd-turn-cast.is-prev{transform:scaleX(-1)}
@@ -295,7 +293,6 @@
 .rd-turn-next-slide{animation:rdTurnNextSlide .2s ease forwards}
 .rd-turn-prev-slide{animation:rdTurnPrevSlide .2s ease forwards}
 [data-theme="dark"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
-[data-theme="dark"] .rd-curl-flash{background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.02) 58%,transparent 70%)}
 .rd-reader[data-rd-bg="eye"] .rd-curl-slice{background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 .rd-reader[data-rd-bg="night"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 
