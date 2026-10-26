@@ -151,7 +151,7 @@
     'rp-thx-en': 1, 'rp-thx-prob': 60, 'rp-thx-mode': 2,
     // v3.9.x：TA 主动查岗——主动发送轮里 TA 按概率来查你的岗（查岗问题卡进聊天，
     // 概率自动弹回答弹窗，作答后 TA 回应）；冷却默认 30 分钟防高概率连查
-    // v3.12.x：默认概率 15% → 8%——用户反馈互动卡片整体太频繁（询问/小问题/好奇/吐槽同步降半）
+    // v3.12.x：默认概率 15% → 8%——用户反馈互动卡片整体太频繁（询问/小问题/好奇/调侃同步降半）
     // v3.13.x：互动卡整体降频第二轮——五类卡加全局闸门（任一卡发出后 60 分钟内其余类型不再自动触发，
     // 见 ta-ask.js interactGateOk）+ 存量旧默认概率一次性迁移到 5%；本文件 ckq-prob 默认 8 保持不变，
     // ck-question.js 的兜底默认已从 15 对齐为 8
@@ -1418,7 +1418,7 @@
       { k: 'ta-ask-prob', def: 5, blob: 'ta-ask', name: '他的询问' },
       { k: 'tc-prob', def: 5, blob: 'ta-choose', name: '他的小问题' },
       { k: 'tcu-prob', def: 5, blob: 'ta-curious', name: '他的好奇' },
-      { k: 'tr-prob', def: 5, blob: 'ta-roast', name: '他的吐槽' },
+      { k: 'tr-prob', def: 5, blob: 'ta-roast', name: '他的调侃' },
       { k: 'ckq-prob', def: 2, pre: 'reply-', name: '他的查岗' },
       { k: 'ai-rps-prob', def: 8, pre: 'reply-', name: '猜拳邀请' },
       { k: 'ai-game-prob', def: 5, pre: 'reply-', name: '游戏邀请' },
@@ -1538,7 +1538,7 @@
       { label: '安静', value: '2' }, { label: '很安静', value: '3' }
     ];
     const IC_DETAIL = '聊天里 他 主动发的卡与邀请多久来一次，按这一档整体往下调（没有比「原频率」更高的档）。'
-      + '覆盖：五类提问卡（询问 / 小问题 / 好奇 / 吐槽 / 分享你的字卡）、邀请三类（猜拳 / 游戏 / 贴贴）、音乐「一起去听」邀请。'
+      + '覆盖：五类提问卡（询问 / 小问题 / 好奇 / 调侃 / 分享你的字卡）、邀请三类（猜拳 / 游戏 / 贴贴）、音乐「一起去听」邀请。'
       + '不影响查岗自己的开关 / 概率 / 冷却，也不影响你自己发的卡。'
       + '\n\n· 原频率：全部 ×1，完全保持现在的节奏（默认）；'
       + '\n· 稍安静：概率 ×0.6、提问卡冷却 ×1.5、跨类型间隔 ×1.5；'
@@ -1606,7 +1606,7 @@
       const sub = document.createElement('div');
       sub.className = 'gs-sub';
       sub.id = 'ic-freq-sub';
-      sub.textContent = '他 在聊天里主动发的卡与邀请（提问卡五类：询问/小问题/好奇/吐槽/分享你的字卡；邀请三类：猜拳/游戏/贴贴；音乐「一起去听」）整体频率；「原频率」＝完全保持现在的节奏，往右都是调低。各类互动卡的单项概率在【字卡与概率】里逐项调。点右侧档位切换。';
+      sub.textContent = '他 在聊天里主动发的卡与邀请（提问卡五类：询问/小问题/好奇/调侃/分享你的字卡；邀请三类：猜拳/游戏/贴贴；音乐「一起去听」）整体频率；「原频率」＝完全保持现在的节奏，往右都是调低。各类互动卡的单项概率在【字卡与概率】里逐项调。点右侧档位切换。';
       group.appendChild(sub);
       panel.appendChild(group);
       rpsHost.insertBefore(panel, rpsTabs.nextSibling);

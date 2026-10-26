@@ -11120,7 +11120,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793020594518" data-version="v8.56.9">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793021577405" data-version="v8.57.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -11494,7 +11494,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-ta-roast-mine">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.4 5.7.3-4.4 3.6 1.5 5.5-4.6-3.3-4.6 3.3 1.5-5.5-4.4-3.6 5.7-.3z"/></svg></div>
-        <div class="ci"><div class="n">他的吐槽·我的添加</div><div class="m">你添加的吐槽字卡</div></div>
+        <div class="ci"><div class="n">他的调侃·我的添加</div><div class="m">你添加的调侃字卡</div></div>
         <div class="t" id="cc-ta-roast-count-mine">0</div>
       </div>
       <div class="chat-item glass" id="li-ta-checkin-mine">
@@ -11589,7 +11589,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-ta-roast">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.4 5.7.3-4.4 3.6 1.5 5.5-4.6-3.3-4.6 3.3 1.5-5.5-4.4-3.6 5.7-.3z"/></svg></div>
-        <div class="ci"><div class="n">他的吐槽</div><div class="m">突然吐槽你一句 · 情侣式调侃</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
+        <div class="ci"><div class="n">他的调侃</div><div class="m">突然调侃你一句 · 情侣式调侃</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
         <div class="t">46</div>
       </div>
       <div class="chat-item glass" id="li-ta-checkin">
@@ -11811,21 +11811,21 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- 他的吐槽（吐槽字卡管理页，独立页面） -->
+<!-- 他的调侃（调侃字卡管理页，独立页面） -->
 <div class="page" id="page-ta-roast" hidden>
   <div class="chat-head">
     <span class="ch-back" id="tc-roast-back">
       <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
     </span>
-    <span class="ch-name">他的吐槽</span>
+    <span class="ch-name">他的调侃</span>
   </div>
   <div class="gs-scroll">
     <button class="div-draw" id="tr-now">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.4 5.7.3-4.4 3.6 1.5 5.5-4.6-3.3-4.6 3.3 1.5-5.5-4.4-3.6 5.7-.3z"/></svg>
-      让他现在吐槽一次
+      让他现在调侃一次
     </button>
     <div class="set-group glass">
-      <div class="gs-row"><span>他 偶尔吐槽你一句</span><label class="toggle"><input type="checkbox" id="tr-enable"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他 偶尔调侃你一句</span><label class="toggle"><input type="checkbox" id="tr-enable"><span class="tk"></span></label></div>
       <div class="gs-row"><span>使用系统预设字卡</span><label class="toggle"><input type="checkbox" id="tr-default" checked><span class="tk"></span></label></div>
       <div class="gs-row"><span>触发概率</span><input type="range" id="tr-prob" min="1" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tr-prob-val">5%</span></div>
       <div class="gs-row"><span>自动弹窗概率</span><input type="range" id="tr-popup" min="0" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tr-popup-val">70%</span></div>
@@ -11835,7 +11835,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <button class="cc-tab" data-tab="mine">我的添加</button>
     </div>
     <div class="tc-search-wrap" style="padding:0 12px 8px">
-      <input type="text" id="tr-search" class="tc-input" placeholder="搜索吐槽…" style="width:100%">
+      <input type="text" id="tr-search" class="tc-input" placeholder="搜索调侃…" style="width:100%">
     </div>
     <div id="tr-sys-panel">
       <div class="set-group glass">
@@ -11845,17 +11845,17 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     </div>
     <div id="tr-mine-panel" hidden>
       <div class="set-group glass">
-        <div class="cal-card-title" style="padding:14px 14px 0;display:flex;align-items:center;justify-content:space-between"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>添加吐槽字卡</span><button class="cc-tool" id="tr-new-grp" style="padding:4px 8px;font-size:11px">＋ 分组</button></div>
+        <div class="cal-card-title" style="padding:14px 14px 0;display:flex;align-items:center;justify-content:space-between"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>添加调侃字卡</span><button class="cc-tool" id="tr-new-grp" style="padding:4px 8px;font-size:11px">＋ 分组</button></div>
         <div class="tc-addform">
           <select id="tr-new-cat" class="tc-input">
             <option value="light">轻微调侃</option>
             <option value="familiar">熟悉感</option>
             <option value="sweet">情侣式调侃</option>
             <option value="mild">轻微嫌弃</option>
-            <option value="serious">严肃吐槽</option>
+            <option value="serious">严肃调侃</option>
             <option value="world">两个世界</option>
           </select>
-          <input id="tr-new-text" class="tc-input" type="text" placeholder="吐槽内容…">
+          <input id="tr-new-text" class="tc-input" type="text" placeholder="调侃内容…">
           <input id="tr-new-match" class="tc-input" type="text" placeholder="触发关键词，用 | 分隔（可选），如：熬夜|没睡">
           <button class="ta-add-btn" style="width:100%" id="tr-new-add">添加</button>
         </div>
@@ -12095,7 +12095,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- 通用回答弹层（他的好奇 / 他的吐槽 共用） -->
+<!-- 通用回答弹层（他的好奇 / 他的调侃 共用） -->
 <div class="qa-mask" id="qa-mask" hidden>
   <div class="qa-panel">
     <div class="mg-head"><span id="qa-title">回答</span><button class="mg-close" id="qa-mask-close">✕</button></div>
@@ -12689,7 +12689,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.56.9</div>
+          <div class="val" id="about-ver-val">v8.57.0</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -12780,7 +12780,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.56.9</div>
+      <div class="ver">Mochi 字卡传讯 v8.57.0</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13179,7 +13179,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.56.9</span>
+              <span class="lic-ver">v8.57.0</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -13250,7 +13250,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">朋友圈贴纸回复：配图动态下点「贴纸」，选表情包贴到照片上（张数不限制，自己贴的可点撤回），他 会按评论概率回贴一张并进朋友圈通知</div>
           <div class="lic-li">回忆闪回：打开朋友圈时，「那年今天」的旧动态会以记忆卡置顶，点击定位到原动态并高亮，✕ 当天不再显示</div>
           <div class="lic-li">心情日记：桌面「日历」→ 顶部心情日记卡，每天选一个心情表情+一句话，他 的心情按天生成；月视图两人心情曲线对照、心情日历格与连续记录统计（#303）</div>
-          <div class="lic-li">「他 的提问」面板：让 他 现在问一次（询问 / 小问题 / 好奇 / 吐槽 / 邀请 / 贴贴 / 查岗 / 跨桌面查岗）——前五项问的是 他 自己（提问、出选择题、好奇、吐槽、约你玩），后三项＝让 他 当场做一件平常只按概率发生的事（发一次贴贴邀请、来查一次岗、让其他桌面的联系人来查一次岗）</div>
+          <div class="lic-li">「他 的提问」面板：让 他 现在问一次（询问 / 小问题 / 好奇 / 调侃 / 邀请 / 贴贴 / 查岗 / 跨桌面查岗）——前五项问的是 他 自己（提问、出选择题、好奇、调侃、约你玩），后三项＝让 他 当场做一件平常只按概率发生的事（发一次贴贴邀请、来查一次岗、让其他桌面的联系人来查一次岗）</div>
           <div class="lic-li">贴贴邀请：他 会主动发来贴贴 / 抱抱 / 牵手 / 靠着的邀请，同意有轻震回应，婉拒也有专属台阶文案</div>
           <div class="lic-li">他 的查岗：温柔关心式查岗问题卡（单选 / 文字作答 / 互动动作），作答后 他 会回应</div>
           <div class="lic-li">批量发送消息：聊天输入栏「批量发送」按钮，可插入表情包 / 图片 / 文字，每条单独一条，多条按顺序一次性发送</div>
@@ -13268,7 +13268,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">聊天字卡分类可上传：【主字卡】【颜文字】【emoji】【表情包】【图片】【拍一拍】【语音】分类</div>
           <div class="lic-li">其他互动功能字卡（自定义）：字卡库→可自定义字卡→其他互动功能字卡·公用 / ·专属，可为摸鱼 / 吃饭 / 经期 / 喝水 / 音乐等功能添加自定义字卡（可编辑 / 删除），功能触发时 他 会随机使用</div>
           <div class="lic-li">互动卡片可自定义内容，概率触发互动（在字卡库里）</div>
-          <div class="lic-li">他 的询问 / 小问题 / 好奇 / 吐槽 / 查岗（含互动动作）/ 邀请：题库内容均可自定义</div>
+          <div class="lic-li">他 的询问 / 小问题 / 好奇 / 调侃 / 查岗（含互动动作）/ 邀请：题库内容均可自定义</div>
           <div class="lic-li">寻踪日常字卡：地点、在做什么、说的话，均可自定义</div>
           <div class="lic-li">情绪回复：按你当前的心情自动匹配相应字卡</div>
           <div class="lic-li">内置词库规模：情绪 11 组 → 心意 9 组 + 特殊心意 4 组 → 交流意图 8 组三级链路，整类与单张均可开关</div>
@@ -13535,7 +13535,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">21</span><span class="lg-name">记录统计</span><span class="lg-count">6</span></summary>
             <div class="lg-body">
-          <div class="lic-li">桌面【提问记录】统计历史：他 的询问、他 的小问题、他 的好奇、他 的吐槽、我的邀请、问问他</div>
+          <div class="lic-li">桌面【提问记录】统计历史：他 的询问、他 的小问题、他 的好奇、他 的调侃、我的邀请、问问他</div>
           <div class="lic-li">桌面【主页】多 tab 统计：联系人换头像、通话记录、每日摸鱼值 / 每日打工值、摸鱼抓包（我抓到 他 / 被 他 抓到 双向记录）、他 的关心（查岗 / 经期 / 喝水 / 吃饭 / 番茄陪伴聚合）、心意币红包 / 赚钱 / 申请记录</div>
           <div class="lic-li">联系人今日情话、我的备忘、我的心情的历史可在【日历】里按天切换查看</div>
           <div class="lic-li">桌面【聊天统计】统计：相处记录（第一次聊天时间、最近聊天时间、聊天消息条数、文字数量、收藏记录）、聊天记录（消息比例、最常聊天时间段、最常聊天日期、平均每日消息、最长连续聊天、单日最高消息）、情绪表达（文字字卡 / 情绪 / 心意 / 交流意图使用次数排行）</div>
@@ -14095,12 +14095,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>他的询问</span><div class="stepper" id="dcp-ta-ask-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-ta-ask-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的小问题</span><div class="stepper" id="dcp-tc-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-tc-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的好奇</span><div class="stepper" id="dcp-tcu-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-tcu-prob-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-row"><span>他的吐槽</span><div class="stepper" id="dcp-tr-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-tr-prob-val" readonly><button class="stp-max">+</button></div></div>
+            <div class="gs-row"><span>他的调侃</span><div class="stepper" id="dcp-tr-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-tr-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的查岗</span><div class="stepper" id="dcp-ckq-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-ckq-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的邀请 · 猜拳</span><div class="stepper" id="dcp-ai-rps-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-ai-rps-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的邀请 · 游戏</span><div class="stepper" id="dcp-ai-game-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-ai-game-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他的邀请 · 贴贴</span><div class="stepper" id="dcp-ai-cuddle-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcp-ai-cuddle-prob-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub">以上分类档行的键与各功能页/其他设置页是同一份（如「他的查岗」= 回复设置→查岗 的「查岗概率」、情绪卡 = 字卡库→聊天情绪字卡 页那三行），改哪边都生效。他的询问/小问题/好奇/吐槽四类是「在自身触发概率之上再乘总档」，各自的题库与弹窗等详细设置在 字卡库→系统预设字卡 对应页。</div>
+            <div class="gs-sub">以上分类档行的键与各功能页/其他设置页是同一份（如「他的查岗」= 回复设置→查岗 的「查岗概率」、情绪卡 = 字卡库→聊天情绪字卡 页那三行），改哪边都生效。他的询问/小问题/好奇/调侃四类是「在自身触发概率之上再乘总档」，各自的题库与弹窗等详细设置在 字卡库→系统预设字卡 对应页。</div>
             <div class="gs-row"><span>桌面今日情话 · 系统预设（开关型）</span><label class="toggle"><input type="checkbox" id="dcp-tg-quote"><span class="tk"></span></label></div>
             <div class="gs-row"><span>他在身边位置卡 · 系统预设（开关型）</span><label class="toggle"><input type="checkbox" id="dcp-tg-loc"><span class="tk"></span></label></div>
             <div class="gs-sub">这两类只有「用不用系统预设」的开关、没有概率，不受总档缩放；关闭后分别只从你自己添加的情话/位置话术里出。</div>
@@ -15343,7 +15343,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     <button class="fav-tab sel" data-tab="ask">他的询问</button>
     <button class="fav-tab" data-tab="choose">他的小问题</button>
     <button class="fav-tab" data-tab="curious">他的好奇</button>
-    <button class="fav-tab" data-tab="roast">他的吐槽</button>
+    <button class="fav-tab" data-tab="roast">他的调侃</button>
     <button class="fav-tab" data-tab="invite">邀请</button>
     <button class="fav-tab" data-tab="askq">问问他</button>
   </div>
@@ -15364,9 +15364,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <button class="mem-add" id="ar-curious-clear">清空好奇记录</button>
     </div>
     <div class="cal-card glass" data-panel="roast" hidden>
-      <div class="cal-card-title">他的吐槽</div>
+      <div class="cal-card-title">他的调侃</div>
       <div id="ar-roast"></div>
-      <button class="mem-add" id="ar-roast-clear">清空吐槽记录</button>
+      <button class="mem-add" id="ar-roast-clear">清空调侃记录</button>
     </div>
     <div class="cal-card glass" data-panel="invite" hidden>
       <div class="cal-card-title">邀请</div>
@@ -17430,9 +17430,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18"/><circle cx="12" cy="12" r="2"/></svg></span>
             <span>好奇</span>
           </button>
-          <button class="more-item" id="more-roast-now" title="让他现在吐槽一次（他的吐槽）">
+          <button class="more-item" id="more-roast-now" title="让他现在调侃一次（他的调侃）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.4 5.7.3-4.4 3.6 1.5 5.5-4.6-3.3-4.6 3.3 1.5-5.5-4.4-3.6 5.7-.3z"/></svg></span>
-            <span>吐槽</span>
+            <span>调侃</span>
           </button>
           <button class="more-item" id="more-invite-now" title="让他现在邀请一次（猜拳/Pong/贪吃蛇/贴贴，话术来自字卡库「他的邀请」）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v3M5.5 12h3"/><path d="M15.5 11h.01M18.5 13h.01"/></svg></span>
@@ -21069,7 +21069,7 @@ return out;
 { n: '多人决定', fn: 'openGroupDecision' },
 { n: '他 询问', fn: 'openAskReply' },
 { n: '他 心情', fn: 'openCurious' },
-{ n: '他 吐槽', fn: 'openRoast' }
+{ n: '他 调侃', fn: 'openRoast' }
 ];
 function fToast(msg) {
 try {
@@ -22917,4 +22917,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvpa615i -->
+<!-- __MOCHI_EOF__ mvpar3jx -->

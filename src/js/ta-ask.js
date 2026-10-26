@@ -1,7 +1,7 @@
 // ===== 功能：TA的询问 =====
 // 题库 3 分类（日常/关心/互动），可添加/删除/开关问题；
 // 联系人随机触发向你提问（v3.12.x：冷却 45 分钟、概率 10%——用户反馈发卡太频繁，原 25 分钟/20%；启动 60 秒后首次检查、每 4 分钟轮询）；
-// #1153：五类互动卡（询问/小问题/好奇/吐槽/分享你的字卡）整体频率可按「互动卡频率」三档缩放
+// #1153：五类互动卡（询问/小问题/好奇/调侃/分享你的字卡）整体频率可按「互动卡频率」三档缩放
 //（频繁/原频率/安静，回复设置页可调）；原频率＝全部 ×1、行为不变。详见下方 IC_MODES 段。
 // 聊天里显示"TA想问你一个问题。" + 询问卡片，点击卡片可回答；
 // 回答后显示"我的回答" + "收到你的回答。"，并记入历史（最多 50 条）；
@@ -11,7 +11,7 @@
   const store = window.activeStore();
   const KEY = 'ta-ask';
 
-  // ================= 我的添加：自定义分组通用工具（TA的询问/小问题/好奇/吐槽、查岗、今日情话共用） =================
+  // ================= 我的添加：自定义分组通用工具（TA的询问/小问题/好奇/调侃、查岗、今日情话共用） =================
   // 数据模型：groups=[{id,name}]（存各模块数据对象或独立键）；条目可选 grp=分组id（缺省=未分组）
   // 分组只用于管理页整理展示，不影响自动抽取逻辑（抽取仍按 isPreset/enabled/useDefault）
   function grpToast(msg) {
@@ -40,14 +40,14 @@
     return escG(window.taFit ? window.taFit(t) : t);
   }
   // v3.7.x：系统预设 tab 内联展示 TA 回应话术池（只读，开关在「互动回应」tab）——
-  // 询问/吐槽 文字题无题自带回应，每个问题下内联通用池（getInteractPool 同源）
+  // 询问/调侃 文字题无题自带回应，每个问题下内联通用池（getInteractPool 同源）
   function interactPoolInlineHtml(poolName) {
     const arr = window.getInteractPool ? window.getInteractPool(poolName, []) : [];
     if (!arr.length) return '';
     return '<div class="tc-qopts">他 回应：<span class="tc-known">系统</span> ' + arr.map(escG).join(' / ') + '</div>';
   }
   // #1315：系统预设字卡「整类停用」（共用件＝default-cards.js 的 window.presetGroup，键 pg-groups-off）。
-  //   本文件四类（询问/小问题/好奇/吐槽）的分类就是它们的「分组」，页顶分类条上挂整类开关；
+  //   本文件四类（询问/小问题/好奇/调侃）的分类就是它们的「分组」，页顶分类条上挂整类开关；
   //   判据只认「这条是不是系统预设 + 它所属分类有没有被停用」——用户在「我的添加」里自建的同类
   //   条目不受这把闸影响（那部分有自己的逐条启停）。
   function pgCatOff(ns, cat) { return !!(window.presetGroup && window.presetGroup.isOff(ns, cat || 'daily')); }
@@ -457,7 +457,7 @@
     if (s && s.autoPopup === false) return 0;
     return 70;
   }
-  // v3.5.117：互动卡片弹窗互斥——TA的询问/小问题/好奇/吐槽各自独立定时触发、
+  // v3.5.117：互动卡片弹窗互斥——TA的询问/小问题/好奇/调侃各自独立定时触发、
   // 各自用不同弹窗容器（modal/tc/qa），同一时刻多个机制命中时会同时弹多个弹窗叠在一起。
   // 弹窗前检查：已有任一互动弹窗打开则不弹本次（卡片仍进聊天，可手动点开）。
   function cardPopupBusy() {
@@ -483,7 +483,7 @@
   // v3.12.x：迟到弹窗守卫——手机浏览器会把后台页面的定时器冻结/深度节流，
   // 回前台时把到点未执行的定时器一次性补跑；补跑瞬间页面已恢复可见，
   // document.hidden 等既有守卫全部失效 → 弹出几分钟前已在聊天里看过的旧互动卡片
-  //（用户反馈：切后台再回来再切出，开屏弹出刚看过的询问/小问题/好奇/吐槽弹窗）。
+  //（用户反馈：切后台再回来再切出，开屏弹出刚看过的询问/小问题/好奇/调侃弹窗）。
   // 正常触发在 400ms 左右执行；超过 4s 才到达的一律视为冻结补跑，不再自动弹
   //（卡片照常留在聊天里，点击可答）。
   // v3.13.x：再加一道「中途切后台」守卫——用户反馈快速切后台再回来（<4s）仍会重复弹
@@ -503,7 +503,7 @@
   // 暴露给 ck-question.js（查岗卡同款守卫）复用，保持一致
   window.interactPopupStale = autoPopupStale;
 
-  // ---- v3.13.x：互动卡全局频率闸门（询问/小问题/好奇/吐槽/查岗五类共享）----
+  // ---- v3.13.x：互动卡全局频率闸门（询问/小问题/好奇/调侃/查岗五类共享）----
   // 用户反馈互动卡整体频率「还是太高」：v3.12.x 只降了各类默认概率，但五类各自独立计时、
   // 冷却互不相干，叠加起来观感仍是「每隔十几分钟就来一张」。现加一道跨类型总闸门：
   // 任意互动卡发出后 INTERACT_GATE_MS 内，其余类型一律不再自动触发
@@ -515,8 +515,8 @@
   // 用户直派「联系人在聊天里发送互动卡片的频率需要可以调整 / 原来的频率也保留」，随后补充
   // 「其实原频率就已经很频繁了。不要高频率，帮我做原频率调低几档」——所以档位全部 ≤ 原频率，
   // 没有比原频率更高的档。作用面＝聊天里 TA 主动发的卡与邀请：
-  //   · 五类提问卡（询问 / 小问题 / 好奇 / 吐槽 / 分享你的字卡）：概率 × probMul、
-  //     各自冷却 × coolMul（基准 询问 45 / 小问题 30 / 好奇 30 / 吐槽 30 / 分享字卡 90 分钟）、
+  //   · 五类提问卡（询问 / 小问题 / 好奇 / 调侃 / 分享你的字卡）：概率 × probMul、
+  //     各自冷却 × coolMul（基准 询问 45 / 小问题 30 / 好奇 30 / 调侃 30 / 分享字卡 90 分钟）、
   //     跨类型总闸门（基准 60 分钟）× gateMul（查岗卡共用本闸门，一并随之缩放）；
   //   · 邀请三类（猜拳 / 游戏 / 贴贴，ta-invite.js 的 hit）与音乐邀请（music-player.js 的
   //     「一起去听」）：只套概率 × probMul（它们没有硬编码冷却，音乐邀请的冷却按音乐设置里的档位）。
@@ -562,7 +562,7 @@
   function interactGateMs() { return Math.round(INTERACT_GATE_MS * icMode().gateMul); }
   window.interactGateMs = interactGateMs;
   function interactGateOk() {
-    // #1015 夜间静默：夜间任意互动卡（询问/小问题/好奇/吐槽/查岗卡）一律不自动触发——
+    // #1015 夜间静默：夜间任意互动卡（询问/小问题/好奇/调侃/查岗卡）一律不自动触发——
     // 五类触发器与 ck-question 自动查岗都经本闸门，此处一处收口；被拦的当次不写冷却时间戳
     //（调用方在 interactGateOk 之后才 interactGateMark/推进 lastAskAt），7:00 后下一个轮询
     // 周期照常触发。手动「现在问一次 / 让 TA 现在查岗一次」不经过本闸门，不受限。
@@ -578,7 +578,7 @@
   // 查岗卡（ck-question.js，后打包）经 window 调用同一道闸门；探针供回归/诊断只读
   window.interactGateOk = interactGateOk;
   window.interactGateMark = interactGateMark;
-  // v3.42.x #422：TA 主动提问（关心询问/小问题/好奇/互动/吐槽）统一走「其他互动功能字卡」里的
+  // v3.42.x #422：TA 主动提问（关心询问/小问题/好奇/互动/调侃）统一走「其他互动功能字卡」里的
   //   「TA主动提问」概率门控（dcf-ask，随联系人桌面隔离）：100%＝保持原节奏（仅受原冷却/闸门约束），
   //   0%＝完全不主动提问。独立于查岗卡（查岗走自己的 dcf-deskcheck/ckq），故不改 interactGateOk 本体。
   function taAskDcfOk() { try { return Math.random() * 100 < (window.dcfGet ? window.dcfGet('ask') : 100); } catch (e) { return true; } }
@@ -640,7 +640,7 @@
   // v3.13.x：一次性降频迁移——设置对象一旦保存就固化了当时的默认概率，
   // v3.12.x 降默认对老设备从不生效（存储里还是旧高概率）。这里把「恰好等于历史默认值」的
   // 概率吸附到新默认 5%；用户真正自定义过的其他值不动。幂等，写盘仅限已有数据。
-  // 各库历史默认：询问 20/10 · 小问题 15/8 · 好奇 15/8 · 吐槽 30/15
+  // 各库历史默认：询问 20/10 · 小问题 15/8 · 好奇 15/8 · 调侃 30/15
   function migrateInteractProb(d, storeKey, oldDefaults) {
     try {
       if (!d.settings || d.settings.probLowV313) return;
@@ -841,7 +841,7 @@
   // v3.7.x：TA 回应挑选——「硬编码/系统预设回应池」与「字卡库自定义文字字卡」两池混合：
   // 预设池 90% 概率抽取，字卡库 10% 概率抽取；抽字卡库时最多连用 5 张字卡、
   // 每张之间空一格（v3.7.1 由合并大池改两池等概率，v3.7.2 调为 90/10 + 多张连用）。
-  // presetPool：可选，该卡片类型自带的预设回应池（好奇的题预设 replies / 吐槽固定句 /
+  // presetPool：可选，该卡片类型自带的预设回应池（好奇的题预设 replies / 调侃固定句 /
   // 选项预设回应等）；两池都空时兜底默认甜话。
   // v3.7.x：预设回应池与「系统预设字卡 → 互动回应」tab 同源展示，逐张开关
   // （dc-off-interact-*）后此处过滤已关闭的话术，不再参与抽取。
@@ -2166,7 +2166,7 @@ window.openTCPanel = openTCPanel;
     refreshAskRecordsIfOpen();
     // #1508：答完即收——小问题弹窗作答后不再停在「结果页」等手动「收起来」（作者实报
     // 「我已经选了答案，没有自动关闭收起来」，明说其他设备型号也有＝纯行为口径，零机型分支）。
-    // 与好奇/吐槽同口径：你的选择与 TA 的回应已由 chatChooseReply 写进聊天卡片与消息流
+    // 与好奇/调侃同口径：你的选择与 TA 的回应已由 chatChooseReply 写进聊天卡片与消息流
     // （气泡翻「✓ 你选择了：…」＋TA 回应一条），默契结果仍在「TA的提问」记录里可查。
     // renderTCResult 保留不删：结果页暂无入口（locateCardIdx 只认未答卡），后续要
     // 「查看结果」入口时从这里接回。
@@ -3291,10 +3291,10 @@ window.openTCPanel = openTCPanel;
   const tcuNow = document.getElementById('tcu-now');
   if (tcuNow) tcuNow.addEventListener('click', () => window.triggerTaCuriousNow());
 
-  // ================= TA的吐槽（复刻星言 ta的吐槽 完整版） =================
-  // 定位：TA 偶尔突然吐槽你一句，然后回到正常聊天（熟悉/调侃/亲密为主，不是批评）
+  // ================= TA的调侃（复刻星言 ta的调侃 完整版） =================
+  // 定位：TA 偶尔突然调侃你一句，然后回到正常聊天（熟悉/调侃/亲密为主，不是批评）
   const KEY4 = 'ta-roast';
-  const TR_CAT_LABEL = { light: '轻微调侃', familiar: '熟悉感', sweet: '情侣式调侃', mild: '轻微嫌弃', serious: '严肃吐槽', world: '两个世界' };
+  const TR_CAT_LABEL = { light: '轻微调侃', familiar: '熟悉感', sweet: '情侣式调侃', mild: '轻微嫌弃', serious: '严肃调侃', world: '两个世界' };
   const TR_CAT_ORDER = ['light', 'familiar', 'sweet', 'mild', 'serious', 'world'];
   const TR_DEFAULT = [
     { id: 'rl1', cat: 'light', text: '你怎么又这样' }, { id: 'rl2', cat: 'light', text: '我就知道' }, { id: 'rl3', cat: 'light', text: '果然还是你' },
@@ -3320,7 +3320,7 @@ window.openTCPanel = openTCPanel;
     { id: 'rw3', cat: 'world', text: '说好让我好好陪你的，自己先睡着了', match: ['困了', '要睡了', '晚安', '睡觉'] },
     { id: 'rw4', cat: 'world', text: '字卡发那么多条，是不是就想让我回你', match: ['发了好多', '字卡', '怎么不回'] },
     { id: 'rw5', cat: 'world', text: '你摸到我的时候，明明笑了', match: ['摸到了', '摸到你了', '感觉到了你'] },
-    // 普通情侣轻松吐槽
+    // 普通情侣轻松调侃
     { id: 'rs11', cat: 'sweet', text: '又在等我的消息吧？', match: ['在吗', '怎么不回', '没回你'] },
     { id: 'rs12', cat: 'sweet', text: '说好的早睡呢？', match: ['晚安', '睡觉', '困了', '睡了'] },
     { id: 'rs13', cat: 'sweet', text: '一天没见就想我了吧？', match: ['想你', '想你了'] },
@@ -3442,7 +3442,7 @@ window.openTCPanel = openTCPanel;
     // #1520：读空但库里本该有＝大键没读全，当场请库取回一次（#1349a 单次飞行闸；同 taAskLoad）
     if (!d) { try { if (store.awaitingBigKey && store.awaitingBigKey(KEY4)) store.requestBigKey(KEY4); } catch (e0) {} }
     if (!d || typeof d !== 'object' || Array.isArray(d)) d = {};
-    // v3.13.x：默认触发概率 15 → 5（v3.12.x 降频漏改了吐槽，这次补上）+ 存量旧默认值迁移
+    // v3.13.x：默认触发概率 15 → 5（v3.12.x 降频漏改了调侃，这次补上）+ 存量旧默认值迁移
     if (!d.settings || typeof d.settings !== 'object') d.settings = { enabled: true, prob: 5 };
     // v3.6.x：是否使用系统预设字卡（默认开启）
     if (d.settings.useDefault === undefined) d.settings.useDefault = true;
@@ -3468,7 +3468,7 @@ window.openTCPanel = openTCPanel;
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function trSave(d) {
-    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的吐槽题库')) return false;
+    if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的调侃题库')) return false;
     try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
     return true;
   }
@@ -3497,12 +3497,12 @@ window.openTCPanel = openTCPanel;
     if (opts && typeof opts.popupProb === 'number') popup = Math.random() * 100 < opts.popupProb;
     else if (opts && opts.popup === false) popup = false;
     // v3.5.146：提示语标记 ask-msg（不算 notable，避免与卡片通知重复成两条）
-    window.chatAddSystem('他吐槽了你一句。', { special: 'ask-msg' });
+    window.chatAddSystem('他调侃了你一句。', { special: 'ask-msg' });
     const el = window.chatAddSystem(q.text, { special: 'ask-roast', roastText: q.text, roastCat: q.cat || 'light' });
     const idx = el ? Number(el.dataset.idx) : -1;
     // v3.5.141：后台收到互动卡片 → 系统通知提示
     // v3.5.146：通知文本合并提示语 + 具体内容
-    if (window.bgNotifyCheck) window.bgNotifyCheck('他吐槽了你一句：' + q.text, Date.now(), { name: '他的吐槽', late: _lateNotify(), kind: 'ask' });
+    if (window.bgNotifyCheck) window.bgNotifyCheck('他调侃了你一句：' + q.text, Date.now(), { name: '他的调侃', late: _lateNotify(), kind: 'ask' });
     // v3.6.x：用户正在聊天输入栏打字时不弹（弹窗会抢焦点打断输入法，见 chatInputFocused）
     // v3.12.x：迟到弹窗守卫（冻结定时器回前台补跑不再弹旧卡，见 autoPopupStale）
     if (popup) {
@@ -3604,7 +3604,7 @@ window.openTCPanel = openTCPanel;
   setTimeout(maybeTriggerTACC, 150000);
   setInterval(maybeTriggerTACC, 240000);
 
-  // 吐槽回应弹窗
+  // 调侃回应弹窗
   window.openRoast = function (msgIdx) {
     msgIdx = locateCardIdx(msgIdx, 'ask-roast', 'roastStatus');
     if (msgIdx < 0) return;
@@ -3619,8 +3619,8 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
-    body.innerHTML = '<div class="qa-hint">他 吐槽你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+    if (title) title.textContent = window.taFit ? window.taFit('他的调侃') : '他的调侃';
+    body.innerHTML = '<div class="qa-hint">他 调侃你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
       '<input id="qa-input" class="qa-input" type="text" placeholder="回 他 一句…">' +
       '<button class="qa-send" id="qa-send">回他一句</button>';
     mask.hidden = false;
@@ -3644,12 +3644,12 @@ window.openTCPanel = openTCPanel;
       rec = getCardAt(msgIdx);
     }
     if (!rec || rec.special !== 'ask-roast' || rec.roastStatus === 'answered') return;
-    // v3.7.x：吐槽话术池与「系统预设字卡 → 互动回应」tab 同源（getInteractPool），
+    // v3.7.x：调侃话术池与「系统预设字卡 → 互动回应」tab 同源（getInteractPool），
     // 数据缺失时回退内置固定句；pickAskCardReply 内部会过滤用户已关闭的话术
     const defs = window.getInteractPool
       ? window.getInteractPool('吐槽·回应', ['你觉得我会信？', '少骗我。', '哼。', '好吧好吧。', '就这一次？', '行吧，放过你。', '嗯，这还差不多。'])
       : ['你觉得我会信？', '少骗我。', '哼。', '好吧好吧。', '就这一次？', '行吧，放过你。', '嗯，这还差不多。'];
-    // v3.7.x：回应 = 吐槽固定句池 + 字卡库自定义字卡 混合随机
+    // v3.7.x：回应 = 调侃固定句池 + 字卡库自定义字卡 混合随机
     const reply = window.pickAskCardReply ? window.pickAskCardReply(defs) : defs[Math.floor(Math.random() * defs.length)];
     // v3.5.128：不再预写 rec 字段——getChatMsgs 是 chat.js 内存对象引用，
     // 预写会让 chatRoastReply 的 roastStatus 守卫早退（回应消息丢失）
@@ -3672,7 +3672,7 @@ window.openTCPanel = openTCPanel;
     const body = document.getElementById('qa-body');
     const title = document.getElementById('qa-title');
     if (!mask || !body) return;
-    if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
+    if (title) title.textContent = window.taFit ? window.taFit('他的调侃') : '他的调侃';
     const _trShow = (window.askCardReplyClean ? window.askCardReplyClean(rec.roastReply || '') : (rec.roastReply || '')); // FIX 2026-09-17 #648 存量媒体卡回应清洗后展示
     body.innerHTML = '<div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
       '<div class="qa-mine">你说：' + String(rec.roastAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
@@ -3682,7 +3682,7 @@ window.openTCPanel = openTCPanel;
     document.getElementById('qa-close2').addEventListener('click', () => { mask.hidden = true; });
   }
 
-  // 吐槽管理页
+  // 调侃管理页
   let trTab = 'sys';
   function renderTRSettings() {
     const d = trLoad();
@@ -3786,7 +3786,7 @@ window.openTCPanel = openTCPanel;
     });
 
   }
-  // TA的吐槽 我的添加渲染配置
+  // TA的调侃 我的添加渲染配置
   const trMineOpt = {
     load: trLoad, save: trSave, order: TR_CAT_ORDER, label: TR_CAT_LABEL,
     emptyTip: '暂未添加自定义字卡，可在上方添加',
@@ -3831,7 +3831,7 @@ window.openTCPanel = openTCPanel;
     });
   }
   // AI-B 代修（2026-08-22）：同上——trTabsWrap 绑定代码重复粘贴第二份已删除
-  // 吐槽入口
+  // 调侃入口
   const liTR = document.getElementById('li-ta-roast');
   const trPage = document.getElementById('page-ta-roast');
   if (liTR && trPage) {
@@ -3851,7 +3851,7 @@ window.openTCPanel = openTCPanel;
     });
   }
   const trEn = document.getElementById('tr-enable');
-  if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? '他的吐槽已开启' : '他的吐槽已关闭'); });
+  if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? '他的调侃已开启' : '他的调侃已关闭'); });
   const trDefault = document.getElementById('tr-default');
   if (trDefault) trDefault.addEventListener('change', () => {
     const d = trLoad(); d.settings.useDefault = trDefault.checked; trSave(d);
@@ -3885,7 +3885,7 @@ window.openTCPanel = openTCPanel;
       const textEl = document.getElementById('tr-new-text');
       const matchEl = document.getElementById('tr-new-match');
       const text = textEl ? textEl.value.trim() : '';
-      if (!text) { toast('请输入吐槽内容'); return; }
+      if (!text) { toast('请输入调侃内容'); return; }
       const parsed = window.cardGroups.parseCatVal(catEl ? catEl.value : 'light');
       if (!parsed) { toast('请先选择分类或分组'); return; }
       const match = (matchEl ? matchEl.value : '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 4);
@@ -3897,7 +3897,7 @@ window.openTCPanel = openTCPanel;
       if (textEl) textEl.value = '';
       if (matchEl) matchEl.value = '';
       renderMineGroupsInto(document.getElementById('tr-mine-cats'), trMineOpt);
-      toast('已添加吐槽字卡');
+      toast('已添加调侃字卡');
     });
   }
   // v3.7.x：「＋分组」按钮（添加字卡卡片标题行）
@@ -3920,14 +3920,14 @@ window.openTCPanel = openTCPanel;
       });
     });
   }
-  // 触发一次吐槽（供管理页按钮 / 更多功能面板共用）
+  // 触发一次调侃（供管理页按钮 / 更多功能面板共用）
   window.triggerTaRoastNow = function () {
     const d = trLoad();
     const q = trPick(d, '');
-    if (!q) { toast('题库没有可用吐槽'); return; }
+    if (!q) { toast('题库没有可用调侃'); return; }
     const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
     trPush(q, { popupProb: askPopupProb(s) });
-    toast('他 在聊天里吐槽你了');
+    toast('他 在聊天里调侃你了');
   };
   const trNow = document.getElementById('tr-now');
   if (trNow) trNow.addEventListener('click', () => window.triggerTaRoastNow());
@@ -3935,7 +3935,7 @@ window.openTCPanel = openTCPanel;
   if (qaClose) qaClose.addEventListener('click', () => { document.getElementById('qa-mask').hidden = true; });
 
   // ================= 提问记录页（桌面第二页） =================
-  // 集中展示 TA的询问 / TA的小问题 / TA的好奇 / TA的吐槽 的历史记录
+  // 集中展示 TA的询问 / TA的小问题 / TA的好奇 / TA的调侃 的历史记录
   function fmtDT(ts) {
     const dd = new Date(ts);
     return ('0' + dd.getHours()).slice(-2) + ':' + ('0' + dd.getMinutes()).slice(-2) + ' ' + ((dd.getMonth() + 1) + '月' + dd.getDate() + '日');
@@ -3943,7 +3943,7 @@ window.openTCPanel = openTCPanel;
   // v3.26.x：提问记录跨桌面汇总——提问与回答都写进「发生所在联系人桌面」的 ta-ask，
   // 主页提问记录若只读当前桌面，用户在联系人桌面答过题、切回主页就「看不到记录」。
   // 汇总 = 当前桌面在前 + 其余桌面（注册表 contacts + default）的 history 合并。
-  // FIX 2026-09-16 #625：此前仅「TA的询问」走了汇总，小问题/好奇/吐槽/邀请·问问仍只读
+  // FIX 2026-09-16 #625：此前仅「TA的询问」走了汇总，小问题/好奇/调侃/邀请·问问仍只读
   // 当前桌面 ⇒ 在联系人桌面发生的记录切回主页就「看不到、不同步」。现五个分类统一走本组
   // 读写（含清空），排序统一按 ts 倒序（新→旧，与「TA的询问」原有观感一致）。
   // 根命名空间（activePrefix() = '<根>:<cid>'）：default 桌面必须与 contacts.js 的
@@ -4066,11 +4066,11 @@ window.openTCPanel = openTCPanel;
         return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
-    // TA的吐槽
+    // TA的调侃
     const roEl = document.getElementById('ar-roast');
     if (roEl) {
       const h = allDeskHistories(KEY4);
-      askListRender(roEl, h, KEY4, '吐槽', function (x) {
+      askListRender(roEl, h, KEY4, '调侃', function (x) {
         return '<div class="tc-li-q">' + escG(x.roast) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
       });
     }
@@ -4147,7 +4147,7 @@ window.openTCPanel = openTCPanel;
   clearBind('ar-ask-clear', KEY, '询问');
   clearBind('ar-choose-clear', KEY2, '小问题');
   clearBind('ar-curious-clear', KEY3, '好奇');
-  clearBind('ar-roast-clear', KEY4, '吐槽');
+  clearBind('ar-roast-clear', KEY4, '调侃');
   // 邀请 / 问问 TA 清空：同一键 invite-ask-history 里两类，各自只清自己那一类（跨桌面口径同 clearDeskHistories）
   const clearByType = (id, match, label) => {
     const btn = document.getElementById(id);
@@ -4207,13 +4207,13 @@ window.openTCPanel = openTCPanel;
     openMine('li-ta-curious-mine', 'page-ta-curious', 'tcu-tabs', switchTCUTab);
     openMine('li-ta-roast-mine', 'page-ta-roast', 'tr-tabs', switchTRTab);
   })();
-  // v3.9.x：注册 TA 询问/小问题/好奇/吐槽跨分类搜索
+  // v3.9.x：注册 TA 询问/小问题/好奇/调侃跨分类搜索
   window.__cardSearchFns = window.__cardSearchFns || [];
   [
     { name: '他的询问', load: taAskLoad },
     { name: '他的小问题', load: tcLoad },
     { name: '他的好奇', load: tcuLoad },
-    { name: '他的吐槽', load: trLoad }
+    { name: '他的调侃', load: trLoad }
   ].forEach(function (it) {
     window.__cardSearchFns.push({ name: it.name, fn: function (kw) {
       const out = [];
