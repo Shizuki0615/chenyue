@@ -429,6 +429,17 @@
 [data-theme="dark"] .msg-inplace .ip-opt-chk.on .ip-opt-box { border-color:var(--ink); background:var(--ink); }
 [data-theme="dark"] .msg-inplace .ip-opt-chk.on .ip-opt-box::after { border-color:#111; }
 [data-theme="dark"] .msg-ask-card { background:var(--dark-card-92); border-color:var(--dark-border); }
+/* 2026-10-26 提问卡片气泡化：左右问卡在暗色下同样读暗色气泡变量（变量未落值时兜深卡底） */
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-ask-card {
+  background:var(--cs-in-surface, var(--msg-in-bg, var(--dark-card-92)));
+  color:var(--msg-in-ink, var(--ink));
+  border-color:var(--dark-border);
+}
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-ask-card {
+  background:var(--cs-out-surface, var(--msg-out-bg, var(--dark-card-92)));
+  color:var(--msg-out-ink, var(--ink));
+  border-color:var(--dark-border-12);
+}
 [data-theme="dark"] .msg-choose-card { background:var(--dark-card-92); border-color:var(--dark-border); }
 /* v3.33.x #521：批量问卷长卡片（暗色适配，跨域改动见 WORKLOG；观感对齐单题 ask-card） */
 [data-theme="dark"] .msg-survey-card { background:var(--dark-card-92); border-color:var(--dark-border); }

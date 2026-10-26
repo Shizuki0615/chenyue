@@ -1893,8 +1893,8 @@ function refreshChatAvatars() {
 avatarBatchCache = null;
 fillAvatar('chat-user-av', 'cs-avatar-user');
 fillAvatar('chat-partner-av', 'cs-avatar-partner');
-document.querySelectorAll('.msg-in .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-partner'));
-document.querySelectorAll('.msg-out .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-user'));
+document.querySelectorAll('.msg-in .msg-av, .msg-ask-in .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-partner'));
+document.querySelectorAll('.msg-out .msg-av, .msg-ask-out .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-user'));
 }
 window.refreshChatAvatars = refreshChatAvatars;
 fillAvatar('chat-user-av', 'cs-avatar-user');
@@ -4301,6 +4301,19 @@ if (acts) acts.outerHTML = wishDoneHtml();
 } catch (e) {}
 }
 window.chatWishSettled = chatWishSettled;
+function askBubbleSideHtml(rec) {
+const timeHtml = rec.ts ? '<span class="msg-time">' + fmtTime(rec.ts) + '</span>' : '';
+return '<div class="msg-side"><div class="msg-av"></div>' + timeHtml + '</div>';
+}
+function askBubbleHtml(rec, cardHtml) {
+const side = askBubbleSideHtml(rec);
+return rec.side === 'out' ? cardHtml + side : side + cardHtml;
+}
+function askBubbleFillAvatar(root, rec) {
+if (!root) return;
+const av = root.querySelector('.msg-av');
+if (av) fillAvatar(av, rec.side === 'out' ? 'cs-avatar-user' : 'cs-avatar-partner');
+}
 function renderMsg(rec, atIdx) {
 const m = document.createElement('div');
 m.dataset.mk = msgKeyOf(rec); // FIX 2026-09-15 #491 身份锚随渲染写入，批量渲染只覆盖 data-idx 不动它
@@ -4338,18 +4351,19 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 const askIsPick = rec.askType === 'single' || rec.askType === 'multi';
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + T('问问他') + ' · ' + escTxt(rec.askQuestion || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ ' + T('他：') + escTxt(T(rec.askAnswer || '回答了你')) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
 : '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4622,19 +4636,20 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-card') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 const isSingle = rec.askType === 'single' || (rec.type === 'single' && Array.isArray(rec.options) && rec.options.length);
 const isMulti = rec.askType === 'multi' || (rec.type === 'multi' && Array.isArray(rec.options) && rec.options.length);
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text) + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 已回答：' + escTxt(rec.askAnswer) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
 : '<div class="msg-ask-tip">' + (isMulti ? ((rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? '最多选 ' + rec.askMultiMax + ' 个，选完点「提交」' : '可多选，选完点「提交」') : isSingle ? '点击选择你的答案' : T('点击回答 他 的提问')) + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -5946,7 +5961,8 @@ addInTyped(finalReply);
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 已回答：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(finalReply)) : askCardReplyClean(finalReply)) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 已回答：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(finalReply)) : askCardReplyClean(finalReply)) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 return finalReply;
 };
@@ -9091,7 +9107,8 @@ saveMsgs();
 saveMsgsNow(); // v3.26.x #489：回答即落盘（同 chatAskReply 先例），切桌面 flush 前不止内存一份
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(text) : text) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(text) : text) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 }
 addInTyped(text);

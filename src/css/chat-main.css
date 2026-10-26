@@ -1431,6 +1431,57 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-ask-tip { font-size:11px; color:var(--muted); margin-top:8px; }
 .msg-ask-a { font-size:12px; color:#3b7a4e; font-weight:600; margin-top:8px; }
 
+/* ===== 2026-10-26 提问卡片气泡化 =====
+   仅作用于「TA 问我」(special:'ask-card') 与「我问 TA」(special:'ask') 两张卡：
+   按发送方左/右排布，卡面读聊天气泡变量（底色/字色/圆角/内边距/字号），
+   头像与时间复用 .msg-side/.msg-av/.msg-time。choose/curious/roast/invite/survey 的居中卡不受影响。 */
+#page-chat .msg-ask.msg-ask-in,
+#page-chat .msg-ask.msg-ask-out {
+  width:auto; max-width:85%;
+  display:flex; align-items:flex-start; gap:8px;
+  padding:2px 0;
+}
+#page-chat .msg-ask.msg-ask-in { align-self:flex-start; justify-content:flex-start; }
+#page-chat .msg-ask.msg-ask-out { align-self:flex-end; justify-content:flex-end; }
+#page-chat .msg-ask.msg-ask-in .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card {
+  max-width:100%; min-width:0; flex:0 1 auto;
+  border-radius:var(--chat-bubble-radius, 18px);
+  padding:var(--chat-bubble-pad, 11px 14px);
+  font-size:var(--chat-font-size, 14px);
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+#page-chat .msg-ask.msg-ask-in .msg-ask-card {
+  background:var(--cs-in-surface, var(--msg-in-bg, #ffffff));
+  color:var(--msg-in-ink, #111111);
+  border-color:rgba(0,0,0,.06);
+}
+#page-chat .msg-ask.msg-ask-out .msg-ask-card {
+  background:var(--cs-out-surface, var(--msg-out-bg, #111111));
+  color:var(--msg-out-ink, #ffffff);
+  border-color:rgba(255,255,255,.1);
+}
+/* 出站卡是深底：卡内文字按气泡字色翻白，已答绿字与收藏心形同步提亮 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-q { color:var(--msg-out-ink, #ffffff); }
+#page-chat .msg-ask.msg-ask-out .msg-ask-tip { color:var(--msg-out-ink, #ffffff); opacity:.55; }
+#page-chat .msg-ask.msg-ask-out .msg-ask-a { color:#7fd39a; }
+#page-chat .msg-ask.msg-ask-out .msg-choose-r { color:var(--msg-out-ink, #ffffff); opacity:.8; }
+#page-chat .msg-ask.msg-ask-out .msg-fav-heart { background:rgba(255,255,255,.12); color:rgba(255,255,255,.78); }
+#page-chat .msg-ask.msg-ask-out .msg-fav-time { color:rgba(255,255,255,.6); }
+/* 时间轴五档：问卡行级定位与普通 .msg 对齐（.msg-side 基础样式全局已生效，这里只补行级定位） */
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in,
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out,
+body.cs-time-float #page-chat .msg-ask.msg-ask-in,
+body.cs-time-float #page-chat .msg-ask.msg-ask-out { position:relative; }
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in .msg-side .msg-time { right:calc(0px - var(--msg-time-dx, 0px)); }
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out .msg-side .msg-time { left:calc(0px + var(--msg-time-dx, 0px)); }
+body.cs-time-float #page-chat .msg-ask.msg-ask-in .msg-side .msg-time { right:calc(-4px - var(--msg-time-dx, 0px)); }
+body.cs-time-float #page-chat .msg-ask.msg-ask-out .msg-side .msg-time { left:calc(-4px + var(--msg-time-dx, 0px)); }
+body.cs-time-center #page-chat .msg-ask.msg-ask-in,
+body.cs-time-center #page-chat .msg-ask.msg-ask-out { position:relative; width:100%; max-width:100%; padding-top:18px; }
+body.cs-time-center #page-chat .msg-ask.msg-ask-in { justify-content:flex-start; }
+body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; }
+
 /* ===== 批量问卷长卡片（v3.33.x #521 special:'ask-survey'）===== */
 /* 观感严格对齐单题 ask-card（.msg-ask-card：同 max-width/min-width/圆角/内边距/阴影/居中），
    标题对应 msg-ask-q、逐题答案对应 msg-ask-a、底部提示对应 msg-ask-tip；无 emoji、无独立进度徽标。

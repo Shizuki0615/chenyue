@@ -746,7 +746,7 @@ el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-wid
 };
 applyTo(chatAv);
 applyTo(deskRing);
-const avNodes = document.querySelectorAll((out ? '.msg-out' : '.msg-in') + ' .msg-av');
+const avNodes = document.querySelectorAll(out ? '.msg-out .msg-av, .msg-ask-out .msg-av' : '.msg-in .msg-av, .msg-ask-in .msg-av');
 const vh = window.innerHeight || 0;
 const avTail = [];
 for (let i = 0; i < avNodes.length; i++) {

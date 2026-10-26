@@ -6668,6 +6668,12 @@ const FIX_SENTINELS = [
   // ==== 2026-10-26 #1559 翻页动画：纸页翻动 / 轻滑淡入 / 关闭 + 设置页切换 ====
   { name: '#1559a 翻页动画给正文拍一张纸盖上去再换底层（删＝翻页直接跳字，没有动效）', file: 'js/reading.js', needle: 'sheet.classList.add(\'rd-turn-next-\' + mode);' },
   { name: '#1559b 翻页动画同章内才播，跨章不播（删＝换章时盖着一张纸等异步正文，观感更假）', file: 'js/reading.js', needle: 'rdAnimateTurn(1, function () { b.pageIdx++; rdRenderPage(); });' },
+  // ==== 2026-10-26 #1560 聊天提问卡片气泡化（两张 ask 卡左右排布 + 头像/时间 + 气泡变量） ====
+  { name: '#1560a 问卡按发送方左/右排布（删＝TA 问我与我问 TA 又变回居中卡片）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-in { align-self:flex-start; justify-content:flex-start; }' },
+  { name: '#1560b 出站问卡读深底气泡变量（删＝我发的问卡回到白底，和黑色气泡脱节）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-a { color:#7fd39a; }' },
+  { name: '#1560c 问卡头像/时间列构建（删＝左右问卡没有发送者头像，和普通消息不一致）', file: 'js/chat.js', needle: 'function askBubbleSideHtml(rec) {' },
+  { name: '#1560d 作答回写保留头像/时间列（删＝回答后卡面重建成裸卡，头像时间消失）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-ask-card answered\"><div class=\"msg-ask-q\">' + escTxt(rec.askQuestion" },
+  { name: '#1560e 问卡时间轴五档补行级定位（删＝时间轴样式下问卡时间胶囊错位/压住卡片）', file: 'css/chat-main.css', needle: 'body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in .msg-side .msg-time' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

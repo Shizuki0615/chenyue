@@ -1022,7 +1022,7 @@
     //   补齐（每片 24 个，几帧内一定落地，不留旧头像；用户滚到历史前早已补完）。判据只有几何可见性，
     //   零机型分支、零视觉改动；拿不到视口（隐藏页／innerHeight 为 0）或内核没有 rAF 时一律照旧一次
     //   写完＝最坏情况等于今天，不会更坏。
-    const avNodes = document.querySelectorAll((out ? '.msg-out' : '.msg-in') + ' .msg-av');
+    const avNodes = document.querySelectorAll(out ? '.msg-out .msg-av, .msg-ask-out .msg-av' : '.msg-in .msg-av, .msg-ask-in .msg-av');
     const vh = window.innerHeight || 0;
     const avTail = [];
     for (let i = 0; i < avNodes.length; i++) {
