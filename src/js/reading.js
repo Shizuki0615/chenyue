@@ -1993,6 +1993,13 @@
     if (typeof bd.carry !== 'number') bd.carry = 0;
     return bd;
   }
+  // 他落后时的停手间隔：30 秒到 3 分钟，按书 + 位置散列，同一天内稳定
+  function rdChasePause(book, his) {
+    const seed = String((book && book.id) || '') + '|' + Math.floor((Number(his) || 0) / RD_CHARS_PER_MIN);
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    return 30000 + (Math.abs(h) % 150000);
+  }
   // 只推进他和书的状态；调用方负责 saveIndex
   function rdBuddyAdvance(book, sec) {
     const bd = rdBuddyGet(book);
@@ -2031,14 +2038,22 @@
       his = nextHis;
       bd.waiting = false;
     } else {
-      // 跟随：差不到一页直接贴合（同页共读）；落后更多就按阅读速度慢慢追，保留「在后面」的实感
+      // 跟随：差不到一页直接贴合（同页共读）；落后更多就按阅读速度追，
+      // 而且追一阵停一阵——读一会儿歇口气，比匀速移动更像真的有人在后面
       const gap = mine - his;
       if (gap > 0) {
         if (gap <= RD_BUDDY_STICK) {
           his = mine;
         } else {
-          const dt = Math.max(1, Number(sec) || 60);
-          his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+          const lastAt = Number(bd.chaseAt) || 0;
+          const pauseMs = Number(bd.chasePauseMs) || 0;
+          if (now - lastAt >= pauseMs) {
+            // 单次最多按两分钟的阅读量算，避免一次会话结束就一口气追平
+            const dt = Math.max(1, Math.min(Number(sec) || 60, 120));
+            his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+            bd.chaseAt = now;
+            bd.chasePauseMs = rdChasePause(book, his);
+          }
         }
       }
       bd.waiting = his > mine;    // 超到我前面就停下来等

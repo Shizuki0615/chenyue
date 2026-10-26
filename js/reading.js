@@ -1829,6 +1829,12 @@ if (typeof bd.off !== 'number') bd.off = 0;
 if (typeof bd.carry !== 'number') bd.carry = 0;
 return bd;
 }
+function rdChasePause(book, his) {
+const seed = String((book && book.id) || '') + '|' + Math.floor((Number(his) || 0) / RD_CHARS_PER_MIN);
+let h = 0;
+for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+return 30000 + (Math.abs(h) % 150000);
+}
 function rdBuddyAdvance(book, sec) {
 const bd = rdBuddyGet(book);
 if (!bd) return null;
@@ -1866,8 +1872,14 @@ if (gap > 0) {
 if (gap <= RD_BUDDY_STICK) {
 his = mine;
 } else {
-const dt = Math.max(1, Number(sec) || 60);
+const lastAt = Number(bd.chaseAt) || 0;
+const pauseMs = Number(bd.chasePauseMs) || 0;
+if (now - lastAt >= pauseMs) {
+const dt = Math.max(1, Math.min(Number(sec) || 60, 120));
 his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+bd.chaseAt = now;
+bd.chasePauseMs = rdChasePause(book, his);
+}
 }
 }
 bd.waiting = his > mine;    // 超到我前面就停下来等
