@@ -6674,6 +6674,10 @@ const FIX_SENTINELS = [
   { name: '#1560c 问卡头像/时间列构建（删＝左右问卡没有发送者头像，和普通消息不一致）', file: 'js/chat.js', needle: 'function askBubbleSideHtml(rec) {' },
   { name: '#1560d 作答回写保留头像/时间列（删＝回答后卡面重建成裸卡，头像时间消失）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-ask-card answered\"><div class=\"msg-ask-q\">' + escTxt(rec.askQuestion" },
   { name: '#1560e 问卡时间轴五档补行级定位（删＝时间轴样式下问卡时间胶囊错位/压住卡片）', file: 'css/chat-main.css', needle: 'body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in .msg-side .msg-time' },
+  // ==== 2026-10-26 #1561 选一个/好奇/吐槽/邀请 四类互动卡并入气泡骨架 ====
+  { name: '#1561a 选一个/好奇/吐槽卡共用左右气泡壳（删＝这三类仍居中卡片）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-in .msg-choose-card,\n#page-chat .msg-ask.msg-ask-out .msg-ask-card,' },
+  { name: '#1561b 邀请卡左右气泡 + 回写保留头像时间（删＝邀请结果回写成裸卡）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-ask-card answered\"><div class=\"msg-ask-q\">' + (window.taFit ? window.taFit('邀请他')" },
+  { name: '#1561c 选一个/好奇/吐槽作答回写保留头像时间（删＝答完卡面变裸卡）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-choose-card answered\"><div class=\"msg-ask-q\">' + escTxt(rec.curiousQuestion" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

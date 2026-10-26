@@ -1444,19 +1444,23 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 #page-chat .msg-ask.msg-ask-in { align-self:flex-start; justify-content:flex-start; }
 #page-chat .msg-ask.msg-ask-out { align-self:flex-end; justify-content:flex-end; }
 #page-chat .msg-ask.msg-ask-in .msg-ask-card,
-#page-chat .msg-ask.msg-ask-out .msg-ask-card {
+#page-chat .msg-ask.msg-ask-in .msg-choose-card,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card {
   max-width:100%; min-width:0; flex:0 1 auto;
   border-radius:var(--chat-bubble-radius, 18px);
   padding:var(--chat-bubble-pad, 11px 14px);
   font-size:var(--chat-font-size, 14px);
   box-shadow:0 2px 8px rgba(0,0,0,.05);
 }
-#page-chat .msg-ask.msg-ask-in .msg-ask-card {
+#page-chat .msg-ask.msg-ask-in .msg-ask-card,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card {
   background:var(--cs-in-surface, var(--msg-in-bg, #ffffff));
   color:var(--msg-in-ink, #111111);
   border-color:rgba(0,0,0,.06);
 }
-#page-chat .msg-ask.msg-ask-out .msg-ask-card {
+#page-chat .msg-ask.msg-ask-out .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card {
   background:var(--cs-out-surface, var(--msg-out-bg, #111111));
   color:var(--msg-out-ink, #ffffff);
   border-color:rgba(255,255,255,.1);

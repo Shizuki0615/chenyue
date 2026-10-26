@@ -430,12 +430,14 @@
 [data-theme="dark"] .msg-inplace .ip-opt-chk.on .ip-opt-box::after { border-color:#111; }
 [data-theme="dark"] .msg-ask-card { background:var(--dark-card-92); border-color:var(--dark-border); }
 /* 2026-10-26 提问卡片气泡化：左右问卡在暗色下同样读暗色气泡变量（变量未落值时兜深卡底） */
-[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-ask-card {
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-ask-card,
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-choose-card {
   background:var(--cs-in-surface, var(--msg-in-bg, var(--dark-card-92)));
   color:var(--msg-in-ink, var(--ink));
   border-color:var(--dark-border);
 }
-[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-ask-card {
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-ask-card,
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-choose-card {
   background:var(--cs-out-surface, var(--msg-out-bg, var(--dark-card-92)));
   color:var(--msg-out-ink, var(--ink));
   border-color:var(--dark-border-12);
