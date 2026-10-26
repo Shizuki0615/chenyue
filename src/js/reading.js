@@ -3891,14 +3891,14 @@
     void root.getBoundingClientRect();
     for (let i = 0; i < N; i++) {
       const seg = segs[i];
-      const delay = (N - 1 - i) * 5;
-      seg.style.transition = 'transform 520ms cubic-bezier(.22,.12,.24,1) ' + delay + 'ms';
+      const delay = (N - 1 - i) * 6;
+      seg.style.transition = 'transform 760ms cubic-bezier(.32,.06,.22,1) ' + delay + 'ms';
       seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
     }
-    root.style.transition = 'transform 600ms cubic-bezier(.22,.12,.24,1)';
+    root.style.transition = 'transform 880ms cubic-bezier(.32,.06,.22,1)';
     root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? 0 : -RD_CURL_TURN_DEG) + 'deg)';
-    const dur = 600 + (N - 1) * 5 + 80;
-    rdTurnBusyUntil = Date.now() + 720;
+    const dur = 880 + (N - 1) * 6 + 80;
+    rdTurnBusyUntil = Date.now() + 1000;
     setTimeout(function () {
       [root, cast].forEach(function (el) {
         if (el && el.parentNode) el.parentNode.removeChild(el);
