@@ -3067,10 +3067,15 @@ sameFirst = true;
 }
 let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
 const nowTs = Date.now();
+const repliedIds = {};
+for (let i = 0; i < items.length; i++) {
+if (items[i] && items[i].replyTo) repliedIds[items[i].replyTo] = 1;
+}
 html += show.map(function (a) {
 const mine = a.by === 'me';
 const old = !mine && a.crossedAt && a.oldText ? a.oldText : '';
 const oldDays = old ? Math.max(RD_MISS_DAYS, Math.floor((nowTs - (a.oldAt || a.at || nowTs)) / 86400000)) : 0;
+const canReply = !mine && !a.replyTo && !repliedIds[a.id];
 return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 (a.replyTo ? ' rd-pop-reply' : '') + '"' +
 ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
@@ -3079,6 +3084,7 @@ return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
 '<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
 : '') +
 '<div class="rd-pop-text"><span class="rd-pop-who">' + (mine ? '我' : '他') + '</span>' + rdEsc(a.text || '') + '</div>' +
+(canReply ? '<button class="rd-pop-reply-btn" data-reply="' + rdEsc(a.id || '') + '" type="button">回应这句</button>' : '') +
 (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
 '</div>';
 }).join('');
@@ -3088,6 +3094,47 @@ html += '<button class="rd-pop-more" type="button">还有 ' +
 }
 list.innerHTML = html;
 pop.hidden = false;
+}
+function rdReplyToHis(id) {
+const b = rdBook;
+if (!b || !id) return;
+const arr0 = (b.anno || []).slice();
+const src = arr0.filter(function (a) { return a && a.id === id; })[0];
+if (!src || src.by === 'me') return;
+if (arr0.some(function (a) { return a && a.replyTo === id; })) { rdToast('已经回应过这句了'); return; }
+if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+window.openModal('回应他', '', async function (v) {
+const t = String(v == null ? '' : v).trim();
+if (!t) return;
+const item = {
+id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+by: 'me',
+s: src.s,
+e: src.e,
+quote: src.quote,
+text: t.slice(0, 200),
+at: Date.now(),
+rev: 1,
+deviceId: rdDeviceId(),
+replyTo: id
+};
+const next = (b.anno || []).slice();
+next.push(item);
+try { await putAnnos(b.id, b.ch, next); }
+catch (e) { rdToast((e && e.message) || '回应没写上：磁盘写入没有完成，请重试'); return; }
+b.anno = next;
+const fresh = readIndex();
+const freshBook = rdFindBook(b.id, fresh);
+if (freshBook) {
+freshBook.annoCount = (Number(freshBook.annoCount) || 0) + 1;
+if (!Array.isArray(freshBook.replyQueue)) freshBook.replyQueue = [];
+freshBook.replyQueue.push({ id: item.id, ch: b.ch, s: item.s, e: item.e, quote: item.quote, at: item.at });
+if (freshBook.replyQueue.length > 200) freshBook.replyQueue = freshBook.replyQueue.slice(-200);
+saveIndex(fresh);
+}
+rdOpenPop(rdPopPos, true);
+rdToast('已回应');
+}, { textarea: true, textareaRows: 3, textareaPlaceholder: '说一句…' });
 }
 function rdCloseAnnoOps() {
 const el = document.getElementById('rd-anno-ops');
@@ -4792,6 +4839,8 @@ const mk = el.closest('.rd-mark');
 if (mk) { e.preventDefault(); rdOpenPop(Number(mk.getAttribute('data-pos'))); return; }
 const oldEl = el.closest('#rd-pop-list .rd-pop-old');
 if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }
+const repBtn = el.closest('#rd-pop-list .rd-pop-reply-btn');
+if (repBtn) { e.preventDefault(); rdReplyToHis(repBtn.getAttribute('data-reply')); return; }
 if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
 const selBtn = el.closest('#rd-selbar [data-act]');
 if (selBtn) {
