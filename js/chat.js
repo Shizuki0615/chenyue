@@ -2939,16 +2939,17 @@ wrap.appendChild(b);
 } else {
 const quicks = (type === 'curious' ? (rec.curiousQuick || []) : []).filter(q => typeof q === 'string' && q);
 if (quicks.length) {
-const chips = document.createElement('div');
-chips.className = 'ip-chips';
+const list = document.createElement('div');
+list.className = 'ip-quick-list';
 quicks.forEach(q => {
 const c = document.createElement('button');
-c.className = 'ip-chip';
+c.type = 'button';
+c.className = 'ip-quick';
 c.textContent = q;
 c.addEventListener('click', () => { try { inp.value = q; inp.focus(); } catch (e) {} });
-chips.appendChild(c);
+list.appendChild(c);
 });
-wrap.appendChild(chips);
+wrap.appendChild(list);
 }
 const row = document.createElement('div');
 row.className = 'ip-row';
@@ -2957,8 +2958,12 @@ inp.className = 'ip-input';
 inp.type = 'text';
 inp.placeholder = type === 'roast' ? (window.taFit ? window.taFit('回 他 一句…') : '回 他 一句…') : '输入你的回答…';
 const send = document.createElement('button');
+send.type = 'button';
 send.className = 'ip-send';
-send.textContent = type === 'roast' ? (window.taFit ? window.taFit('回他') : '回他') : '回答';
+const sendLabel = type === 'roast' ? (window.taFit ? window.taFit('回他') : '回他') : '回答';
+send.setAttribute('aria-label', sendLabel);
+send.setAttribute('title', sendLabel);
+send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
 const doSend = () => {
 const v = (inp.value || '').trim();
 if (!v) return;
@@ -3126,12 +3131,13 @@ if (!item || item.dataset.idx === undefined) return;
 const idx = Number(item.dataset.idx);
 const rec = msgs[idx];
 if (!rec) return;
+if (card.classList.contains('answered') && (rec.special === 'ask' || rec.special === 'invite')) { e.stopPropagation(); return; }
 const hadFav = card.classList.contains('show-fav');
 body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav').forEach(c => c.classList.remove('show-fav'));
 if (!hadFav) card.classList.add('show-fav');
 if (card.classList.contains('answered')) {
 e.stopPropagation();
-if (rec.special === 'ask' || rec.special === 'ask-card' || rec.special === 'ask-choose') askToggleAnsweredOpts(card, rec);
+if (rec.special === 'ask-card' || rec.special === 'ask-choose') askToggleAnsweredOpts(card, rec);
 return;
 }
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
