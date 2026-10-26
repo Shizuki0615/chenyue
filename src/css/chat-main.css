@@ -1609,37 +1609,38 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 .ask-q-toggle[hidden] { display:none !important; }
 
-/* ===== 批量问卷长卡片（v3.33.x #521 special:'ask-survey'）===== */
-/* 观感严格对齐单题 ask-card（.msg-ask-card：同 max-width/min-width/圆角/内边距/阴影/居中），
-   标题对应 msg-ask-q、逐题答案对应 msg-ask-a、底部提示对应 msg-ask-tip；无 emoji、无独立进度徽标。
-   TA 逐题作答的进度由 ta-ask.js 经 chatSyncSurveyCard 回写快照后原地重画 innerHTML（不整窗重建） */
-.msg-survey-card {
-  max-width:78%; min-width:220px; text-align:center;
-  background:#fff; border:1px solid rgba(0,0,0,.1);
-  border-radius:16px; padding:14px 16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.05);
-  cursor:pointer;
+/* ===== 批量问卷摘要气泡（2026-10-26 B 版 special:'ask-survey'）===== */
+/* 已并入 .msg-ask 气泡骨架：右出站/左接收 + 头像时间 + 固定宽度；卡面只露前 2 题，
+   其余题数收进「查看详情」弹层；收藏心形常驻，整卡不再点开。 */
+#page-chat .msg-ask .msg-survey-card { text-align:left; cursor:default; }
+#page-chat .msg-survey-card > .msg-fav-heart { display:inline-flex; margin-top:6px; }
+.msg-survey-head { font-size:13px; font-weight:700; line-height:1.5; opacity:.92; }
+.msg-survey-status { font-size:11px; line-height:1.5; opacity:.58; margin-top:1px; }
+.msg-survey-list { display:flex; flex-direction:column; gap:8px; margin-top:9px; }
+.msg-survey-item { font-size:13px; line-height:1.55; word-break:break-word; }
+.msg-survey-q {
+  font-weight:600;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
 }
-.msg-survey-head { font-size:14px; font-weight:700; color:var(--ink); line-height:1.5; }
-.msg-survey-list { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-.msg-survey-item { font-size:13px; color:var(--ink); line-height:1.5; }
-.msg-survey-q { font-weight:600; word-break:break-word; }
-.msg-survey-opts { display:flex; flex-wrap:nowrap; justify-content:center; gap:6px; margin-top:6px; overflow-x:auto; }
-/* 选项观感对齐单题作答的选项 chip（.msg-inplace .ip-chip：白底 + 细边 + 墨色字），
-   不再用灰色小标签；TA 选中的那个加 .sel 高亮（同 .ip-opt-row.sel 口径） */
-.msg-survey-opt {
-  flex:0 0 auto; white-space:nowrap;
-  padding:6px 12px; border:1px solid rgba(0,0,0,.12); border-radius:16px;
-  background:#fff; color:var(--ink); font-size:12px;
+.msg-survey-a {
+  font-size:12px; font-weight:600; margin-top:3px; word-break:break-word; opacity:.88;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
 }
-.msg-survey-opt.sel { border-color:var(--ink); font-weight:700; }
-.msg-survey-a { font-size:12px; font-weight:600; color:#3b7a4e; margin-top:4px; word-break:break-word; }
-/* #1005 卡片可点暗示（用户直派「需要暗示这个卡片可以点击」）：提示行文案本就写着「点击查看…」，
-   这里再补两处视觉信号——行尾一枚右向箭头，以及整张卡的按压反馈（同 .rps-choice:active 口径）。
-   收藏心形改为「点卡片才浮现」后，卡片必须自己把「我能点」摆出来。 */
-.msg-survey-tip { font-size:11px; color:var(--muted); margin-top:8px; display:flex; align-items:center; justify-content:center; gap:3px; }
-.msg-survey-chev { font-size:13px; line-height:1; opacity:.75; transform:translateY(-.5px); }
-.msg-survey-card:active { transform:translateY(1px); box-shadow:0 1px 3px rgba(0,0,0,.05); }
+#page-chat .msg-ask.msg-ask-out .msg-survey-a { color:#7fd39a; opacity:1; }
+#page-chat .msg-ask.msg-ask-in .msg-survey-a { color:#3b7a4e; opacity:1; }
+.msg-survey-more { font-size:11px; opacity:.55; margin-top:1px; }
+.msg-survey-actions { display:flex; justify-content:flex-end; margin-top:10px; }
+.msg-survey-detail-btn {
+  padding:7px 12px; border-radius:999px; font-family:inherit; font-size:12px; font-weight:600;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn {
+  border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.12); color:var(--msg-out-ink,#fff);
+}
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn {
+  border:1px solid rgba(0,0,0,.14); background:rgba(0,0,0,.05); color:var(--ink,#111);
+}
+.msg-survey-detail-btn:active { opacity:.8; }
 
 /* ===== TA鐨勫皬闂 ===== */
 /* 鑱婂ぉ閲岀殑閫夋嫨棰樺崱鐗?*/
@@ -1663,8 +1664,7 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   -webkit-tap-highlight-color:transparent;
 }
 .msg-ask-card.show-fav .msg-fav-heart,
-.msg-choose-card.show-fav .msg-fav-heart,
-.msg-survey-card.show-fav .msg-fav-heart {
+.msg-choose-card.show-fav .msg-fav-heart {
   display:inline-flex; animation:favFadeIn .18s ease;
 }
 @keyframes favFadeIn { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:none; } }
@@ -1679,8 +1679,7 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   display:none; -webkit-tap-highlight-color:transparent;
 }
 .msg-ask-card.show-fav .msg-fav-time,
-.msg-choose-card.show-fav .msg-fav-time,
-.msg-survey-card.show-fav .msg-fav-time {
+.msg-choose-card.show-fav .msg-fav-time {
   display:block; animation:favFadeIn .18s ease;
 }
 
