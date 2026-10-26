@@ -1220,15 +1220,15 @@ const st = rdBuddyState(book);
 const bd = rdBuddyGet(book);
 const dot = document.getElementById('rd-buddy-dot');
 const line = document.getElementById('rd-buddy');
-const same = !!(bd && (st === 'read' || st === 'wait') && bd.ch === b.ch && bd.off >= p.s && bd.off <= p.e);
+const same = !!(bd && (st === 'read' || st === 'wait' || st === 'behind') && bd.ch === b.ch && bd.off >= p.s && bd.off <= p.e);
 if (dot) {
-const show = st === 'read' || st === 'wait' || st === 'done';
+const show = st !== 'none' && st !== 'skip';
 dot.hidden = !show;
 if (show) {
-const behind = !same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s);
+const isBehind = st === 'behind' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
 dot.style.left = same ? 'calc(' + myPct + '% + 6px)' : rdPosPct(book, bd.ch, bd.off) + '%';
-dot.classList.toggle('rd-buddy-ahead', !same && !behind);
-dot.classList.toggle('rd-buddy-behind', behind);
+dot.classList.toggle('rd-buddy-ahead', !same && !isBehind);
+dot.classList.toggle('rd-buddy-behind', !same && isBehind);
 dot.classList.toggle('rd-buddy-same', same);
 }
 }
@@ -1402,8 +1402,9 @@ if (!book) return;
 const bd = rdBuddyGet(book);
 if (!bd || !bd.started || bd.mode !== 'follow') return;
 if (!rdCoopOn()) return;
-if (rdBuddyState(book) !== 'read') return;
-rdBuddyAdvance(book);
+const st = rdBuddyState(book);
+if (st !== 'read' && st !== 'behind') return;
+rdBuddyAdvance(book, sec);
 rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
 }
 function rdBuddyCommonHour(h) {
@@ -1828,7 +1829,7 @@ if (typeof bd.off !== 'number') bd.off = 0;
 if (typeof bd.carry !== 'number') bd.carry = 0;
 return bd;
 }
-function rdBuddyAdvance(book) {
+function rdBuddyAdvance(book, sec) {
 const bd = rdBuddyGet(book);
 if (!bd) return null;
 const now = Date.now();
@@ -1860,7 +1861,15 @@ rdHabitAdd('him', units * 60, pages, new Date(prevAt).getHours(), now);
 his = nextHis;
 bd.waiting = false;
 } else {
-if (his < mine) his = mine; // 跟随：追上来，但不往回退
+const gap = mine - his;
+if (gap > 0) {
+if (gap <= RD_BUDDY_STICK) {
+his = mine;
+} else {
+const dt = Math.max(1, Number(sec) || 60);
+his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+}
+}
 bd.waiting = his > mine;    // 超到我前面就停下来等
 }
 const pos = rdPosFromFlat(book, Math.min(his, total));
@@ -1870,6 +1879,7 @@ bd.updatedAt = now;
 book.status = his >= total ? 'done' : 'co';
 return bd;
 }
+const RD_BUDDY_STICK = 480;
 function rdBuddyState(book) {
 const bd = rdBuddyGet(book);
 if (!bd) return 'none';
@@ -1879,17 +1889,23 @@ const total = rdTotalWords(book);
 const his = rdFlatPos(book, bd.ch, bd.off);
 if (total && his >= total) return 'done';
 const prog = book.progress || {};
-const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
+const myCh = Number(prog.ch) || 0;
+const mine = rdFlatPos(book, myCh, Number(prog.off) || 0);
 if (his > mine) return 'wait';
+if (his < mine) {
+if (bd.ch < myCh) return 'behind';
+if (mine - his >= RD_BUDDY_STICK) return 'behind';
+}
 return 'read';
 }
 const RD_BUDDY_STATE_TEXT = {
-none: '还没开始', read: '共读中', wait: '停在这等你', done: '读完了', skip: '今天不读'
+none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面', done: '读完了', skip: '今天不读'
 };
 const RD_BUDDY_LINES = {
 none: ['还没翻开这本书。', '他把书放在那儿，等你一起。', '书还合着，他也没动。'],
 read: ['他在你旁边一页一页看。', '他刚翻过一页。', '他跟着你的速度往下读。'],
 wait: ['他停在前面等你。', '他先读到前面去了，正等着你。', '他在前面那页等你跟上来。'],
+behind: ['他在你后面慢慢跟着。', '他落后了几页，正一页页追。', '他在后面那几页，没催你。'],
 done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
 skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
 };
@@ -3739,6 +3755,7 @@ if (!rdCoopOn()) return '';
 const st = rdBuddyState(b);
 if (st === 'done') return '他读完了';
 if (st === 'wait') return '等你';
+if (st === 'behind') return '在你后面';
 if (st === 'skip') return '今天不读';
 if (st === 'none') return '未开始';
 return '共读中';
