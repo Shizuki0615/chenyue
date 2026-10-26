@@ -1942,8 +1942,14 @@ bd.ch = pos.ch;
 bd.off = pos.off;
 if (mine - his >= RD_BUDDY_STICK) {
 if (!bd.behindSince) bd.behindSince = now;
+const lastGlance = Number(bd.glanceAt) || 0;
+if (now - lastGlance >= 4 * 60 * 1000 && Math.random() < 0.4) {
+bd.glanceUntil = now + 60000;
+bd.glanceAt = now;
+}
 } else {
 bd.behindSince = 0;
+bd.glanceUntil = 0;
 }
 bd.updatedAt = now;
 book.status = his >= total ? 'done' : 'co';
@@ -1994,14 +2000,23 @@ const RD_BUDDY_QUIET_LINES = [
 '他在后面慢慢赶，不用等他。',
 '他还在后面，读到哪算哪。'
 ];
+const RD_BUDDY_GLANCE_LINES = [
+'他停了一下，像在看你读到哪了。',
+'他抬头看了一眼你的进度。',
+'他往后翻了翻，在找你读到哪。'
+];
 function rdBuddyLine(book, state) {
 const bd = rdBuddyGet(book);
+const glancing = bd && bd.glanceUntil && Date.now() < Number(bd.glanceUntil) &&
+(state === 'behind' || state === 'far');
 const stuck = (state === 'behind' || state === 'far') && bd && bd.behindSince &&
 (Date.now() - Number(bd.behindSince) >= RD_BUDDY_QUIET_MS);
 const slow = state === 'read' && rdBuddySpeedToday(book) < 1;
-const pool = stuck ? RD_BUDDY_QUIET_LINES
-: (slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read));
-const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
+const pool = glancing ? RD_BUDDY_GLANCE_LINES
+: (stuck ? RD_BUDDY_QUIET_LINES
+: (slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read)));
+const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now()) +
+(glancing ? '|' + (bd.glanceAt || 0) : '');
 let h = 0;
 for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
 return pool[Math.abs(h) % pool.length];
