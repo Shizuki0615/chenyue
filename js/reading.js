@@ -365,7 +365,6 @@ page.innerHTML =
 '<div class="rd-stat" id="rd-stat" hidden>' +
 '<div class="rd-stat-label">阅读记录 /</div>' +
 '<div class="rd-stat-h" id="rd-stat-h">今天读了 0 分钟</div>' +
-'<div class="rd-stat-s" id="rd-stat-s"></div>' +
 '<div class="rd-stat-nums">' +
 '<span class="rd-sg">今日 <b id="rd-stat-pages">0</b> 页</span>' +
 '<span class="rd-sg">近 7 天 <b id="rd-stat-week">0</b> 小时</span>' +
@@ -586,7 +585,7 @@ settingsPage.innerHTML =
 '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
 '<span class="rd-live-entry-t">' +
 '<span class="rd-live-entry-name">边看边调</span>' +
-'<span class="rd-live-entry-sub">打开调色条：字号 / 行距 / 阅读背景实时预览</span>' +
+'<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
 '</span>' +
 '<span class="rd-live-entry-go">点击开启 ›</span>' +
 '</button>' +
@@ -739,12 +738,14 @@ try { store.remove(cssKey); } catch (e) {}
 applyFn('');
 rdRenderShelf();
 rdRefreshPresetOpts(cssKey);
+rdRefreshToneChips(cssKey);
 rdToast('已恢复默认');
 } else {
 try { store.set(cssKey, res.out); } catch (e) {}
 applyFn(res.out);
 rdRenderShelf();
 rdRefreshPresetOpts(cssKey);
+rdRefreshToneChips(cssKey);
 rdToast(res.blocked > 0 ? ('应用成功 · 有 ' + res.blocked + ' 条被拦截') : (label + ' 已应用'));
 }
 }, { textarea: true, textareaRows: 5, textareaPlaceholder: 'background:#1a1a1a;color:#eee;border-radius:16px', staticText: safeHint });
@@ -818,24 +819,64 @@ liveDrawer.innerHTML =
 '<button class="rd-live-mini" id="rd-live-close" type="button">✕</button>' +
 '</div>' +
 '<div class="rd-live-body" id="rd-live-body">' +
-'<div class="rd-set-slider rd-live-slider"><span>字号</span><input type="range" id="rd-live-fs-range" min="12" max="30" step="1" aria-label="字号"><span class="rd-live-val" id="rd-live-fs-val"></span></div>' +
-'<div class="rd-set-slider rd-live-slider"><span>行距</span><input type="range" id="rd-live-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span class="rd-live-val" id="rd-live-lh-val"></span></div>' +
-'<div class="rd-live-bgrow"><span>背景</span><div class="rd-live-bg">' +
-'<button class="rd-live-bgopt" data-rd-bgopt="auto" type="button">跟随</button>' +
-'<button class="rd-live-bgopt" data-rd-bgopt="eye" type="button">护眼</button>' +
-'<button class="rd-live-bgopt" data-rd-bgopt="night" type="button">夜间</button>' +
-'</div></div>' +
+'<div class="rd-live-tone">' +
+'<div class="rd-live-tone-h">Hero 封面卡</div>' +
+'<div class="rd-live-chips" id="rd-live-hero-chips"></div>' +
+'</div>' +
+'<div class="rd-live-tone">' +
+'<div class="rd-live-tone-h">共读手账底色</div>' +
+'<div class="rd-live-chips" id="rd-live-ledger-chips"></div>' +
+'</div>' +
 '<div class="rd-live-note">改动即时生效；关掉抽屉后保留。</div>' +
 '</div>';
 document.body.appendChild(liveDrawer);
-const fsRange = liveDrawer.querySelector('#rd-live-fs-range');
-if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
-const lhRange = liveDrawer.querySelector('#rd-live-lh-range');
-if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
 bindLiveDrag(liveDrawer.querySelector('.rd-live-grip'));
 bindLiveDrag(liveDrawer.querySelector('#rd-live-head'));
 rdApplyBg();
 return liveDrawer;
+}
+function rdFillToneChips(containerId, presets, cssKey, applyFn, scopeLabel) {
+const box = document.getElementById(containerId);
+if (!box) return;
+let saved = '';
+try { saved = store.get(cssKey) || ''; } catch (e) {}
+let selectedId = '';
+for (let i = 0; i < presets.length; i++) {
+if (presets[i].id !== 'custom' && saved && saved === presets[i].css) { selectedId = presets[i].id; break; }
+}
+let h = '';
+for (let i = 0; i < presets.length; i++) {
+const p = presets[i];
+const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+'<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+'<span>' + rdEsc(p.label) + '</span></button>';
+}
+box.innerHTML = h;
+box.onclick = function (e) {
+const btn = e.target.closest && e.target.closest('.rd-preset-chip');
+if (!btn) return;
+e.preventDefault();
+const pid = btn.getAttribute('data-pid');
+const pcss = btn.getAttribute('data-css') || '';
+if (pid === 'custom') {
+rdOpenCustomCssModal(cssKey, scopeLabel || '自定义', applyFn);
+return;
+}
+try { store.set(cssKey, pcss); } catch (err) {}
+applyFn(pcss);
+rdFillToneChips(containerId, presets, cssKey, applyFn, scopeLabel);
+rdRenderShelf();
+};
+}
+function rdRefreshToneChips(cssKey) {
+if (cssKey === RD_HERO_CSS_KEY) {
+rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+} else {
+rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
+}
 }
 function rdOpenLiveDrawer() {
 if (!settingsPage || settingsPage.hidden) return;
@@ -847,6 +888,8 @@ const foldBtn = document.getElementById('rd-live-fold');
 if (foldBtn) foldBtn.textContent = '收起';
 liveDrawer.hidden = false;
 liveDrawer.style.transition = 'bottom .16s ease';
+rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
 rdLiveApplyBottom();
 rdApplyBg();
 rdRenderPrefsActive();
@@ -3264,16 +3307,6 @@ if (lhRange) {
 lhRange.value = String(p.lh);
 lhRange.style.setProperty('--rd-pct', lhPct);
 }
-const liveFs = document.getElementById('rd-live-fs-range');
-if (liveFs) {
-liveFs.value = String(p.fs);
-liveFs.style.setProperty('--rd-pct', fsPct);
-}
-const liveLh = document.getElementById('rd-live-lh-range');
-if (liveLh) {
-liveLh.value = String(p.lh);
-liveLh.style.setProperty('--rd-pct', lhPct);
-}
 const prev = document.getElementById('rd-set-preview-text');
 if (prev) {
 prev.style.fontSize = p.fs + 'px';
@@ -3283,10 +3316,6 @@ const fsVal = document.getElementById('rd-set-fs-val');
 if (fsVal) fsVal.textContent = p.fs + 'px';
 const lhVal = document.getElementById('rd-set-lh-val');
 if (lhVal) lhVal.textContent = p.lh.toFixed(1);
-const liveFsVal = document.getElementById('rd-live-fs-val');
-if (liveFsVal) liveFsVal.textContent = p.fs + 'px';
-const liveLhVal = document.getElementById('rd-live-lh-val');
-if (liveLhVal) liveLhVal.textContent = p.lh.toFixed(1);
 const bg = rdReadBg();
 document.querySelectorAll('[data-rd-bgopt]').forEach(function (btn) {
 btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);
@@ -3899,14 +3928,6 @@ for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 1
 stat.hidden = false;
 const stH = document.getElementById('rd-stat-h');
 if (stH) stH.textContent = '今天读了 ' + todayMin + ' 分钟';
-const stS = document.getElementById('rd-stat-s');
-if (stS) {
-const t = heroBook ? (heroBook.title || '未命名') : '';
-stS.textContent = !heroBook ? ''
-: (todayMin === 0 ? '《' + t + '》今天还没翻开。'
-: (rdProgressPct(heroBook) >= 100 ? '《' + t + '》已经读完了。'
-: '《' + t + '》还停在上次那一页。'));
-}
 const stP = document.getElementById('rd-stat-pages');
 if (stP) stP.textContent = pageCount;
 const stW = document.getElementById('rd-stat-week');
