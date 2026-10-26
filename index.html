@@ -10467,6 +10467,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-gtitle{font-size:15.5px;font-weight:700}
 .rd-gnew{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-gnew:active{opacity:.6}
+.rd-ghead-r{display:flex;align-items:center;gap:12px}
+.rd-gsort{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gsort:active{opacity:.6}
+#rd-shelf.rd-sorting .rd-gk[data-gid]{cursor:grab;outline:1px dashed rgba(26,23,18,.22);outline-offset:2px}
+#rd-shelf.rd-sorting .rd-gk[data-gid="all"]{cursor:default;outline-color:transparent}
+.rd-gk-drag{opacity:.65;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.18)!important}
 .rd-ggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 15px 0}
 .rd-ggrid>*:nth-child(even){margin-top:20px}
 .rd-gk{position:relative;min-width:0;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -10876,7 +10882,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792981666597" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792982202018" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22673,4 +22679,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvomzo6d -->
+<!-- __MOCHI_EOF__ mvonb5b6 -->
