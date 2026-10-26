@@ -6685,18 +6685,16 @@ const FIX_SENTINELS = [
   { name: '#1562d 选项超过 6 个折叠（删＝选项多时整卡无限长）', file: 'js/chat.js', needle: "btn.textContent = open ? '展开全部（' + activeOpts.length + '）' : '收起选项';" },
   { name: '#1562e 长问题超过 4 行折叠加展开（删＝长问题整卡铺满屏）', file: 'css/chat-main.css', needle: '.msg-ask-q.ask-q-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4;' },
   { name: '#1562f 直接铺开的选项卡不再弹旧「点卡展开」区（删＝点卡片会在卡上再叠一层旧选项）', file: 'js/chat.js', needle: "if ((type === 'ask' || type === 'choose') && card.querySelector('.msg-ask-opts')) return;" },
-  // ==== 2026-10-26 #1563 已答显示：你/他两行 + 点卡回看完整选项 ====
+  // ==== 2026-10-26 #1563 已答显示：统一你/他两行（#1564d/e 收口为静态 + 常驻收藏） ====
   { name: '#1563a 已答统一「你：/ 他：」两行且无对勾（删＝回到 ✓ 已回答/你选择了 的旧文案）', file: 'js/chat.js', needle: 'function askAnsweredLinesHtml(youText, taText) {' },
-  { name: '#1563b 已答卡点卡展开/收起完整选项（删＝答完只能看两句，选项回看消失）', file: 'js/chat.js', needle: 'function askToggleAnsweredOpts(card, rec) {' },
-  { name: '#1563c 我这边已答卡点卡回看接入卡点击（问卡/选一个；出站侧按 #1564d 已去掉点开）', file: 'js/chat.js', needle: "if (rec.special === 'ask-card' || rec.special === 'ask-choose') askToggleAnsweredOpts(card, rec);" },
   { name: '#1563d 已答/问题/选项统一左对齐（删＝卡片又回到居中排版）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-choose-card { text-align:left; }' },
   { name: '#1563e 模块作用域禁止引用 renderMsg 内的局部 T()（2026-10-26 实锤：长问题折叠里写 T(\'展开\') 抛 ReferenceError，选项绑定整段被打断，双方都答不了）', file: 'js/chat.js', needle: "btn.textContent = '展开';" },
-  // ==== 2026-10-26 #1564 问卡固定宽度 + P1/P2 作答区 + 出站已答常驻收藏 ====
+  // ==== 2026-10-26 #1564 问卡固定宽度 + P1/P2 作答区 + 已答卡静态化 ====
   { name: '#1564a 所有问卡固定行宽 85%（删＝气泡宽度又随答案/问题长短变化）', file: 'css/chat-main.css', needle: 'width:85%; max-width:85%;' },
   { name: '#1564b P1 快捷选项改成一行一个（删＝回到横向 chips，长选项挤成一排）', file: 'js/chat.js', needle: "list.className = 'ip-quick-list';" },
   { name: '#1564c 文字作答键同聊天发送键（38px 圆 + 纸飞机 + 发送键配色；删＝回到大块文字按钮）', file: 'css/chat-main.css', needle: '.msg-inplace .ip-send {' },
-  { name: '#1564d 出站「问问他/邀请他」已答后去掉点开（删＝点卡又切收藏/展选项）', file: 'js/chat.js', needle: "if (card.classList.contains('answered') && (rec.special === 'ask' || rec.special === 'invite')) { e.stopPropagation(); return; }" },
-  { name: '#1564e 出站已答收藏心形直接显示（删＝心形又藏起来，必须点卡才出现）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered > .msg-fav-heart { display:inline-flex; }' },
+  { name: '#1564d 所有已答问卡去掉点开（删＝点卡又切收藏/展选项，退回两套交互）', file: 'js/chat.js', needle: "if (card.classList.contains('answered')) { e.stopPropagation(); return; }" },
+  { name: '#1564e 所有已答问卡收藏心形直接显示（删＝心形又藏起来，必须点卡才出现）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered > .msg-fav-heart { display:inline-flex; }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

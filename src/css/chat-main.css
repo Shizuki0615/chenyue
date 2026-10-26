@@ -1494,9 +1494,15 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 #page-chat .msg-ask.msg-ask-out .msg-choose-r { color:var(--msg-out-ink, #ffffff); opacity:.8; }
 #page-chat .msg-ask.msg-ask-out .msg-fav-heart { background:rgba(255,255,255,.12); color:rgba(255,255,255,.78); }
 #page-chat .msg-ask.msg-ask-out .msg-fav-time { color:rgba(255,255,255,.6); }
-/* 2026-10-26：出站已答卡不再点开——两行常驻 + 收藏心形直接显示（心形本身仍可点） */
-#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered { cursor:default; }
-#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered > .msg-fav-heart { display:inline-flex; }
+/* 2026-10-26：所有已答问卡不再点开——两行常驻 + 收藏心形直接显示（心形本身仍可点） */
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered { cursor:default; }
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered > .msg-fav-heart { display:inline-flex; }
 /* 时间轴五档：问卡行级定位与普通 .msg 对齐（.msg-side 基础样式全局已生效，这里只补行级定位） */
 body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in,
 body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out,
@@ -1569,11 +1575,6 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   padding:9px 12px; border:1px solid rgba(127,127,127,.32); border-radius:10px;
   font-size:13px; line-height:1.5; word-break:break-word;
 }
-/* 已答回看：选中项高亮、其余淡化；右侧是该项对应的 ~TA回应 */
-.ask-opt-view { cursor:default; }
-.ask-opt-view.on { border-color:currentColor; background:rgba(127,127,127,.14); font-weight:600; }
-.ask-opt-view.off { opacity:.55; }
-.ask-opt-view .ask-opt-reply { margin-left:auto; flex-shrink:0; font-size:11px; opacity:.6; max-width:45%; text-align:right; }
 /* 已答统一两行：你：xxxx / 他：xxxx（左对齐，无对勾） */
 .msg-ask-lines { margin-top:9px; display:flex; flex-direction:column; gap:5px; }
 .ask-line { font-size:13px; line-height:1.55; word-break:break-word; }
