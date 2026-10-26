@@ -457,7 +457,9 @@
 .rd-ggrid>*:nth-child(even){margin-top:20px}
 .rd-gk{position:relative;min-width:0;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-gk:active{opacity:.78}
-.rd-gn{position:absolute;top:12px;right:12px;font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+.rd-gn{position:absolute;top:12px;right:24px;font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+/* 他新回了批注：卡片右上角一个小粉点，不计数、不写「新消息」 */
+.rd-gnewdot{position:absolute;top:16px;right:12px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
 .rd-gstack{display:flex;min-height:36px}
 .rd-gsb{width:26px;aspect-ratio:3/4;border-radius:4px;margin-left:-9px;font-size:10px;font-weight:700;color:rgba(56,45,32,.6);box-shadow:0 2px 6px rgba(0,0,0,.16);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .rd-gsb:first-child{margin-left:0}
@@ -506,6 +508,8 @@
 /* 置顶标记：封面上角一个小粉点 */
 .rd-dd-pin{position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
 .rd-dd-fcov.rd-fcov-pin::before{content:'';position:absolute;top:10px;left:10px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3);z-index:2}
+/* 他新回了批注：封面右上角小粉点，和置顶点（左上）分开 */
+.rd-dd-new{position:absolute;top:8px;right:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 /* 底部渐隐：纯视觉，pointer-events:none 不拦书卡点击；滚到底时淡出，最后一排不被遮 */

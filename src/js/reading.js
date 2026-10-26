@@ -20,6 +20,16 @@
   // 他「读得慢」和「读得快」的日子各占多少比例（0-100，默认 30 / 10）
   const RD_SLOW_CHANCE_KEY = 'reading-slow-chance';
   const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
+  // 回应提醒：进书时页脚提一句 + 书架分组卡小点（默认开）
+  const RD_REPLY_TIP_KEY = 'reading-reply-tip';
+  let rdReplyTipUntil = 0;
+  function rdReplyTipOn() {
+    try {
+      const raw = store.get(RD_REPLY_TIP_KEY);
+      if (raw == null || raw === '') return true;
+      return String(raw) !== '0';
+    } catch (e) { return true; }
+  }
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
@@ -721,6 +731,11 @@
             '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-reply-range" min="0" max="100" step="5" aria-label="他回应批注的概率"><span>总是</span></div>' +
             '<div class="rd-set-row-desc">你写下批注后，他读到那一句时可能回一句。调低只是让他更常安静，位置越过的判断不受影响。</div>' +
           '</div>' +
+          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">回应提醒</span>' +
+              '<label class="toggle"><input type="checkbox" id="rd-reply-tip-toggle"><span class="tk"></span></label></div>' +
+            '<div class="rd-set-row-desc">打开后，他回了你的批注时，书架分组卡右上角有一个小点，进书时页脚提一句「他回你一句话」。不计数、不推送、不弹窗。</div>' +
+          '</div>' +
           '<div class="rd-set-row">' +
             '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得慢的频率</span><span class="rd-set-row-v" id="rd-set-slow-val">30%</span></div>' +
             '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
@@ -747,6 +762,11 @@
     if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
     const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
     if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
+    const replyTipToggle = settingsPage.querySelector('#rd-reply-tip-toggle');
+    if (replyTipToggle) replyTipToggle.addEventListener('change', function () {
+      try { store.set(RD_REPLY_TIP_KEY, this.checked ? 1 : 0); } catch (e) {}
+      rdRenderShelf();
+    });
     const replyRange = settingsPage.querySelector('#rd-set-reply-range');
     if (replyRange) replyRange.addEventListener('input', function () {
       const v = Math.max(0, Math.min(100, Number(this.value) || 0));
@@ -1134,7 +1154,17 @@
       bd.updatedAt = Date.now();
     }
     rdBuddyAdvance(book);
+    // 翻开这本书就算看过他的回应：清掉书架小点，并在页脚提一句
+    const hadNewReply = !!book.replyNewAt && book.replyNewAt > (book.annoSeenAt || 0);
+    book.annoSeenAt = Date.now();
     saveIndex(list);
+    if (hadNewReply && rdReplyTipOn()) {
+      rdReplyTipUntil = Date.now() + 3200;
+      const tipBookId = id;
+      setTimeout(function () {
+        if (rdBook && rdBook.id === tipBookId && Date.now() >= rdReplyTipUntil) rdUpdateBar();
+      }, 3400);
+    }
     rdBook = {
       id: id, toc: toc, ch: ch, off: off,
       cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
@@ -1341,6 +1371,8 @@
     const book = rdFindBook(b.id, list);
     const fill = document.getElementById('rd-bar-fill');
     if (!fill || !book) return;
+    // 刚翻开书时先让「他回你一句话」显示三秒，不被正常状态文案立刻盖掉
+    const tipOn = Date.now() < rdReplyTipUntil;
     const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
     const myPct = rdPosPct(book, b.ch, p.s);
     fill.style.width = myPct + '%';
@@ -1376,12 +1408,17 @@
       }
     }
     if (line) {
-      const tog = rdTogetherOn(book);
-      const paceNote = tog ? '' : rdPaceNote(book, b);
-      line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
-      line.classList.toggle('rd-buddy-same-text', same);
-      line.classList.toggle('rd-tog', tog);
-      line.classList.toggle('rd-pace', !!paceNote);
+      if (tipOn) {
+        line.textContent = '他回你一句话';
+        line.classList.remove('rd-buddy-same-text', 'rd-tog', 'rd-pace');
+      } else {
+        const tog = rdTogetherOn(book);
+        const paceNote = tog ? '' : rdPaceNote(book, b);
+        line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
+        line.classList.toggle('rd-buddy-same-text', same);
+        line.classList.toggle('rd-tog', tog);
+        line.classList.toggle('rd-pace', !!paceNote);
+      }
     }
     rdSyncLamp(book, st);
     rdMaybeBookmarkReturn(book, b, bd, st);
@@ -2979,6 +3016,8 @@
       fb.replyQueue = rest;
       if (added) {
         fb.annoCount = (Number(fb.annoCount) || 0) + added;
+        // 他刚回应过我：书架上的小点靠这个字段亮，等我打开这本书时清掉
+        fb.replyNewAt = Date.now();
         const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
         for (let i = 0; i < addedTexts.length; i++) used.push(addedTexts[i]);
         fb.buddyTexts = used.slice(-200);
@@ -3900,6 +3939,7 @@
     syncSub('rd-lamp-toggle', rdLampOn());
     syncSub('rd-bookmark-toggle', rdBookmarkOn());
     syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
+    syncSub('rd-reply-tip-toggle', rdReplyTipOn());
     rdApplyBg();
   }
 
@@ -4434,6 +4474,19 @@
         if (fcov) {
           if (fc) fcov.setAttribute('data-id', fc.id); else fcov.removeAttribute('data-id');
           fcov.classList.toggle('rd-fcov-pin', !!(fc && fc.pinned));
+          // 他新回了批注：封面右上角加一个小点（用真实元素，伪元素已被高光占用）
+          const needDot = rdReplyTipOn() && fc && fc.replyNewAt && fc.replyNewAt > (fc.annoSeenAt || 0);
+          let dot = fcov.querySelector('.rd-dd-new');
+          if (needDot) {
+            if (!dot) {
+              dot = document.createElement('i');
+              dot.className = 'rd-dd-new';
+              dot.setAttribute('aria-label', '有新回应');
+              fcov.appendChild(dot);
+            }
+          } else if (dot) {
+            dot.parentNode.removeChild(dot);
+          }
         }
         // 右侧列表
         const flist = document.getElementById('rd-dd-flist');
@@ -4461,9 +4514,11 @@
           const pct = rdProgressPct(b);
           const pctText = pct >= 100 ? '读完' : (pct + '%');
           const tc = rdCoverGrad(i);
+          const newRep = rdReplyTipOn() && b.replyNewAt && b.replyNewAt > (b.annoSeenAt || 0);
           ghtml += '<div class="rd-dd-gi" data-id="' + rdEsc(b.id) + '">' +
             '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) +
-              (b.pinned ? '<i class="rd-dd-pin" aria-label="已置顶"></i>' : '') + '</div>' +
+              (b.pinned ? '<i class="rd-dd-pin" aria-label="已置顶"></i>' : '') +
+              (newRep ? '<i class="rd-dd-new" aria-label="有新回应"></i>' : '') + '</div>' +
             '<div class="rd-dd-gt">' + rdEsc(b.title || '未命名') + '</div>' +
             '<div class="rd-dd-gm">' + pctText + '</div></div>';
         }
@@ -4624,6 +4679,14 @@
   function rdGroupCardHtml(group, books) {
     const name = (group && group.name) || '未命名';
     const isDefault = !!(group && group.id === RD_DEFAULT_GROUP_ID);
+    // 组内有没有书带着他新回的批注（小点只表示「有点东西」，不计数）
+    let hasNew = false;
+    if (rdReplyTipOn()) {
+      for (let i = 0; i < books.length; i++) {
+        const bk = books[i];
+        if (bk && bk.replyNewAt && bk.replyNewAt > (bk.annoSeenAt || 0)) { hasNew = true; break; }
+      }
+    }
     const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
     const recent = sorted[0];
     // 该卡的起始色位：默认分组固定 0（第一根是深色主书），其余按组名散列，保证卡内相邻不同色
@@ -4655,6 +4718,7 @@
     }
     return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
       '<span class="rd-gn">' + books.length + ' 本</span>' +
+      (hasNew ? '<i class="rd-gnewdot" aria-label="有新回应"></i>' : '') +
       '<div class="rd-gstack">' + stack + '</div>' +
       '<div class="rd-gt">' + rdEsc(name) + '</div>' +
       '<div class="rd-gs">' + subtitle + '</div>' +
