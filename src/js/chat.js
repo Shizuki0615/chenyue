@@ -4021,7 +4021,7 @@ wrap.appendChild(b);
 } else {
 const quicks = (type === 'curious' ? (rec.curiousQuick || []) : []).filter(q => typeof q === 'string' && q);
 if (quicks.length) {
-// 2026-10-26 P1：快捷选项改成一行一个，点一行只填入输入框，可改完再发
+// 2026-10-26 P1：快捷选项一行一个；点一行直接发送（仍可在下方输入框改自定义答案）
 const list = document.createElement('div');
 list.className = 'ip-quick-list';
 quicks.forEach(q => {
@@ -4029,7 +4029,7 @@ const c = document.createElement('button');
 c.type = 'button';
 c.className = 'ip-quick';
 c.textContent = q;
-c.addEventListener('click', () => { try { inp.value = q; inp.focus(); } catch (e) {} });
+c.addEventListener('click', () => { doSend(q); });
 list.appendChild(c);
 });
 wrap.appendChild(list);
@@ -4048,8 +4048,8 @@ const sendLabel = type === 'roast' ? (window.taFit ? window.taFit('回他') : '�
 send.setAttribute('aria-label', sendLabel);
 send.setAttribute('title', sendLabel);
 send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
-const doSend = () => {
-const v = (inp.value || '').trim();
+const doSend = (rawVal) => {
+const v = (rawVal != null ? String(rawVal) : (inp.value || '')).trim();
 if (!v) return;
 // FIX 2026-09-30 #1462：提交前先收键盘（口径同 #512 askDismissIme／#542 弹窗 close——blur 先行）。
 // 就地作答框（.ip-input，安卓已转 .ce-box）此刻持有焦点，随后 chatAskReply/chatCuriousReply/
@@ -4082,7 +4082,7 @@ window.chatAskReply(idx, v, (window.pickAskCardReply ? window.pickAskCardReply(p
 if (window.logFish) window.logFish();
 delete inplaceDrafts[idx];
 };
-send.addEventListener('click', doSend);
+send.addEventListener('click', () => doSend());
 inp.addEventListener('keydown', (e) => {
 if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); doSend(); }
 });
@@ -4149,7 +4149,20 @@ e.stopPropagation();
 // v3.28.x：心形不只挂在 .msg-ask 家族（红包/送花/礼物/佳肴是 .msg-rp/.msg-flower/.msg-gift），
 // 改为按最近的 data-idx 容器定位，保证所有带心形的互动卡片都能收藏
 const fItem = favBtn.closest('[data-idx]');
-if (fItem && fItem.dataset.idx !== undefined) window.favCardFromMsg(Number(fItem.dataset.idx));
+if (fItem && fItem.dataset.idx !== undefined) {
+const fIdx = Number(fItem.dataset.idx);
+const added = window.favCardFromMsg(fIdx);
+// 2026-10-26：已收藏状态常红（含原本已收藏），不再只在按下的瞬间红一下
+try {
+const fRec = msgs[fIdx];
+if (added || (fRec && favCardAlready(fRec))) {
+favBtn.classList.add('is-fav');
+favBtn.setAttribute('aria-pressed', 'true');
+const tx = favBtn.querySelector('.msg-fav-heart-txt');
+if (tx) tx.textContent = '已收藏';
+}
+} catch (eFav) {}
+}
 return;
 }
 // #985：礼物卡的【领取】与【回复】——两条都只对「联系人送我的礼物」出现（giftSelf 的 TA 自买卡
@@ -13576,17 +13589,49 @@ return { kind: 'card', special: special, q: q, mine: mine, ta: ta, ts: rec.ts ||
 }
 window.favCardFromMsg = function (idx) {
 const rec = msgs[idx];
-if (!rec) return;
+if (!rec) return false;
 const f = cardSnapshot(rec);
-if (!f) return;
-if (window.addMyFavItem(f)) toast('已收藏互动卡片');
-else toast('已收藏过这张卡片');
+if (!f) return false;
+if (window.addMyFavItem(f)) { toast('已收藏互动卡片'); return true; }
+toast('已收藏过这张卡片');
+return false;
 };
+// 2026-10-26：收藏心形常红——按「我的收藏」同一套判重口径（by/kind/q/text/ts）算卡片是否已收藏；
+// 缓存按 fav-msgs 原始串 + 待落盘队列末项失效，渲染多张卡时不重复解析大收藏包。
+let favHeartCacheKey = null;
+let favHeartCacheSet = null;
+function favHeartSet() {
+try {
+const raw = store.get('fav-msgs') || '[]';
+const cid = favCid();
+const pend = (favHold(cid) && favPending[cid]) ? favPending[cid] : null;
+// 用长度 + 首尾片段做签名，避免每张卡都把整个收藏包拼一份新字符串
+const sig = raw.length + ':' + raw.slice(0, 48) + ':' + raw.slice(-48);
+const key = sig + '|' + (pend ? (pend.length + ':' + JSON.stringify(pend[pend.length - 1] || '')) : '0');
+if (key === favHeartCacheKey && favHeartCacheSet) return favHeartCacheSet;
+const set = {};
+(getFav() || []).forEach(x => {
+if ((x.by || 'me') !== 'me') return;
+set[(x.kind || 'msg') + '|' + (x.q || '') + '|' + (x.text || '') + '|' + x.ts] = 1;
+});
+favHeartCacheKey = key;
+favHeartCacheSet = set;
+return set;
+} catch (e) { return {}; }
+}
+function favCardAlready(rec) {
+try {
+const f = cardSnapshot(rec);
+if (!f) return false;
+return !!favHeartSet()[(f.kind || 'msg') + '|' + (f.q || '') + '|' + (f.text || '') + '|' + f.ts];
+} catch (e) { return false; }
+}
 // #1005 收藏心形一律默认隐藏、点卡片浮现（.show-fav，见 body click 里各卡片分支）：#713 当年
 // 给问卷卡加的 always=true 常显按钮被用户点名「卡片直接显示了收藏的按钮」，现收回成与单题卡
 // 同一套机制（问卷卡的浮现分支在 surveyCard 那里）。
 function favHeartHtml(rec) {
-const heart = '<button class="msg-fav-heart" title="收藏整张互动卡片"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>收藏</button>';
+const isFav = favCardAlready(rec);
+const heart = '<button class="msg-fav-heart' + (isFav ? ' is-fav' : '') + '" title="收藏整张互动卡片" aria-pressed="' + (isFav ? 'true' : 'false') + '"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span class="msg-fav-heart-txt">' + (isFav ? '已收藏' : '收藏') + '</span></button>';
 let time = '';
 if (rec && rec.ts) {
 const who = rec.side === 'out' ? chatUserName() : chatPartnerName();

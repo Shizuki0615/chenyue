@@ -2946,7 +2946,7 @@ const c = document.createElement('button');
 c.type = 'button';
 c.className = 'ip-quick';
 c.textContent = q;
-c.addEventListener('click', () => { try { inp.value = q; inp.focus(); } catch (e) {} });
+c.addEventListener('click', () => { doSend(q); });
 list.appendChild(c);
 });
 wrap.appendChild(list);
@@ -2964,8 +2964,8 @@ const sendLabel = type === 'roast' ? (window.taFit ? window.taFit('回他') : '�
 send.setAttribute('aria-label', sendLabel);
 send.setAttribute('title', sendLabel);
 send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
-const doSend = () => {
-const v = (inp.value || '').trim();
+const doSend = (rawVal) => {
+const v = (rawVal != null ? String(rawVal) : (inp.value || '')).trim();
 if (!v) return;
 try { inp.blur(); } catch (eKb) {}
 if (window.mochiKbDismiss) { try { window.mochiKbDismiss(); } catch (eKd) {} }
@@ -2987,7 +2987,7 @@ window.chatAskReply(idx, v, (window.pickAskCardReply ? window.pickAskCardReply(p
 if (window.logFish) window.logFish();
 delete inplaceDrafts[idx];
 };
-send.addEventListener('click', doSend);
+send.addEventListener('click', () => doSend());
 inp.addEventListener('keydown', (e) => {
 if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); doSend(); }
 });
@@ -3050,7 +3050,19 @@ const favBtn = e.target.closest('.msg-fav-heart');
 if (favBtn) {
 e.stopPropagation();
 const fItem = favBtn.closest('[data-idx]');
-if (fItem && fItem.dataset.idx !== undefined) window.favCardFromMsg(Number(fItem.dataset.idx));
+if (fItem && fItem.dataset.idx !== undefined) {
+const fIdx = Number(fItem.dataset.idx);
+const added = window.favCardFromMsg(fIdx);
+try {
+const fRec = msgs[fIdx];
+if (added || (fRec && favCardAlready(fRec))) {
+favBtn.classList.add('is-fav');
+favBtn.setAttribute('aria-pressed', 'true');
+const tx = favBtn.querySelector('.msg-fav-heart-txt');
+if (tx) tx.textContent = '已收藏';
+}
+} catch (eFav) {}
+}
 return;
 }
 const giftClaimBtn = e.target.closest('.msg-gift-claim');
@@ -10683,14 +10695,43 @@ return { kind: 'card', special: special, q: q, mine: mine, ta: ta, ts: rec.ts ||
 }
 window.favCardFromMsg = function (idx) {
 const rec = msgs[idx];
-if (!rec) return;
+if (!rec) return false;
 const f = cardSnapshot(rec);
-if (!f) return;
-if (window.addMyFavItem(f)) toast('已收藏互动卡片');
-else toast('已收藏过这张卡片');
+if (!f) return false;
+if (window.addMyFavItem(f)) { toast('已收藏互动卡片'); return true; }
+toast('已收藏过这张卡片');
+return false;
 };
+let favHeartCacheKey = null;
+let favHeartCacheSet = null;
+function favHeartSet() {
+try {
+const raw = store.get('fav-msgs') || '[]';
+const cid = favCid();
+const pend = (favHold(cid) && favPending[cid]) ? favPending[cid] : null;
+const sig = raw.length + ':' + raw.slice(0, 48) + ':' + raw.slice(-48);
+const key = sig + '|' + (pend ? (pend.length + ':' + JSON.stringify(pend[pend.length - 1] || '')) : '0');
+if (key === favHeartCacheKey && favHeartCacheSet) return favHeartCacheSet;
+const set = {};
+(getFav() || []).forEach(x => {
+if ((x.by || 'me') !== 'me') return;
+set[(x.kind || 'msg') + '|' + (x.q || '') + '|' + (x.text || '') + '|' + x.ts] = 1;
+});
+favHeartCacheKey = key;
+favHeartCacheSet = set;
+return set;
+} catch (e) { return {}; }
+}
+function favCardAlready(rec) {
+try {
+const f = cardSnapshot(rec);
+if (!f) return false;
+return !!favHeartSet()[(f.kind || 'msg') + '|' + (f.q || '') + '|' + (f.text || '') + '|' + f.ts];
+} catch (e) { return false; }
+}
 function favHeartHtml(rec) {
-const heart = '<button class="msg-fav-heart" title="收藏整张互动卡片"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>收藏</button>';
+const isFav = favCardAlready(rec);
+const heart = '<button class="msg-fav-heart' + (isFav ? ' is-fav' : '') + '" title="收藏整张互动卡片" aria-pressed="' + (isFav ? 'true' : 'false') + '"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span class="msg-fav-heart-txt">' + (isFav ? '已收藏' : '收藏') + '</span></button>';
 let time = '';
 if (rec && rec.ts) {
 const who = rec.side === 'out' ? chatUserName() : chatPartnerName();

@@ -1670,6 +1670,9 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 @keyframes favFadeIn { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:none; } }
 .msg-fav-heart svg { width:12px; height:12px; }
 .msg-fav-heart:active { background:rgba(255,77,106,.12); color:#ff4d6a; }
+/* 2026-10-26：已收藏状态常红（不再只在按下的瞬间红一下） */
+.msg-fav-heart.is-fav { background:rgba(255,77,106,.12); color:#ff4d6a; }
+#page-chat .msg-ask.msg-ask-out .msg-fav-heart.is-fav { background:rgba(255,77,106,.18); color:#ff6b82; }
 /* 互动卡片发送时间：展开收藏心形时与心形一同显示，精确到秒 */
 .msg-fav-time {
   margin-top:4px; font-size:11px; color:#999; line-height:1.4;

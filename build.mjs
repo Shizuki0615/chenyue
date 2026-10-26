@@ -6699,6 +6699,10 @@ const FIX_SENTINELS = [
   { name: '#1565a 出站已答且出过选项才出现小箭头（删＝我这边无法回看选项）', file: 'js/chat.js', needle: 'const ASK_VIEW_ARROW_HTML =' },
   { name: '#1565b 小箭头展开/收起完整选项（删＝箭头点了没反应）', file: 'js/chat.js', needle: 'function askBindAnsweredView(root, rec) {' },
   { name: '#1565c 小箭头定位/旋转/展开列表样式（删＝箭头不在右下、展开后不转向）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask-view-arrow {' },
+  // ==== 2026-10-26 #1566 好奇快捷项直接发送 + 收藏已收藏常红 ====
+  { name: '#1566a 好奇快捷项点一行直接发送（删＝又退回只填入输入框）', file: 'js/chat.js', needle: "c.addEventListener('click', () => { doSend(q); });" },
+  { name: '#1566b 收藏心形按「我的收藏」判重算出已收藏态（删＝重新打开后心形又变灰）', file: 'js/chat.js', needle: 'function favCardAlready(rec) {' },
+  { name: '#1566c 已收藏心形常红样式（删＝只有按下的瞬间红一下）', file: 'css/chat-main.css', needle: '.msg-fav-heart.is-fav { background:rgba(255,77,106,.12); color:#ff4d6a; }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
