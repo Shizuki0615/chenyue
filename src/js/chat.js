@@ -5957,7 +5957,7 @@ if (Array.isArray(r)) return r.filter(s => typeof s === 'string' && s.trim()).ma
 if (typeof r === 'string') return r.split(';').map(s => s.trim()).filter(Boolean);
 return [];
 }
-// 已答统一两行：你：xxxx / 他：xxxx（左对齐，无对勾；选项默认折叠，点卡回看）
+// 已答统一两行：你：xxxx / 他：xxxx（左对齐，无对勾；接收侧选项默认收起且不再回看）
 function askAnsweredLinesHtml(youText, taText) {
 const y = String(youText == null ? '' : youText);
 const t = String(taText == null ? '' : taText);
@@ -5967,6 +5967,8 @@ if (t) html += '<div class="ask-line"><span class="ask-line-who">他：</span><s
 html += '</div>';
 return html;
 }
+// 我这边（出站「问问他」）已答卡右下角的小箭头：只负责展开/收起完整选项，点整卡仍然无操作
+const ASK_VIEW_ARROW_HTML = '<button type="button" class="msg-ask-view-arrow" data-ask-view="1" aria-label="查看选项" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>';
 function askSingleOptsHtml(opts) {
 let rows = '';
 for (let i = 0; i < opts.length; i++) {
@@ -6148,10 +6150,51 @@ btn.textContent = open ? ('查看选项（' + activeOpts.length + '）') : '收�
 // 只读选项本身不触发整卡收藏心形
 root.querySelectorAll('.ask-opt-static').forEach(el => el.addEventListener('click', (e) => e.stopPropagation()));
 }
+// 我这边已答卡的小箭头：展开/收起完整选项（选中高亮、其余淡化，右侧保留 ~TA回应）
+function askBindAnsweredView(root, rec) {
+if (!root || !rec) return;
+const btn = root.querySelector('.msg-ask-view-arrow');
+if (!btn) return;
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const card = btn.closest('.msg-ask-card');
+if (!card) return;
+const old = card.querySelector('.msg-ask-opts.ask-opts-answered');
+if (old) {
+old.remove();
+btn.classList.remove('is-open');
+btn.setAttribute('aria-expanded', 'false');
+return;
+}
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : [];
+if (!opts.length) return;
+const answer = String(rec.askAnswer != null ? rec.askAnswer : '');
+let rows = '';
+opts.forEach(o => {
+const t = String((o && o.t) || '');
+const hit = window.mochiAnswerHits ? window.mochiAnswerHits(t, answer) : (!!answer && t === answer);
+const rl = askOptReplyList(o);
+const rt = rl.length ? (rl.length > 1 ? rl[0] + ' 等' + rl.length + '条' : rl[0]) : '';
+rows += '<div class="ask-opt-row ask-opt-view' + (hit ? ' on' : ' off') + '">' +
+'<span class="ask-opt-t">' + escTxt(t) + '</span>' +
+(rt ? '<span class="ask-opt-reply">' + escTxt(rt) + '</span>' : '') +
+'</div>';
+});
+const box = document.createElement('div');
+box.className = 'msg-ask-opts ask-opts-answered';
+box.innerHTML = rows;
+box.querySelectorAll('.ask-opt-view').forEach(el => el.addEventListener('click', (e2) => e2.stopPropagation()));
+const heart = card.querySelector('.msg-fav-heart');
+if (heart && heart.parentNode === card) card.insertBefore(box, heart); else card.appendChild(box);
+btn.classList.add('is-open');
+btn.setAttribute('aria-expanded', 'true');
+});
+}
 function askBubbleAfterRender(root, rec, idx) {
 askBubbleFillAvatar(root, rec);
 askBindQuestionClamp(root);
 askBindOptions(root, rec, idx);
+askBindAnsweredView(root, rec);
 }
 function renderMsg(rec, atIdx) {
 const m = document.createElement('div');
@@ -6221,12 +6264,15 @@ const optsOut = Array.isArray(rec.askOptions) ? rec.askOptions : [];
 const askQ = rec.askQuestion || '';
 const askTitle = answered ? T('问问他') : T('问问他') + ' · ' + escTxt(askQ);
 const askTa = rec.askReply ? T(askCardReplyClean(rec.askReply)) : T(rec.askAnswer || '回答了你');
-m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+// 我这边已答且出过选项：右下角小箭头回看；接收侧与无选项的文字题不出现
+const askShowArrow = answered && optsOut.length > 0;
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + (askShowArrow ? ' has-ask-arrow' : '') + '">' +
 '<div class="msg-ask-q">' + askTitle + '</div>' +
 (answered
 ? askAnsweredLinesHtml(askQ, askTa)
 : '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>' + (optsOut.length ? askOutgoingOptsHtml(optsOut) : '')) +
 favHeartHtml(rec) +
+(askShowArrow ? ASK_VIEW_ARROW_HTML : '') +
 '</div>');
 appendMsg(m);
 askBubbleAfterRender(m, rec, __msgAt);
@@ -12054,7 +12100,8 @@ saveMsgs();
 saveMsgsNow(); // v3.26.x #489：回答即落盘（同 chatAskReply 先例），切桌面 flush 前不止内存一份
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
-el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + '</div>' + askAnsweredLinesHtml(content, window.taFit ? window.taFit(text) : text) + favHeartHtml(rec) + '</div>');
+const _hasOpts = Array.isArray(rec.askOptions) && rec.askOptions.length > 0;
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered' + (_hasOpts ? ' has-ask-arrow' : '') + '"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + '</div>' + askAnsweredLinesHtml(content, window.taFit ? window.taFit(text) : text) + favHeartHtml(rec) + (_hasOpts ? ASK_VIEW_ARROW_HTML : '') + '</div>');
 askBubbleAfterRender(el, rec, i);
 }
 }

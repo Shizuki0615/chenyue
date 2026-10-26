@@ -6695,6 +6695,10 @@ const FIX_SENTINELS = [
   { name: '#1564c 文字作答键同聊天发送键（38px 圆 + 纸飞机 + 发送键配色；删＝回到大块文字按钮）', file: 'css/chat-main.css', needle: '.msg-inplace .ip-send {' },
   { name: '#1564d 所有已答问卡去掉点开（删＝点卡又切收藏/展选项，退回两套交互）', file: 'js/chat.js', needle: "if (card.classList.contains('answered')) { e.stopPropagation(); return; }" },
   { name: '#1564e 所有已答问卡收藏心形直接显示（删＝心形又藏起来，必须点卡才出现）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered > .msg-fav-heart { display:inline-flex; }' },
+  // ==== 2026-10-26 #1565 我这边已答卡右下角小箭头回看选项（接收侧不做） ====
+  { name: '#1565a 出站已答且出过选项才出现小箭头（删＝我这边无法回看选项）', file: 'js/chat.js', needle: 'const ASK_VIEW_ARROW_HTML =' },
+  { name: '#1565b 小箭头展开/收起完整选项（删＝箭头点了没反应）', file: 'js/chat.js', needle: 'function askBindAnsweredView(root, rec) {' },
+  { name: '#1565c 小箭头定位/旋转/展开列表样式（删＝箭头不在右下、展开后不转向）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask-view-arrow {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
