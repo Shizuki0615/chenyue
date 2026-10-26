@@ -3479,7 +3479,8 @@ setTimeout(function () { body.classList.remove(cls); body._rdBounce = 0; }, 200)
 }
 let rdTurnBusyUntil = 0;
 const RD_CURL_SEGS = 20;
-const RD_CURL_DEG = 92;
+const RD_CURL_TURN_DEG = 142; // 整页绕最左缘翻过去的总角度
+const RD_CURL_CURL_DEG = 14;  // 末端额外卷一点，避免整页像一块硬板
 function rdCurlTurn(dir, body, reader, mutate) {
 const br = body.getBoundingClientRect();
 const rr = reader.getBoundingClientRect();
@@ -3487,7 +3488,7 @@ const W = Math.max(1, br.width);
 const H = Math.max(1, br.height);
 const N = RD_CURL_SEGS;
 const sw = W / N;
-const perDeg = RD_CURL_DEG / N;
+const perDeg = RD_CURL_CURL_DEG / N;
 const isPrev = dir < 0;
 if (isPrev) mutate();
 const html = body.innerHTML;
@@ -3502,6 +3503,8 @@ root.style.left = left;
 root.style.top = top;
 root.style.width = W + 'px';
 root.style.height = H + 'px';
+root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? -RD_CURL_TURN_DEG : 0) + 'deg)';
+root.style.transition = 'none';
 const segs = [];
 let parent = root;
 for (let i = 0; i < N; i++) {
@@ -3540,25 +3543,20 @@ cast.style.zIndex = '4';
 if (isPrev) cast.classList.add('is-prev');
 reader.appendChild(cast);
 reader.appendChild(root);
-const flash = document.createElement('div');
-flash.className = 'rd-curl-flash';
-flash.style.left = left;
-flash.style.top = top;
-flash.style.width = W + 'px';
-flash.style.height = H + 'px';
-reader.appendChild(flash);
 if (!isPrev) mutate();
 void root.getBoundingClientRect();
 for (let i = 0; i < N; i++) {
 const seg = segs[i];
-const delay = (N - 1 - i) * 5;
-seg.style.transition = 'transform 320ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
+const delay = (N - 1 - i) * 4;
+seg.style.transition = 'transform 380ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
 seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
 }
-const dur = 320 + (N - 1) * 5 + 60;
-rdTurnBusyUntil = Date.now() + 400;
+root.style.transition = 'transform 400ms cubic-bezier(.18,.72,.28,1)';
+root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? 0 : -RD_CURL_TURN_DEG) + 'deg)';
+const dur = 400 + (N - 1) * 4 + 80;
+rdTurnBusyUntil = Date.now() + 460;
 setTimeout(function () {
-[root, cast, flash].forEach(function (el) {
+[root, cast].forEach(function (el) {
 if (el && el.parentNode) el.parentNode.removeChild(el);
 });
 }, dur);

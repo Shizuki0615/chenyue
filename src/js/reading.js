@@ -3813,11 +3813,12 @@
     setTimeout(function () { body.classList.remove(cls); body._rdBounce = 0; }, 200);
   }
 
-  // 翻页动画：paper＝分段卷曲（12 条竖条逐段累积旋转，拼成一道弧），slide＝单层轻滑。
+  // 翻页动画：paper＝整页绕最左缘翻出去（末端再卷一点，不是硬板），slide＝单层轻滑。
   // 跨章不播动画：换章要等异步取正文，盖着一张纸干等反而更假。
   let rdTurnBusyUntil = 0;
   const RD_CURL_SEGS = 20;
-  const RD_CURL_DEG = 92;
+  const RD_CURL_TURN_DEG = 142; // 整页绕最左缘翻过去的总角度
+  const RD_CURL_CURL_DEG = 14;  // 末端额外卷一点，避免整页像一块硬板
   function rdCurlTurn(dir, body, reader, mutate) {
     const br = body.getBoundingClientRect();
     const rr = reader.getBoundingClientRect();
@@ -3825,7 +3826,7 @@
     const H = Math.max(1, br.height);
     const N = RD_CURL_SEGS;
     const sw = W / N;
-    const perDeg = RD_CURL_DEG / N;
+    const perDeg = RD_CURL_CURL_DEG / N;
     const isPrev = dir < 0;
     // 上一页先换底层，再把新页做成卷起来的纸；下一页反过来
     if (isPrev) mutate();
@@ -3841,6 +3842,9 @@
     root.style.top = top;
     root.style.width = W + 'px';
     root.style.height = H + 'px';
+    // 轴心是最左缘（书脊）：整页绕这一条边转出去，不是每段各自从中间折
+    root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? -RD_CURL_TURN_DEG : 0) + 'deg)';
+    root.style.transition = 'none';
     const segs = [];
     let parent = root;
     for (let i = 0; i < N; i++) {
@@ -3849,7 +3853,7 @@
       seg.style.left = (i === 0 ? 0 : sw) + 'px';
       seg.style.width = sw + 'px';
       seg.style.height = H + 'px';
-      // 每段都绕自己的左缘转，父段的角度会累加下来，整体就是一条弧
+      // 每段只叠一点点角度，累积成末端的一点弧度；主旋转在 root 上
       seg.style.transform = 'rotateY(' + (isPrev ? -perDeg : 0) + 'deg)';
       seg.style.transition = 'none';
       const slice = document.createElement('div');
@@ -3882,27 +3886,21 @@
     if (isPrev) cast.classList.add('is-prev');
     reader.appendChild(cast);
     reader.appendChild(root);
-    // 掠过纸面的那道光：不跟着卷曲，盖在最上层，短促扫过
-    const flash = document.createElement('div');
-    flash.className = 'rd-curl-flash';
-    flash.style.left = left;
-    flash.style.top = top;
-    flash.style.width = W + 'px';
-    flash.style.height = H + 'px';
-    reader.appendChild(flash);
     if (!isPrev) mutate();
-    // 先把「未卷」的初始状态算进布局，否则和后面的目标角度会被合成同一帧，过渡不触发
+    // 先把「未翻」的初始状态算进布局，否则和后面的目标角度会被合成同一帧，过渡不触发
     void root.getBoundingClientRect();
     for (let i = 0; i < N; i++) {
       const seg = segs[i];
-      const delay = (N - 1 - i) * 5;
-      seg.style.transition = 'transform 320ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
+      const delay = (N - 1 - i) * 4;
+      seg.style.transition = 'transform 380ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
       seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
     }
-    const dur = 320 + (N - 1) * 5 + 60;
-    rdTurnBusyUntil = Date.now() + 400;
+    root.style.transition = 'transform 400ms cubic-bezier(.18,.72,.28,1)';
+    root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? 0 : -RD_CURL_TURN_DEG) + 'deg)';
+    const dur = 400 + (N - 1) * 4 + 80;
+    rdTurnBusyUntil = Date.now() + 460;
     setTimeout(function () {
-      [root, cast, flash].forEach(function (el) {
+      [root, cast].forEach(function (el) {
         if (el && el.parentNode) el.parentNode.removeChild(el);
       });
     }, dur);
