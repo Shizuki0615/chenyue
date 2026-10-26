@@ -376,7 +376,10 @@ page.innerHTML =
 '<div class="rd-glabel">书库 /</div>' +
 '<div class="rd-groups-head">' +
 '<div class="rd-gtitle">我的分组</div>' +
+'<div class="rd-ghead-r">' +
+'<button class="rd-gsort" id="rd-gsort" type="button">排序</button>' +
 '<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
+'</div>' +
 '</div>' +
 '<div class="rd-ggrid" id="rd-ggrid"></div>' +
 '</div>' +
@@ -921,6 +924,7 @@ if (btn) btn.textContent = willFold ? '展开' : '收起';
 function rdOpen() {
 buildPage();
 rdCloseLiveDrawer();
+rdSetGroupSorting(false);
 try { rdApplyHeroCss(store.get(RD_HERO_CSS_KEY) || ''); } catch (e) {}
 try { rdApplyLedgerCss(store.get(RD_LEDGER_CSS_KEY) || ''); } catch (e) {}
 rdRenderShelf();
@@ -4160,6 +4164,75 @@ if (!saveIndex(list)) return;
 rdRenderShelf();
 rdToast(toGid === RD_DEFAULT_GROUP_ID ? '已移出分组' : '已移进分组');
 }
+let rdGroupSorting = false;
+let rdDragCard = null, rdDragX = 0, rdDragY = 0, rdDragMoved = false;
+function rdSetGroupSorting(on) {
+rdGroupSorting = !!on;
+const shelf = document.getElementById('rd-shelf');
+if (shelf) shelf.classList.toggle('rd-sorting', rdGroupSorting);
+const btn = document.getElementById('rd-gsort');
+if (btn) btn.textContent = rdGroupSorting ? '完成' : '排序';
+const newBtn = document.getElementById('rd-gnew');
+if (newBtn) newBtn.hidden = rdGroupSorting;
+}
+function rdSaveGroupOrder() {
+const grid = document.getElementById('rd-ggrid');
+if (!grid) return;
+const cards = grid.querySelectorAll('.rd-gk[data-gid]');
+const groups = rdGroupLoad();
+const out = [];
+for (let i = 0; i < cards.length; i++) {
+const gid = cards[i].getAttribute('data-gid');
+if (!gid || gid === RD_DEFAULT_GROUP_ID) continue;
+const g = rdGroupFind(groups, gid);
+if (g && out.indexOf(g) < 0) out.push(g);
+}
+for (let i = 0; i < groups.length; i++) if (out.indexOf(groups[i]) < 0) out.push(groups[i]);
+if (!rdGroupSave(out)) { rdToast('保存失败，再试一次？'); return; }
+rdToast('分组顺序已保存');
+}
+document.addEventListener('pointerdown', function (e) {
+if (!rdGroupSorting) return;
+const el = e.target;
+if (!el || !el.closest) return;
+const card = el.closest('#rd-ggrid .rd-gk[data-gid]');
+if (!card) return;
+if (card.getAttribute('data-gid') === RD_DEFAULT_GROUP_ID) { rdToast('「全部书籍」位置固定'); return; }
+e.preventDefault();
+rdDragCard = card;
+rdDragX = e.clientX; rdDragY = e.clientY; rdDragMoved = false;
+card.classList.add('rd-gk-drag');
+try { card.setPointerCapture(e.pointerId); } catch (err) {}
+}, true);
+document.addEventListener('pointermove', function (e) {
+if (!rdDragCard) return;
+if (!rdDragMoved && (Math.abs(e.clientX - rdDragX) > 6 || Math.abs(e.clientY - rdDragY) > 6)) rdDragMoved = true;
+if (!rdDragMoved) return;
+e.preventDefault();
+const grid = document.getElementById('rd-ggrid');
+if (!grid) return;
+const under = document.elementFromPoint(e.clientX, e.clientY);
+const target = under && under.closest && under.closest('#rd-ggrid .rd-gk[data-gid]');
+if (!target || target === rdDragCard) return;
+if (target.getAttribute('data-gid') === RD_DEFAULT_GROUP_ID) return;
+const kids = Array.prototype.slice.call(grid.children);
+const from = kids.indexOf(rdDragCard), to = kids.indexOf(target);
+if (from < 0 || to < 0) return;
+if (from < to) grid.insertBefore(rdDragCard, target.nextSibling);
+else grid.insertBefore(rdDragCard, target);
+}, true);
+document.addEventListener('pointerup', function (e) {
+if (!rdDragCard) return;
+const card = rdDragCard;
+rdDragCard = null;
+card.classList.remove('rd-gk-drag');
+if (rdDragMoved) rdSaveGroupOrder();
+}, true);
+document.addEventListener('pointercancel', function () {
+if (!rdDragCard) return;
+rdDragCard.classList.remove('rd-gk-drag');
+rdDragCard = null;
+}, true);
 function rdFindBook(id, list) {
 for (let i = 0; i < list.length; i++) { if (list[i] && list[i].id === id) return list[i]; }
 return null;
@@ -4444,7 +4517,7 @@ const el = e.target;
 if (!el || !el.closest) return;
 if (el.closest('.rd-gnew')) return;
 const card = el.closest('#rd-grid .rd-book');
-const gk = card ? null : el.closest('.rd-gk[data-gid]');
+const gk = card ? null : (!rdGroupSorting && el.closest('.rd-gk[data-gid]'));
 const bgCard = (card || gk) ? null
 : (el.closest('.rd-dd-gi[data-id]') || el.closest('.rd-dd-frow[data-id]') || el.closest('.rd-dd-fcov[data-id]'));
 if (!card && !gk && !bgCard) return;
@@ -4606,9 +4679,15 @@ if (btn && btn.getAttribute('data-id')) rdOpenBook(btn.getAttribute('data-id'));
 return;
 }
 if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
+if (el.closest('#rd-gsort')) {
+e.preventDefault();
+rdSetGroupSorting(!rdGroupSorting);
+return;
+}
 const gk = el.closest('.rd-gk[data-gid]');
 if (gk) {
 e.preventDefault();
+if (rdGroupSorting) return;
 if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
 const gid = gk.getAttribute('data-gid');
 rdViewGroupId = gid;
