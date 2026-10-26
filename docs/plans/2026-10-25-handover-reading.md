@@ -9,38 +9,75 @@
 
 ```bash
 cd /workspace
-git branch --show-current          # 如果显示 trae/agent-HyW2zB，先看下面的警告
+git branch --show-current     # 不是 main 就先 git checkout main
 git checkout main
-git log --oneline -5                # 应能看到 14dec36、14ab4cc 和 docs 交接文档提交
-git status -sb                      # 工作区应为干净
-git rev-list --count origin/main..main   # 应 ≥ 3（两批功能 + 交接文档）
-node build.mjs --allow-revert       # 应看到：哨兵 4483/4483、sw 16/16
+git log --oneline -3
+git status -sb                # 工作区应为干净
+node build.mjs --allow-revert # 应看到：哨兵 4483/4483、sw 16/16、哑哨兵 0
 ```
 
-起服务、打开页面：
+### 当前状态（2026-10-26 更新）
 
-```bash
-cd /workspace && python3 -m http.server 16451 --bind 127.0.0.1
-# 打开 http://127.0.0.1:16451/?t=handover1
-```
+main 与 origin/main 一致，最新提交 `ffb44d4`。
+预览分支 `trae/agent-r2g0AV` 已同步成同一份内容（`4bd0eb9`）。
 
-### 三个必须先知道的警告
+三个必须先知道的警告：
 
-1. **工作区可能停在旧分支。**
-   截至本文写完，工作区实际停在 `trae/agent-HyW2zB`（`db02a22`），
-   这个分支**没有**最近两批成果。`main` 才是有成果的分支。
-   任何编辑、构建、截图之前，先确认 `git branch --show-current` 是 `main`。
-   如果环境中途把分支切回去，重新 `git checkout main` 并重新构建，不要惊慌。
+1. 工作区可能停在旧分支。平台会在会话中断后把工作区切到 `trae/agent-r2g0AV`，
+   那个分支曾经停在很旧的版本上（书签位置、渐变、分组管理全都没有）。
+   动代码前先确认 `git branch --show-current` 是 `main`，不是就 `git checkout main` 并重新构建。
 
-2. **最近两批功能提交只在本地，尚未推到 GitHub。**
-   `origin/main` 还停在 `a112dd4`；`main` 领先 3 个以上提交
-   （`14ab4cc`、`14dec36`，以及其后的交接文档提交）。
-   如果换号后要发布 / 用 GitHub Pages 部署，必须先用**原账号**
-   `git push origin main`（推之前征求用户同意）。新号 clone 仓库是拿不到这些成果的。
+2. main 的提交历史被平台压过一次。`b80ae54 chore: pre-termination backup` 是重建的孤儿提交，
+   之前那批提交（`b7df2c1` … `6de7036`）在 main 上已经查不到，但文件内容都在。
+   不要试图去 git 里找那些 hash，直接以当前工作区为准。
 
-3. **不要直接改构建产物。**
-   `index.html`、`js/reading.js`、`sw.js`、`version.json` 都是
-   `node build.mjs --allow-revert` 生成的。改 `src/` 下的源文件，再构建。
+3. 不要直接改构建产物。`index.html`、`js/reading.js`、`sw.js`、`version.json`
+   都是 `node build.mjs --allow-revert` 生成的。改 `src/`，再构建。
+
+### 真机测试约定（2026-10-26 起）
+
+平台内置浏览器工具会崩（报 P30009）。用户已明确要求：
+不再调用浏览器自动化测试，写完直接构建 + push，由用户在真机
+`https://shizuki0615.github.io/chenyue/` 验证。
+
+所以交付前必须自查三件事：
+
+- `node --check src/js/reading.js`
+- `node build.mjs --allow-revert`（哨兵 4483/4483、sw 16/16、哑哨兵 0）
+- 逐项核对 DOM 里的 id 和 `getElementById` 调用是否对得上。这类静默失效已经踩过两次：
+  `rd-dd-feat` / `rd-dd-pills` 漏 id 导致整块不渲染且不报错。
+
+---
+
+## 0.1 待办清单（2026-10-26）
+
+### 已完成
+
+设计稿三份（`shelf_rework_upper_half_v2` / `lower_half_v2` / `home_groups_v2`）已全部落地：
+
+- 书架首页：hero 卡（三层高光渐变、书签贴顶、日期两行、标签胶囊、进度条、右下按钮）、
+  阅读记录（标签 + 大标题 + 数字行，叙事句已按用户要求删除）、
+  共读手账（粉边、标题前短横线、书名+备注两行、章号胶囊）、
+  分组卡（阴影、错落、暖色书脊、副标题三态）、页脚
+- 分组详情页：书库头、全部/在读/读完 胶囊、特征大卡、02/03 列表、错落网格（可滚动 + 底部渐隐不拦点击）
+- 顶栏：恢复全局 chat-head 风格，字体跟随系统，不做局部覆盖
+- 分组管理：长按分组卡改名/删除、长按书卡移进移出/改书名/删书
+- 分组排序：分组头「排序」进编辑模式，拖动落位，松手保存
+- 美化：设置页「书架首页」区块 + 边看边调抽屉（hero / 手账底色预设 + 自定义 CSS 白名单过滤）
+
+### 待用户真机确认
+
+1. hero 渐变是否够明显（三层高光，左上主光强度 .18）
+2. 书签是否贴合卡片顶沿、不再悬在标题上方
+3. 边看边调抽屉里是否是两组色块（不再是字号/行距）
+4. 顶栏「读书」字体是否和桌面其它应用一致
+5. 分组「排序」的拖动是否顺手。这是本轮新加的手势，未经自动化验证，
+   和三套既有手势（点进详情、长按菜单、页面滚动）共存，需要真机手感确认
+
+### 明确不做（用户已否）
+
+- 详情页胶囊记住上次筛选
+- 点顶栏标题区返回
 
 ---
 
@@ -484,7 +521,7 @@ DOM（在 `.rd-reader` 内，`src/js/reading.js` 约 378–405 行）：
 
 ---
 
-## 7. 下一批任务规格：设置页「美化 / 功能 / 数据」
+## 7. 设置页「美化 / 功能 / 数据」（已于 2026-10-26 完成，保留作参考）
 
 这是用户已经确认过的下一批，按下面做即可。
 
