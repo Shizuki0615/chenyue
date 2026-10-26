@@ -56,6 +56,8 @@
    底部留 10px 余量，避免最后一行被 overflow:hidden 裁掉半行。 */
 .rd-body{flex:1;overflow:hidden;padding:18px 18px 10px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+/* 段首缩进：空 span 撑两个字的宽度，不写入正文文本，字符偏移保持不变 */
+.rd-ind{display:inline-block;width:2em;pointer-events:none}
 /* 阅读背景：auto 沿用全站主题；eye / night 只在阅读器内覆盖 */
 .rd-reader[data-rd-bg="eye"]{--bg:#ffffff;--line:#e6e6e6;--ink:#111111;--muted:#8a8a8a;color:#111111;background:#fbf8f1}
 .rd-reader[data-rd-bg="night"]{--bg:#1e1e1e;--line:#333333;--ink:#f0f0f0;--muted:#aaaaaa;color:#f0f0f0;background:#1b1916}
