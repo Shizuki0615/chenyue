@@ -282,7 +282,7 @@
 .rd-curl.is-prev .rd-curl-page{animation:none}
 @keyframes rdCurlPageBlank{from{opacity:1}to{opacity:0}}
 /* 纸页抬起来时在新页上留下的投影，随掀开淡掉 */
-.rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast .46s ease-out forwards}
+.rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast .72s ease-out forwards}
 .rd-turn-cast.is-prev{transform:scaleX(-1)}
 @keyframes rdTurnCast{from{opacity:1}to{opacity:0}}
 /* 轻滑用的单层纸 */
