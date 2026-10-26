@@ -3434,6 +3434,31 @@
     if (typeof window !== 'undefined') window.csRpSyncAskMax = rpAskMaxSync;
   }
 
+  // 2026-10-26：TA 拒收我发出红包的概率（每联系人独立，默认 20%）——红包半框「设置」里可调；
+  // chat.js handleSendResponse 读同一键决定 TA 这次是拒收/领取/继续等。
+  const csRpReject = row('cs-rp-reject-prob');
+  if (csRpReject) {
+    const rpRejectGet = () => {
+      let v = null; try { v = parseFloat(store.get('cs-rp-reject-prob')); } catch (e) {}
+      return (v !== null && isFinite(v)) ? Math.max(0, Math.min(100, Math.round(v))) : 20;
+    };
+    const rpRejectSync = () => { const el = document.getElementById('cs-rp-reject-prob-val'); if (el) el.textContent = rpRejectGet() + '%'; };
+    rpRejectSync();
+    csRpReject.addEventListener('click', () => {
+      if (!window.openModal) return;
+      window.openModal('他 拒收红包概率（0-100%·每联系人独立）', String(rpRejectGet()), (v) => {
+        let n = parseFloat(String(v || '').trim());
+        if (!isFinite(n)) n = 20;
+        n = Math.max(0, Math.min(100, Math.round(n)));
+        store.set('cs-rp-reject-prob', String(n));
+        rpRejectSync();
+        toast('已设置：他 拒收红包概率为 ' + n + '%');
+      }, { maxlength: 3 });
+    });
+    document.addEventListener('contact-switched', rpRejectSync);
+    if (typeof window !== 'undefined') window.csRpSyncReject = rpRejectSync;
+  }
+
   // v3.29.x #807/#848：红包领后捎一句话——红包半框「设置」里直接可调（原来本区只有一行只读
   // 说明、真控件藏在 设置→回复设置→红包互动，用户实报「红包设置里找不到这个功能」）。
   // 三行读写 rp-thx-en / rp-thx-prob / rp-thx-mode（reply-settings 的每联系人键，经
@@ -3522,6 +3547,7 @@
       try { if (window.csRpSyncMax) window.csRpSyncMax(); } catch (e) {}
       try { if (window.csRpSyncAskProb) window.csRpSyncAskProb(); } catch (e) {}
       try { if (window.csRpSyncAskMax) window.csRpSyncAskMax(); } catch (e) {}
+      try { if (window.csRpSyncReject) window.csRpSyncReject(); } catch (e) {}
       try { if (window.csRpSyncThx) window.csRpSyncThx(); } catch (e) {}
     };
   }

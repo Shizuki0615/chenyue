@@ -4103,40 +4103,6 @@ if (fi) setTimeout(() => { try { fi.focus(); } catch (e) {} }, 60);
 return true;
 }
 if (body) {
-let rpPressTimer = null;
-let rpPressSuppressClick = false;
-body.addEventListener('pointerdown', (e) => {
-const rpCard = e.target.closest('.msg-rp-card');
-if (!rpCard) return;
-const rpItem = rpCard.closest('.msg-rp');
-if (!rpItem || rpItem.dataset.idx === undefined) return;
-const rpShownDEl = rpItem.querySelector('.msg-rp-status');
-const rpShownD = rpShownDEl ? rpShownDEl.textContent : '';
-const rpHitD = msgRecFromEl(rpItem, function (m) { return rpStatusText(m) === rpShownD; }); // #1477：下标快路径＋data-mk 身份校正；同身份多份取与显示一致那份
-if (!rpHitD) return;
-const rpRec = rpHitD.rec;
-if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return;
-rpPressTimer = setTimeout(() => {
-rpPressTimer = null;
-rpPressSuppressClick = true;
-if (window.openModal) {
-window.openModal('退回这个红包？', '', () => {
-rpRec.rpStatus = 'returned';
-const w = rpWalletGet();
-w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
-rpWalletSet(w);
-saveMsgsNow();
-if (!rpPatchStatusInPlace(msgs.indexOf(rpRec))) renderWindow(true, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
-setTimeout(() => addIn('你退回了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
-}, { okText: '退回', cancelText: '取消' });
-}
-}, 500);
-});
-const rpClearPress = () => { if (rpPressTimer) { clearTimeout(rpPressTimer); rpPressTimer = null; } };
-body.addEventListener('pointerup', rpClearPress);
-body.addEventListener('pointerleave', rpClearPress);
-body.addEventListener('pointercancel', rpClearPress);
 body.addEventListener('click', (e) => {
 // #1005 问卷卡也进「点卡片浮现收藏」这一套：守卫必须认得 .msg-survey-card，否则点问卷卡时
 // 会先被这里把它自己的 .show-fav 抹掉再补上（切不成开关）；点卡片外也要能把它的心形收起来。
@@ -4204,8 +4170,10 @@ return;
 }
 const rpCard = e.target.closest('.msg-rp-card');
 if (rpCard) {
-if (rpPressSuppressClick) { rpPressSuppressClick = false; return; }
 e.stopPropagation();
+const rejectHit = e.target.closest('.msg-rp-reject');
+const openHit = e.target.closest('.msg-rp-open');
+if (!rejectHit && !openHit) return; // 2026-10-26：点卡身不再领取，只认「领取/拒收」两枚图标
 const rpItem = rpCard.closest('.msg-rp');
 if (!rpItem || rpItem.dataset.idx === undefined) return;
 const rpShownEl = rpItem.querySelector('.msg-rp-status');
@@ -4215,20 +4183,34 @@ if (!rpHit) return;
 const rpIdx = rpHit.idx;
 const rpRec = rpHit.rec;
 if (!rpRec || rpRec.special !== 'redpacket') return;
-if ((rpRec.rpStatus || 'pending') !== 'pending') return; // #1477：与卡片状态文案同口径（falsy＝待领取）
-if (rpRec.side === 'out') { toast(window.taFit ? window.taFit('等待 他 领取') : '等待 他 领取'); return; } // #1477：与「我 发出」渲染同侧判据（side 缺失的历史卡＝联系人发出，可领）
+if ((rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return;
+const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
+if (rejectHit) {
+const doReject = () => {
+rpRec.rpStatus = 'returned';
+const w = rpWalletGet();
+w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
+rpWalletSet(w);
+saveMsgsNow();
+if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true);
+setTimeout(() => addIn('你拒收了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
+// 拒收后 TA 按概率回一句（避开「嫌少」这类话）
+setTimeout(() => rpRejectFeedback(), randInt(900, 1600));
+};
+if (!window.openModal) { doReject(); return; }
+window.openModal('拒收这个红包？', '', doReject, { noInput: true, staticText: '拒收后，这个红包会退回给' + chatPartnerName() + '。', okText: '拒收', cancelText: '取消' });
+return;
+}
 rpRec.rpStatus = 'received';
 rpRec.rpOpenedAt = Date.now();
 const wallet = rpWalletGet();
 wallet.myBalance += Math.round((rpRec.rpAmount || 0) * 100);
 rpWalletSet(wallet);
 saveMsgsNow();
-const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
 // FIX 2026-09-15 #517 用户要求：领取联系人发来的红包不再弹黑色提示浮层（#cc-toast 黑底白字，见
 // chat-pages.css 的 #cc-toast / chat.js 的 toast()）。领取反馈已有两处、信息零丢失——①卡片自身状态
 // 就地转「已领取」（rpPatchStatusInPlace，不重建窗口）②聊天里 poke 留痕「你领取了红包（心意币 ¥x）」。
 // 黑色浮层只是重复打扰。勿恢复：原为 toast('已领取' + amtTxt);
-// 注：本条上方「等待 TA 领取」的 toast 是无效操作提示（点自己发出的未领红包），语义不同，保留。
 if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
 setTimeout(() => addIn('你领取了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(400, 1000));
 // v3.29.x #807：红包领后捎一句话（我领 TA 的红包方向）——等 poke 留痕落地后再掷概率，别抢在留痕前
@@ -6405,21 +6387,24 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'redpacket') {
-m.className = 'msg-rp';
+// 2026-10-26：红包卡贴发送方头像（左收/右发），去掉收藏心形，待领红包给我两枚图标按钮
+m.className = 'msg-rp ' + (rec.side === 'out' ? 'msg-rp-out' : 'msg-rp-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
-const sideTxt = rec.side === 'out' ? '我' : chatPartnerName();
 const cls = rpStatusCls(rec);
 const rpIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9c3 2 6 3 9 3s6-1 9-3"/><circle cx="12" cy="9" r="1.4"/></svg>';
-m.innerHTML = '<div class="msg-rp-card' + (cls ? ' ' + cls : '') + '">' +
+const canAct = (rec.rpStatus || 'pending') === 'pending' && rec.side !== 'out';
+const rejectBtn = '<button type="button" class="msg-rp-act msg-rp-reject" aria-label="拒收" title="拒收"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+const claimBtn = '<button type="button" class="msg-rp-act msg-rp-open" aria-label="领取" title="领取"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>';
+const cardHtml = '<div class="msg-rp-card' + (cls ? ' ' + cls : '') + '">' +
 '<div class="msg-rp-top"><span class="msg-rp-ico">' + rpIco + '</span><span class="msg-rp-label">红包 · 心意币</span></div>' +
 '<div class="msg-rp-amt">¥' + escTxt(Number(rec.rpAmount || 0).toFixed(2)) + '</div>' +
 '<div class="msg-rp-wish">' + escTxt(rec.rpWish || '心意') + '</div>' +
-'<div class="msg-rp-foot">' +
-'<span class="msg-rp-side">' + escTxt(sideTxt) + ' 发出</span>' +
+'<div class="msg-rp-foot' + (canAct ? ' has-act' : '') + '">' +
 '<span class="msg-rp-status">' + escTxt(rpStatusText(rec)) + '</span>' +
+(canAct ? '<span class="msg-rp-acts">' + rejectBtn + claimBtn + '</span>' : '') +
 '</div>' +
-favHeartHtml(rec) +
 '</div>';
+m.innerHTML = askBubbleHtml(rec, cardHtml);
 if (rec.rpCover) {
 const cover = rpCoverGet(rec.side);
 if (cover) {
@@ -6431,6 +6416,7 @@ card.style.backgroundImage = 'url("' + cover + '")';
 }
 }
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -10977,7 +10963,7 @@ function rpStatusText(rec) {
 const st = rec.rpStatus || 'pending';
 if (st === 'received') return '已领取';
 if (st === 'expired') return '已过期·退回';
-if (st === 'returned') return '已退回';
+if (st === 'returned') return '已拒收';
 return rec.side === 'out' ? (window.taFit ? window.taFit('待他领取') : '待他领取') : '待领取'; // #1477：side 缺失的历史卡与渲染的「联系人 发出」同侧＝待我领取
 }
 function rpStatusCls(rec) {
@@ -11006,6 +10992,11 @@ const cls = rpStatusCls(rec);
 if (cls) card.classList.add(cls);
 const st = card.querySelector('.msg-rp-status');
 if (st) st.textContent = rpStatusText(rec);
+// 2026-10-26：领取/拒收落定后撤掉两枚图标，脚部回到单行状态
+const acts = card.querySelector('.msg-rp-acts');
+if (acts) acts.remove();
+const foot = card.querySelector('.msg-rp-foot');
+if (foot) foot.classList.remove('has-act');
 return true;
 }
 // v3.28.x：TA 每日发红包上限次数可设——对话设置「TA 每日发红包上限」cs-rp-daily-max
@@ -11155,23 +11146,39 @@ addInTyped(rep.text, { type: rep.type, parts: rep.parts, tag: pyMultiDrawn ? '�
 }, randInt(800, 2000));
 }
 }
+function rpRejectProb() {
+let v = 20;
+try { const s = parseFloat(store.get('cs-rp-reject-prob')); if (isFinite(s)) v = Math.max(0, Math.min(100, s)); } catch (e) {}
+return v;
+}
+// 我拒收 TA 的红包后，TA 按概率回一句（避开「嫌少」这类话）
+function rpRejectFeedback() {
+const myCid = window.__activeCid || 'default';
+if (Math.random() >= 0.35) return;
+const defs = ['怎么不收？', '是不喜欢吗？', '收下嘛。', '这个也不收？', '好吧，那我留着。', '你不收我会有点难过。', '那我下次换个方式。', '是不是我哪里惹你了？'];
+const pool = window.getInteractPool ? window.getInteractPool('红包·拒收', defs) : defs;
+const txt = pick(pool && pool.length ? pool : defs);
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn(txt, { silent: true, nightAllow: true, rateAllow: true }); }, randInt(800, 1800));
+}
 function handleSendResponse(msg) {
 const idx = msgs.indexOf(msg);
 if (idx < 0) return;
 const rec = msgs[idx];
 if (!rec || rec.rpStatus !== 'pending') return;
 const myCid = window.__activeCid || 'default';
-const r = Math.random();
+const rejectP = rpRejectProb();
+const claimP = Math.max(0, 90 - rejectP);
+const r = Math.random() * 100;
 const wallet = rpWalletGet();
 const amtFen = Math.round((rec.rpAmount || 0) * 100);
-if (r < 0.2) {
+if (r < rejectP) {
 rec.rpStatus = 'returned';
 wallet.myBalance += amtFen;
 rpWalletSet(wallet);
 saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 退回了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
-} else if (r < 0.9) {
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 拒收了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
+} else if (r < rejectP + claimP) {
 rec.rpStatus = 'received';
 rec.rpOpenedAt = Date.now();
 wallet.systemBalance += amtFen;

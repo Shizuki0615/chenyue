@@ -97,6 +97,7 @@ const HUB = [
 { n: '我可发送语音', d: '输入栏语音按钮显隐开关', k: '语音 录音 麦克风 开关', go: ['.app[data-app="chat"]', '#chat-settings-btn', '#cs-voice-send'] },
 { n: '他 自动发红包概率', d: '他 聊天中主动发红包的触发概率（红包页面→设置）', k: '红包 概率 自动 触发', go: ['.app[data-app="chat"]', '#more-rp', '#rp-settings-btn'] },
 { n: '他 每日发红包上限', d: '他 每天最多主动发几个红包（红包页面→设置）', k: '红包 上限 每日 次数', go: ['.app[data-app="chat"]', '#more-rp', '#rp-settings-btn'] },
+{ n: '他 拒收红包概率', d: '我发出的红包被联系人拒收并退款给我的概率（红包页面→设置）', k: '红包 拒收 概率 退款 设置', go: ['.app[data-app="chat"]', '#more-rp', '#rp-settings-btn'] },
 { n: '隐藏联系人的表情包', d: '聊天里不显示 他 发的表情包图片', k: '表情包 隐藏 贴图', go: ['.app[data-app="chat"]', '#chat-settings-btn', '#cs-hide-ta-sticker'] },
 { n: '聊天全屏模式', d: '隐藏模拟状态栏让聊天页全屏', k: '全屏 状态栏 隐藏', go: ['.app[data-app="chat"]', '#chat-settings-btn', '#cs-fullscreen'] },
 { n: '全屏边缘防误触', d: '全屏时边缘手势防误触保护', k: '全屏 边缘 防误触 手势', go: ['.app[data-app="chat"]', '#chat-settings-btn', '#cs-edge-guard'] },

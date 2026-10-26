@@ -2703,6 +2703,28 @@ toast(n === 0 ? '已设置：他 申请心意币不限次数' : '已设置：他
 document.addEventListener('contact-switched', rpAskMaxSync);
 if (typeof window !== 'undefined') window.csRpSyncAskMax = rpAskMaxSync;
 }
+const csRpReject = row('cs-rp-reject-prob');
+if (csRpReject) {
+const rpRejectGet = () => {
+let v = null; try { v = parseFloat(store.get('cs-rp-reject-prob')); } catch (e) {}
+return (v !== null && isFinite(v)) ? Math.max(0, Math.min(100, Math.round(v))) : 20;
+};
+const rpRejectSync = () => { const el = document.getElementById('cs-rp-reject-prob-val'); if (el) el.textContent = rpRejectGet() + '%'; };
+rpRejectSync();
+csRpReject.addEventListener('click', () => {
+if (!window.openModal) return;
+window.openModal('他 拒收红包概率（0-100%·每联系人独立）', String(rpRejectGet()), (v) => {
+let n = parseFloat(String(v || '').trim());
+if (!isFinite(n)) n = 20;
+n = Math.max(0, Math.min(100, Math.round(n)));
+store.set('cs-rp-reject-prob', String(n));
+rpRejectSync();
+toast('已设置：他 拒收红包概率为 ' + n + '%');
+}, { maxlength: 3 });
+});
+document.addEventListener('contact-switched', rpRejectSync);
+if (typeof window !== 'undefined') window.csRpSyncReject = rpRejectSync;
+}
 if (!document.getElementById('cs-rp-thx-box')) {
 const rpSetBox = document.getElementById('rp-settings');
 const rpDoneBtn = rpSetBox ? rpSetBox.querySelector('.rp-settings-done') : null;
@@ -2782,6 +2804,7 @@ try { if (window.csRpSyncProb) window.csRpSyncProb(); } catch (e) {}
 try { if (window.csRpSyncMax) window.csRpSyncMax(); } catch (e) {}
 try { if (window.csRpSyncAskProb) window.csRpSyncAskProb(); } catch (e) {}
 try { if (window.csRpSyncAskMax) window.csRpSyncAskMax(); } catch (e) {}
+try { if (window.csRpSyncReject) window.csRpSyncReject(); } catch (e) {}
 try { if (window.csRpSyncThx) window.csRpSyncThx(); } catch (e) {}
 };
 }
