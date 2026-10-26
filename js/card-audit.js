@@ -789,7 +789,7 @@ var ck = null; try { ck = JSON.parse(store('ta-checkin') || 'null'); } catch (e)
 var ckUseDef = ck && ck.settings ? ck.settings.useDefault !== false : true;
 oInner += rowHtml('查岗问题库（ta-checkin.settings.useDefault）', (ckUseDef ? '使用系统预设' : '仅用自建') + ' · 触发 ckq-en ' + (replyBool('ckq-en', true) ? '开' : '关') + ' / ckq-prob ' + replyNum('ckq-prob', 2) + '%', 'mute', { jump: 'taCheckin' });
 var TA_EDIT = { 'ta-ask': 'taAsk', 'ta-choose': 'taChoose', 'ta-curious': 'taCurious', 'ta-roast': 'taRoast' };
-['ta-ask:询问', 'ta-choose:小问题', 'ta-curious:好奇', 'ta-roast:吐槽'].forEach(function (pair) {
+['ta-ask:询问', 'ta-choose:小问题', 'ta-curious:好奇', 'ta-roast:调侃'].forEach(function (pair) {
 var key = pair.split(':')[0], label = pair.split(':')[1];
 var blob = null; try { blob = JSON.parse(store(key) || 'null'); } catch (e) {}
 var s = blob && blob.settings ? blob.settings : {};

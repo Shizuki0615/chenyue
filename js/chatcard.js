@@ -505,7 +505,7 @@ if (!groupsBar) return;
 groupsBar.innerHTML = '';
 const grps = groups[cur] || [];
 const allCount = grps.reduce((s, g) => s + (Array.isArray(g[1]) ? g[1].length : 0), 0);
-const chips = [['', '全部', allCount]].concat(grps.map(g => [g[0], g[0], Array.isArray(g[1]) ? g[1].length : 0]));
+const chips = [['', '全部', allCount]].concat(grps.map(g => [g[0], ccGroupLabel(g[0]), Array.isArray(g[1]) ? g[1].length : 0]));
 chips.forEach(([val, label, n]) => {
 const c = document.createElement('span');
 c.className = 'cc-g-chip' + (curGroup === val ? ' sel' : '');
@@ -520,6 +520,13 @@ groupsBar.appendChild(c);
 });
 }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function ccGroupLabel(name) {
+const s = String(name == null ? '' : name);
+if (s === '小小吐槽') return '小小调侃';
+if (s === '吐槽') return '调侃';
+if (s === '吐槽·回应') return '调侃·回应';
+return s;
+}
 const ICON_EYE_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
 function ccOffScope() { return ccScope === 'public' ? 'public' : 'own'; }
@@ -588,7 +595,7 @@ const CC_NAME_BTN_CSS = 'position:absolute;right:4px;top:4px;width:22px;height:2
 + 'background:rgba(0,0,0,.5);color:#fff;font-size:11px;line-height:22px;text-align:center;cursor:pointer;z-index:2;';
 function groupHeaderHtml(gname, count) {
 const off = isGroupOff(ccOffScope(), cur, gname);
-return '<span class="ccg-name">' + esc(gname) + (off ? '<em class="ccg-off-tag">已停用</em>' : '') + '</span>' +
+return '<span class="ccg-name">' + esc(ccGroupLabel(gname)) + (off ? '<em class="ccg-off-tag">已停用</em>' : '') + '</span>' +
 '<span class="ccg-count">' + count + '</span>' +
 '<button type="button" class="ccg-toggle' + (off ? ' off' : '') + '" title="' + (off ? '启用该分组' : '停用该分组') + '">' + (off ? ICON_EYE_OFF : ICON_EYE_ON) + '</button>';
 }
@@ -600,7 +607,7 @@ ev.preventDefault();
 ev.stopPropagation();
 const off = toggleGroupOff(cur, gname);
 refreshGroupHeaderUI(gname);
-toast(off ? '已停用分组「' + gname + '」：该分组字卡不再被联系人使用' : '已启用分组「' + gname + '」：该分组字卡恢复使用');
+toast(off ? '已停用分组「' + ccGroupLabel(gname) + '」：该分组字卡不再被联系人使用' : '已启用分组「' + ccGroupLabel(gname) + '」：该分组字卡恢复使用');
 });
 }
 function refreshGroupHeaderUI(gname) {
@@ -1480,7 +1487,7 @@ cards.forEach(function (c) {
 if (typeof c !== 'string' || !c) return;
 if (type === 'sticker' || type === 'image') {
 const nm = ccCardNameAny(c);
-if (nm && nm.toLowerCase().indexOf(kw) >= 0) out.push({ t: nm, cat: gname });
+if (nm && nm.toLowerCase().indexOf(kw) >= 0) out.push({ t: nm, cat: ccGroupLabel(gname) });
 return;
 }
 if (window.ccTextCardOnly && !window.ccTextCardOnly(c)) {
@@ -1488,7 +1495,7 @@ const bar = c.indexOf('|||');
 if (!(bar > 0 && c.slice(bar + 3).indexOf('data:audio') === 0)) return;
 }
 const txt = c.split('|||')[0] || c;
-if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: gname });
+if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: ccGroupLabel(gname) });
 });
 });
 });
@@ -1500,7 +1507,7 @@ const out = [];
 try {
 if (window.cardLockOpen && !window.cardLockOpen()) return out; // #319 锁定＝搜不到系统预设字卡
 const d = window.DEFAULT_CARD_DATA || {};
-Object.keys(d).forEach(function (k) { (d[k] || []).forEach(function (grp) { const gname = grp[0]; const cards = grp[1] || []; cards.forEach(function (c) { if (c && String(c).toLowerCase().indexOf(kw) >= 0) out.push({ t: String(c), cat: gname }); }); }); });
+Object.keys(d).forEach(function (k) { (d[k] || []).forEach(function (grp) { const gname = grp[0]; const cards = grp[1] || []; cards.forEach(function (c) { if (c && String(c).toLowerCase().indexOf(kw) >= 0) out.push({ t: String(c), cat: ccGroupLabel(gname) }); }); }); });
 } catch (e) {}
 return out;
 } });
@@ -1624,7 +1631,7 @@ row.className = 'mg-row';
 row.dataset.gidx = String(gi);
 const builtin = (BUILTIN[cur] || []).some(b => b[0] === gname);
 row.innerHTML = '<button class="mg-handle" aria-label="拖动排序">' + handleSvg + '</button>' +
-'<span class="mg-name">' + esc(gname) + '</span><span class="mg-count">' + arr.length + ' 张</span>' +
+'<span class="mg-name">' + esc(ccGroupLabel(gname)) + '</span><span class="mg-count">' + arr.length + ' 张</span>' +
 (builtin ? '<span class="mg-tag">内置</span>' : '<button class="mg-rn" aria-label="重命名">' + editSvg + '</button><button class="mg-del">✕</button>');
 attachGroupRowDrag(row, gi);
 if (!builtin) {
@@ -2627,7 +2634,7 @@ liCcFullExport.addEventListener('click', () => {
 if (!window.openModal) { ccFullDoExport('all'); return; }
 window.openModal('导出自定义字卡', '', (mode) => { if (mode) ccFullDoExport(mode); }, {
 noInput: true,
-staticText: '选择导出范围（四档）：\n· 公用聊天字卡：全桌面共享（不含互动功能字卡），含分组与停用开关\n· 专属聊天字卡：只含当前桌面联系人的字卡（不含互动功能字卡），含分组与停用开关；寻踪日常 / 今日情话 / 他 六类题库（询问 / 小问题 / 好奇 / 吐槽 / 查岗 / 邀请）随本档导出\n· 互动功能字卡（单独）：摸鱼 / 吃饭 / 经期 / 喝水 / 同频 / 伸手 / 此间 / 房间 / 存钱罐 / 漂流瓶 / 互动回应 / 音乐——公用与专属两个库都导，含停用开关；不用这些功能可忽略本档\n· 全量导出：以上全部\n注意：「专属」「互动功能字卡（专属库部分）」换机恢复时，请切到对应联系人桌面再导入；导出文件不代替 设置→数据备份 的整包备份',
+staticText: '选择导出范围（四档）：\n· 公用聊天字卡：全桌面共享（不含互动功能字卡），含分组与停用开关\n· 专属聊天字卡：只含当前桌面联系人的字卡（不含互动功能字卡），含分组与停用开关；寻踪日常 / 今日情话 / 他 六类题库（询问 / 小问题 / 好奇 / 调侃 / 查岗 / 邀请）随本档导出\n· 互动功能字卡（单独）：摸鱼 / 吃饭 / 经期 / 喝水 / 同频 / 伸手 / 此间 / 房间 / 存钱罐 / 漂流瓶 / 互动回应 / 音乐——公用与专属两个库都导，含停用开关；不用这些功能可忽略本档\n· 全量导出：以上全部\n注意：「专属」「互动功能字卡（专属库部分）」换机恢复时，请切到对应联系人桌面再导入；导出文件不代替 设置→数据备份 的整包备份',
 pills: [
 { label: '公用聊天字卡', value: 'pub' },
 { label: '专属聊天字卡', value: 'own' },

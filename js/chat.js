@@ -11237,7 +11237,7 @@ favList.innerHTML += '<div class="fav-empty">' + empty + '</div>';
 return;
 }
 const FAV_KIND_LABEL = {
-'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '吐槽',
+'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '调侃',
 'ask-card': '问问他', 'invite': '邀请他', 'ask': '问问他', 'ask-survey': '问卷',
 'redpacket': '红包', 'flower': '送花', 'gift': '礼物', 'dish': '佳肴'
 };

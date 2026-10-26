@@ -4110,7 +4110,7 @@ window.mochiViewportForm = function (sig) {
     { n: '多人决定', fn: 'openGroupDecision' },
     { n: '他 询问', fn: 'openAskReply' },
     { n: '他 心情', fn: 'openCurious' },
-    { n: '他 吐槽', fn: 'openRoast' }
+    { n: '他 调侃', fn: 'openRoast' }
   ];
   function fToast(msg) {
     try {

@@ -4075,7 +4075,7 @@ window.chatRoastReply(idx, v, reply);
 } else if (type === 'ask' && window.chatAskReply) {
 const defs = ['收到你的回答。', '好呀，我知道了。', '你这么说，我记住了。'];
 const pool = window.getInteractPool ? window.getInteractPool('询问·回应', defs) : defs;
-// FIX 2026-09-17 #648 与吐槽/好奇分支同款走 pickAskCardReply（预设池媒体守卫）——
+// FIX 2026-09-17 #648 与调侃/好奇分支同款走 pickAskCardReply（预设池媒体守卫）——
 // 原裸抽 pool[random] 会把功能池里混入的媒体卡原样发进 rec.askReply＝互动卡直出令牌串
 window.chatAskReply(idx, v, (window.pickAskCardReply ? window.pickAskCardReply(pool) : pool[Math.floor(Math.random() * pool.length)]));
 }
@@ -14242,7 +14242,7 @@ favList.innerHTML += '<div class="fav-empty">' + empty + '</div>';
 return;
 }
 const FAV_KIND_LABEL = {
-'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '吐槽',
+'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '调侃',
 'ask-card': '问问他', 'invite': '邀请他', 'ask': '问问他', 'ask-survey': '问卷',
 'redpacket': '红包', 'flower': '送花', 'gift': '礼物', 'dish': '佳肴'
 };

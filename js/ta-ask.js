@@ -2821,7 +2821,7 @@ toast('他 在聊天里向你好奇了');
 const tcuNow = document.getElementById('tcu-now');
 if (tcuNow) tcuNow.addEventListener('click', () => window.triggerTaCuriousNow());
 const KEY4 = 'ta-roast';
-const TR_CAT_LABEL = { light: '轻微调侃', familiar: '熟悉感', sweet: '情侣式调侃', mild: '轻微嫌弃', serious: '严肃吐槽', world: '两个世界' };
+const TR_CAT_LABEL = { light: '轻微调侃', familiar: '熟悉感', sweet: '情侣式调侃', mild: '轻微嫌弃', serious: '严肃调侃', world: '两个世界' };
 const TR_CAT_ORDER = ['light', 'familiar', 'sweet', 'mild', 'serious', 'world'];
 const TR_DEFAULT = [
 { id: 'rl1', cat: 'light', text: '你怎么又这样' }, { id: 'rl2', cat: 'light', text: '我就知道' }, { id: 'rl3', cat: 'light', text: '果然还是你' },
@@ -2978,7 +2978,7 @@ if (!Array.isArray(d.groups)) d.groups = [];
 return d;
 }
 function trSave(d) {
-if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的吐槽题库')) return false;
+if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的调侃题库')) return false;
 try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
 return true;
 }
@@ -3002,10 +3002,10 @@ trSave(d);
 let popup = true;
 if (opts && typeof opts.popupProb === 'number') popup = Math.random() * 100 < opts.popupProb;
 else if (opts && opts.popup === false) popup = false;
-window.chatAddSystem('他吐槽了你一句。', { special: 'ask-msg' });
+window.chatAddSystem('他调侃了你一句。', { special: 'ask-msg' });
 const el = window.chatAddSystem(q.text, { special: 'ask-roast', roastText: q.text, roastCat: q.cat || 'light' });
 const idx = el ? Number(el.dataset.idx) : -1;
-if (window.bgNotifyCheck) window.bgNotifyCheck('他吐槽了你一句：' + q.text, Date.now(), { name: '他的吐槽', late: _lateNotify(), kind: 'ask' });
+if (window.bgNotifyCheck) window.bgNotifyCheck('他调侃了你一句：' + q.text, Date.now(), { name: '他的调侃', late: _lateNotify(), kind: 'ask' });
 if (popup) {
 if (document.hidden) { _enqueuePop(idx, 'openRoast'); }
 else {
@@ -3107,8 +3107,8 @@ const mask = document.getElementById('qa-mask');
 const body = document.getElementById('qa-body');
 const title = document.getElementById('qa-title');
 if (!mask || !body) return;
-if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
-body.innerHTML = '<div class="qa-hint">他 吐槽你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+if (title) title.textContent = window.taFit ? window.taFit('他的调侃') : '他的调侃';
+body.innerHTML = '<div class="qa-hint">他 调侃你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
 '<input id="qa-input" class="qa-input" type="text" placeholder="回 他 一句…">' +
 '<button class="qa-send" id="qa-send">回他一句</button>';
 mask.hidden = false;
@@ -3153,7 +3153,7 @@ const mask = document.getElementById('qa-mask');
 const body = document.getElementById('qa-body');
 const title = document.getElementById('qa-title');
 if (!mask || !body) return;
-if (title) title.textContent = window.taFit ? window.taFit('他的吐槽') : '他的吐槽';
+if (title) title.textContent = window.taFit ? window.taFit('他的调侃') : '他的调侃';
 const _trShow = (window.askCardReplyClean ? window.askCardReplyClean(rec.roastReply || '') : (rec.roastReply || '')); // FIX 2026-09-17 #648 存量媒体卡回应清洗后展示
 body.innerHTML = '<div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
 '<div class="qa-mine">你说：' + String(rec.roastAnswer || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '</div>' +
@@ -3322,7 +3322,7 @@ if (home) home.hidden = false;
 });
 }
 const trEn = document.getElementById('tr-enable');
-if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? '他的吐槽已开启' : '他的吐槽已关闭'); });
+if (trEn) trEn.addEventListener('change', () => { const d = trLoad(); d.settings.enabled = trEn.checked; trSave(d); toast(trEn.checked ? '他的调侃已开启' : '他的调侃已关闭'); });
 const trDefault = document.getElementById('tr-default');
 if (trDefault) trDefault.addEventListener('change', () => {
 const d = trLoad(); d.settings.useDefault = trDefault.checked; trSave(d);
@@ -3355,7 +3355,7 @@ const catEl = document.getElementById('tr-new-cat');
 const textEl = document.getElementById('tr-new-text');
 const matchEl = document.getElementById('tr-new-match');
 const text = textEl ? textEl.value.trim() : '';
-if (!text) { toast('请输入吐槽内容'); return; }
+if (!text) { toast('请输入调侃内容'); return; }
 const parsed = window.cardGroups.parseCatVal(catEl ? catEl.value : 'light');
 if (!parsed) { toast('请先选择分类或分组'); return; }
 const match = (matchEl ? matchEl.value : '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 4);
@@ -3367,7 +3367,7 @@ trSave(d);
 if (textEl) textEl.value = '';
 if (matchEl) matchEl.value = '';
 renderMineGroupsInto(document.getElementById('tr-mine-cats'), trMineOpt);
-toast('已添加吐槽字卡');
+toast('已添加调侃字卡');
 });
 }
 const trNewGrp = document.getElementById('tr-new-grp');
@@ -3392,10 +3392,10 @@ toast('已新建分组「' + g.name + '」');
 window.triggerTaRoastNow = function () {
 const d = trLoad();
 const q = trPick(d, '');
-if (!q) { toast('题库没有可用吐槽'); return; }
+if (!q) { toast('题库没有可用调侃'); return; }
 const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
 trPush(q, { popupProb: askPopupProb(s) });
-toast('他 在聊天里吐槽你了');
+toast('他 在聊天里调侃你了');
 };
 const trNow = document.getElementById('tr-now');
 if (trNow) trNow.addEventListener('click', () => window.triggerTaRoastNow());
@@ -3512,7 +3512,7 @@ return '<div class="tc-li-q">' + escG(x.q) + '</div><div class="tc-li-line">你�
 const roEl = document.getElementById('ar-roast');
 if (roEl) {
 const h = allDeskHistories(KEY4);
-askListRender(roEl, h, KEY4, '吐槽', function (x) {
+askListRender(roEl, h, KEY4, '调侃', function (x) {
 return '<div class="tc-li-q">' + escG(x.roast) + '</div><div class="tc-li-line">你：' + escG(x.my) + '</div><div class="tc-li-line">' + (window.taFit ? window.taFit('他：') : '他：') + taReplyShow(x.reply) + '</div><div class="tc-li-time">' + fmtDT(x.ts) + '</div>';
 });
 }
@@ -3579,7 +3579,7 @@ window.renderAskRecords();
 clearBind('ar-ask-clear', KEY, '询问');
 clearBind('ar-choose-clear', KEY2, '小问题');
 clearBind('ar-curious-clear', KEY3, '好奇');
-clearBind('ar-roast-clear', KEY4, '吐槽');
+clearBind('ar-roast-clear', KEY4, '调侃');
 const clearByType = (id, match, label) => {
 const btn = document.getElementById(id);
 if (!btn) return;
@@ -3638,7 +3638,7 @@ window.__cardSearchFns = window.__cardSearchFns || [];
 { name: '他的询问', load: taAskLoad },
 { name: '他的小问题', load: tcLoad },
 { name: '他的好奇', load: tcuLoad },
-{ name: '他的吐槽', load: trLoad }
+{ name: '他的调侃', load: trLoad }
 ].forEach(function (it) {
 window.__cardSearchFns.push({ name: it.name, fn: function (kw) {
 const out = [];

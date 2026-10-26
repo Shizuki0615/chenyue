@@ -128,7 +128,7 @@
       desc: '全部动态、评论点赞、通知提醒、封面与昵称头像',
       res: [/^feed-/] },
     { id: 'ask', name: '他 的提问与问卷', group: '聊天与社交', scope: 'desk', page: 'page-ta-ask',
-      desc: '他 的提问/选择题/好奇/吐槽、问卷作答记录、询问提醒时间',
+      desc: '他 的提问/选择题/好奇/调侃、问卷作答记录、询问提醒时间',
       // #1325b 审计：ta-invite.js:115/116 的 ti-last-id（上一条邀请到哪一首）无人认领 ⇒ 换机后从第一条重头邀请。
       res: [/^ta-ask$/, /^ta-survey$/, /^ta-choose$/, /^ta-curious$/, /^ta-roast$/, /^ta-cc-state$/, /^ta-checkin$/, /^interact-card-last$/, /^ta-chime:/, /^ti-last-id$/] },
     // #1325 审计：desk-msg-en 由 chat.js:6221 走 activeStore 写在**各桌面**命名空间，其余四把开关
