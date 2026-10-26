@@ -268,13 +268,18 @@
    slide：单层滑出/滑入，成本最低。 */
 .rd-curl{position:absolute;z-index:5;pointer-events:none;perspective:1200px;transform-style:preserve-3d}
 .rd-curl-seg{position:absolute;top:0;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
-.rd-curl-slice{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;background:#fbf8f1}
-/* 越靠掀起的右端越暗：纸背背光。暗度在掀起过程中渐显，翻页第一帧不会整页发暗 */
+/* 每段右侧多出半像素与下一段重叠，消掉 3D 抗锯齿留下的接缝 */
+.rd-curl-slice{position:absolute;top:0;left:0;width:calc(100% + .5px);height:100%;overflow:hidden;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+/* 越靠掀起的右端越暗：纸背背光。暗度在掀起过程中渐显，翻页第一帧不会整页发暗。
+   重叠半像素处由后一段整段盖住，不会叠出双重暗色 */
 .rd-curl-slice::after{content:'';position:absolute;inset:0;pointer-events:none;background:rgba(0,0,0,var(--shade,0));animation:rdCurlShadeIn .42s ease-out forwards}
 .rd-curl.is-prev .rd-curl-slice::after{animation-name:rdCurlShadeOut}
 @keyframes rdCurlShadeIn{from{opacity:0}to{opacity:1}}
 @keyframes rdCurlShadeOut{from{opacity:1}to{opacity:0}}
-.rd-curl-page{position:absolute;top:0;box-sizing:border-box;flex:none;overflow:visible}
+/* 掀起的那张纸正面朝下，一掀起来就只剩空白纸背；回上一页时纸面要带着内容落回来 */
+.rd-curl-page{position:absolute;top:0;box-sizing:border-box;flex:none;overflow:visible;animation:rdCurlPageBlank .07s linear forwards}
+.rd-curl.is-prev .rd-curl-page{animation:none}
+@keyframes rdCurlPageBlank{from{opacity:1}to{opacity:0}}
 /* 掠过纸面的那道光，短促扫过，不跟着卷曲 */
 .rd-curl-flash{position:absolute;z-index:6;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.38) 46%,rgba(255,255,255,.04) 58%,transparent 70%);animation:rdCurlFlash .46s ease-out}
 @keyframes rdCurlFlash{0%{opacity:0;transform:translateX(-30%)}18%{opacity:.85}100%{opacity:0;transform:translateX(34%)}}
@@ -289,10 +294,10 @@
 @keyframes rdTurnPrevSlide{from{transform:translateX(10%);opacity:0}to{transform:translateX(0);opacity:1}}
 .rd-turn-next-slide{animation:rdTurnNextSlide .2s ease forwards}
 .rd-turn-prev-slide{animation:rdTurnPrevSlide .2s ease forwards}
-[data-theme="dark"] .rd-curl-slice{background:#1b1916}
+[data-theme="dark"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 [data-theme="dark"] .rd-curl-flash{background:linear-gradient(100deg,transparent 28%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.02) 58%,transparent 70%)}
-.rd-reader[data-rd-bg="eye"] .rd-curl-slice{background:#fbf8f1}
-.rd-reader[data-rd-bg="night"] .rd-curl-slice{background:#1b1916}
+.rd-reader[data-rd-bg="eye"] .rd-curl-slice{background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-reader[data-rd-bg="night"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 
 /* ---------- 边看边调抽屉 ---------- */
 #rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}

@@ -3274,6 +3274,10 @@
     const cutMap = {};
     Object.keys(marks).forEach(function (k) { cutMap[k] = 1; });
     Object.keys(traces).forEach(function (k) { cutMap[k] = 1; });
+    // 段首也当切点：一页通常会一次性输出整块文本，不切段首的话缩进插不进去
+    indents.forEach(function (pos) {
+      if (pos > start && pos < end) cutMap[pos] = 1;
+    });
     const cuts = Object.keys(cutMap).map(Number).sort(function (x, y) { return x - y; });
     const sel = rdSel && rdSel.e > start && rdSel.s < end
       ? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
@@ -3812,7 +3816,7 @@
   // 翻页动画：paper＝分段卷曲（12 条竖条逐段累积旋转，拼成一道弧），slide＝单层轻滑。
   // 跨章不播动画：换章要等异步取正文，盖着一张纸干等反而更假。
   let rdTurnBusyUntil = 0;
-  const RD_CURL_SEGS = 12;
+  const RD_CURL_SEGS = 20;
   const RD_CURL_DEG = 92;
   function rdCurlTurn(dir, body, reader, mutate) {
     const br = body.getBoundingClientRect();
@@ -3891,11 +3895,11 @@
     void root.getBoundingClientRect();
     for (let i = 0; i < N; i++) {
       const seg = segs[i];
-      const delay = (N - 1 - i) * 8;
+      const delay = (N - 1 - i) * 5;
       seg.style.transition = 'transform 320ms cubic-bezier(.18,.72,.28,1) ' + delay + 'ms';
       seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
     }
-    const dur = 320 + (N - 1) * 8 + 60;
+    const dur = 320 + (N - 1) * 5 + 60;
     rdTurnBusyUntil = Date.now() + 400;
     setTimeout(function () {
       [root, cast, flash].forEach(function (el) {
