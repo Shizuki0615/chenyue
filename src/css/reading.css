@@ -91,8 +91,9 @@
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);opacity:.8;border-radius:1px;box-shadow:0 0 6px rgba(244,182,194,.25)}
 .rd-buddy-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:2;transition:left .18s ease}
-/* 他在我前面：60% 不透明；同页：贴在我这一页末端外侧 6px */
+/* 他在我前面：60% 不透明；他在我后面：更淡，像个跟在不远处的影子；同页：贴在我这一页末端外侧 6px */
 .rd-buddy-dot.rd-buddy-ahead{opacity:.6}
+.rd-buddy-dot.rd-buddy-behind{opacity:.32}
 .rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28),0 1px 4px rgba(0,0,0,.1)}
 /* 折角书签：圆点滑回我这一页时短暂亮一圈 */
 .rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}

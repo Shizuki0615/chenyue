@@ -6537,7 +6537,7 @@ const FIX_SENTINELS = [
   { name: '#1547c 正文按章分键进 IDB（改回整本存一个键＝大键超限、每次翻页整本读写）', file: 'js/reading.js', needle: "await window.idbSet(RD_BODY_P + id + ':' + ch" },
   { name: '#1547d 单本 20MB 上限（删＝整本读进内存再分章，手机端导入卡死/挤占存储）', file: 'js/reading.js', needle: 'const RD_MAX_BYTES = 20 * 1024 * 1024;' },
   { name: '#1547e 两份进度真值分开存、永不合并（删＝他和我绑成一个值，「独立推进」语义失效）', file: 'js/reading.js', needle: 'let his = rdFlatPos(book, bd.ch, bd.off);' },
-  { name: '#1547f 跟随只追不拽（删＝他往回退，把我拽回他停下的位置）', file: 'js/reading.js', needle: 'if (his < mine) his = mine;' },
+  { name: '#1547f 跟随只追不拽（删＝他往回退，把我拽回他停下的位置）', file: 'js/reading.js', needle: 'if (gap <= RD_BUDDY_STICK) {' },
   { name: '#1547g 他超到我前面就停下来等（删＝他继续往前读，读到我还没读的章＝剧透）', file: 'js/reading.js', needle: 'bd.waiting = his > mine;' },
   { name: '#1547h 独立推进单次最多补 30 分钟（删＝隔夜打开一口气读完整本）', file: 'js/reading.js', needle: 'Math.min(now - prevAt, RD_CATCHUP_MAX_MS)' },
   { name: '#1547i 独立推进按 420 字/分钟（删＝他原地不动或跳得太快）', file: 'js/reading.js', needle: 'his + units * RD_CHARS_PER_MIN' },
