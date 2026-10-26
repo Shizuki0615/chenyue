@@ -2045,13 +2045,16 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .rp-send:active { opacity:.85; }
 
 /* ===== 绾㈠寘娑堟伅鍗＄墖锛堢櫧搴曠畝绾︼紝灏侀潰鍥句綔椤堕儴妯箙锛?===== */
-.msg-rp { align-self:center; width:100%; display:flex; justify-content:center; padding:2px 0; }
+.msg-rp { align-self:center; width:100%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
+/* 2026-10-26：谁发的贴谁的头像——左收/右发，卡片按内容宽度（不硬撑 78%） */
+.msg-rp.msg-rp-in { align-self:flex-start; justify-content:flex-start; }
+.msg-rp.msg-rp-out { align-self:flex-end; justify-content:flex-end; }
 .msg-rp-card {
-  max-width:78%; min-width:220px; text-align:center;
+  flex:0 1 auto; max-width:78%; min-width:0; text-align:center;
   background:#fff; border:1px solid rgba(0,0,0,.1);
   border-radius:16px; padding:14px 18px;
   box-shadow:0 2px 8px rgba(0,0,0,.05);
-  cursor:pointer; position:relative; overflow:hidden;
+  cursor:default; position:relative; overflow:hidden;
 }
 .msg-rp-card.has-cover { background-size:cover; background-position:center; }
 .msg-rp-card.has-cover > * { position:relative; z-index:1; }
@@ -2066,10 +2069,21 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .msg-rp-amt { font-size:24px; font-weight:800; color:var(--msg-event-ink, var(--ink)); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
 .msg-rp-wish { font-size:13px; color:var(--msg-event-ink, var(--ink)); margin-bottom:10px; }
 .msg-rp-foot {
-  display:flex; justify-content:space-between; align-items:center;
+  display:flex; justify-content:center; align-items:center; gap:8px;
   font-size:11px; color:var(--msg-event-ink, var(--muted));
   padding-top:8px; border-top:1px dashed rgba(0,0,0,.1);
 }
+.msg-rp-foot.has-act { justify-content:space-between; }
+.msg-rp-acts { display:inline-flex; align-items:center; gap:8px; }
+.msg-rp-act {
+  width:32px; height:32px; padding:0; border:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.msg-rp-act svg { width:16px; height:16px; }
+.msg-rp-reject { background:rgba(0,0,0,.06); color:#777; }
+.msg-rp-open { background:#e05656; color:#fff; }
+.msg-rp-act:active { opacity:.8; transform:scale(.96); }
 .msg-rp-status { font-weight:600; }
 .msg-rp-card.opened .msg-rp-status { color:var(--msg-event-ink, var(--ink)); }
 .msg-rp-card.opened { border-color:rgba(0,0,0,.18); }
