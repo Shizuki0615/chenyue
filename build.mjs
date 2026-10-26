@@ -72,16 +72,24 @@ const pad = (n) => (n < 10 ? '0' + n : '' + n);
 const buildInfo = '部署于 ' + buildTime.getFullYear() + '-' + pad(buildTime.getMonth() + 1) + '-' + pad(buildTime.getDate()) +
   ' ' + pad(buildTime.getHours()) + ':' + pad(buildTime.getMinutes());
 const buildStamp = buildTime.getTime().toString(36); // sw 缓存名版本号（每次构建必变）
-// 应用版本号（设置页底部与开屏共用）
-// v8 系列起：版本号 v8.<提交数÷10 取整>，总共三位数字（提交数 258 → v8.25），
-// 每提交 10 次 +0.1（258 → v8.25，260 → v8.26，300 → v8.30）。
+// 应用版本号（设置页底部与开屏共用；2026-10-26 起改为构建计数器）
+// 旧口径按 git 提交数算（v8.<提交数÷10>），但本仓库历史被压缩过，rev-list 只剩几条提交，
+// 实际一直算成 v8.0、也不随 push 变化。现在改用 version-counter.json：
+//   正常构建读 n → APP_VERSION = v8.<n÷10>.<n%10> → 写回 n+1。
+// 每次构建（含每次 push 前的构建）版本号必变；v8.56.8 → v8.56.9 → v8.57.0 …
+// --check-sentinels 只检查不构建，不读写计数器。
 // SW 缓存刷新依赖的是上面的 buildStamp（每次构建必变），与 APP_VERSION 无关。
-// 非 git 环境（脚本被拷贝/CI 无 git）回退 v8.0 兜底。
-let APP_VERSION = 'v8.56'; // 仓外隔离副本兜底直置（主树 execSync 自动取；#1011 批按 git rev-list --count 现值对齐，勿回退）
+const VERSION_COUNTER_FILE = join(root, 'version-counter.json');
+let versionN = 568; // 缺少计数器时的起点（对齐交接文档里的 v8.56 现值）
 try {
-  const cnt = execSync('git rev-list --count HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  if (cnt && /^\d+$/.test(cnt)) APP_VERSION = 'v8.' + Math.floor(parseInt(cnt, 10) / 10);
-} catch (e) { /* 无 git：保持兜底 */ }
+  const raw = JSON.parse(readFileSync(VERSION_COUNTER_FILE, 'utf8'));
+  const n = Number(raw && raw.n);
+  if (Number.isFinite(n) && n >= 0) versionN = Math.floor(n);
+} catch (e) { /* 无计数器：从 568 起 */ }
+const APP_VERSION = 'v8.' + Math.floor(versionN / 10) + '.' + (versionN % 10);
+if (!CHECK_SENTINELS) {
+  try { writeFileSync(VERSION_COUNTER_FILE, JSON.stringify({ n: versionN + 1 }) + '\n'); } catch (e) { /* 只读目录：跳过 */ }
+}
 
 // ===== 零依赖保守压缩 =====
 // 只删注释/空行/缩进，不改任何代码语义（无依赖、无解析器）。
@@ -358,7 +366,7 @@ console.log('已生成 index.html（' + html.length + ' 字节，' + (html.split
 // v3.6.x：生成版本文件 version.json（部署到站点根目录）——
 // 手机端靠它检测新版本（fetch 对比时间戳），不依赖 Service Worker 更新机制
 //（sw 只在页面加载/导航时检查、iOS Safari 检测不可靠，开着旧页面永远收不到提醒）。
-const versionJson = JSON.stringify({ ts: buildTime.getTime(), info: buildInfo });
+const versionJson = JSON.stringify({ ts: buildTime.getTime(), ver: APP_VERSION, info: buildInfo });
 writeFileSync(join(root, 'version.json'), versionJson);
 console.log('已生成 version.json（' + versionJson + '）');
 
