@@ -3145,6 +3145,7 @@ else if (rec.special === 'ask-curious') type = 'curious';
 else if (rec.special === 'ask-roast') type = 'roast';
 else if (rec.special === 'ask-card') type = 'ask';
 if (!type) return;
+if ((type === 'ask' || type === 'choose') && card.querySelector('.msg-ask-opts')) return;
 const ok = expandCardInPlace(idx, type);
 if (!ok) {
 try {
@@ -4314,6 +4315,191 @@ if (!root) return;
 const av = root.querySelector('.msg-av');
 if (av) fillAvatar(av, rec.side === 'out' ? 'cs-avatar-user' : 'cs-avatar-partner');
 }
+function askOptReplyList(o) {
+const r = o && o.reply;
+if (Array.isArray(r)) return r.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim());
+if (typeof r === 'string') return r.split(';').map(s => s.trim()).filter(Boolean);
+return [];
+}
+function askSingleOptsHtml(opts) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) {
+const o = opts[i];
+const t = String((o && o.t) || '');
+rows += '<button type="button" class="ask-opt-btn' + (i >= 6 ? ' ask-opt-extra' : '') + '" data-ask-opt="' + i + '"' + (i >= 6 ? ' hidden' : '') + '>' + escTxt(t) + '</button>';
+}
+if (opts.length > 6) rows += '<button type="button" class="ask-opt-more" data-ask-more="1">展开全部（' + opts.length + '）</button>';
+return '<div class="msg-ask-opts">' + rows + '</div>';
+}
+function askMultiOptsHtml(opts, capN) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) {
+const o = opts[i];
+const t = String((o && o.t) || '');
+rows += '<div class="ask-opt-row ask-opt-chk' + (i >= 6 ? ' ask-opt-extra' : '') + '" data-ask-opt="' + i + '"' + (i >= 6 ? ' hidden' : '') + '><span class="ask-opt-box"></span><span class="ask-opt-t">' + escTxt(t) + '</span></div>';
+}
+if (opts.length > 6) rows += '<button type="button" class="ask-opt-more" data-ask-more="1">展开全部（' + opts.length + '）</button>';
+rows += '<button type="button" class="ask-opt-submit" data-ask-submit="1" disabled>' + (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案') + '</button>';
+return '<div class="msg-ask-opts is-multi">' + rows + '</div>';
+}
+function askOutgoingOptsHtml(opts) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) rows += '<div class="ask-opt-static">' + escTxt(String((opts[i] && opts[i].t) || '')) + '</div>';
+return '<button type="button" class="ask-opt-toggle" data-ask-toggle="1">查看选项（' + opts.length + '）</button>' +
+'<div class="msg-ask-opts ask-opts-readonly" hidden>' + rows + '</div>';
+}
+let askClampIO = null;
+function askClampMeasure(root) {
+try {
+const q = root.querySelector('.msg-ask-q.ask-q-clamp');
+if (!q) return;
+const btn = q.nextElementSibling;
+if (!btn || !btn.classList || !btn.classList.contains('ask-q-toggle')) return;
+if (q.scrollHeight > q.clientHeight + 2) btn.hidden = false;
+} catch (e) {}
+}
+function askBindQuestionClamp(root) {
+if (!root) return;
+const q = root.querySelector('.msg-ask-q');
+if (!q || q.dataset.askClamp === '1') return;
+q.dataset.askClamp = '1';
+q.classList.add('ask-q-clamp');
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'ask-q-toggle';
+btn.textContent = T('展开');
+btn.hidden = true;
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const open = q.classList.toggle('ask-q-open');
+btn.textContent = open ? T('收起') : T('展开');
+});
+q.parentNode.insertBefore(btn, q.nextSibling);
+if (askClampIO) { try { askClampIO.unobserve(root); } catch (e) {} }
+if (typeof IntersectionObserver === 'function') {
+if (!askClampIO) {
+askClampIO = new IntersectionObserver((entries) => {
+entries.forEach(en => {
+if (!en.isIntersecting) return;
+askClampMeasure(en.target);
+try { askClampIO.unobserve(en.target); } catch (e) {}
+});
+}, { rootMargin: '80px' });
+}
+askClampIO.observe(root);
+} else {
+let tries = 0;
+const retry = () => {
+if (!root.isConnected && tries++ < 20) { setTimeout(retry, 50); return; }
+askClampMeasure(root);
+};
+setTimeout(retry, 0);
+}
+}
+function askSyncMultiSubmit(root, capN) {
+const submit = root.querySelector('.ask-opt-submit');
+if (!submit) return;
+const picked = root.querySelectorAll('.ask-opt-chk.on').length;
+submit.disabled = !picked;
+submit.textContent = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');
+}
+function askBindOptions(root, rec, idx) {
+if (!root || !rec) return;
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec.options) ? rec.options : []);
+const choiceOpts = Array.isArray(rec.choiceOptions) ? rec.choiceOptions : [];
+const isChoose = rec.special === 'ask-choose';
+const activeOpts = isChoose ? choiceOpts : opts;
+const multi = rec.special === 'ask-card' && (rec.askType === 'multi' || (rec.type === 'multi' && opts.length));
+const capN = multi && rec.askMultiMax >= 2 && rec.askMultiMax <= 6 ? rec.askMultiMax : 0;
+root.querySelectorAll('.ask-opt-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const i = Number(btn.getAttribute('data-ask-opt'));
+if (isChoose) {
+const o = choiceOpts[i];
+if (!o) return;
+const prefIdx = typeof rec.choicePref === 'number' ? rec.choicePref : 0;
+const prefTxt = choiceOpts[prefIdx] ? choiceOpts[prefIdx].t : '';
+const isPref = i === prefIdx;
+const isLiked = o.liked === true || o.liked === 'true';
+const matchTxt = isPref ? '✦ 刚好想到了一起'
+: isLiked ? '你们想得不一样，不过他似乎很喜欢你的答案'
+: '这次没有选到一起。他心里想的是：「' + prefTxt + '」';
+if (window.chatChooseReply) window.chatChooseReply(idx, String(o.t || ''), o, matchTxt);
+if (window.logFish) window.logFish();
+return;
+}
+const o = opts[i];
+if (!o) return;
+let _cr = null;
+if (window.taAskChatReplyOn && window.taAskChatReplyOn() && window.genChatStyleReply) _cr = window.genChatStyleReply();
+if (_cr && window.chatAskReply) window.chatAskReply(idx, String(o.t || ''), _cr, { raw: true });
+else if (window.chatAskReply) window.chatAskReply(idx, String(o.t || ''), o.reply);
+if (window.logFish) window.logFish();
+});
+});
+if (multi) {
+root.querySelectorAll('.ask-opt-chk').forEach(row => {
+row.addEventListener('click', (e) => {
+e.stopPropagation();
+const on = row.classList.contains('on');
+if (!on && capN && root.querySelectorAll('.ask-opt-chk.on').length >= capN) { toast('这题最多选 ' + capN + ' 个'); return; }
+row.classList.toggle('on', !on);
+askSyncMultiSubmit(root, capN);
+});
+});
+const submit = root.querySelector('.ask-opt-submit');
+if (submit) submit.addEventListener('click', (e) => {
+e.stopPropagation();
+const pickedIdx = [];
+root.querySelectorAll('.ask-opt-chk.on').forEach(row => pickedIdx.push(Number(row.getAttribute('data-ask-opt'))));
+if (!pickedIdx.length) return;
+pickedIdx.sort((a, b) => a - b);
+const answers = [];
+const replies = [];
+pickedIdx.forEach(i => {
+const o = opts[i];
+if (!o) return;
+answers.push(String(o.t || ''));
+askOptReplyList(o).forEach(s => replies.push(s));
+});
+if (window.chatAskReply) window.chatAskReply(idx, answers.join('、'), replies.length ? replies : undefined);
+if (window.logFish) window.logFish();
+});
+askSyncMultiSubmit(root, capN);
+}
+root.querySelectorAll('.ask-opt-more').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const open = btn.getAttribute('data-open') === '1';
+const extras = root.querySelectorAll('.ask-opt-extra');
+if (open) {
+extras.forEach(el => { el.setAttribute('hidden', ''); if (el.classList.contains('on')) el.classList.remove('on'); });
+} else {
+extras.forEach(el => el.removeAttribute('hidden'));
+}
+btn.setAttribute('data-open', open ? '0' : '1');
+btn.textContent = open ? '展开全部（' + activeOpts.length + '）' : '收起选项';
+if (multi) askSyncMultiSubmit(root, capN);
+});
+});
+root.querySelectorAll('.ask-opt-toggle').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const box = btn.nextElementSibling;
+if (!box || !box.classList.contains('msg-ask-opts')) return;
+const open = !box.hidden;
+box.hidden = open;
+btn.textContent = open ? ('查看选项（' + activeOpts.length + '）') : '收起选项';
+});
+});
+root.querySelectorAll('.ask-opt-static').forEach(el => el.addEventListener('click', (e) => e.stopPropagation()));
+}
+function askBubbleAfterRender(root, rec, idx) {
+askBubbleFillAvatar(root, rec);
+askBindQuestionClamp(root);
+askBindOptions(root, rec, idx);
+}
 function renderMsg(rec, atIdx) {
 const m = document.createElement('div');
 m.dataset.mk = msgKeyOf(rec); // FIX 2026-09-15 #491 身份锚随渲染写入，批量渲染只覆盖 data-idx 不动它
@@ -4347,7 +4533,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answ
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4356,15 +4542,16 @@ m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 const askIsPick = rec.askType === 'single' || rec.askType === 'multi';
+const optsOut = Array.isArray(rec.askOptions) ? rec.askOptions : [];
 m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + T('问问他') + ' · ' + escTxt(rec.askQuestion || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ ' + T('他：') + escTxt(T(rec.askAnswer || '回答了你')) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
-: '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>') +
+: '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>' + (optsOut.length ? askOutgoingOptsHtml(optsOut) : '')) +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4587,15 +4774,16 @@ if (rec.special === 'ask-choose') {
 m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.choiceStatus === 'answered';
+const opts = Array.isArray(rec.choiceOptions) ? rec.choiceOptions : [];
 m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 你选择了：' + escTxt(rec.choiceAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.choiceReply))) + '</div>'
-: '<div class="msg-ask-tip">点击选择你的答案</div>') +
+: (opts.length ? askSingleOptsHtml(opts) : '<div class="msg-ask-tip">点击选择你的答案</div>')) +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4611,7 +4799,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' a
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4627,7 +4815,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' a
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4645,15 +4833,20 @@ m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 const isSingle = rec.askType === 'single' || (rec.type === 'single' && Array.isArray(rec.options) && rec.options.length);
 const isMulti = rec.askType === 'multi' || (rec.type === 'multi' && Array.isArray(rec.options) && rec.options.length);
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec.options) ? rec.options : []);
+const capN = (isMulti && rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;
+const pendingHtml = isMulti && opts.length ? askMultiOptsHtml(opts, capN)
+: isSingle && opts.length ? askSingleOptsHtml(opts)
+: '<div class="msg-ask-tip">' + T('点击回答 他 的提问') + '</div>';
 m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text) + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 已回答：' + escTxt(rec.askAnswer) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
-: '<div class="msg-ask-tip">' + (isMulti ? ((rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? '最多选 ' + rec.askMultiMax + ' 个，选完点「提交」' : '可多选，选完点「提交」') : isSingle ? '点击选择你的答案' : T('点击回答 他 的提问')) + '</div>') +
+: pendingHtml) +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
-askBubbleFillAvatar(m, rec);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -5866,7 +6059,7 @@ taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你选择了：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatCuriousReply = function (msgIdx, answer, reply, followup) {
@@ -5883,7 +6076,7 @@ taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatRoastReply = function (msgIdx, answer, reply) {
@@ -5900,7 +6093,7 @@ taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatAskReply = function (msgIdx, answer, reply, opts) {
@@ -5969,7 +6162,7 @@ taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 已回答：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(finalReply)) : askCardReplyClean(finalReply)) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, msgIdx);
 }
 return finalReply;
 };
@@ -9115,7 +9308,7 @@ saveMsgsNow(); // v3.26.x #489：回答即落盘（同 chatAskReply 先例），
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(text) : text) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, i);
 }
 }
 addInTyped(text);
@@ -9190,7 +9383,7 @@ taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
 el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('邀请他') : '邀请他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + escTxt(window.taFit ? window.taFit(answer) : answer) + '</div>' + favHeartHtml(rec) + '</div>');
-askBubbleFillAvatar(el, rec);
+askBubbleAfterRender(el, rec, i);
 }
 }
 if (reply) addInTyped(reply, null, randInt(800, 1400));

@@ -442,6 +442,12 @@
   color:var(--msg-out-ink, var(--ink));
   border-color:var(--dark-border-12);
 }
+/* 2026-10-26 未答选项区：勾选与提交条在暗色下按暗色气泡变量走（变量未落值时兜深底） */
+[data-theme="dark"] .ask-opt-chk.on .ask-opt-box::after { border-color:var(--msg-in-bg, #2a2a2a); }
+[data-theme="dark"] .ask-opt-submit {
+  background:var(--msg-in-ink, #f0f0f0);
+  color:var(--msg-in-bg, #2a2a2a);
+}
 [data-theme="dark"] .msg-choose-card { background:var(--dark-card-92); border-color:var(--dark-border); }
 /* v3.33.x #521：批量问卷长卡片（暗色适配，跨域改动见 WORKLOG；观感对齐单题 ask-card） */
 [data-theme="dark"] .msg-survey-card { background:var(--dark-card-92); border-color:var(--dark-border); }
