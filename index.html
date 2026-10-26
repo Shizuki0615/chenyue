@@ -3251,35 +3251,38 @@ display:flex; align-items:center; justify-content:center; padding:18px;
 .rp-open-box {
 position:relative; overflow:hidden;
 width:min(320px, 86vw); padding:26px 22px 20px;
-border-radius:24px; text-align:center; color:#fff;
-background:radial-gradient(120% 80% at 50% -10%, #ff8a7a 0%, transparent 55%), linear-gradient(160deg, #e35d5d 0%, #c0392b 100%);
-box-shadow:0 24px 64px rgba(0,0,0,.38);
+border-radius:24px; text-align:center; color:var(--ink, #111);
+background:#fff;
+box-shadow:0 24px 64px rgba(0,0,0,.28);
 animation:rpOpenIn .22s ease both;
 }
 @keyframes rpOpenIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
-.rp-open-box::before {
-content:''; position:absolute; left:-20%; right:-20%; top:-60%; height:70%;
-background:radial-gradient(closest-side, rgba(255,255,255,.28), transparent);
-pointer-events:none;
+.rp-open-box.has-cover { background-size:cover; background-position:center; }
+.rp-open-box.has-cover > * { position:relative; z-index:1; }
+.rp-open-box.has-cover::before {
+content:''; position:absolute; inset:0; border-radius:24px;
+background:rgba(255,255,255,.78); z-index:0;
 }
+[data-theme="dark"] .rp-open-box { background:var(--dark-card-92); color:var(--ink); }
+[data-theme="dark"] .rp-open-box.has-cover::before { background:rgba(30,30,30,.8); }
 .rp-open-close {
 position:absolute; right:10px; top:10px; z-index:2;
 width:28px; height:28px; padding:0; border:none; border-radius:50%;
-background:rgba(255,255,255,.16); color:#fff;
+background:rgba(127,127,127,.14); color:var(--ink, #111);
 display:flex; align-items:center; justify-content:center; cursor:pointer;
 -webkit-tap-highlight-color:transparent;
 }
 .rp-open-close svg { width:14px; height:14px; }
-.rp-open-close:active { background:rgba(255,255,255,.28); }
-.rp-open-ico { width:66px; height:66px; margin:2px auto 8px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.18)); }
+.rp-open-close:active { background:rgba(127,127,127,.24); }
+.rp-open-ico { width:66px; height:66px; margin:2px auto 8px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.14)); }
 .rp-open-ico svg { width:100%; height:100%; }
-.rp-open-from { font-size:12px; opacity:.82; letter-spacing:.5px; }
+.rp-open-from { font-size:12px; color:var(--muted, #888); letter-spacing:.5px; }
 .rp-open-amt {
 font-size:36px; font-weight:800; letter-spacing:-.5px; margin:6px 0 2px;
-font-variant-numeric:tabular-nums; text-shadow:0 2px 8px rgba(0,0,0,.18);
+font-variant-numeric:tabular-nums; color:var(--ink, #111);
 }
-.rp-open-wish { font-size:13px; opacity:.92; line-height:1.5; word-break:break-word; }
-.rp-open-note { font-size:11px; opacity:.7; line-height:1.5; margin:10px 0 16px; }
+.rp-open-wish { font-size:13px; color:var(--ink, #111); line-height:1.5; word-break:break-word; }
+.rp-open-note { font-size:11px; color:var(--muted, #888); line-height:1.5; margin:10px 0 16px; }
 .rp-open-btns, .rp-open-confirm { display:flex; gap:10px; }
 .rp-open-btns[hidden], .rp-open-confirm[hidden], .rp-open-status[hidden], .rp-open-done[hidden] { display:none !important; }
 .rp-open-btns button, .rp-open-confirm button {
@@ -3288,24 +3291,24 @@ cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6p
 -webkit-tap-highlight-color:transparent;
 }
 .rp-open-btns svg { width:18px; height:18px; }
-.rp-open-reject { border:1px solid rgba(255,255,255,.38); background:rgba(255,255,255,.1); color:#fff; }
-.rp-open-reject:active { background:rgba(255,255,255,.2); }
+.rp-open-reject { border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.08); color:var(--ink, #111); }
+.rp-open-reject:active { background:rgba(127,127,127,.16); }
 .rp-open-claim {
 border:none; background:linear-gradient(135deg, #ffe8a8 0%, #f3c55f 100%); color:#8a3b1f;
-box-shadow:0 6px 16px rgba(0,0,0,.18);
+box-shadow:0 6px 16px rgba(0,0,0,.14);
 }
 .rp-open-claim:active { transform:translateY(1px); }
-.rp-open-cancel { border:1px solid rgba(255,255,255,.34); background:rgba(255,255,255,.08); color:#fff; }
-.rp-open-sure { border:none; background:#fff; color:#b52f2f; }
-.rp-open-status { font-size:14px; font-weight:700; margin:0 0 16px; line-height:1.5; }
-.rp-open-status-sub { display:block; font-size:11px; font-weight:400; opacity:.7; margin-top:4px; }
+.rp-open-cancel { border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.06); color:var(--ink, #111); }
+.rp-open-sure { border:none; background:var(--ink, #111); color:var(--card-bg, #fff); }
+.rp-open-status { font-size:14px; font-weight:700; margin:0 0 16px; line-height:1.5; color:var(--ink, #111); }
+.rp-open-status-sub { display:block; font-size:11px; font-weight:400; color:var(--muted, #888); margin-top:4px; }
 .rp-open-done {
 width:100%; height:42px; border-radius:999px;
-border:1px solid rgba(255,255,255,.36); background:rgba(255,255,255,.1);
-color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.06);
+color:var(--ink, #111); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
 -webkit-tap-highlight-color:transparent;
 }
-.rp-open-done:active { background:rgba(255,255,255,.2); }
+.rp-open-done:active { background:rgba(127,127,127,.16); }
 .msg-flower { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-flower-card {
 width:min(260px,82vw); padding:0 0 14px; border-radius:20px;
@@ -11194,7 +11197,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793029673234" data-version="v8.57.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793032295429" data-version="v8.57.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -12179,16 +12182,15 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 
 <!-- 红包拆开弹层（2026-10-26：点红包卡打开，领取/拒收都在这里） -->
 <div class="rp-open-mask" id="rp-open-mask" hidden>
-  <div class="rp-open-box" role="dialog" aria-modal="true" aria-labelledby="rp-open-from">
+  <div class="rp-open-box" id="rp-open-box" role="dialog" aria-modal="true" aria-labelledby="rp-open-from">
     <button class="rp-open-close" id="rp-open-close" type="button" aria-label="关闭">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
     </button>
     <div class="rp-open-ico" aria-hidden="true">
       <svg viewBox="0 0 64 64" fill="none">
-        <rect x="9" y="14" width="46" height="38" rx="9" fill="rgba(255,255,255,.14)"/>
-        <path d="M9 23c9 6 18 9 23 9s14-3 23-9" stroke="#f7d778" stroke-width="2.6" stroke-linecap="round"/>
-        <circle cx="32" cy="32" r="7.5" fill="#f7d778"/>
-        <path d="M28.5 32h7M32 28.5v7" stroke="#a7741c" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="32" r="24" fill="#f7d778"/>
+        <circle cx="32" cy="32" r="19" stroke="#c7952b" stroke-width="1.8" opacity=".6"/>
+        <path d="M32 15l4.2 12.8L49 32l-12.8 4.2L32 49l-4.2-12.8L15 32l12.8-4.2z" fill="#a7741c"/>
       </svg>
     </div>
     <div class="rp-open-from" id="rp-open-from">来自 他</div>
@@ -12201,7 +12203,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <span>拒收</span>
       </button>
       <button class="rp-open-claim" id="rp-open-claim" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7M12 8.5v7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M12 5.5l1.4 5.1L18.5 12l-5.1 1.4L12 18.5l-1.4-5.1L5.5 12l5.1-1.4z" fill="currentColor"/>
+        </svg>
         <span>领取</span>
       </button>
     </div>
@@ -12800,7 +12805,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.57.4</div>
+          <div class="val" id="about-ver-val">v8.57.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -12891,7 +12896,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.57.4</div>
+      <div class="ver">Mochi 字卡传讯 v8.57.5</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13290,7 +13295,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.57.4</span>
+              <span class="lic-ver">v8.57.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -23033,4 +23038,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvpfkmc2 -->
+<!-- __MOCHI_EOF__ mvph4tmt -->
