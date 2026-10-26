@@ -1944,8 +1944,9 @@ if (mine - his >= RD_BUDDY_STICK) {
 if (!bd.behindSince) bd.behindSince = now;
 const lastGlance = Number(bd.glanceAt) || 0;
 if (now - lastGlance >= 4 * 60 * 1000 && Math.random() < 0.4) {
-bd.glanceUntil = now + 60000;
+bd.glanceUntil = now + 90000;
 bd.glanceAt = now;
+setTimeout(function () { try { rdUpdateBar(); } catch (e) {} }, 0);
 }
 } else {
 bd.behindSince = 0;

@@ -2122,11 +2122,13 @@
     // 落后了多久：用来在落后太久之后把文案降噪，不让他一直像在欠着什么
     if (mine - his >= RD_BUDDY_STICK) {
       if (!bd.behindSince) bd.behindSince = now;
-      // 他在后面时偶尔抬头看一眼我读到哪了：每 4 分钟最多一次，持续一分钟
+      // 他在后面时偶尔抬头看一眼我读到哪了：每 4 分钟最多一次，持续 90 秒
       const lastGlance = Number(bd.glanceAt) || 0;
       if (now - lastGlance >= 4 * 60 * 1000 && Math.random() < 0.4) {
-        bd.glanceUntil = now + 60000;
+        bd.glanceUntil = now + 90000;
         bd.glanceAt = now;
+        // 立刻重绘一次页脚，不等到下一次翻页或轮询
+        setTimeout(function () { try { rdUpdateBar(); } catch (e) {} }, 0);
       }
     } else {
       bd.behindSince = 0;
