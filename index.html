@@ -2715,6 +2715,69 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-in,
 body.cs-time-center #page-chat .msg-ask.msg-ask-out { position:relative; width:100%; max-width:100%; padding-top:18px; }
 body.cs-time-center #page-chat .msg-ask.msg-ask-in { justify-content:flex-start; }
 body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; }
+.msg-ask-opts { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.msg-ask-opts[hidden] { display:none !important; }
+.ask-opt-btn {
+display:block; width:100%; box-sizing:border-box;
+padding:10px 12px; border:1px solid rgba(127,127,127,.26); border-radius:10px;
+background:transparent; color:inherit; font-size:13px; font-family:inherit;
+text-align:left; line-height:1.5; word-break:break-word;
+cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-btn:active { background:rgba(127,127,127,.12); }
+.ask-opt-btn[hidden] { display:none !important; }
+.ask-opt-row {
+display:flex; align-items:center; gap:9px;
+padding:10px 12px; border:1px solid rgba(127,127,127,.26); border-radius:10px;
+background:transparent; color:inherit; font-size:13px; line-height:1.5;
+cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-row[hidden] { display:none !important; }
+.ask-opt-row .ask-opt-t { flex:1 1 auto; min-width:0; text-align:left; word-break:break-word; }
+.ask-opt-box {
+position:relative; flex:none; width:16px; height:16px; box-sizing:border-box;
+border:1.5px solid rgba(127,127,127,.55); border-radius:5px; background:transparent;
+}
+.ask-opt-chk.on { border-color:currentColor; background:rgba(127,127,127,.14); font-weight:600; }
+.ask-opt-chk.on .ask-opt-box { border-color:currentColor; background:currentColor; }
+.ask-opt-chk.on .ask-opt-box::after {
+content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+border:solid var(--msg-in-bg, #fff); border-width:0 2px 2px 0; transform:rotate(45deg);
+}
+.ask-opt-submit {
+display:block; width:100%; box-sizing:border-box; padding:10px 12px;
+border:none; border-radius:10px;
+background:var(--msg-in-ink, #111); color:var(--msg-in-bg, #fff);
+font-size:13px; font-weight:600; font-family:inherit; cursor:pointer;
+-webkit-tap-highlight-color:transparent;
+}
+.ask-opt-submit:active { opacity:.85; }
+.ask-opt-submit:disabled { opacity:.42; cursor:default; }
+.ask-opt-more {
+display:block; width:100%; box-sizing:border-box; padding:8px 12px;
+border:1px dashed rgba(127,127,127,.36); border-radius:10px;
+background:transparent; color:inherit; opacity:.55;
+font-size:11px; font-weight:600; font-family:inherit;
+cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-toggle {
+display:block; width:100%; box-sizing:border-box; margin-top:10px; padding:8px 0 0;
+border:none; border-top:1px dashed rgba(127,127,127,.36);
+background:transparent; color:inherit; opacity:.72;
+font-size:12px; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-static {
+padding:9px 12px; border:1px solid rgba(127,127,127,.32); border-radius:10px;
+font-size:13px; line-height:1.5; word-break:break-word;
+}
+.msg-ask-q.ask-q-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+.msg-ask-q.ask-q-open { display:block; -webkit-line-clamp:unset; overflow:visible; }
+.ask-q-toggle {
+display:block; margin:6px auto 0; padding:2px 8px;
+border:none; background:transparent; color:inherit; opacity:.6;
+font-size:11px; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-q-toggle[hidden] { display:none !important; }
 .msg-survey-card {
 max-width:78%; min-width:220px; text-align:center;
 background:#fff; border:1px solid rgba(0,0,0,.1);
@@ -8799,6 +8862,11 @@ background:var(--cs-out-surface, var(--msg-out-bg, var(--dark-card-92)));
 color:var(--msg-out-ink, var(--ink));
 border-color:var(--dark-border-12);
 }
+[data-theme="dark"] .ask-opt-chk.on .ask-opt-box::after { border-color:var(--msg-in-bg, #2a2a2a); }
+[data-theme="dark"] .ask-opt-submit {
+background:var(--msg-in-ink, #f0f0f0);
+color:var(--msg-in-bg, #2a2a2a);
+}
 [data-theme="dark"] .msg-choose-card { background:var(--dark-card-92); border-color:var(--dark-border); }
 [data-theme="dark"] .msg-survey-card { background:var(--dark-card-92); border-color:var(--dark-border); }
 [data-theme="dark"] .msg-survey-opt { background:var(--dark-card); border-color:var(--dark-border-12); color:var(--ink); }
@@ -11001,7 +11069,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793009075629" data-version="v8.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793011095280" data-version="v8.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22798,4 +22866,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvp3b54d -->
+<!-- __MOCHI_EOF__ mvp4ifhs -->

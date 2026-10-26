@@ -6084,7 +6084,7 @@ const FIX_SENTINELS = [
   { name: '#1480i 草稿状态行点名单独限选的题数（删＝杆上读数被当成全卷统一上限，用户无从知道按题限已生效）', file: 'js/ta-ask.js', needle: "+ (nCap ? nCap + ' 题单独限选、其余' : '') +" },
   { name: '#1480j 手动作答的上限闸（删＝限 2 的题勾第 3 个照样上屏，用户侧与 TA 侧两套规矩）', file: 'js/chat.js', needle: "if (at < 0 && capN && picked.length >= capN) { toast('这题最多选 ' + capN + ' 个'); return; }" },
   { name: '#1480k 手动作答上限的取数（删＝capN 恒 0＝闸永远不关）', file: 'js/chat.js', needle: "const capN = (rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;" },
-  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第三个才被拦，人不知道是规则不是故障）', file: 'js/chat.js', needle: "? '最多选 ' + rec.askMultiMax + ' 个，选完点「提交」'" },
+  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；已随未答选项直接铺开重锚到提交条初始文案）', file: 'js/chat.js', needle: "submit.textContent = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');" },
   { name: '#1480m 尾日志压缩字段表带上 askMultiMax（删＝尾巴日志回放出的限选卡丢了按题上限，跨桌面/回收恢复后闸失效）', file: 'js/chat.js', needle: "'askType', 'askMultiMax', 'deskCk'" },
   { name: '#1480n 问卷格式说明写出按题限选写法（删＝页面上没有任何一处教「（多选·最多2）」，功能等于不存在）', file: 'template.html', needle: "个别题想另限就写成「（多选·最多2）」" },
   { name: '#1480o 「按题限选」文案随 #1502 章下线、落点回到问卷设置页说明（删＝功能说明也没了，用户无处得知「（多选·最多2）」写法）', file: 'template.html', needle: '也可写「（多选·最多2）」给这一题单独限个数' },
@@ -6678,6 +6678,13 @@ const FIX_SENTINELS = [
   { name: '#1561a 选一个/好奇/吐槽卡共用左右气泡壳（删＝这三类仍居中卡片）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-in .msg-choose-card,\n#page-chat .msg-ask.msg-ask-out .msg-ask-card,' },
   { name: '#1561b 邀请卡左右气泡 + 回写保留头像时间（删＝邀请结果回写成裸卡）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-ask-card answered\"><div class=\"msg-ask-q\">' + (window.taFit ? window.taFit('邀请他')" },
   { name: '#1561c 选一个/好奇/吐槽作答回写保留头像时间（删＝答完卡面变裸卡）', file: 'js/chat.js', needle: "askBubbleHtml(rec, '<div class=\"msg-choose-card answered\"><div class=\"msg-ask-q\">' + escTxt(rec.curiousQuestion" },
+  // ==== 2026-10-26 #1562 未答卡面：选项直接铺开（全部单列）+ 折叠 + 长问题折叠 ====
+  { name: '#1562a 未答单选/选一个选项直接铺在卡上（删＝又要先点卡片才看到选项）', file: 'js/chat.js', needle: 'function askSingleOptsHtml(opts) {' },
+  { name: '#1562b 未答多选勾选行 + 提交（删＝多选没有勾选态/提交入口）', file: 'js/chat.js', needle: 'function askMultiOptsHtml(opts, capN) {' },
+  { name: '#1562c 出站「我问 TA」选项默认折叠（删＝我出的选项直接铺开或完全看不到）', file: 'js/chat.js', needle: 'function askOutgoingOptsHtml(opts) {' },
+  { name: '#1562d 选项超过 6 个折叠（删＝选项多时整卡无限长）', file: 'js/chat.js', needle: "btn.textContent = open ? '展开全部（' + activeOpts.length + '）' : '收起选项';" },
+  { name: '#1562e 长问题超过 4 行折叠加展开（删＝长问题整卡铺满屏）', file: 'css/chat-main.css', needle: '.msg-ask-q.ask-q-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4;' },
+  { name: '#1562f 直接铺开的选项卡不再弹旧「点卡展开」区（删＝点卡片会在卡上再叠一层旧选项）', file: 'js/chat.js', needle: "if ((type === 'ask' || type === 'choose') && card.querySelector('.msg-ask-opts')) return;" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
