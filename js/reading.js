@@ -882,9 +882,15 @@ rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rd
 }
 }
 function rdOpenLiveDrawer() {
-if (!settingsPage || settingsPage.hidden) return;
+if (!page) return;
 buildLiveDrawer();
 rdLiveDragBot = 0;
+if (settingsPage) settingsPage.hidden = true;
+page.hidden = false;
+if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; }
+rdSetGroupSorting(false);
+rdApplyChrome();
+rdRenderShelf();
 const body = document.getElementById('rd-live-body');
 if (body) body.style.display = 'flex';
 const foldBtn = document.getElementById('rd-live-fold');
@@ -896,15 +902,6 @@ rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rd
 rdLiveApplyBottom();
 rdApplyBg();
 rdRenderPrefsActive();
-const setBody = settingsPage.querySelector('.rd-set-body');
-if (setBody) {
-setBody.style.overflow = 'hidden';
-const prev = document.getElementById('rd-set-preview');
-if (prev) {
-const top = prev.getBoundingClientRect().top - setBody.getBoundingClientRect().top + setBody.scrollTop;
-setBody.scrollTop = Math.max(0, top - 8);
-}
-}
 }
 function rdCloseLiveDrawer() {
 if (!liveDrawer) return;

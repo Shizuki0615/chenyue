@@ -945,9 +945,16 @@
     }
   }
   function rdOpenLiveDrawer() {
-    if (!settingsPage || settingsPage.hidden) return;
+    if (!page) return;
     buildLiveDrawer();
     rdLiveDragBot = 0;
+    // 边看边调必须看得见书架：收起设置页，回到首页（hero 和手账只在首页可见），抽屉浮在上面
+    if (settingsPage) settingsPage.hidden = true;
+    page.hidden = false;
+    if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; }
+    rdSetGroupSorting(false);
+    rdApplyChrome();
+    rdRenderShelf();
     const body = document.getElementById('rd-live-body');
     if (body) body.style.display = 'flex';
     const foldBtn = document.getElementById('rd-live-fold');
@@ -959,15 +966,6 @@
     rdLiveApplyBottom();
     rdApplyBg();
     rdRenderPrefsActive();
-    const setBody = settingsPage.querySelector('.rd-set-body');
-    if (setBody) {
-      setBody.style.overflow = 'hidden';
-      const prev = document.getElementById('rd-set-preview');
-      if (prev) {
-        const top = prev.getBoundingClientRect().top - setBody.getBoundingClientRect().top + setBody.scrollTop;
-        setBody.scrollTop = Math.max(0, top - 8);
-      }
-    }
   }
   function rdCloseLiveDrawer() {
     if (!liveDrawer) return;
