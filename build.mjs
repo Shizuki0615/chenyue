@@ -6342,7 +6342,7 @@ const FIX_SENTINELS = [
   { name: '#1473e 开屏公告·离线兜底（template.html）同条在位（断网用户看到的那份与在线源两份同步）', file: 'template.html', needle: '收不到④·手机开了勿扰/免打扰</b>' },
   { name: '#1477a 互动卡点击解析的身份校验快路径（删＝msgs 画后重排时旧下标读错条，「联系人发的红包点不动」回归）', file: 'js/chat.js', needle: 'const okFast = !!(rec && _mk && msgKeyOf(rec) === _mk);' },
   { name: '#1477b 红包领取分支走身份解析＋显示状态 tie-break（删＝只修长按不修领取，主症状回归）', file: 'js/chat.js', needle: 'const rpHit = msgRecFromEl(rpItem, function (m) { return rpStatusText(m) === rpShown; });' },
-  { name: '#1477g 红包拒收图标走同一身份解析（删＝拒收按旧下标读错条，拒错红包）', file: 'js/chat.js', needle: "const rejectHit = e.target.closest('.msg-rp-reject');" },
+  { name: '#1477g 红包点击走同一身份解析后开拆红包小窗（删＝点红包按旧下标读错条，开错红包）', file: 'js/chat.js', needle: 'openRpOpen(rpHit.rec, rpHit.idx)' },
   { name: '#1477c 身份反查命中后把节点下标修回真值（删＝就地状态补丁 rpPatchStatusInPlace 找不到节点＝领取后整窗重建闪屏回归）', file: 'js/chat.js', needle: 'if (j >= 0) { item.dataset.idx = String(j); return { rec: msgs[j], idx: j }; }' },
   { name: '#1477d normCell 无 ts 存量改盖自身事件时间（删＝每次首遇跳到数组末尾的漂移驱动回归，#407 同族）', file: 'js/chat.js', needle: 'if (!r.ts) { r.ts = (r.rpTs || r.askTs || r.surveyTs || r.dAt) || Date.now(); c = true; }' },
   { name: "#1477e msgKeyOf 拼卡片身份字段＋时间同链（删＝同毫秒同侧两张红包分不开／盖章后 data-mk 失效）", file: 'js/chat.js', needle: "String(rec.text || '').slice(0, 80) + chatRecCardExtra(rec);" },
@@ -6713,13 +6713,20 @@ const FIX_SENTINELS = [
   { name: '#1566c 已收藏心形常红样式（删＝只有按下的瞬间红一下）', file: 'css/chat-main.css', needle: '.msg-fav-heart.is-fav { background:rgba(255,77,106,.12); color:#ff4d6a; }' },
   // ==== 2026-10-26 #1568 红包贴发送方头像 + 领取/拒收图标 + 拒收概率 ====
   { name: '#1568a 红包卡贴发送方头像（左收/右发；删＝红包又回到居中裸卡）', file: 'js/chat.js', needle: "m.className = 'msg-rp ' + (rec.side === 'out' ? 'msg-rp-out' : 'msg-rp-in');" },
-  { name: '#1568b 待领红包两枚图标按钮（删＝只剩文字状态，领取/拒收入口消失）', file: 'js/chat.js', needle: 'class="msg-rp-act msg-rp-reject"' },
-  { name: '#1568c 拒收前确认弹层（删＝一点就拒收，误触不可逆）', file: 'js/chat.js', needle: "'拒收这个红包？'" },
+  { name: '#1568b 拆红包小窗的领取/拒收按钮（删＝只剩卡面状态，领取/拒收入口消失）', file: 'template.html', needle: 'id="rp-open-claim"' },
+  { name: '#1568c 拆红包小窗的拒收确认按钮（删＝拒收少一道确认，误触不可逆）', file: 'template.html', needle: 'id="rp-open-sure"' },
   { name: '#1568d 红包设置里拒收概率行（删＝用户找不到拒收概率调节）', file: 'template.html', needle: 'id="cs-rp-reject-prob"' },
   { name: '#1568e TA 拒收概率读每联系人设置（删＝设置页改了不生效，仍写死 20%）', file: 'js/chat.js', needle: "store.get('cs-rp-reject-prob')" },
   { name: '#1568f 拒收后 TA 概率回话池（删＝拒收后 TA 只留系统提示，不再回一句）', file: 'js/chat.js', needle: "const defs = ['怎么不收？', '是不喜欢吗？'" },
   { name: '#1568g 红包拒收状态文案（returned→已拒收；删＝又显示「已退回」）', file: 'js/chat.js', needle: "if (st === 'returned') return '已拒收';" },
-  { name: '#1568h 红包落定后撤掉两枚图标（删＝领取/拒收后按钮仍留在已领/已拒卡上）', file: 'js/chat.js', needle: "card.querySelector('.msg-rp-acts')" },
+  { name: '#1568h 红包落定后卡面提示切「点击查看」（删＝领/拒后仍写着「点击拆开」）', file: 'js/chat.js', needle: "card.querySelector('.msg-rp-hint')" },
+  // ==== 2026-10-26 #1569 红包加宽 + 拆红包小窗 ====
+  { name: '#1569a 拆红包小窗 DOM（删＝点红包无窗可开）', file: 'template.html', needle: 'id="rp-open-mask"' },
+  { name: '#1569b 红包卡加宽到 85% 行宽（删＝又缩回内容宽小卡）', file: 'css/chat-main.css', needle: 'width:85%; max-width:85%' },
+  { name: '#1569c 拆红包小窗领取落库（删＝窗里点领取不生效）', file: 'js/chat.js', needle: 'function rpClaimIncoming(rpIdx, rpRec) {' },
+  { name: '#1569d 拆红包小窗拒收落库（删＝窗里点确定拒收不生效）', file: 'js/chat.js', needle: 'function rpRejectIncoming(rpIdx, rpRec) {' },
+  { name: '#1569e 红包卡「点击拆开/点击查看」提示（删＝卡面看不出可点）', file: 'css/chat-main.css', needle: '.msg-rp-hint {' },
+  { name: '#1569f 拆红包小窗打开/阶段切换（删＝点卡只渲染空窗，领取/拒收/确认阶段不显示）', file: 'js/chat.js', needle: 'function openRpOpen(rec, idx) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

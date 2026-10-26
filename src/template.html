@@ -1370,6 +1370,43 @@
   </div>
 </div>
 
+<!-- 红包拆开弹层（2026-10-26：点红包卡打开，领取/拒收都在这里） -->
+<div class="rp-open-mask" id="rp-open-mask" hidden>
+  <div class="rp-open-box" role="dialog" aria-modal="true" aria-labelledby="rp-open-from">
+    <button class="rp-open-close" id="rp-open-close" type="button" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
+    </button>
+    <div class="rp-open-ico" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="9" y="14" width="46" height="38" rx="9" fill="rgba(255,255,255,.14)"/>
+        <path d="M9 23c9 6 18 9 23 9s14-3 23-9" stroke="#f7d778" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="32" cy="32" r="7.5" fill="#f7d778"/>
+        <path d="M28.5 32h7M32 28.5v7" stroke="#a7741c" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="rp-open-from" id="rp-open-from">来自 他</div>
+    <div class="rp-open-amt" id="rp-open-amt">¥0.00</div>
+    <div class="rp-open-wish" id="rp-open-wish">心意</div>
+    <div class="rp-open-note" id="rp-open-note"></div>
+    <div class="rp-open-btns" id="rp-open-btns">
+      <button class="rp-open-reject" id="rp-open-reject" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 010 10h-3"/></svg>
+        <span>拒收</span>
+      </button>
+      <button class="rp-open-claim" id="rp-open-claim" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7M12 8.5v7"/></svg>
+        <span>领取</span>
+      </button>
+    </div>
+    <div class="rp-open-confirm" id="rp-open-confirm" hidden>
+      <button class="rp-open-cancel" id="rp-open-cancel" type="button">再想想</button>
+      <button class="rp-open-sure" id="rp-open-sure" type="button">确定拒收</button>
+    </div>
+    <div class="rp-open-status" id="rp-open-status" hidden></div>
+    <button class="rp-open-done" id="rp-open-done" type="button" hidden>知道了</button>
+  </div>
+</div>
+
 <!-- 通话弹层（来电/去电/通话中） -->
 <div class="call-mask" id="call-mask" hidden>
   <div class="call-panel" id="call-panel">

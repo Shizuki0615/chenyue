@@ -2045,16 +2045,16 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .rp-send:active { opacity:.85; }
 
 /* ===== 绾㈠寘娑堟伅鍗＄墖锛堢櫧搴曠畝绾︼紝灏侀潰鍥句綔椤堕儴妯箙锛?===== */
-.msg-rp { align-self:center; width:100%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
-/* 2026-10-26：谁发的贴谁的头像——左收/右发，卡片按内容宽度（不硬撑 78%） */
+.msg-rp { align-self:center; width:85%; max-width:85%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
+/* 2026-10-26：谁发的贴谁的头像——左收/右发；卡面按 85% 行宽铺开，点整卡开红包小窗 */
 .msg-rp.msg-rp-in { align-self:flex-start; justify-content:flex-start; }
 .msg-rp.msg-rp-out { align-self:flex-end; justify-content:flex-end; }
 .msg-rp-card {
-  flex:0 1 auto; max-width:78%; min-width:0; text-align:center;
+  flex:1 1 auto; max-width:100%; min-width:0; text-align:center;
   background:#fff; border:1px solid rgba(0,0,0,.1);
   border-radius:16px; padding:14px 18px;
   box-shadow:0 2px 8px rgba(0,0,0,.05);
-  cursor:default; position:relative; overflow:hidden;
+  cursor:pointer; position:relative; overflow:hidden;
 }
 .msg-rp-card.has-cover { background-size:cover; background-position:center; }
 .msg-rp-card.has-cover > * { position:relative; z-index:1; }
@@ -2069,26 +2069,83 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .msg-rp-amt { font-size:24px; font-weight:800; color:var(--msg-event-ink, var(--ink)); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
 .msg-rp-wish { font-size:13px; color:var(--msg-event-ink, var(--ink)); margin-bottom:10px; }
 .msg-rp-foot {
-  display:flex; justify-content:center; align-items:center; gap:8px;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
   font-size:11px; color:var(--msg-event-ink, var(--muted));
   padding-top:8px; border-top:1px dashed rgba(0,0,0,.1);
 }
-.msg-rp-foot.has-act { justify-content:space-between; }
-.msg-rp-acts { display:inline-flex; align-items:center; gap:8px; }
-.msg-rp-act {
-  width:32px; height:32px; padding:0; border:none; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; -webkit-tap-highlight-color:transparent;
-}
-.msg-rp-act svg { width:16px; height:16px; }
-.msg-rp-reject { background:rgba(0,0,0,.06); color:#777; }
-.msg-rp-open { background:#e05656; color:#fff; }
-.msg-rp-act:active { opacity:.8; transform:scale(.96); }
 .msg-rp-status { font-weight:600; }
+.msg-rp-hint { display:inline-flex; align-items:center; gap:2px; opacity:.72; white-space:nowrap; }
+.msg-rp-chev { font-size:12px; line-height:1; transform:translateY(-.5px); }
 .msg-rp-card.opened .msg-rp-status { color:var(--msg-event-ink, var(--ink)); }
 .msg-rp-card.opened { border-color:rgba(0,0,0,.18); }
 .msg-rp-card.expired { opacity:.6; }
 .msg-rp-card.expired .msg-rp-status { color:var(--msg-event-ink, var(--muted)); }
+
+/* ===== 红包拆开弹层（2026-10-26）===== */
+.rp-open-mask {
+  position:absolute; inset:0; z-index:92;
+  background:rgba(0,0,0,.5);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.rp-open-mask[hidden] { display:none; }
+.rp-open-box {
+  position:relative; overflow:hidden;
+  width:min(320px, 86vw); padding:26px 22px 20px;
+  border-radius:24px; text-align:center; color:#fff;
+  background:radial-gradient(120% 80% at 50% -10%, #ff8a7a 0%, transparent 55%), linear-gradient(160deg, #e35d5d 0%, #c0392b 100%);
+  box-shadow:0 24px 64px rgba(0,0,0,.38);
+  animation:rpOpenIn .22s ease both;
+}
+@keyframes rpOpenIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
+.rp-open-box::before {
+  content:''; position:absolute; left:-20%; right:-20%; top:-60%; height:70%;
+  background:radial-gradient(closest-side, rgba(255,255,255,.28), transparent);
+  pointer-events:none;
+}
+.rp-open-close {
+  position:absolute; right:10px; top:10px; z-index:2;
+  width:28px; height:28px; padding:0; border:none; border-radius:50%;
+  background:rgba(255,255,255,.16); color:#fff;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-close svg { width:14px; height:14px; }
+.rp-open-close:active { background:rgba(255,255,255,.28); }
+.rp-open-ico { width:66px; height:66px; margin:2px auto 8px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.18)); }
+.rp-open-ico svg { width:100%; height:100%; }
+.rp-open-from { font-size:12px; opacity:.82; letter-spacing:.5px; }
+.rp-open-amt {
+  font-size:36px; font-weight:800; letter-spacing:-.5px; margin:6px 0 2px;
+  font-variant-numeric:tabular-nums; text-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+.rp-open-wish { font-size:13px; opacity:.92; line-height:1.5; word-break:break-word; }
+.rp-open-note { font-size:11px; opacity:.7; line-height:1.5; margin:10px 0 16px; }
+.rp-open-btns, .rp-open-confirm { display:flex; gap:10px; }
+.rp-open-btns[hidden], .rp-open-confirm[hidden], .rp-open-status[hidden], .rp-open-done[hidden] { display:none !important; }
+.rp-open-btns button, .rp-open-confirm button {
+  flex:1; height:44px; border-radius:999px; font-family:inherit; font-size:14px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-btns svg { width:18px; height:18px; }
+.rp-open-reject { border:1px solid rgba(255,255,255,.38); background:rgba(255,255,255,.1); color:#fff; }
+.rp-open-reject:active { background:rgba(255,255,255,.2); }
+.rp-open-claim {
+  border:none; background:linear-gradient(135deg, #ffe8a8 0%, #f3c55f 100%); color:#8a3b1f;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+.rp-open-claim:active { transform:translateY(1px); }
+.rp-open-cancel { border:1px solid rgba(255,255,255,.34); background:rgba(255,255,255,.08); color:#fff; }
+.rp-open-sure { border:none; background:#fff; color:#b52f2f; }
+.rp-open-status { font-size:14px; font-weight:700; margin:0 0 16px; line-height:1.5; }
+.rp-open-status-sub { display:block; font-size:11px; font-weight:400; opacity:.7; margin-top:4px; }
+.rp-open-done {
+  width:100%; height:42px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.36); background:rgba(255,255,255,.1);
+  color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-done:active { background:rgba(255,255,255,.2); }
 /* 鑺辨湹鍗＄墖 */
 .msg-flower { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-flower-card {
