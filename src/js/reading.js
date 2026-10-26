@@ -1325,10 +1325,11 @@
       const show = st !== 'none' && st !== 'skip';
       dot.hidden = !show;
       if (show) {
-        const isBehind = st === 'behind' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
+        const isBehind = st === 'behind' || st === 'far' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
         dot.style.left = same ? 'calc(' + myPct + '% + 6px)' : rdPosPct(book, bd.ch, bd.off) + '%';
         dot.classList.toggle('rd-buddy-ahead', !same && !isBehind);
         dot.classList.toggle('rd-buddy-behind', !same && isBehind);
+        dot.classList.toggle('rd-buddy-far', !same && st === 'far');
         dot.classList.toggle('rd-buddy-same', same);
       }
     }
@@ -1513,7 +1514,7 @@
     if (!bd || !bd.started || bd.mode !== 'follow') return;
     if (!rdCoopOn()) return;
     const st = rdBuddyState(book);
-    if (st !== 'read' && st !== 'behind') return;
+    if (st !== 'read' && st !== 'behind' && st !== 'far') return;
     rdBuddyAdvance(book, sec);
     rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
   }
@@ -2081,13 +2082,16 @@
     if (his > mine) return 'wait';
     // 他落后：跨章，或同章里差出一页以上才算「在后面」，差几个字仍算同页共读
     if (his < mine) {
+      // 落后两章以上是另一档：「在很后面」，文案不催，只是如实说
+      if (myCh - bd.ch >= 2) return 'far';
       if (bd.ch < myCh) return 'behind';
       if (mine - his >= RD_BUDDY_STICK) return 'behind';
     }
     return 'read';
   }
   const RD_BUDDY_STATE_TEXT = {
-    none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面', done: '读完了', skip: '今天不读'
+    none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面',
+    far: '在很后面', done: '读完了', skip: '今天不读'
   };
   // 文案池按状态分组；同一天内固定取同一条，跨天自然轮换
   const RD_BUDDY_LINES = {
@@ -2095,6 +2099,7 @@
     read: ['他在你旁边一页一页看。', '他刚翻过一页。', '他跟着你的速度往下读。'],
     wait: ['他停在前面等你。', '他先读到前面去了，正等着你。', '他在前面那页等你跟上来。'],
     behind: ['他在你后面慢慢跟着。', '他落后了几页，正一页页追。', '他在后面那几页，没催你。'],
+    far: ['他还在很后面，慢慢读着。', '他落后好几章了，没追上来。', '他在后面很远的地方，不着急。'],
     done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
     skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
   };
@@ -4103,6 +4108,7 @@
     if (st === 'done') return '他读完了';
     if (st === 'wait') return '等你';
     if (st === 'behind') return '在你后面';
+    if (st === 'far') return '还没追上来';
     if (st === 'skip') return '今天不读';
     if (st === 'none') return '未开始';
     return '共读中';
