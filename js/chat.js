@@ -4336,17 +4336,18 @@ if (typeof t === 'string' && t.indexOf('{me}') >= 0) t = t.split('{me}').join(__
 return t;
 };
 if (rec.special === 'invite') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.inviteStatus === 'answered';
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + T('邀请他') + ' · ' + escTxt(rec.inviteContent || rec.text || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ ' + escTxt(T(askCardReplyClean(rec.inviteAnswer) || '他 回应了你')) + '</div>'
 : '<div class="msg-ask-tip">' + T('等待 他 回应…') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -4583,47 +4584,50 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-choose') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.choiceStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 你选择了：' + escTxt(rec.choiceAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.choiceReply))) + '</div>'
 : '<div class="msg-ask-tip">点击选择你的答案</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-curious') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.curiousStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 你：' + escTxt(rec.curiousAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.curiousReply))) + '</div>'
 : '<div class="msg-ask-tip">' + T('点击回答 他 的好奇') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-roast') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.roastStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div>' +
 (answered
 ? '<div class="msg-ask-a">✓ 你：' + escTxt(rec.roastAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.roastReply))) + '</div>'
 : '<div class="msg-ask-tip">' + T('点击回 他 一句') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -5861,7 +5865,8 @@ addInTyped(reply || '…');
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你选择了：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你选择了：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 };
 window.chatCuriousReply = function (msgIdx, answer, reply, followup) {
@@ -5877,7 +5882,8 @@ addInTyped(followup ? [reply || '…', followup] : (reply || '…'));
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 };
 window.chatRoastReply = function (msgIdx, answer, reply) {
@@ -5893,7 +5899,8 @@ addInTyped(reply || '…');
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 };
 window.chatAskReply = function (msgIdx, answer, reply, opts) {
@@ -9182,7 +9189,8 @@ saveMsgsNow(); // v3.26.x #489：结果即落盘，切桌面 flush 前不止内�
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('邀请他') : '邀请他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + escTxt(window.taFit ? window.taFit(answer) : answer) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('邀请他') : '邀请他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + escTxt(window.taFit ? window.taFit(answer) : answer) + '</div>' + favHeartHtml(rec) + '</div>');
+askBubbleFillAvatar(el, rec);
 }
 }
 if (reply) addInTyped(reply, null, randInt(800, 1400));
