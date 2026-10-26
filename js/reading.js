@@ -3481,7 +3481,7 @@ const reader = document.getElementById('rd-reader');
 const mode = rdTurnMode();
 const now = Date.now();
 if (!body || !reader || mode === 'off' || now < rdTurnBusyUntil) { mutate(); return; }
-const dur = mode === 'paper' ? 340 : 200;
+const dur = mode === 'paper' ? 360 : 200;
 rdTurnBusyUntil = now + dur - 60;
 const br = body.getBoundingClientRect();
 const rr = reader.getBoundingClientRect();
@@ -3496,6 +3496,18 @@ sheet.style.width = br.width + 'px';
 sheet.style.height = br.height + 'px';
 sheet.style.zIndex = '5';
 sheet.style.pointerEvents = 'none';
+let cast = null;
+if (mode === 'paper') {
+cast = document.createElement('div');
+cast.className = 'rd-turn-cast';
+cast.style.left = sheet.style.left;
+cast.style.top = sheet.style.top;
+cast.style.width = sheet.style.width;
+cast.style.height = sheet.style.height;
+cast.style.boxSizing = 'border-box';
+if (dir < 0) cast.classList.add('is-prev');
+reader.appendChild(cast);
+}
 if (dir > 0) {
 sheet.innerHTML = body.innerHTML;
 reader.appendChild(sheet);
@@ -3507,7 +3519,10 @@ sheet.innerHTML = body.innerHTML;
 reader.appendChild(sheet);
 sheet.classList.add('rd-turn-prev-' + mode);
 }
-function done() { if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }
+function done() {
+if (sheet.parentNode) sheet.parentNode.removeChild(sheet);
+if (cast && cast.parentNode) cast.parentNode.removeChild(cast);
+}
 sheet.addEventListener('animationend', done);
 setTimeout(done, dur + 80);
 }
