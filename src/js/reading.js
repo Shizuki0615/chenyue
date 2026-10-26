@@ -717,6 +717,11 @@
             '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
           '</div>' +
           '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">他回应批注的概率</span><span class="rd-set-row-v" id="rd-set-reply-val">62%</span></div>' +
+            '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-reply-range" min="0" max="100" step="5" aria-label="他回应批注的概率"><span>总是</span></div>' +
+            '<div class="rd-set-row-desc">你写下批注后，他读到那一句时可能回一句。调低只是让他更常安静，位置越过的判断不受影响。</div>' +
+          '</div>' +
+          '<div class="rd-set-row">' +
             '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得慢的频率</span><span class="rd-set-row-v" id="rd-set-slow-val">30%</span></div>' +
             '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
             '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
@@ -742,6 +747,14 @@
     if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
     const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
     if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
+    const replyRange = settingsPage.querySelector('#rd-set-reply-range');
+    if (replyRange) replyRange.addEventListener('input', function () {
+      const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+      try { store.set('reading-reply-chance', v); } catch (e) {}
+      const val = document.getElementById('rd-set-reply-val');
+      if (val) val.textContent = v + '%';
+      this.style.setProperty('--rd-pct', v + '%');
+    });
     const slowRange = settingsPage.querySelector('#rd-set-slow-range');
     if (slowRange) slowRange.addEventListener('input', function () {
       const v = Math.max(0, Math.min(100, Number(this.value) || 0));
@@ -2429,11 +2442,22 @@
   //      独立推进时他读得比我快，纸条会先落在还没读到的章节里，由 rdBuddyAnnoVisible 挡住，
   //      等我翻到那一页才浮现。
   //   2. 回应不是即时的。我写下的批注进 book.replyQueue，下次打开且他的位置越过那句时才掷一次骰子，
-  //      没中就一直安静留着；他未开始、今天不读、停在这等你时都不回应。
+  //      没中就一直安静留着；只有他未开始、今天不读时才完全不回应。
   const RD_HIS_PER_CH = 3;      // 每章最多 3 条
   const RD_HIS_GAP = 8;         // 同章两条之间至少隔 8 句
   const RD_HIS_CHANCE = 0.45;   // 翻到一页时他留下新批注的概率
-  const RD_REPLY_CHANCE = 0.62; // 越过那句之后真正回应的概率（允许一部分永远安静）
+  const RD_REPLY_CHANCE_DEF = 62; // 「他回应批注」的默认概率（%），设置页可调
+  function rdReplyChancePct() {
+    let v = RD_REPLY_CHANCE_DEF;
+    try {
+      const raw = store.get('reading-reply-chance');
+      if (raw != null && raw !== '') {
+        const n = Number(raw);
+        if (!isNaN(n)) v = n;
+      }
+    } catch (e) {}
+    return Math.max(0, Math.min(100, v));
+  }
   const RD_REPLY_MAX = 2;       // 每次打开最多回应 2 条
   // 封存一句：他先读到、折起来，等我读到才展开。只在他独立推进时生成。
   const RD_SEAL_PER_BOOK = 3;   // 每本同时最多 3 条
@@ -2895,7 +2919,11 @@
     rdBuddyAdvance(book);
     const bd = rdBuddyGet(book);
     if (!bd.started) return;
-    if (rdBuddyState(book) !== 'read') return; // 未开始 / 停在这等你 / 今天不读 / 读完了 都不回应
+    // 不再要求「必须同页共读」：他领先等我、落在后面、甚至已经读完，
+    // 只要进度越过了那句，看到我留下的批注都可能想回一句。
+    // 今天不读、还没开始才真的不回应；位置闸门在下面的 hisFlat 判断里。
+    const stNow = rdBuddyState(book);
+    if (stNow === 'none' || stNow === 'skip') return;
     const queue = Array.isArray(book.replyQueue) ? book.replyQueue.slice() : [];
     if (!queue.length) return;
     queue.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
@@ -2920,7 +2948,7 @@
       if (!mine) continue; // 我那条已经删了，队列作废
       if (arr.some(function (x) { return x && x.replyTo === q.id; })) continue; // 已经回过
       // 每句只掷一次：没中就一直安静留着，不再整轮重试
-      if (!force && Math.random() > RD_REPLY_CHANCE * rdDcfRatio()) continue;
+      if (!force && Math.random() > (rdReplyChancePct() / 100) * rdDcfRatio()) continue;
       const repTxt = rdHisReplyText(book);
       if (!repTxt) continue; // 回应字卡被逐张关光/整组停用/锁定＝这一句就安静留着
       const item = {
@@ -3826,6 +3854,15 @@
     if (fsVal) fsVal.textContent = p.fs + 'px';
     const lhVal = document.getElementById('rd-set-lh-val');
     if (lhVal) lhVal.textContent = p.lh.toFixed(1);
+    // 他回应批注的概率
+    const replyRange = document.getElementById('rd-set-reply-range');
+    const replyPct = rdReplyChancePct();
+    if (replyRange) {
+      replyRange.value = String(replyPct);
+      replyRange.style.setProperty('--rd-pct', replyPct + '%');
+    }
+    const replyVal = document.getElementById('rd-set-reply-val');
+    if (replyVal) replyVal.textContent = replyPct + '%';
     // 他读得慢 / 快的频率
     const slowRange = document.getElementById('rd-set-slow-range');
     const slowPct = rdSlowChance();
