@@ -10141,7 +10141,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-empty-ico{width:46px;height:46px;opacity:.3;margin-bottom:14px}
 .rd-empty-t{font-size:14px;font-weight:600;color:var(--w-mut,rgba(26,23,18,.52))}
 .rd-empty-s{margin-top:7px;font-size:11.5px;line-height:1.7}
-.rd-body{flex:1;overflow:hidden;padding:18px 18px 0;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-body{flex:1;overflow:hidden;padding:18px 18px 10px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
 [data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
 .rd-reader[data-rd-bg="eye"]{--bg:#ffffff;--line:#e6e6e6;--ink:#111111;--muted:#8a8a8a;color:#111111;background:#fbf8f1}
 .rd-reader[data-rd-bg="night"]{--bg:#1e1e1e;--line:#333333;--ink:#f0f0f0;--muted:#aaaaaa;color:#f0f0f0;background:#1b1916}
@@ -10171,7 +10171,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .phone.rd-chrome-eye .statusbar{background:rgba(255,255,255,.92);color:#111111}
 .phone.rd-chrome-night .statusbar{background:rgba(30,30,30,.92);color:#f0f0f0}
 .phone.rd-chrome-night .statusbar .icons{filter:invert(1)}
-.rd-foot{padding:8px 18px 14px}
+.rd-foot{padding:8px 18px calc(14px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)))}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
 .rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);opacity:.8;border-radius:1px;box-shadow:0 0 6px rgba(244,182,194,.25)}
 .rd-buddy-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:2;transition:left .18s ease}
@@ -10888,7 +10888,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792983839764" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792990882092" data-version="v8.89">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -12457,7 +12457,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.1</div>
+          <div class="val" id="about-ver-val">v8.89</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -12548,7 +12548,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.1</div>
+      <div class="ver">Mochi 字卡传讯 v8.89</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -12947,7 +12947,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.1</span>
+              <span class="lic-ver">v8.89</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -22685,4 +22685,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvooa904 -->
+<!-- __MOCHI_EOF__ mvosh6wc -->
