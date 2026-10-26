@@ -3368,11 +3368,18 @@
     }
     let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
     const nowTs = Date.now();
+    // 哪些批注已经有回复：有回复的那条不再给「回应」入口，避免一句话被反复接
+    const repliedIds = {};
+    for (let i = 0; i < items.length; i++) {
+      if (items[i] && items[i].replyTo) repliedIds[items[i].replyTo] = 1;
+    }
     html += show.map(function (a) {
       const mine = a.by === 'me';
       // 错过七天：旧句被划掉，正文换成他现在写的那句
       const old = !mine && a.crossedAt && a.oldText ? a.oldText : '';
       const oldDays = old ? Math.max(RD_MISS_DAYS, Math.floor((nowTs - (a.oldAt || a.at || nowTs)) / 86400000)) : 0;
+      // 他的原始批注、且还没被我回过 → 给一个「回应」
+      const canReply = !mine && !a.replyTo && !repliedIds[a.id];
       return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
         (a.replyTo ? ' rd-pop-reply' : '') + '"' +
         ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
@@ -3381,6 +3388,7 @@
             '<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
           : '') +
         '<div class="rd-pop-text"><span class="rd-pop-who">' + (mine ? '我' : '他') + '</span>' + rdEsc(a.text || '') + '</div>' +
+        (canReply ? '<button class="rd-pop-reply-btn" data-reply="' + rdEsc(a.id || '') + '" type="button">回应这句</button>' : '') +
         (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
         '</div>';
     }).join('');
@@ -3390,6 +3398,51 @@
     }
     list.innerHTML = html;
     pop.hidden = false;
+  }
+
+  // ===== 回应他的批注：生成一条带 replyTo 的我的批注，并进待回应队列 =====
+  // 他最多再回一轮（他的回应不入队），所以不会无限往返
+  function rdReplyToHis(id) {
+    const b = rdBook;
+    if (!b || !id) return;
+    const arr0 = (b.anno || []).slice();
+    const src = arr0.filter(function (a) { return a && a.id === id; })[0];
+    if (!src || src.by === 'me') return;
+    if (arr0.some(function (a) { return a && a.replyTo === id; })) { rdToast('已经回应过这句了'); return; }
+    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+    window.openModal('回应他', '', async function (v) {
+      const t = String(v == null ? '' : v).trim();
+      if (!t) return;
+      const item = {
+        id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        by: 'me',
+        s: src.s,
+        e: src.e,
+        quote: src.quote,
+        text: t.slice(0, 200),
+        at: Date.now(),
+        rev: 1,
+        deviceId: rdDeviceId(),
+        replyTo: id
+      };
+      const next = (b.anno || []).slice();
+      next.push(item);
+      try { await putAnnos(b.id, b.ch, next); }
+      catch (e) { rdToast((e && e.message) || '回应没写上：磁盘写入没有完成，请重试'); return; }
+      b.anno = next;
+      const fresh = readIndex();
+      const freshBook = rdFindBook(b.id, fresh);
+      if (freshBook) {
+        freshBook.annoCount = (Number(freshBook.annoCount) || 0) + 1;
+        // 我的回应也进队列：他读到这句时可能再回一句
+        if (!Array.isArray(freshBook.replyQueue)) freshBook.replyQueue = [];
+        freshBook.replyQueue.push({ id: item.id, ch: b.ch, s: item.s, e: item.e, quote: item.quote, at: item.at });
+        if (freshBook.replyQueue.length > 200) freshBook.replyQueue = freshBook.replyQueue.slice(-200);
+        saveIndex(fresh);
+      }
+      rdOpenPop(rdPopPos, true);
+      rdToast('已回应');
+    }, { textarea: true, textareaRows: 3, textareaPlaceholder: '说一句…' });
   }
 
   // ===== 自己的批注：长按修改 / 删除（他的批注没有操作入口） =====
@@ -5208,6 +5261,9 @@
     // 浮层里那条被划掉的旧句：点一下他有概率接一句
     const oldEl = el.closest('#rd-pop-list .rd-pop-old');
     if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }
+    // 回应他留在某一句上的批注
+    const repBtn = el.closest('#rd-pop-list .rd-pop-reply-btn');
+    if (repBtn) { e.preventDefault(); rdReplyToHis(repBtn.getAttribute('data-reply')); return; }
     // 浮层里「还有 N 条」展开
     if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
     // 选句浮条

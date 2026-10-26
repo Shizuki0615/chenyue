@@ -357,6 +357,9 @@
 .rd-pop-mine .rd-pop-who::before{content:'●';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-his .rd-pop-who::before{content:'○';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-reply{margin-left:20px}
+/* 回应他这句：胶囊小按钮，只出现在他的原始批注下面 */
+.rd-pop-reply-btn{margin-top:8px;border:1px solid rgba(244,182,194,.55);background:transparent;color:#c26e69;font-family:inherit;font-size:11px;line-height:1;padding:5px 11px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-pop-reply-btn:active{opacity:.6}
 .rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
 
 /* 自己批注的长按菜单（底部半框） */

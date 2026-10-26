@@ -10408,6 +10408,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-pop-mine .rd-pop-who::before{content:'●';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-his .rd-pop-who::before{content:'○';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-reply{margin-left:20px}
+.rd-pop-reply-btn{margin-top:8px;border:1px solid rgba(244,182,194,.55);background:transparent;color:#c26e69;font-family:inherit;font-size:11px;line-height:1;padding:5px 11px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-pop-reply-btn:active{opacity:.6}
 .rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
 .rd-anno-ops{position:absolute;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;padding:6px 8px 14px;border-radius:18px 18px 0 0;background:var(--bg,#fff);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
 .rd-lost{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
@@ -10890,7 +10892,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1792994426443" data-version="v8.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1792995028784" data-version="v8.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -22687,4 +22689,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvoul5qj -->
+<!-- __MOCHI_EOF__ mvouy2i8 -->
