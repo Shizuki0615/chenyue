@@ -1503,6 +1503,25 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 #page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart,
 #page-chat .msg-ask.msg-ask-out .msg-ask-card.answered > .msg-fav-heart,
 #page-chat .msg-ask.msg-ask-out .msg-choose-card.answered > .msg-fav-heart { display:inline-flex; }
+/* 我这边已答卡右下角小箭头：只负责展开/收起完整选项，点整卡仍无操作 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow {
+  position:relative; padding-bottom:34px;
+}
+#page-chat .msg-ask-view-arrow {
+  position:absolute; right:8px; bottom:6px;
+  width:26px; height:26px; padding:0; border:none; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; color:inherit; opacity:.55;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+#page-chat .msg-ask-view-arrow:active { opacity:.85; background:rgba(127,127,127,.12); }
+#page-chat .msg-ask-view-arrow svg { width:14px; height:14px; transition:transform .15s ease; }
+#page-chat .msg-ask-view-arrow.is-open svg { transform:rotate(90deg); }
+/* 箭头展开的选项列表：选中高亮、其余淡化，右侧保留 ~TA回应 */
+.ask-opt-view { cursor:default; }
+.ask-opt-view.on { border-color:currentColor; background:rgba(127,127,127,.14); font-weight:600; }
+.ask-opt-view.off { opacity:.55; }
+.ask-opt-view .ask-opt-reply { margin-left:auto; flex-shrink:0; font-size:11px; opacity:.6; max-width:45%; text-align:right; }
 /* 时间轴五档：问卡行级定位与普通 .msg 对齐（.msg-side 基础样式全局已生效，这里只补行级定位） */
 body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in,
 body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out,
