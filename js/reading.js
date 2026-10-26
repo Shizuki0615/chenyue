@@ -11,6 +11,7 @@ const RD_LAMP_KEY = 'reading-lamp';
 const RD_BOOKMARK_KEY = 'reading-bookmark';
 const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
 const RD_SLOW_CHANCE_KEY = 'reading-slow-chance';
+const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
 const RD_HABIT_KEY = 'reading-habits';
 const RD_HABIT_DAYS = 45;
 const RD_GROUP_KEY = 'reading-groups';
@@ -662,6 +663,11 @@ settingsPage.innerHTML =
 '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
 '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
 '</div>' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">他读得快的频率</span><span class="rd-set-row-v" id="rd-set-fast-val">10%</span></div>' +
+'<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-fast-range" min="0" max="100" step="5" aria-label="他读得快的频率"><span>总是</span></div>' +
+'<div class="rd-set-row-desc">调高后他更容易读得比你快。两项相加超过 100% 时，多出来的部分会把「正常」和「快」挤掉。</div>' +
+'</div>' +
 '</div>' +
 '</div>';
 const phone = document.querySelector('.phone');
@@ -684,7 +690,15 @@ const v = Math.max(0, Math.min(100, Number(this.value) || 0));
 try { store.set(RD_SLOW_CHANCE_KEY, v); } catch (e) {}
 const val = document.getElementById('rd-set-slow-val');
 if (val) val.textContent = v + '%';
-this.style.setProperty('--rd-pct', (v / 100 * 100) + '%');
+this.style.setProperty('--rd-pct', v + '%');
+});
+const fastRange = settingsPage.querySelector('#rd-set-fast-range');
+if (fastRange) fastRange.addEventListener('input', function () {
+const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+try { store.set(RD_FAST_CHANCE_KEY, v); } catch (e) {}
+const val = document.getElementById('rd-set-fast-val');
+if (val) val.textContent = v + '%';
+this.style.setProperty('--rd-pct', v + '%');
 });
 rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'), 'Hero 封面卡');
 rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'), '共读手账底色');
@@ -1844,10 +1858,10 @@ if (typeof bd.off !== 'number') bd.off = 0;
 if (typeof bd.carry !== 'number') bd.carry = 0;
 return bd;
 }
-function rdSlowChance() {
-let v = 30;
+function rdChanceGet(key, def) {
+let v = def;
 try {
-const raw = store.get(RD_SLOW_CHANCE_KEY);
+const raw = store.get(key);
 if (raw != null && raw !== '') {
 const n = Number(raw);
 if (!isNaN(n)) v = n;
@@ -1855,6 +1869,8 @@ if (!isNaN(n)) v = n;
 } catch (e) {}
 return Math.max(0, Math.min(100, v));
 }
+function rdSlowChance() { return rdChanceGet(RD_SLOW_CHANCE_KEY, 30); }
+function rdFastChance() { return rdChanceGet(RD_FAST_CHANCE_KEY, 10); }
 function rdBuddySpeedToday(book) {
 const seed = String((book && book.id) || '') + '|speed|' + rdTodayKey(Date.now());
 let h = 0;
@@ -1862,7 +1878,7 @@ for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
 const n = Math.abs(h) % 100;
 const slowPct = rdSlowChance();
 if (n < slowPct) return 0.55;
-if (n < slowPct + 10 && slowPct + 10 <= 100) return 1.35;
+if (n < slowPct + rdFastChance()) return 1.35;
 return 1;
 }
 function rdChasePause(book, his) {
@@ -3418,6 +3434,14 @@ slowRange.style.setProperty('--rd-pct', slowPct + '%');
 }
 const slowVal = document.getElementById('rd-set-slow-val');
 if (slowVal) slowVal.textContent = slowPct + '%';
+const fastRange = document.getElementById('rd-set-fast-range');
+const fastPct = rdFastChance();
+if (fastRange) {
+fastRange.value = String(fastPct);
+fastRange.style.setProperty('--rd-pct', fastPct + '%');
+}
+const fastVal = document.getElementById('rd-set-fast-val');
+if (fastVal) fastVal.textContent = fastPct + '%';
 const bg = rdReadBg();
 document.querySelectorAll('[data-rd-bgopt]').forEach(function (btn) {
 btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);

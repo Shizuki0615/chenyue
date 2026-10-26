@@ -17,8 +17,9 @@
   const RD_LAMP_KEY = 'reading-lamp';
   const RD_BOOKMARK_KEY = 'reading-bookmark';
   const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
-  // 他「读得慢」的日子占多少比例（0-100，默认 30）
+  // 他「读得慢」和「读得快」的日子各占多少比例（0-100，默认 30 / 10）
   const RD_SLOW_CHANCE_KEY = 'reading-slow-chance';
+  const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
@@ -720,6 +721,11 @@
             '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
             '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
           '</div>' +
+          '<div class="rd-set-row">' +
+            '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得快的频率</span><span class="rd-set-row-v" id="rd-set-fast-val">10%</span></div>' +
+            '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-fast-range" min="0" max="100" step="5" aria-label="他读得快的频率"><span>总是</span></div>' +
+            '<div class="rd-set-row-desc">调高后他更容易读得比你快。两项相加超过 100% 时，多出来的部分会把「正常」和「快」挤掉。</div>' +
+          '</div>' +
         '</div>' +
       '</div>';
     const phone = document.querySelector('.phone');
@@ -742,7 +748,15 @@
       try { store.set(RD_SLOW_CHANCE_KEY, v); } catch (e) {}
       const val = document.getElementById('rd-set-slow-val');
       if (val) val.textContent = v + '%';
-      this.style.setProperty('--rd-pct', (v / 100 * 100) + '%');
+      this.style.setProperty('--rd-pct', v + '%');
+    });
+    const fastRange = settingsPage.querySelector('#rd-set-fast-range');
+    if (fastRange) fastRange.addEventListener('input', function () {
+      const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+      try { store.set(RD_FAST_CHANCE_KEY, v); } catch (e) {}
+      const val = document.getElementById('rd-set-fast-val');
+      if (val) val.textContent = v + '%';
+      this.style.setProperty('--rd-pct', v + '%');
     });
 
     // Hero / 手账 预设色块
@@ -2009,11 +2023,11 @@
     if (typeof bd.carry !== 'number') bd.carry = 0;
     return bd;
   }
-  // 他读得慢的概率（0-100），设置页可调；默认 30 = 三成日子慢半拍
-  function rdSlowChance() {
-    let v = 30;
+  // 他读得慢 / 读得快的概率（0-100），设置页可调；默认 30 / 10
+  function rdChanceGet(key, def) {
+    let v = def;
     try {
-      const raw = store.get(RD_SLOW_CHANCE_KEY);
+      const raw = store.get(key);
       if (raw != null && raw !== '') {
         const n = Number(raw);
         if (!isNaN(n)) v = n;
@@ -2021,8 +2035,10 @@
     } catch (e) {}
     return Math.max(0, Math.min(100, v));
   }
+  function rdSlowChance() { return rdChanceGet(RD_SLOW_CHANCE_KEY, 30); }
+  function rdFastChance() { return rdChanceGet(RD_FAST_CHANCE_KEY, 10); }
   // 他今天的阅读速度：正常 / 慢半拍 / 快一点，按书 + 日期散列，同一天内稳定。
-  // 慢的概率由设置页控制；快的一成固定，让他的状态有起伏，不是机器。
+  // 两档概率都由设置页控制；慢占 [0, slow)，快占 [slow, slow+fast)，其余正常。
   function rdBuddySpeedToday(book) {
     const seed = String((book && book.id) || '') + '|speed|' + rdTodayKey(Date.now());
     let h = 0;
@@ -2030,7 +2046,7 @@
     const n = Math.abs(h) % 100;
     const slowPct = rdSlowChance();
     if (n < slowPct) return 0.55;
-    if (n < slowPct + 10 && slowPct + 10 <= 100) return 1.35;
+    if (n < slowPct + rdFastChance()) return 1.35;
     return 1;
   }
   // 他落后时的停手间隔：30 秒到 3 分钟，按书 + 位置散列，同一天内稳定
@@ -3738,7 +3754,7 @@
     if (fsVal) fsVal.textContent = p.fs + 'px';
     const lhVal = document.getElementById('rd-set-lh-val');
     if (lhVal) lhVal.textContent = p.lh.toFixed(1);
-    // 他读得慢的频率
+    // 他读得慢 / 快的频率
     const slowRange = document.getElementById('rd-set-slow-range');
     const slowPct = rdSlowChance();
     if (slowRange) {
@@ -3747,6 +3763,14 @@
     }
     const slowVal = document.getElementById('rd-set-slow-val');
     if (slowVal) slowVal.textContent = slowPct + '%';
+    const fastRange = document.getElementById('rd-set-fast-range');
+    const fastPct = rdFastChance();
+    if (fastRange) {
+      fastRange.value = String(fastPct);
+      fastRange.style.setProperty('--rd-pct', fastPct + '%');
+    }
+    const fastVal = document.getElementById('rd-set-fast-val');
+    if (fastVal) fastVal.textContent = fastPct + '%';
     const bg = rdReadBg();
     document.querySelectorAll('[data-rd-bgopt]').forEach(function (btn) {
       btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);
