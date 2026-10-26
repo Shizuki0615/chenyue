@@ -1830,6 +1830,15 @@ if (typeof bd.off !== 'number') bd.off = 0;
 if (typeof bd.carry !== 'number') bd.carry = 0;
 return bd;
 }
+function rdBuddySpeedToday(book) {
+const seed = String((book && book.id) || '') + '|speed|' + rdTodayKey(Date.now());
+let h = 0;
+for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+const n = Math.abs(h) % 10;
+if (n < 3) return 0.55;
+if (n < 4) return 1.35;
+return 1;
+}
 function rdChasePause(book, his) {
 const seed = String((book && book.id) || '') + '|' + Math.floor((Number(his) || 0) / RD_CHARS_PER_MIN);
 let h = 0;
@@ -1853,13 +1862,14 @@ if (!total) return bd;
 const prog = book.progress || {};
 const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
 let his = rdFlatPos(book, bd.ch, bd.off);
+const speed = rdBuddySpeedToday(book);
 if (bd.mode === 'solo') {
 const prevAt = bd.updatedAt || now;
 const dt = Math.max(0, Math.min(now - prevAt, RD_CATCHUP_MAX_MS));
 const ms = (bd.carry || 0) + dt;
 const units = Math.floor(ms / 60000);
 bd.carry = ms - units * 60000;
-const nextHis = Math.min(total, his + units * RD_CHARS_PER_MIN);
+const nextHis = Math.min(total, his + Math.round(units * RD_CHARS_PER_MIN * speed));
 if (units > 0) {
 const words = Math.max(0, nextHis - his);
 const pages = words > 0 ? Math.max(1, Math.round(words / 500)) : 0;
@@ -1871,13 +1881,13 @@ bd.waiting = false;
 const gap = mine - his;
 if (gap > 0) {
 if (gap <= RD_BUDDY_STICK) {
-his = mine;
+his = speed < 1 ? Math.max(his, mine - Math.round(RD_BUDDY_SLOW_GAP)) : mine;
 } else {
 const lastAt = Number(bd.chaseAt) || 0;
 const pauseMs = Number(bd.chasePauseMs) || 0;
 if (now - lastAt >= pauseMs) {
 const dt = Math.max(1, Math.min(Number(sec) || 60, 120));
-his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN * speed / 60)));
 bd.chaseAt = now;
 bd.chasePauseMs = rdChasePause(book, his);
 }
@@ -1893,6 +1903,7 @@ book.status = his >= total ? 'done' : 'co';
 return bd;
 }
 const RD_BUDDY_STICK = 480;
+const RD_BUDDY_SLOW_GAP = 240;
 function rdBuddyState(book) {
 const bd = rdBuddyGet(book);
 if (!bd) return 'none';
@@ -1925,8 +1936,14 @@ far: ['他还在很后面，慢慢读着。', '他落后好几章了，没追上
 done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
 skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
 };
+const RD_BUDDY_SLOW_LINES = [
+'他今天读得慢，还在你后面跟着。',
+'他今天翻得慢，一页要停一会儿。',
+'他今天读得有点慢，你别等太久。'
+];
 function rdBuddyLine(book, state) {
-const pool = RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read;
+const slow = state === 'read' && rdBuddySpeedToday(book) < 1;
+const pool = slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read);
 const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
 let h = 0;
 for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;

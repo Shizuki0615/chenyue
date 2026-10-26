@@ -1994,6 +1994,17 @@
     if (typeof bd.carry !== 'number') bd.carry = 0;
     return bd;
   }
+  // 他今天的阅读速度：正常 / 慢半拍 / 快一点，按书 + 日期散列，同一天内稳定。
+  // 三成日子慢（0.55 倍），一成快（1.35 倍），其余正常——让他的状态有起伏，不是机器。
+  function rdBuddySpeedToday(book) {
+    const seed = String((book && book.id) || '') + '|speed|' + rdTodayKey(Date.now());
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    const n = Math.abs(h) % 10;
+    if (n < 3) return 0.55;
+    if (n < 4) return 1.35;
+    return 1;
+  }
   // 他落后时的停手间隔：30 秒到 3 分钟，按书 + 位置散列，同一天内稳定
   function rdChasePause(book, his) {
     const seed = String((book && book.id) || '') + '|' + Math.floor((Number(his) || 0) / RD_CHARS_PER_MIN);
@@ -2022,6 +2033,7 @@
     const prog = book.progress || {};
     const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
     let his = rdFlatPos(book, bd.ch, bd.off);
+    const speed = rdBuddySpeedToday(book);
     if (bd.mode === 'solo') {
       // 按离开时长推进，单次最多补 30 分钟，避免隔夜一口气读完整本
       const prevAt = bd.updatedAt || now;
@@ -2029,7 +2041,7 @@
       const ms = (bd.carry || 0) + dt;
       const units = Math.floor(ms / 60000);
       bd.carry = ms - units * 60000;
-      const nextHis = Math.min(total, his + units * RD_CHARS_PER_MIN);
+      const nextHis = Math.min(total, his + Math.round(units * RD_CHARS_PER_MIN * speed));
       // 他独立读掉的这一段也记进习惯（只记时长与估算页数，不记内容）
       if (units > 0) {
         const words = Math.max(0, nextHis - his);
@@ -2044,14 +2056,15 @@
       const gap = mine - his;
       if (gap > 0) {
         if (gap <= RD_BUDDY_STICK) {
-          his = mine;
+          // 慢的日子他不贴上来，停在我后面一小段距离；正常日子直接同页贴合
+          his = speed < 1 ? Math.max(his, mine - Math.round(RD_BUDDY_SLOW_GAP)) : mine;
         } else {
           const lastAt = Number(bd.chaseAt) || 0;
           const pauseMs = Number(bd.chasePauseMs) || 0;
           if (now - lastAt >= pauseMs) {
             // 单次最多按两分钟的阅读量算，避免一次会话结束就一口气追平
             const dt = Math.max(1, Math.min(Number(sec) || 60, 120));
-            his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN / 60)));
+            his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN * speed / 60)));
             bd.chaseAt = now;
             bd.chasePauseMs = rdChasePause(book, his);
           }
@@ -2068,6 +2081,8 @@
   }
   // 他落后超过这个字数才算「在后面」；不到就是同页共读
   const RD_BUDDY_STICK = 480;
+  // 他读得慢的日子，跟在我后面大约这么多字，不贴上来
+  const RD_BUDDY_SLOW_GAP = 240;
   function rdBuddyState(book) {
     const bd = rdBuddyGet(book);
     if (!bd) return 'none';
@@ -2103,8 +2118,15 @@
     done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
     skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
   };
+  // 他今天读得慢时的替换句（只在「共读中」用它；前面等我、在后面的状态照旧）
+  const RD_BUDDY_SLOW_LINES = [
+    '他今天读得慢，还在你后面跟着。',
+    '他今天翻得慢，一页要停一会儿。',
+    '他今天读得有点慢，你别等太久。'
+  ];
   function rdBuddyLine(book, state) {
-    const pool = RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read;
+    const slow = state === 'read' && rdBuddySpeedToday(book) < 1;
+    const pool = slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read);
     const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
     let h = 0;
     for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
