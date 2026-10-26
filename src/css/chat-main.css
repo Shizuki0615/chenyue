@@ -1451,10 +1451,10 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
    问卡家族（ask / ask-card / ask-choose / ask-curious / ask-roast / invite）
    按发送方左/右排布，卡面读聊天气泡变量（底色/字色/圆角/内边距/字号），
    头像与时间复用 .msg-side/.msg-av/.msg-time。问卷长卡与红包卡仍保持居中、不受影响。 */
-/* 2026-10-26：所有问卡固定宽度——85% 屏宽减去头像位，答案/问题长短都不再改变气泡宽度 */
+/* 2026-10-26：所有问卡固定宽度——78% 屏宽减去头像位，答案/问题长短都不再改变气泡宽度 */
 #page-chat .msg-ask.msg-ask-in,
 #page-chat .msg-ask.msg-ask-out {
-  width:85%; max-width:85%;
+  width:78%; max-width:78%;
   display:flex; align-items:flex-start; gap:8px;
   padding:2px 0;
 }

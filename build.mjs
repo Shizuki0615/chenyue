@@ -6698,7 +6698,7 @@ const FIX_SENTINELS = [
   { name: '#1563d 已答/问题/选项统一左对齐（删＝卡片又回到居中排版）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-choose-card { text-align:left; }' },
   { name: '#1563e 模块作用域禁止引用 renderMsg 内的局部 T()（2026-10-26 实锤：长问题折叠里写 T(\'展开\') 抛 ReferenceError，选项绑定整段被打断，双方都答不了）', file: 'js/chat.js', needle: "btn.textContent = '展开';" },
   // ==== 2026-10-26 #1564 问卡固定宽度 + P1/P2 作答区 + 已答卡静态化 ====
-  { name: '#1564a 所有问卡固定行宽 85%（删＝气泡宽度又随答案/问题长短变化）', file: 'css/chat-main.css', needle: 'width:85%; max-width:85%;' },
+  { name: '#1564a 所有问卡固定行宽 78%（删＝气泡宽度又随答案/问题长短变化；2026-10-26 用户反馈偏宽后由 85% 收窄）', file: 'css/chat-main.css', needle: 'width:78%; max-width:78%;' },
   { name: '#1564b P1 快捷选项改成一行一个（删＝回到横向 chips，长选项挤成一排）', file: 'js/chat.js', needle: "list.className = 'ip-quick-list';" },
   { name: '#1564c 文字作答键同聊天发送键（38px 圆 + 纸飞机 + 发送键配色；删＝回到大块文字按钮）', file: 'css/chat-main.css', needle: '.msg-inplace .ip-send {' },
   { name: '#1564d 所有已答问卡去掉点开（删＝点卡又切收藏/展选项，退回两套交互）', file: 'js/chat.js', needle: "if (card.classList.contains('answered')) { e.stopPropagation(); return; }" },
