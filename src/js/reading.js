@@ -22,6 +22,8 @@
   const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
   // 回应提醒：进书时页脚提一句 + 书架分组卡小点（默认开）
   const RD_REPLY_TIP_KEY = 'reading-reply-tip';
+  // 主按钮颜色：只存预设名，真正生效的是写进页面根节点的 CSS 变量
+  const RD_PRIMARY_KEY = 'reading-primary';
   let rdReplyTipUntil = 0;
   function rdReplyTipOn() {
     try {
@@ -638,6 +640,7 @@
     (phone || document.body).appendChild(page);
     rdApplyPrefs(rdReadPrefs());
     rdApplyBg();
+    rdApplyPrimary();
     return page;
   }
 
@@ -659,97 +662,137 @@
         '<span class="ch-name">阅读设置</span>' +
       '</div>' +
       '<div class="rd-set-body">' +
-        '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
-          '<span class="rd-live-entry-t">' +
-            '<span class="rd-live-entry-name">边看边调</span>' +
-            '<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
-          '</span>' +
-          '<span class="rd-live-entry-go">点击开启 ›</span>' +
-        '</button>' +
-        '<div class="rd-set-preview" id="rd-set-preview">' +
-          '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
-          '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
+        '<div class="them-tabs rd-set-tabs" id="rd-set-tabs">' +
+          '<button class="them-tab active" data-tab="beautify" type="button">美化</button>' +
+          '<button class="them-tab" data-tab="function" type="button">功能</button>' +
+          '<button class="them-tab" data-tab="data" type="button">数据</button>' +
         '</div>' +
-        '<div class="gs-title">阅读显示</div>' +
-        '<div class="set-group glass">' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
-            '<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
+        '<div class="them-sec" data-sec="beautify">' +
+          '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
+            '<span class="rd-live-entry-t">' +
+              '<span class="rd-live-entry-name">边看边调</span>' +
+              '<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
+            '</span>' +
+            '<span class="rd-live-entry-go">点击开启 ›</span>' +
+          '</button>' +
+          '<div class="rd-set-preview" id="rd-set-preview">' +
+            '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
+            '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
           '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
-            '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
+          '<div class="gs-title">阅读显示</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
+              '<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
+              '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
+              '<div class="rd-bg-opts">' +
+                '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
+                '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
+                '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
-            '<div class="rd-bg-opts">' +
-              '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
-              '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
-              '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
+          '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+          '<div class="gs-title">书架首页</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
+              '<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
+              '<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
+              '<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
+              '<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-set-note">只换底色，不改卡片里的书签、标签、进度线和按钮。自定义只接受观感属性（background / color / border / box-shadow 等），布局类属性会被拦掉。</div>' +
+          '<div class="gs-title">按钮</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">主按钮颜色</span><span class="rd-set-row-v" id="rd-set-primary-val">墨黑</span></div>' +
+              '<div class="rd-primary-opts">' +
+                '<button class="rd-primary-opt" data-rd-primary="ink" type="button" aria-pressed="false"><i></i><span>墨黑</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="pink" type="button" aria-pressed="false"><i></i><span>阅读粉</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="blue" type="button" aria-pressed="false"><i></i><span>雾蓝</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="brown" type="button" aria-pressed="false"><i></i><span>暖棕</span></button>' +
+              '</div>' +
+              '<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；选完立即生效。</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
-        '<div class="gs-title">书架首页</div>' +
-        '<div class="set-group glass">' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
-            '<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
-            '<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
-          '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
-            '<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
-            '<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+        '<div class="them-sec" data-sec="function" hidden>' +
+          '<div class="gs-title">共读</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row rd-set-toggle">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他回应批注的概率</span><span class="rd-set-row-v" id="rd-set-reply-val">62%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-reply-range" min="0" max="100" step="5" aria-label="他回应批注的概率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">你写下批注后，他读到那一句时可能回一句。调低只是让他更常安静，位置越过的判断不受影响。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">回应提醒</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-reply-tip-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">打开后，他回了你的批注时，书架分组卡右上角有一个小点，进书时页脚提一句「他回你一句话」。不计数、不推送、不弹窗。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得慢的频率</span><span class="rd-set-row-v" id="rd-set-slow-val">30%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得快的频率</span><span class="rd-set-row-v" id="rd-set-fast-val">10%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-fast-range" min="0" max="100" step="5" aria-label="他读得快的频率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">调高后他更容易读得比你快。两项相加超过 100% 时，多出来的部分会把「正常」和「快」挤掉。</div>' +
+            '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="rd-set-note">只换底色，不改卡片里的书签、标签、进度线和按钮。自定义只接受观感属性（background / color / border / box-shadow 等），布局类属性会被拦掉。</div>' +
-        '<div class="gs-title">共读</div>' +
-        '<div class="set-group glass">' +
-          '<div class="rd-set-row rd-set-toggle">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
-              '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
-            '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
+        '<div class="them-sec" data-sec="data" hidden>' +
+          '<div class="gs-title">书架概览</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-stat"><span>书架</span><b id="rd-set-data-books">0 本</b></div>' +
+            '<div class="rd-set-stat"><span>正文</span><b id="rd-set-data-words">约 0.0 万字</b></div>' +
+            '<div class="rd-set-stat"><span>占用</span><b id="rd-set-data-size">约 0.0 MB</b></div>' +
+            '<div class="rd-set-stat"><span>书签</span><b id="rd-set-data-marks">0 条</b></div>' +
+            '<div class="rd-set-stat"><span>批注</span><b id="rd-set-data-annos">0 条</b></div>' +
           '</div>' +
-          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
-              '<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
-            '<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
+          '<div class="gs-title">存储与备份</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row"><div class="rd-set-row-desc">正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。</div></div>' +
+            '<div class="rd-set-row"><div class="rd-set-row-desc">换机恢复后正文需要重新导入，批注会按原文重新定位。</div></div>' +
           '</div>' +
-          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
-              '<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
-            '<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
-          '</div>' +
-          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
-              '<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
-            '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
-          '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">他回应批注的概率</span><span class="rd-set-row-v" id="rd-set-reply-val">62%</span></div>' +
-            '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-reply-range" min="0" max="100" step="5" aria-label="他回应批注的概率"><span>总是</span></div>' +
-            '<div class="rd-set-row-desc">你写下批注后，他读到那一句时可能回一句。调低只是让他更常安静，位置越过的判断不受影响。</div>' +
-          '</div>' +
-          '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">回应提醒</span>' +
-              '<label class="toggle"><input type="checkbox" id="rd-reply-tip-toggle"><span class="tk"></span></label></div>' +
-            '<div class="rd-set-row-desc">打开后，他回了你的批注时，书架分组卡右上角有一个小点，进书时页脚提一句「他回你一句话」。不计数、不推送、不弹窗。</div>' +
-          '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得慢的频率</span><span class="rd-set-row-v" id="rd-set-slow-val">30%</span></div>' +
-            '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
-            '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
-          '</div>' +
-          '<div class="rd-set-row">' +
-            '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得快的频率</span><span class="rd-set-row-v" id="rd-set-fast-val">10%</span></div>' +
-            '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-fast-range" min="0" max="100" step="5" aria-label="他读得快的频率"><span>总是</span></div>' +
-            '<div class="rd-set-row-desc">调高后他更容易读得比你快。两项相加超过 100% 时，多出来的部分会把「正常」和「快」挤掉。</div>' +
-          '</div>' +
+          '<div class="rd-set-note">这一页只做只读概览，数字在每次打开设置页时刷新。</div>' +
         '</div>' +
       '</div>';
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(settingsPage);
+    initReadingSettingsTabs();
+    rdApplyPrimary();
     const fsRange = settingsPage.querySelector('#rd-set-fs-range');
     if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
     const lhRange = settingsPage.querySelector('#rd-set-lh-range');
@@ -802,6 +845,58 @@
 
     rdRenderPrefsActive();
     return settingsPage;
+  }
+  // 设置页页签：只切 hidden，不复建控件，切页不丢字号/行距/开关状态
+  function initReadingSettingsTabs() {
+    if (!settingsPage) return;
+    const tabsEl = settingsPage.querySelector('#rd-set-tabs');
+    const tabs = tabsEl ? tabsEl.querySelectorAll('.them-tab') : [];
+    const secs = settingsPage.querySelectorAll('.them-sec');
+    if (!tabs.length || !secs.length) return;
+    function show(name) {
+      secs.forEach(function (s) { s.hidden = (s.getAttribute('data-sec') !== name); });
+      tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
+      if (name === 'data') rdRenderDataOverview();
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        show(t.getAttribute('data-tab'));
+        const body = settingsPage.querySelector('.rd-set-body');
+        if (body) body.scrollTop = 0;
+      });
+    });
+    show('beautify');
+  }
+  // 数据栏只读概览：全部从书架索引汇总，不为统计去读正文
+  function rdDataOverview() {
+    const list = readIndex();
+    let words = 0, bytes = 0, marks = 0, annos = 0;
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i] || {};
+      let w = 0;
+      if (Array.isArray(b.chWords)) {
+        for (let j = 0; j < b.chWords.length; j++) w += Number(b.chWords[j]) || 0;
+      } else {
+        w = Number(b.words) || 0;
+      }
+      words += w;
+      bytes += Number(b.size) || (w * 3);
+      marks += Array.isArray(b.marks) ? b.marks.length : 0;
+      annos += Number(b.annoCount) || 0;
+    }
+    return { books: list.length, words: words, bytes: bytes, marks: marks, annos: annos };
+  }
+  function rdRenderDataOverview() {
+    const d = rdDataOverview();
+    function set(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+    set('rd-set-data-books', d.books + ' 本');
+    set('rd-set-data-words', '约 ' + (d.words / 10000).toFixed(1) + ' 万字');
+    set('rd-set-data-size', '约 ' + rdMB(d.bytes) + ' MB');
+    set('rd-set-data-marks', d.marks + ' 条');
+    set('rd-set-data-annos', d.annos + ' 条');
   }
   function rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl, scopeLabel) {
     const box = settingsPage && settingsPage.querySelector('#' + containerId);
@@ -888,6 +983,8 @@
     settingsPage.hidden = false;
     settingsPage.classList.add('full');
     rdRenderPrefsActive();
+    rdApplyPrimary();
+    rdRenderDataOverview();
     const body = settingsPage.querySelector('.rd-set-body');
     if (body) body.scrollTop = 0;
   }
@@ -3870,6 +3967,48 @@
     }
     rdRenderPrefsActive();
   }
+  // ===== 主按钮颜色：四档预设，写到书架页与设置页根节点的 CSS 变量 =====
+  const RD_PRIMARY_DEFAULT = 'ink';
+  const RD_PRIMARY_PRESETS = {
+    ink: { name: '墨黑', v: '#111111', ink: '#ffffff' },
+    pink: { name: '阅读粉', v: '#d97a8c', ink: '#ffffff' },
+    blue: { name: '雾蓝', v: '#7893ad', ink: '#ffffff' },
+    brown: { name: '暖棕', v: '#8b6a4b', ink: '#ffffff' }
+  };
+  function rdReadPrimary() {
+    try {
+      const v = String(store.get(RD_PRIMARY_KEY) || '');
+      return RD_PRIMARY_PRESETS[v] ? v : RD_PRIMARY_DEFAULT;
+    } catch (e) { return RD_PRIMARY_DEFAULT; }
+  }
+  function rdApplyPrimary() {
+    const key = rdReadPrimary();
+    const preset = RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT];
+    // 设置页是 .phone 的兄弟页面，不在 #page-reading 里，两个根节点都要写
+    ['page-reading', 'page-reading-settings'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.setProperty('--rd-primary', preset.v);
+      el.style.setProperty('--rd-primary-ink', preset.ink);
+    });
+    rdRenderPrimaryActive();
+  }
+  function rdRenderPrimaryActive() {
+    const key = rdReadPrimary();
+    document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
+      const on = btn.getAttribute('data-rd-primary') === key;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const val = document.getElementById('rd-set-primary-val');
+    if (val) val.textContent = (RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT]).name;
+  }
+  function rdSetPrimary(key) {
+    if (!RD_PRIMARY_PRESETS[key]) return;
+    try { store.set(RD_PRIMARY_KEY, key); }
+    catch (e) { rdToast('主按钮颜色没保存上'); }
+    rdApplyPrimary();
+  }
   function rdRenderPrefsActive() {
     const p = rdReadPrefs();
     const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
@@ -5472,6 +5611,8 @@
     if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
     const bgOpt = el.closest('[data-rd-bgopt]');
     if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
+    const primaryOpt = el.closest('[data-rd-primary]');
+    if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
     if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
