@@ -6665,6 +6665,9 @@ const FIX_SENTINELS = [
   // ==== 2026-10-25 #1558 阅读设置页改美化/功能/数据三栏 + 主按钮颜色 ====
   { name: '#1558a 主按钮颜色同时写到书架页与设置页（删＝设置页选色后导入/确认主按钮不变）', file: 'js/reading.js', needle: "['page-reading', 'page-reading-settings'].forEach(function (id) {" },
   { name: '#1558b 数据栏直接从书架索引汇总，不为统计读正文（删＝打开设置页要把全书正文读一遍）', file: 'js/reading.js', needle: 'bytes += Number(b.size) || (w * 3);' },
+  // ==== 2026-10-26 #1559 翻页动画：纸页翻动 / 轻滑淡入 / 关闭 + 设置页切换 ====
+  { name: '#1559a 翻页动画给正文拍一张纸盖上去再换底层（删＝翻页直接跳字，没有动效）', file: 'js/reading.js', needle: 'sheet.classList.add(\'rd-turn-next-\' + mode);' },
+  { name: '#1559b 翻页动画同章内才播，跨章不播（删＝换章时盖着一张纸等异步正文，观感更假）', file: 'js/reading.js', needle: 'rdAnimateTurn(1, function () { b.pageIdx++; rdRenderPage(); });' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

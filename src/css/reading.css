@@ -251,6 +251,26 @@
 .rd-bg-sw.night{background:linear-gradient(180deg,#201e1a,#141311)}
 [data-theme="dark"] .rd-bg-opt{background:#242424;border-color:#3a3a3a}
 [data-theme="dark"] .rd-bg-sw{border-color:rgba(255,255,255,.12)}
+/* 翻页动画选项小样：纸页＝一张斜翻的纸、轻滑＝两道错开的页、关闭＝一条横线 */
+.rd-turn-sw{display:block;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,.06);position:relative;overflow:hidden;background:linear-gradient(180deg,#fdfbf6,#f6efe0)}
+.rd-turn-sw.paper{background:linear-gradient(105deg,#fdfbf6 0 58%,#e9e0cf 58% 63%,#f7f0e3 63% 100%)}
+.rd-turn-sw.slide{background:linear-gradient(90deg,#fdfbf6 0 46%,#f4e9da 46% 54%,#fdfbf6 54% 100%)}
+.rd-turn-sw.off::after{content:'';position:absolute;left:6px;right:6px;top:50%;height:1px;background:rgba(0,0,0,.18)}
+[data-theme="dark"] .rd-turn-sw{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-turn-sw.paper{background:linear-gradient(105deg,#2a2723 0 58%,#1c1a17 58% 63%,#252220 63% 100%)}
+[data-theme="dark"] .rd-turn-sw.slide{background:linear-gradient(90deg,#2a2723 0 46%,#1c1a17 46% 54%,#2a2723 54% 100%)}
+
+/* ---------- 翻页动画：盖在正文上的那一张纸 ---------- */
+.rd-turn-sheet{overflow:hidden;pointer-events:none;backface-visibility:hidden;will-change:transform,opacity;transform-origin:left center}
+.rd-turn-sheet::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to left,rgba(0,0,0,.14),rgba(0,0,0,.03) 46%,transparent 72%)}
+@keyframes rdTurnNextPaper{from{transform:perspective(1600px) rotateY(0deg)}to{transform:perspective(1600px) rotateY(88deg)}}
+@keyframes rdTurnPrevPaper{from{transform:perspective(1600px) rotateY(88deg)}to{transform:perspective(1600px) rotateY(0deg)}}
+@keyframes rdTurnNextSlide{from{transform:translateX(0);opacity:1}to{transform:translateX(-22%);opacity:0}}
+@keyframes rdTurnPrevSlide{from{transform:translateX(10%);opacity:0}to{transform:translateX(0);opacity:1}}
+.rd-turn-next-paper{animation:rdTurnNextPaper .34s cubic-bezier(.33,.02,.55,1) forwards}
+.rd-turn-prev-paper{animation:rdTurnPrevPaper .34s cubic-bezier(.33,.02,.55,1) forwards}
+.rd-turn-next-slide{animation:rdTurnNextSlide .2s ease forwards}
+.rd-turn-prev-slide{animation:rdTurnPrevSlide .2s ease forwards}
 
 /* ---------- 边看边调抽屉 ---------- */
 #rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}

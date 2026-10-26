@@ -14,6 +14,14 @@ const RD_SLOW_CHANCE_KEY = 'reading-slow-chance';
 const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
 const RD_REPLY_TIP_KEY = 'reading-reply-tip';
 const RD_PRIMARY_KEY = 'reading-primary';
+const RD_TURN_KEY = 'reading-turn';
+const RD_TURN_LABEL = { paper: '纸页', slide: '轻滑', off: '关闭' };
+function rdTurnMode() {
+try {
+const v = String(store.get(RD_TURN_KEY) || '');
+return (v === 'paper' || v === 'slide' || v === 'off') ? v : 'paper';
+} catch (e) { return 'paper'; }
+}
 let rdReplyTipUntil = 0;
 function rdReplyTipOn() {
 try {
@@ -637,8 +645,16 @@ settingsPage.innerHTML =
 '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
 '</div>' +
 '</div>' +
+'<div class="rd-set-row">' +
+'<div class="rd-set-row-h"><span class="rd-set-row-t">翻页动画</span><span class="rd-set-row-v" id="rd-set-turn-val">纸页</span></div>' +
+'<div class="rd-bg-opts">' +
+'<button class="rd-bg-opt" data-rd-turn="paper" type="button"><i class="rd-turn-sw paper"></i><span>纸页</span></button>' +
+'<button class="rd-bg-opt" data-rd-turn="slide" type="button"><i class="rd-turn-sw slide"></i><span>轻滑</span></button>' +
+'<button class="rd-bg-opt" data-rd-turn="off" type="button"><i class="rd-turn-sw off"></i><span>关闭</span></button>' +
 '</div>' +
-'<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。</div>' +
+'</div>' +
+'</div>' +
+'<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。翻页动画只管同章内翻页，跨章仍是直接换页。</div>' +
 '<div class="gs-title">书架首页</div>' +
 '<div class="set-group glass">' +
 '<div class="rd-set-row">' +
@@ -3417,15 +3433,58 @@ body.classList.add(cls);
 body._rdBounce = 1;
 setTimeout(function () { body.classList.remove(cls); body._rdBounce = 0; }, 200);
 }
+let rdTurnBusyUntil = 0;
+function rdAnimateTurn(dir, mutate) {
+const body = document.getElementById('rd-body');
+const reader = document.getElementById('rd-reader');
+const mode = rdTurnMode();
+const now = Date.now();
+if (!body || !reader || mode === 'off' || now < rdTurnBusyUntil) { mutate(); return; }
+const dur = mode === 'paper' ? 340 : 200;
+rdTurnBusyUntil = now + dur - 60;
+const br = body.getBoundingClientRect();
+const rr = reader.getBoundingClientRect();
+const sheet = document.createElement('div');
+sheet.className = 'rd-body rd-turn-sheet';
+sheet.style.cssText = body.style.cssText;
+sheet.style.position = 'absolute';
+sheet.style.boxSizing = 'border-box';
+sheet.style.left = (br.left - rr.left) + 'px';
+sheet.style.top = (br.top - rr.top) + 'px';
+sheet.style.width = br.width + 'px';
+sheet.style.height = br.height + 'px';
+sheet.style.zIndex = '5';
+sheet.style.pointerEvents = 'none';
+if (dir > 0) {
+sheet.innerHTML = body.innerHTML;
+reader.appendChild(sheet);
+mutate();
+sheet.classList.add('rd-turn-next-' + mode);
+} else {
+mutate();
+sheet.innerHTML = body.innerHTML;
+reader.appendChild(sheet);
+sheet.classList.add('rd-turn-prev-' + mode);
+}
+function done() { if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }
+sheet.addEventListener('animationend', done);
+setTimeout(done, dur + 80);
+}
 function rdTurn(dir) {
 const b = rdBook;
 if (!b) return;
 if (dir > 0) {
-if (b.pageIdx < b.pages.length - 1) { b.pageIdx++; rdRenderPage(); return; }
+if (b.pageIdx < b.pages.length - 1) {
+rdAnimateTurn(1, function () { b.pageIdx++; rdRenderPage(); });
+return;
+}
 if (b.ch < b.toc.length - 1) { rdTogChapterNote(b); b.ch++; rdEnsureChapter('first'); return; }
 rdBounce(1);
 } else {
-if (b.pageIdx > 0) { b.pageIdx--; rdRenderPage(); return; }
+if (b.pageIdx > 0) {
+rdAnimateTurn(-1, function () { b.pageIdx--; rdRenderPage(); });
+return;
+}
 if (b.ch > 0) { b.ch--; rdEnsureChapter('last'); return; }
 rdBounce(-1);
 }
@@ -3527,6 +3586,20 @@ if (prev) prev.setAttribute('data-rd-bg', mode);
 const drawer = document.getElementById('rd-live-drawer');
 if (drawer) drawer.setAttribute('data-rd-bg', mode);
 rdApplyChrome();
+}
+function rdSetTurn(mode) {
+if (mode !== 'paper' && mode !== 'slide' && mode !== 'off') return;
+try { store.set(RD_TURN_KEY, mode); }
+catch (e) { rdToast('翻页动画没保存上'); }
+rdRenderTurnActive();
+}
+function rdRenderTurnActive() {
+const mode = rdTurnMode();
+document.querySelectorAll('[data-rd-turn]').forEach(function (btn) {
+btn.classList.toggle('on', btn.getAttribute('data-rd-turn') === mode);
+});
+const val = document.getElementById('rd-set-turn-val');
+if (val) val.textContent = RD_TURN_LABEL[mode];
 }
 function rdApplyChrome() {
 const phone = document.querySelector('.phone');
@@ -3728,6 +3801,7 @@ syncSub('rd-lamp-toggle', rdLampOn());
 syncSub('rd-bookmark-toggle', rdBookmarkOn());
 syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
 syncSub('rd-reply-tip-toggle', rdReplyTipOn());
+rdRenderTurnActive();
 rdApplyBg();
 }
 let rdTocBadgeBook = '';
@@ -5172,6 +5246,8 @@ const bgOpt = el.closest('[data-rd-bgopt]');
 if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
 const primaryOpt = el.closest('[data-rd-primary]');
 if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
+const turnOpt = el.closest('[data-rd-turn]');
+if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
 if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
