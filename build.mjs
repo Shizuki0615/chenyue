@@ -6662,6 +6662,9 @@ const FIX_SENTINELS = [
   { name: '#1557b 共读关闭时不显示他所在的章节（删＝关了共读目录里还挂着他的位置）', file: 'js/reading.js', needle: 'if (!rdCoopOn() || !book || !book.buddy || !rdBook) return -1;' },
   { name: '#1557c 批注气泡只对可视行取数（删＝打开目录就把全书每章批注都读一遍）', file: 'js/reading.js', needle: 'rdTocBadgeObs.observe(rows[i]);' },
   { name: '#1557d 书签按章 + 字符偏移保存（删＝换字号/换屏后页码书签落错位置）', file: 'js/reading.js', needle: 'marks.push({ ch: b.ch, off: p.s, q: rdMarkSnippet(b, p), at: Date.now() });' },
+  // ==== 2026-10-25 #1558 阅读设置页改美化/功能/数据三栏 + 主按钮颜色 ====
+  { name: '#1558a 主按钮颜色同时写到书架页与设置页（删＝设置页选色后导入/确认主按钮不变）', file: 'js/reading.js', needle: "['page-reading', 'page-reading-settings'].forEach(function (id) {" },
+  { name: '#1558b 数据栏直接从书架索引汇总，不为统计读正文（删＝打开设置页要把全书正文读一遍）', file: 'js/reading.js', needle: 'bytes += Number(b.size) || (w * 3);' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

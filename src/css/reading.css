@@ -216,6 +216,26 @@
 [data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
 [data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
 .rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
+/* 设置页三栏：页签贴边吸顶（沿用 .them-tabs 的 sticky 与底色），只补负边距和按钮字体 */
+.rd-set-tabs{margin:0 -16px}
+.rd-set-tabs .them-tab{border-top:0;border-left:0;border-right:0;font-family:inherit;-webkit-tap-highlight-color:transparent}
+/* 主按钮颜色：四个色块，选中描边跟随正文色，深浅主题都看得见 */
+.rd-primary-opts{display:flex;gap:8px}
+.rd-primary-opt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-opt i{display:block;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.rd-primary-opt[data-rd-primary="ink"] i{background:#111111}
+.rd-primary-opt[data-rd-primary="pink"] i{background:#d97a8c}
+.rd-primary-opt[data-rd-primary="blue"] i{background:#7893ad}
+.rd-primary-opt[data-rd-primary="brown"] i{background:#8b6a4b}
+.rd-primary-opt.on{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
+.rd-primary-opt span{display:block;white-space:nowrap}
+[data-theme="dark"] .rd-primary-opt{background:#242424;border-color:#3a3a3a}
+/* 数据栏只读统计行 */
+.rd-set-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-stat:last-child{border-bottom:none}
+.rd-set-stat span{font-size:14px}
+.rd-set-stat b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+[data-theme="dark"] .rd-set-stat{border-bottom-color:rgba(255,255,255,.08)}
 .rd-live-entry{display:flex;align-items:center;gap:10px;width:100%;margin:12px 0 0;padding:11px 14px;border:1px solid var(--card-border,#ddd);border-radius:12px;background:var(--card-bg,#fff);background:color-mix(in srgb,var(--btn-bg,#111) 10%,var(--card-bg,#fff));color:var(--btn-bg,#111);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rd-live-entry-t{flex:1;min-width:0}
 .rd-live-entry-name{display:block;font-size:15px;font-weight:700;line-height:1.25}
