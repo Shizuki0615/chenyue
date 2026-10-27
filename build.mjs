@@ -6739,8 +6739,9 @@ const FIX_SENTINELS = [
   { name: '#1570g 全局卡片键不随 migrateLegacy 迁走（删＝切换联系人后卡片样式/配色丢失）', file: 'js/contacts.js', needle: "if (r.indexOf('cs-card-global-') === 0) return true;" },
   { name: '#1570h 卡片 CSS 设置页入口（删＝设置页找不到卡片 CSS）', file: 'template.html', needle: 'id="cs-card-css"' },
   { name: '#1570i 按题限选 askMultiMax 经 chatAddSystem/addIn 双白名单透传（删＝卡上不显示「最多 N 个」、限选闸失效；E2E 实捕）', file: 'js/chat.js', needle: 'askMultiMax: opts.askMultiMax' },
-  { name: '#1571 已答卡答复分割线 + 底部按钮分割线（删＝已答卡又变一整块无层次）', file: 'css/chat-main.css', needle: 'msg-ask-card.answered:not(.msg-survey-card)::after' },
+  { name: '#1571 B 版已答卡题目/答复单分割线（删＝已答卡又变一整块无层次；30% 文字色）', file: 'css/chat-main.css', needle: 'border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);' },
   { name: '#1572 问卡文字对比安全色（删＝浅气泡+白字时卡片文字看不清；E2E 实捕 #ffd6e0 白字 1.32:1）', file: 'js/chat-settings.js', needle: 'if (_csContrast(outInk, outBg) < 4.5) {' },
+  { name: '#1573 B 版入站收藏心形左下（删＝他那边又回到右下）', file: 'css/chat-main.css', needle: 'msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

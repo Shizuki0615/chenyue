@@ -1746,8 +1746,8 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 #page-chat .msg-ask .msg-ask-lines {
   margin-top: 10px;
   padding-top: 9px;
-  border-top: 1px solid rgba(127,127,127,.45);
-  border-top-color: color-mix(in srgb, var(--ask-side-text) 45%, transparent);
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
 }
 #page-chat .msg-ask .ask-line {
   display: flex;
@@ -1818,20 +1818,14 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
+/* B 版（用户 2026-10-27 定）：入站（他那边）收藏心形挪到左下；出站（我这边）心形与箭头保持右下 */
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart {
+  right: auto;
+  left: 8px;
+}
 #page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
 #page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
-#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
-#page-chat .msg-ask .msg-choose-card.answered::after {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 40px;
-  height: 1px;
-  background: rgba(127,127,127,.45);
-  background: color-mix(in srgb, var(--ask-side-text) 45%, transparent);
-  pointer-events: none;
-}
 #page-chat .msg-ask .msg-ask-view-arrow {
   right: 8px;
   bottom: 6px;
