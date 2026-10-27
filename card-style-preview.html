@@ -19,7 +19,7 @@
     --card-border:rgba(36,31,43,.08); --card-shadow:0 4px 14px rgba(36,31,43,.07);
     --a-top:rgba(255,255,255,.16);
     --b-top:rgba(255,255,255,.35); --b-base:#fbe9f0;
-    --opt-bg:rgba(255,255,255,.62); --opt-ink:#241f2b; --opt-border:rgba(36,31,43,.12);
+    --opt-bg:#fdf9fb; --opt-ink:#241f2b; --opt-border:rgba(36,31,43,.12);
     --opt-sel-bg:#fff; --opt-sel-border:#241f2b;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.15);
     --line:rgba(36,31,43,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.18);
@@ -30,7 +30,7 @@
     --card-border:rgba(0,0,0,.08); --card-shadow:0 4px 14px rgba(0,0,0,.06);
     --a-top:rgba(255,255,255,.8);
     --b-top:rgba(255,255,255,.4); --b-base:#fdf4f7;
-    --opt-bg:rgba(0,0,0,.025); --opt-ink:#222; --opt-border:rgba(0,0,0,.11);
+    --opt-bg:#fbf9f5; --opt-ink:#222; --opt-border:rgba(0,0,0,.11);
     --opt-sel-bg:#fff; --opt-sel-border:#222;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.16);
     --line:rgba(0,0,0,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.14);
@@ -41,7 +41,7 @@
     --card-border:rgba(255,255,255,.14); --card-shadow:0 6px 18px rgba(0,0,0,.45);
     --a-top:rgba(255,255,255,.06);
     --b-top:rgba(255,255,255,.1); --b-base:#2a2226;
-    --opt-bg:rgba(255,255,255,.06); --opt-ink:#f1f1f1; --opt-border:rgba(255,255,255,.22);
+    --opt-bg:#242424; --opt-ink:#f1f1f1; --opt-border:rgba(255,255,255,.22);
     --opt-sel-bg:rgba(255,255,255,.1); --opt-sel-border:#f1f1f1;
     --accent:#f0a3b5; --accent-ink:#2a2024; --accent-strong:#f0a3b5; --accent-soft:rgba(240,163,181,.14);
     --line:rgba(255,255,255,.1); --phone-shadow:0 24px 70px rgba(0,0,0,.6);
@@ -89,6 +89,9 @@
     background:var(--ink); color:var(--phone);
     align-items:center; justify-content:center; font-size:12px;
   }
+  .col-head .picked, .col-head .alt { font-size:10px; padding:2px 7px; border-radius:999px; }
+  .col-head .picked { background:var(--accent-soft); color:var(--accent-strong); }
+  .col-head .alt { background:rgba(127,127,127,.1); color:var(--muted); }
   .col[data-variant="b"] .col-head b { background:var(--accent); color:var(--accent-ink); }
 
   .phone {
@@ -157,7 +160,7 @@
   .opt.sel { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); font-weight:600; }
   .col[data-variant="a"] .opt.sel {
     border-color:var(--opt-ink);
-    background:color-mix(in srgb, var(--opt-ink) 7%, var(--bubble));
+    background:color-mix(in srgb, var(--opt-ink) 7%, var(--opt-bg));
   }
   .col[data-variant="b"] .opt { border-radius:14px; }
   .col[data-variant="b"] .opt.sel { border-color:var(--accent); background:var(--accent-soft); }
@@ -176,15 +179,9 @@
   .opt-box svg { width:10px; height:10px; }
   .opt.sel .opt-box { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 
-  .submit {
-    width:100%; height:42px; margin-top:8px; border:none; border-radius:12px;
-    background:var(--ink); color:var(--phone);
-    font:inherit; font-size:13px; font-weight:700; cursor:pointer;
-  }
-  .col[data-variant="b"] .submit {
-    border-radius:14px;
-    background:var(--accent); color:var(--accent-ink);
-    box-shadow:0 6px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+  .submit-row { display:flex; justify-content:flex-end; margin-top:9px; }
+  .col[data-variant="b"] .submit-row .send {
+    box-shadow:0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .quick {
@@ -197,7 +194,7 @@
   .quick.is-press { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); }
   .col[data-variant="a"] .quick.is-press {
     border-color:var(--opt-ink);
-    background:color-mix(in srgb, var(--opt-ink) 7%, var(--bubble));
+    background:color-mix(in srgb, var(--opt-ink) 7%, var(--opt-bg));
   }
   .col[data-variant="b"] .quick { border-radius:14px; }
   .col[data-variant="b"] .quick.is-press { border-color:var(--accent); background:var(--accent-soft); }
@@ -212,6 +209,7 @@
     width:38px; height:38px; border:none; border-radius:50%;
     background:var(--ink); color:var(--phone);
     display:flex; align-items:center; justify-content:center; flex:none;
+    cursor:pointer;
   }
   .send svg { width:16px; height:16px; }
   .col[data-variant="b"] .send {
@@ -278,7 +276,7 @@
 <body>
 <header class="top">
   <h1>问卡美化样张 · A / B</h1>
-  <div class="sub">只做问卡家族：单选 / 多选 / P1 快捷行 / P2 文字作答 / 已答。点下面切换底色，两版同时变。</div>
+  <div class="sub">已选 A 纸感极简，B 只做对照。只做问卡家族：单选 / 多选 / P1 快捷行 / P2 文字作答 / 已答。</div>
   <div class="segs">
     <button data-pick="lav" class="on">浅紫</button>
     <button data-pick="white">白</button>
@@ -288,6 +286,7 @@
     <label>强调色<input type="color" id="c-accent" value="#e88fa3"></label>
     <label>A 卡面<input type="color" id="c-bubble" value="#dcc9f2"></label>
     <label>B 卡面<input type="color" id="c-bbase" value="#fbe9f0"></label>
+    <label>选项底色<input type="color" id="c-opt" value="#fdf9fb"></label>
     <label>文字<input type="color" id="c-text" value="#241f2b"></label>
     <button class="reset" id="c-reset" type="button">跟随主题</button>
   </div>
@@ -295,14 +294,14 @@
 
 <main class="stage">
   <section class="col" data-variant="a">
-    <div class="col-head"><b>A</b><span>纸感极简</span></div>
+    <div class="col-head"><b>A</b><span>纸感极简</span><span class="picked">已选</span></div>
     <div class="phone">
       <div class="chat-head"><span class="dot"></span><b>他</b><span class="online">在线</span><span class="dots">⋯</span></div>
       <div class="chat-body"></div>
     </div>
   </section>
   <section class="col" data-variant="b">
-    <div class="col-head"><b>B</b><span>轻甜卡片</span></div>
+    <div class="col-head"><b>B</b><span>轻甜卡片</span><span class="alt">对照</span></div>
     <div class="phone">
       <div class="chat-head"><span class="dot"></span><b>他</b><span class="online">在线</span><span class="dots">⋯</span></div>
       <div class="chat-body"></div>
@@ -341,7 +340,7 @@
         <div class="opt sel"><span class="opt-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="opt-t">日料</span></div>
         <div class="opt"><span class="opt-box"></span><span class="opt-t">家常菜</span></div>
       </div>
-      <button class="submit" type="button">提交选择</button>
+      <div class="submit-row"><button class="send" type="button" aria-label="提交"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
     </div>
     <div class="side"><div class="av">我</div><div class="time">21:13</div></div>
   </div>
@@ -391,9 +390,10 @@
     var accent = document.getElementById('c-accent');
     var bubble = document.getElementById('c-bubble');
     var bbase = document.getElementById('c-bbase');
+    var opt = document.getElementById('c-opt');
     var text = document.getElementById('c-text');
     var reset = document.getElementById('c-reset');
-    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--bubble-ink', '--opt-ink'];
+    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--opt-bg', '--bubble-ink', '--opt-ink'];
 
     function hexToRgb(hex) {
       hex = String(hex || '').replace('#', '');
@@ -442,6 +442,7 @@
       accent.value = toHex(cs.getPropertyValue('--accent').trim());
       bubble.value = toHex(cs.getPropertyValue('--bubble').trim());
       bbase.value = toHex(cs.getPropertyValue('--b-base').trim());
+      opt.value = toHex(cs.getPropertyValue('--opt-bg').trim());
       text.value = toHex(cs.getPropertyValue('--bubble-ink').trim());
     }
     function applyAccent() {
@@ -458,6 +459,10 @@
     }
     function applyBBase() {
       root.style.setProperty('--b-base', bbase.value);
+      clearThemeOn();
+    }
+    function applyOpt() {
+      root.style.setProperty('--opt-bg', opt.value);
       clearThemeOn();
     }
     function applyText() {
@@ -478,6 +483,7 @@
     accent.addEventListener('input', applyAccent);
     bubble.addEventListener('input', applyBubble);
     bbase.addEventListener('input', applyBBase);
+    opt.addEventListener('input', applyOpt);
     text.addEventListener('input', applyText);
     reset.addEventListener('click', function () {
       clearOverrides();
