@@ -7630,7 +7630,7 @@ special: 'lyric',
 lyricLine: String(data.line),
 lyricSong: String(data.song || ''),
 lyricArtist: String(data.artist || ''),
-lyricCover: String(data.cover || '')
+lyricCover: /^https?:\/\//i.test(String(data.cover || '')) ? String(data.cover) : ''
 };
 const r = addRec(rec);
 if (r) {

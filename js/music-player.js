@@ -557,7 +557,8 @@ const m = findTrack(currentId);
 const line = lyricState.sel >= 0 && lyricState.lines[lyricState.sel] ? lyricState.lines[lyricState.sel].text : '';
 if (!m || !line) return;
 if (!window.chatAddLyricCard) { toast('聊天还没准备好，稍后再试'); return; }
-const r = window.chatAddLyricCard({ line: line, song: m.name || '', artist: m.artist || '', cover: m.cover || '' });
+const cover = m.cover && /^https?:\/\//i.test(m.cover) ? m.cover : '';
+const r = window.chatAddLyricCard({ line: line, song: m.name || '', artist: m.artist || '', cover: cover });
 if (!r) { toast('发送失败，请重试'); return; }
 toast('已发给 ' + partnerName());
 clearLyricSelection();
