@@ -5687,6 +5687,7 @@ if (data.nightAllow === true) rec.nightAllow = true;
 if (data.silent === true) rec.silent = true;
 if (data.rateAllow === true) rec.rateAllow = true;
 const r = addRec(rec);
+if (r && side === 'in' && data.silent !== true && window.playSfx) { try { window.playSfx('in'); } catch (e) {} }
 if (r && side === 'out') {
 try { scheduleReply(); } catch (e) {}
 try { if (window.logFish) window.logFish(); } catch (e) {}

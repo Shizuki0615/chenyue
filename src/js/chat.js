@@ -7637,6 +7637,8 @@ if (data.nightAllow === true) rec.nightAllow = true;
 if (data.silent === true) rec.silent = true;
 if (data.rateAllow === true) rec.rateAllow = true;
 const r = addRec(rec);
+// 正常提醒：他发来的歌词卡落地后响普通消息音；silent 或被闸门挡下时不响（避免「响一声却没有消息」）
+if (r && side === 'in' && data.silent !== true && window.playSfx) { try { window.playSfx('in'); } catch (e) {} }
 if (r && side === 'out') {
 try { scheduleReply(); } catch (e) {}
 try { if (window.logFish) window.logFish(); } catch (e) {}
