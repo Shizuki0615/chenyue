@@ -10,9 +10,11 @@
 .msg-bubble { font-size: calc(var(--chat-font-size, 14px) + var(--mochi-text-adj, 0px)); }
 .msg-quote { font-size: calc(12px + var(--mochi-text-adj, 0px)); }
 /* 聊天输入框——注意：base.css 有 `.phone [contenteditable="true"] { font-size:16px }`（iOS 聚焦不放大）
-   特异性压过裸类选择器，故输入框转成 contenteditable 后必须用同级双段选择器才赢得级联 */
-.chat-input { font-size: calc(15px + var(--mochi-text-adj, 0px)); }
-.phone .chat-input[contenteditable="true"] { font-size: calc(15px + var(--mochi-text-adj, 0px)); }
+   特异性压过裸类选择器，故输入框转成 contenteditable 后必须用同级双段选择器才赢得级联。
+   v8.60.0：聊天设置「输入框字号」档写 --cs-input-font（跟随气泡时为 calc(气泡字号 + 文字轴微调)）；
+   未设置就不写变量，回落原来的 15px + 文字轴微调，外观与改造前一致。 */
+.chat-input { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }
+.phone .chat-input[contenteditable="true"] { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }
 /* 聊天页标题 */
 .ch-name { font-size: calc(17px + var(--mochi-text-adj, 0px)); }
 /* 设置主页 + 群聊设置行 */

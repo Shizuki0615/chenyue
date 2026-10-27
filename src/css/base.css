@@ -651,10 +651,10 @@ html.force-mobile, html.force-mobile body, html.force-mobile * { touch-action: m
 html.force-mobile, html.force-mobile body, html.force-mobile .phone, html.force-mobile img { -webkit-touch-callout:none; }
 html.force-mobile .tabbar { margin-bottom:var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)); }
 html.force-mobile .phone .page.full .chat-input-row {
-  margin: 0; border-radius: 0;
+  margin: 0; border-radius: var(--cs-input-radius, 0);
   border-left: none; border-right: none; border-bottom: none;
-  padding-left: 12px; padding-right: 12px; padding-top: 10px;
-  padding-bottom: calc(10px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
+  padding-left: 12px; padding-right: 12px; padding-top: var(--cs-input-pad-y, 10px);
+  padding-bottom: calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
 }
 html.force-mobile .phone .page.full .chat-head { padding-top: calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
 html.force-mobile .phone .page.full { padding-bottom: 0; }
@@ -853,11 +853,11 @@ html.ios-pwa-standalone.ios-cover-top body { height:var(--mochi-ios-h, 100vh); m
      选择器加 .phone 前缀提高特异性，压过后加载的 chat-main.css 悬浮样式 */
   .phone .page.full .chat-input-row {
     margin: 0;
-    border-radius: 0;
+    border-radius: var(--cs-input-radius, 0);
     border-left: none; border-right: none; border-bottom: none;
     padding-left: 12px; padding-right: 12px;
-    padding-top: 10px;
-    padding-bottom: calc(10px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
+    padding-top: var(--cs-input-pad-y, 10px);
+    padding-bottom: calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
   }
   .phone .page.full .chat-head { padding-top: calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
   .phone .page.full { padding-bottom: 0; }
@@ -1005,11 +1005,11 @@ html.tablet.ios-fs-active .phone { width:100vw; max-width:none; }
 html.tablet.ios-fs-active .phone { padding-top:max(env(safe-area-inset-top, 0px), 12px); }
 /* 聊天页通栏输入栏贴底（与手机端一致，横屏不再悬浮圆角卡片） */
 html.tablet .phone .page.full .chat-input-row {
-  margin:0; border-radius:0;
+  margin:0; border-radius:var(--cs-input-radius, 0);
   border-left:none; border-right:none; border-bottom:none;
   padding-left:12px; padding-right:12px;
-  padding-top:10px;
-  padding-bottom:calc(10px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
+  padding-top:var(--cs-input-pad-y, 10px);
+  padding-bottom:calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
 }
 html.tablet .phone .page.full .chat-head { padding-top:calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
 html.tablet .phone .page.full { padding-bottom:0; }

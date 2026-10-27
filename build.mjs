@@ -1949,7 +1949,7 @@ const FIX_SENTINELS = [
   { name: '#764f 面板 hidden 真隐藏规则（删＝内联 display:flex 压过 UA，返回键置 hidden 面板不消失）', file: 'css/display-tune.css', needle: '#screen-adj-panel[hidden] { display: none !important; }' },
   { name: '#764g 工具区首位独立入口行（删＝功能又藏进诊断组不显眼，用户报「找不到」复发）', file: 'template.html', needle: '屏幕适配微调<span class="sub">' },
   { name: '#764h 返回键先关微调面板（删回不含＝安卓返回直接退页不关面板）', file: 'js/tabs.js', needle: "'screen-adj-panel'];" },
-  { name: '#764i 输入框 contenteditable 形态字号消费（删＝base.css 防 iOS 聚焦缩放的 .phone [contenteditable=16px] 截胡，文字轴对输入框永远无效——隔离构建真浏览器实测）', file: 'css/display-tune.css', needle: '.phone .chat-input[contenteditable="true"] { font-size: calc(15px + var(--mochi-text-adj, 0px)); }' },
+  { name: '#764i 输入框 contenteditable 形态字号消费（删＝base.css 防 iOS 聚焦缩放的 .phone [contenteditable=16px] 截胡，文字轴对输入框永远无效——隔离构建真浏览器实测；v8.60.0 改为先吃输入框字号变量）', file: 'css/display-tune.css', needle: '.phone .chat-input[contenteditable="true"] { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }' },
   // ==== 2026-09-18 信箱纯性能批（收口者按其 WORKLOG 委托补登）——该批曾被并行会话旧缓冲回写整文件打回 HEAD 一次，
   // 哨兵是唯一能拦住它再来一遍的东西；needle 均为「逻辑锚点」：实现被改坏即消失 ====
   { name: '信箱 load 解析缓存接线（删 cachedParse 调用＝每帧全量 JSON.parse 数百 KB dataURL 键，卡顿回归）', file: 'js/mail.js', needle: 'cachedParse(prefixFor(cid)' },
@@ -4264,8 +4264,8 @@ const FIX_SENTINELS = [
   { name: '#966f 群聊美化同值不重写守卫（删＝点同一个档仍重写 ~16 个变量＝#938 那型闪屏在群聊侧回流）', file: 'js/group-chat.js', needle: 'const gcSetVar = (el, name, value) =>' },
   { name: '#966g 群聊 time-style 类只摘挂着的那一个（删＝每点一次白摘 5 个不存在的 cs-time-* 类）', file: 'js/group-chat.js', needle: 'gcSetCls(page, wantTime, true);' },
   { name: '#949a 输入框保底 4em 可用宽（退回 min-width:0＝窄屏开语音+批量后输入框被按钮压成 0 宽无法输入）', file: 'css/chat-main.css', needle: 'min-width:4em' },
-  { name: '#949b 输入栏图标按钮放开收缩并保 30px 下限（退回 flex-shrink:0＝按钮一像素不让，挤压全部由输入框吸收）', file: 'css/chat-main.css', needle: 'min-width:30px' },
-  { name: '#949c 窄屏档输入栏间距收紧（删＝360px 级机型按钮收缩到下限后仍差一口气，发送键被顶出/输入框贴 0）', file: 'css/chat-main.css', needle: 'padding:12px 8px 12px 10px' },
+  { name: '#949b 输入栏图标按钮放开收缩并保 30px 下限（退回 flex-shrink:0＝按钮一像素不让，挤压全部由输入框吸收；v8.60.0 起下限随按钮大小档联动＝尺寸-8px，默认 38→30）', file: 'css/chat-main.css', needle: 'min-width:calc(var(--cs-input-btn-size, 38px) - 8px);' },
+  { name: '#949c 窄屏档输入栏间距收紧（删＝360px 级机型按钮收缩到下限后仍差一口气，发送键被顶出/输入框贴 0；v8.60.0 起上下内边距吃粗细档，左右仍锁死）', file: 'css/chat-main.css', needle: 'padding:var(--cs-input-pad-y, 12px) 8px var(--cs-input-pad-y, 12px) 10px;' },
   /* ==== 2026-09-21 #950 表情包大包 IDB 数组直存（用户实指「表情包库能超几十 MB」，既有 34.93MB/#172 实例；原保存链整包 JSON.stringify 压主线程＝包越大点按帧冻结越久，#943b 防抖只减次数不减单次重量）==== */
   { name: '#950a 大包按体积分流直存 IDB 数组（删＝几十 MB 包每次保存仍整包主线程序列化+读回再 parse）', file: 'js/chat.js', needle: "if (myeBytesEst() > MYE_DIRECT_LIMIT && window.idbSet) {" },
   { name: '#950b 防覆盖闸门读回类型感知（删＝数组形态的 hydrate 值被 JSON.parse 吞掉＝合并静默失败，盲写顶掉 IDB 全量）', file: 'js/chat.js', needle: "const full = typeof rawGate === 'string' ? JSON.parse(rawGate || 'null') : (rawGate || null);" },
@@ -6747,6 +6747,12 @@ const FIX_SENTINELS = [
   { name: '#1577 设置页卡片配色入口（删＝设置页又找不到卡片配色）', file: 'template.html', needle: 'id="cs-card-colors"' },
   { name: '#1578 卡片配色入口直达边看边调卡片分区（删＝点开停回气泡分区）', file: 'js/chat-settings.js', needle: "csDrawerSec = 'card';" },
   { name: '#1579 卡片 CSS 示例按钮（删＝示例入口消失，用户只能从零手写）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex1"' },
+  // ==== 2026-10-27 #1580 输入栏细节（圆角 / 输入框字号 / 按钮大小 / 粗细）====
+  { name: '#1580a 输入栏圆角/粗细变量消费（删＝圆角与粗细两档失效，退回固定胶囊/14px）', file: 'css/chat-main.css', needle: 'var(--cs-input-radius, 99px)' },
+  { name: '#1580b 输入框字号变量消费（删＝输入框字号档失效，display-tune 又钉死 15px）', file: 'css/display-tune.css', needle: '.chat-input { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }' },
+  { name: '#1580c 手机/平板通栏输入栏吃用户圆角与粗细（删＝真机上圆角/粗细两档无效，恒为 0/10px）', file: 'css/base.css', needle: 'border-radius: var(--cs-input-radius, 0);' },
+  { name: '#1580d 抽屉栏位四项控件（删＝输入栏圆角/字号/按钮/粗细入口消失）', file: 'js/chat-settings.js', needle: 'cs-input-btn-size' },
+  { name: '#1580e 输入栏四项纳入美化方案/备份/恢复（删＝换方案或恢复初始后输入栏细节残留）', file: 'js/chat-settings.js', needle: "'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y'," },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
