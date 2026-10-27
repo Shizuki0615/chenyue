@@ -16,7 +16,7 @@ let playlists = [];        // {id,name,createdAt}
 let history = [];          // {id,trackId,trackName,triggerType,ts} —— TA 邀请听歌记录
 let myHistory = [];        // {id,trackId,trackName,ts} —— 我的听歌记录（自己点击播放）
 let hisSubTab = 'ta';      // 听歌记录二级子 tab：ta（TA 邀请）/ mine（我的）；默认 ta 与原 tab 语义一致
-const DEF_SETTINGS = { floatEn: true, reqProb: 5, cooldownMs: 600000, widgetCoverMode: 'song', taNextProb: 15, taRandProb: 10, taModeProb: 5, taFavProb: 20, taReserveProb: 6, taPauseProb: 3, taPauseEn: true };
+const DEF_SETTINGS = { floatEn: true, reqProb: 5, cooldownMs: 600000, widgetCoverMode: 'song', taNextProb: 15, taRandProb: 10, taModeProb: 5, taFavProb: 20, taReserveProb: 6, taPauseProb: 3, taPauseEn: true, taLyricProb: 35 };
 let settings = Object.assign({}, DEF_SETTINGS);
 function probOf(v, def) { const n = (typeof v === 'number' && !isNaN(v)) ? v : def; return Math.max(0, Math.min(100, n)); }
 let currentId = null;
@@ -278,6 +278,7 @@ loadNetwork();
 }
 function syncLyricTrack(m) {
 const id = m && m.id ? m.id : null;
+if (taLyricSession.trackId !== id) taLyricBegin(id); // 换歌/停止时取消上一首待发的歌词
 if (lyricState.trackId !== id) {
 lyricState = { trackId: id, lines: [], synced: false, cur: -1, sel: -1, loading: false, source: '', empty: false };
 const bar = document.getElementById('lyric-select-bar');
@@ -291,6 +292,7 @@ ensureLyric(m, false, function () {
 if (currentId !== id) return;
 renderWidgetLyric();
 if (lyricPageVisible()) renderLyricPage();
+taLyricMaybeSchedule(m);
 });
 }
 function lyricCalcCur() {
@@ -442,6 +444,7 @@ if (lyricState.trackId === m.id) {
 lyricSet(m.id, text, 'manual');
 renderWidgetLyric();
 if (lyricPageVisible()) renderLyricPage();
+taLyricMaybeSchedule(m); // 刚补完词且正在播这首歌时，重新起一轮挑句判定
 }
 return true;
 }
@@ -576,6 +579,79 @@ const id = window.feedAddPost(content, imgs);
 if (!id) { toast('发布失败，请重试'); return; }
 toast('已发到朋友圈');
 clearLyricSelection();
+}
+const TA_LYRIC_CREDIT_RE = /^\s*(作词|作曲|编曲|制作人?|出品人?|监制|混音|录音|母带|和声|吉他|贝斯|鼓|键盘|弦乐|词|曲|演唱|原唱|翻唱|OP|SP)\s*[:：]/i;
+let taLyricSession = { trackId: null, scheduled: false, fired: false, timer: null, retry: 0 };
+function taLyricBegin(id) {
+if (taLyricSession.timer) { try { clearTimeout(taLyricSession.timer); } catch (e) {} }
+taLyricSession = { trackId: id || null, scheduled: false, fired: false, timer: null, retry: 0 };
+}
+function taLyricPickLines() {
+const pool = [];
+(lyricState.lines || []).forEach(function (x) {
+const t = String(x.text || '').trim();
+if (!t) return;
+if (TA_LYRIC_CREDIT_RE.test(t)) return;
+if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) return; // 纯标点/符号行不发
+if (/未经许可|不得翻唱|版权|制作发行|录音制作者/.test(t)) return;
+pool.push(t);
+});
+if (pool.length < 2) return '';
+const n = Math.min(pool.length, 2 + Math.floor(Math.random() * 2)); // 2~3 句
+const start = Math.floor(Math.random() * (pool.length - n + 1));
+return pool.slice(start, start + n).join('\n');
+}
+function taLyricMaybeSchedule(m) {
+if (!m || !m.id || currentId !== m.id) return;
+if (taLyricSession.trackId !== m.id) taLyricBegin(m.id);
+const s = taLyricSession;
+if (s.scheduled || s.fired) return;
+if (lyricState.trackId !== m.id || !lyricState.lines.length) return; // 歌词未就绪，等加载回调
+s.scheduled = true;
+const prob = probOf(settings.taLyricProb, 35);
+if (!prob || Math.random() * 100 >= prob) return;
+const cur = audio ? (audio.currentTime || 0) : 0;
+const dur = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : (Number(m.duration) || 0);
+let delay;
+if (dur > 0) {
+const remain = dur - cur;
+if (remain < 18) { s.fired = true; return; } // 临近结尾不再发
+let target = dur * (0.2 + Math.random() * 0.5);
+delay = target - cur;
+if (delay < 6) delay = 6;
+if (delay > remain - 8) delay = Math.max(4, remain - 8);
+if (delay < 4) { s.fired = true; return; }
+} else {
+delay = 12 + Math.random() * 18;
+}
+s.timer = setTimeout(function () { taLyricFire(m.id); }, Math.round(delay * 1000));
+}
+function taLyricFire(id) {
+const s = taLyricSession;
+if (!s || s.trackId !== id || s.fired) return;
+if (currentId !== id) return;
+s.timer = null;
+if (!audio || audio.paused) {
+if (s.retry < 3) {
+s.retry++;
+s.timer = setTimeout(function () { taLyricFire(id); }, 8000);
+} else {
+s.fired = true;
+}
+return;
+}
+s.fired = true;
+if (!probOf(settings.taLyricProb, 35)) return; // 用户中途把概率调成 0，立即生效
+if (lyricState.trackId !== id || !lyricState.lines.length) return;
+const m = findTrack(id);
+if (!m) return;
+const line = taLyricPickLines();
+if (!line) return;
+if (!window.chatAddLyricCard) return;
+const cover = m.cover && /^https?:\/\//i.test(m.cover) ? m.cover : '';
+try {
+window.chatAddLyricCard({ side: 'in', line: line, song: m.name || '', artist: m.artist || '', cover: cover, nightAllow: true, rateAllow: true });
+} catch (e) {}
 }
 function songIcoHtml(m, icon) {
 if (m && m.cover) {
@@ -3030,6 +3106,7 @@ el.preload = 'auto';
 setupHandlers(m);
 if (callHoldPending) { try { syncPlayIcons(false); } catch (e) {} return; }
 wantPlay = true; // v3.10.x：用户点播/切歌＝意图播放（外部打断时自动续播的依据）
+taLyricMaybeSchedule(m); // 歌词若已就绪，在这里起「他挑句」计时；未就绪由长歌词回调补
 const p = el.play();
 if (p && p.catch) {
 p.catch((err) => {
@@ -3511,6 +3588,7 @@ if (roamActive && m.playlistId !== 'fm') stopRoamMode();
 cancelTaPause();
 if (m) m._httpsRetried = false;
 currentId = id;
+taLyricBegin(id); // 显式点播/重播同一首也重新起一轮「他挑句」判定
 if (m && m.cover) { if (COVER_PROXY_RE.test(m.cover)) enqueueCovMig(m); }
 else ensureSongCover(m);
 teardownAudio();
@@ -4952,6 +5030,8 @@ window.openTCPanel('音乐设置', '' +
 '<div class="sm-set-hint">播放歌曲时 他 有小概率突然暂停播放（聊天里发一张字卡），几秒后再帮你点播放恢复（再发一张字卡）；字卡文案在【字卡库 → 其他互动功能字卡 → 音乐】可逐张开关。上方开关关闭或概率设 0 = 关闭 他 暂停权限；同一首歌只触发一次、触发后 10 分钟内不重复（不会一直暂停又继续）</div>' +
 '<div class="gs-row"><span>他 收藏歌曲概率</span><div class="stepper" id="sm-set-favprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-favprob-val" readonly><button class="stp-max">+</button></div></div>' +
 '<div class="sm-set-hint">你播放歌曲听一会儿后，他 有概率把这首歌收进「他的收藏」（音乐页收藏 tab 右边可查看；已收藏过的歌不重复判定，两次收藏间隔至少 90 秒）</div>' +
+'<div class="gs-row"><span>他 从歌词挑句发给你概率</span><div class="stepper" id="sm-set-lyricprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricprob-val" readonly><button class="stp-max">+</button></div></div>' +
+'<div class="sm-set-hint">播放歌曲时 他 有概率从这首歌的歌词里随机挑连续 2~3 句发到聊天（左气泡歌词卡，带封面/歌名/歌手，正常消息提醒）；会跳过作词/作曲/编曲等制作信息行。同一遍播放只判定一次，临近结尾不补发，设 0 = 关闭</div>' +
 '<div class="sm-set-row"><span>本地音频缓存</span><span id="sm-storage-use" style="color:var(--muted);font-size:12px">计算中…</span></div>' +
 '<div class="mail-actions"><button class="cc-tool" id="sm-diag-req">诊断邀请</button><button class="cc-tool" id="sm-clear-cache">清理本地音频缓存</button><button class="cc-tool" id="sm-set-close">关闭</button></div>');
 document.getElementById('sm-set-close').addEventListener('click', () => { document.getElementById('tc-mask').hidden = true; });
@@ -5001,6 +5081,7 @@ bindProbStep('sm-set-rand', 'taRandProb', 10, 100);
 bindProbStep('sm-set-modep', 'taModeProb', 5, 100);
 bindProbStep('sm-set-pauseprob', 'taPauseProb', 3, 100);
 bindProbStep('sm-set-favprob', 'taFavProb', 20, 100);
+bindProbStep('sm-set-lyricprob', 'taLyricProb', 35, 100);
 const syncPauseEn = function () {
 const box = document.getElementById('sm-set-pauseprob');
 if (box) box.style.opacity = settings.taPauseEn ? '' : '0.4';

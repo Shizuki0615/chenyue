@@ -6777,6 +6777,12 @@ const FIX_SENTINELS = [
   { name: '#1585e 歌词卡片出站发送接口（删＝点「发给 TA」无效，消息会退回成普通文字）', file: 'js/chat.js', needle: 'window.chatAddLyricCard = function (data) {' },
   { name: '#1585f 歌词卡片渲染分支（删＝聊天里只剩纯文字，歌名/封面/引号卡面丢失）', file: 'js/chat.js', needle: "rec.special === 'lyric'" },
   { name: '#1585g 歌词卡片样式（删＝歌词卡无封面/歌名层级，退化成裸文字）', file: 'css/chat-main.css', needle: '.msg-lyric-card {' },
+  // ==== 2026-10-27 #1586 他主动从正在听的歌里挑句发来 ====
+  { name: '#1586a 他发歌词调度入口（删＝播放中不会再自动挑句发来）', file: 'js/music-player.js', needle: 'function taLyricMaybeSchedule(m) {' },
+  { name: '#1586b 发歌词前复核当前播放（删＝切歌/暂停后仍会把上一首的歌词发进来）', file: 'js/music-player.js', needle: 'function taLyricFire(id) {' },
+  { name: '#1586c 他发歌词概率设置（删＝音乐设置里没有开关，用户无法调/关）', file: 'js/music-player.js', needle: "bindProbStep('sm-set-lyricprob', 'taLyricProb', 35, 100);" },
+  { name: '#1586d 歌词卡支持 TA 发来（删＝自动歌词只能作为我发出的消息）', file: 'js/chat.js', needle: "const side = data.side === 'in' ? 'in' : 'out';" },
+  { name: '#1586e 多句歌词换行渲染（删＝连续 2~3 句挤成一行）', file: 'js/chat.js', needle: 'escTxtBr(lyricLineTxt)' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

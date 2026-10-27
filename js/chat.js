@@ -4915,7 +4915,7 @@ b.innerHTML = '<div class="msg-lyric-card">' +
 '<div class="msg-lyric-song">' + escTxt(lyricSongTxt || '歌词') + '</div>' +
 (lyricArtistTxt ? '<div class="msg-lyric-artist">' + escTxt(lyricArtistTxt) + '</div>' : '') +
 '</div></div>' +
-'<div class="msg-lyric-line">「' + escTxt(lyricLineTxt) + '」</div>' +
+'<div class="msg-lyric-line">「' + escTxtBr(lyricLineTxt) + '」</div>' +
 '</div>';
 const lyricCoverEl = b.querySelector('.msg-lyric-cover');
 if (lyricCoverEl) lyricCoverEl.addEventListener('error', function () { this.style.display = 'none'; });
@@ -5673,8 +5673,9 @@ return r;
 window.chatAddGift = function (rec) { if (!rec.ts) rec.ts = Date.now(); return addRec(rec); };
 window.chatAddLyricCard = function (data) {
 if (!data || !data.line) return null;
+const side = data.side === 'in' ? 'in' : 'out';
 const rec = {
-side: 'out',
+side: side,
 text: String(data.line),
 special: 'lyric',
 lyricLine: String(data.line),
@@ -5682,8 +5683,11 @@ lyricSong: String(data.song || ''),
 lyricArtist: String(data.artist || ''),
 lyricCover: /^https?:\/\//i.test(String(data.cover || '')) ? String(data.cover) : ''
 };
+if (data.nightAllow === true) rec.nightAllow = true;
+if (data.silent === true) rec.silent = true;
+if (data.rateAllow === true) rec.rateAllow = true;
 const r = addRec(rec);
-if (r) {
+if (r && side === 'out') {
 try { scheduleReply(); } catch (e) {}
 try { if (window.logFish) window.logFish(); } catch (e) {}
 }
