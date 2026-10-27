@@ -6784,6 +6784,13 @@ const FIX_SENTINELS = [
   { name: '#1586d 歌词卡支持 TA 发来（删＝自动歌词只能作为我发出的消息）', file: 'js/chat.js', needle: "const side = data.side === 'in' ? 'in' : 'out';" },
   { name: '#1586e 多句歌词换行渲染（删＝连续 2~3 句挤成一行）', file: 'js/chat.js', needle: 'escTxtBr(lyricLineTxt)' },
   { name: '#1586f 他发歌词的入站提示音（删＝歌词卡只弹横幅/未读，不响普通消息音）', file: 'js/chat.js', needle: "if (r && side === 'in' && data.silent !== true && window.playSfx)" },
+  // ==== 2026-10-27 #1587 歌词来源与失败重试 ====
+  { name: '#1587a 网易云后端歌词源（删＝漫游曲目只能靠 LRCLIB，冷门歌继续无词）', file: 'js/music-player.js', needle: 'function fetchLyricFromNetease(m, cb) {' },
+  { name: '#1587b 后端歌词失败后回落 LRCLIB（删＝后端一挂就完全没词）', file: 'js/music-player.js', needle: 'fetchLyricFromNetease(m, function (resN) {' },
+  { name: '#1587c 临时失败不记成无歌词（删＝LRCLIB 偶发 503 后整首歌都不再重试）', file: 'js/music-player.js', needle: 'else if (transient) {' },
+  { name: '#1587d 临时失败文案（删＝用户看到「没找到歌词」而不是「服务暂时没响应」）', file: 'js/music-player.js', needle: '歌词服务暂时没响应' },
+  { name: '#1587e 后端歌词短超时（删＝歌词要等 15 秒后端超时才回落 LRCLIB）', file: 'js/music-player.js', needle: 'try { xhr.timeout = lim; } catch (e) {}' },
+  { name: '#1587f 漫游曲目清退时连带清歌词缓存（删＝换一批 FM 歌就留下无主歌词键）', file: 'js/music-player.js', needle: 'removed.forEach(id => {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
