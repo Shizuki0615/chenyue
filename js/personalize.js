@@ -3992,6 +3992,18 @@ if (!page.hidden && h > 0) page.style.setProperty('--theme-head-h', h + 'px');
 try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
 sync();
 })();
+(function initSettingStickyHead() {
+const page = document.getElementById('page-setting');
+if (!page) return;
+const head = page.querySelector('.set-title');
+if (!head) return;
+const sync = () => {
+const h = head.offsetHeight;
+if (!page.hidden && h > 0) page.style.setProperty('--set-head-h', h + 'px');
+};
+try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
+sync();
+})();
 (function initThemeTabs() {
 const tabsEl = document.getElementById('them-tabs');
 const page = document.getElementById('page-theme');

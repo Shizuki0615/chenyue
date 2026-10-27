@@ -57,7 +57,15 @@
 .them-tabs.sub .them-tab, .gc-set-tabs .them-tab { font-size:12px; padding:8px 0 7px; }
 /* v3.33.x：设置页顶部 tag 分类——与聊天设置/美化页同款 sticky，滚动时吸顶，
    标签下不再透出其他分区的 .set-group，避免视觉穿帮 */
-#page-setting .set-tabs, #set-tabs { position:sticky; top:0; }
+/* v8.59.5 用户 2026-10-27：设置主页也把「设置」大标题固定住，标签行让出标题实测高度。
+   搜索框保持在标题与标签之间、随内容滚走——它占一整行，跟着吸顶会把顶部压掉近三分之一屏。
+   回复设置 / 收藏页的头部本来就常驻（内容在 .gs-scroll / .fav-body 内部滚动），无需改动。 */
+#page-setting { --set-head-h: 46px; }
+#page-setting .set-title {
+  position:sticky; top:0; z-index:7;
+  background:var(--bg-b);
+}
+#page-setting .set-tabs, #set-tabs { position:sticky; top:var(--set-head-h, 46px); }
 /* .them-sec 默认 display:block（不写），切换靠 hidden 属性原生 display:none */
 /* 页面是 flex 纵向滚动容器：设置块禁止被 flex 压缩，内容超高时应滚动而非裁切/重叠 */
 .set-group, .gs-title, .set-title { flex-shrink:0; }

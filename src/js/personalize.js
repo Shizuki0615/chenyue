@@ -4950,6 +4950,21 @@ try {
     sync();
   })();
 
+  // v8.59.5 设置主页「设置」大标题吸顶：标签行要让出标题的实际高度（同主题页/聊天设置口径）。
+  // 高度随字号/安全区变，ResizeObserver 实测后写进 --set-head-h；CSS 里的 46px 只是兜底。
+  (function initSettingStickyHead() {
+    const page = document.getElementById('page-setting');
+    if (!page) return;
+    const head = page.querySelector('.set-title');
+    if (!head) return;
+    const sync = () => {
+      const h = head.offsetHeight;
+      if (!page.hidden && h > 0) page.style.setProperty('--set-head-h', h + 'px');
+    };
+    try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
+    sync();
+  })();
+
   // 手机桌面美化页：顶部标签切换分区（颜色/尺寸/背景/图标/方案），互斥显示
   (function initThemeTabs() {
     const tabsEl = document.getElementById('them-tabs');

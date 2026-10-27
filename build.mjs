@@ -6766,6 +6766,9 @@ const FIX_SENTINELS = [
   // ==== 2026-10-27 #1583 桌面美化页顶栏吸顶 ====
   { name: '#1583a 桌面美化页标题栏吸顶、标签行让出实测高度（删＝标题栏又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-theme .them-tabs { top:var(--theme-head-h, 60px); }' },
   { name: '#1583b 桌面美化页顶栏高度同步（删＝--theme-head-h 恒为 60px，手机安全区/横屏下标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--theme-head-h', h + 'px');" },
+  // ==== 2026-10-27 #1584 设置主页大标题吸顶 ====
+  { name: '#1584a 设置主页「设置」标题吸顶、标签行让出实测高度（删＝大标题又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-setting .set-title {' },
+  { name: '#1584b 设置主页标题高度同步（删＝--set-head-h 恒为 46px，字号/安全区变化后标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--set-head-h', h + 'px');" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
