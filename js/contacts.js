@@ -64,6 +64,7 @@ if (r.indexOf('music-file:') === 0) return true;
 if (r.indexOf('font-blob-') === 0) return true;
 if (r.indexOf('narc-') === 0) return true;
 if (r.indexOf('myarc') === 0) return true;
+if (r.indexOf('cs-card-global-') === 0) return true;
 if (r.indexOf('screen-adj-') === 0) return true;
 const m = r.match(/^([^:]+):/);
 if (m) {

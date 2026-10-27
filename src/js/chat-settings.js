@@ -3,6 +3,44 @@
 (function () {
   const uid = window.activePrefix();
   const store = window.activeStore();
+  // ===== v8.57.6 问卡 A 版：全局卡片配色 + 卡片 CSS =====
+  // 用户定稿：卡片 CSS 单开一栏、全局共用、只作用单聊；配色 4 项也是全局。
+  // 根命名空间键（contacts.js isExcluded 已按 cs-card-global- 前缀挡迁移），
+  // 与气泡 CSS 的 per-cid 存储互不影响。
+  const CARD_GNS = 'xy-home-v2';
+  const CARD_CSS_KEY = 'cs-card-global-css';
+  const CARD_ACCENT_KEY = 'cs-card-global-accent';
+  const CARD_BG_KEY = 'cs-card-global-bg';
+  const CARD_SEL_KEY = 'cs-card-global-sel-bg';
+  const CARD_TEXT_KEY = 'cs-card-global-text';
+  const CARD_GLOBAL_ALL = [CARD_CSS_KEY, CARD_ACCENT_KEY, CARD_BG_KEY, CARD_SEL_KEY, CARD_TEXT_KEY];
+  const CARD_ACCENT_DEF = '#e88fa3';
+  function cardGStore() {
+    try { return window.xyStore ? window.xyStore(CARD_GNS) : null; } catch (e) { return null; }
+  }
+  function cardSafeHex(v) {
+    const s = String(v || '').trim().toLowerCase();
+    const m = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})(?:[0-9a-f]{2})?$/i);
+    if (!m) return '';
+    let h = m[1];
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    return '#' + h;
+  }
+  function cardRgb(v) {
+    const h = cardSafeHex(v);
+    if (!h) return null;
+    return { r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) };
+  }
+  function cardInkFor(v) {
+    const c = cardRgb(v);
+    if (!c) return '#2a2024';
+    const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+    return lum > 0.6 ? '#2a2024' : '#ffffff';
+  }
+  function cardRgba(v, a) {
+    const c = cardRgb(v);
+    return c ? 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')' : '';
+  }
   const root = document.documentElement;
   const body = document.getElementById('chat-body');
   if (!body) return;
@@ -2035,6 +2073,107 @@
     document.head.appendChild(st);
     return hint;
   }
+
+  // ===== v8.57.6 问卡 A 版：全局卡片 CSS / 配色注入 =====
+  // 卡片 CSS 与气泡 CSS 分开：气泡 CSS 会被 mochiMapBubbleCss 包成 .msg-bubble，
+  // 卡片选择器会被吃掉；这里用 CSSOM 把用户写的选择器统一补 #page-chat 前缀，
+  // 既保留原生选择器能力，又只作用于单聊（群聊页选择器永远匹配不到）。
+  function cardScopeSelector(sel, scope) {
+    return String(sel || '').split(',').map(function (part) {
+      part = part.trim();
+      if (!part) return part;
+      if (part.indexOf(scope) === 0) return part;
+      if (part.indexOf('#page-chat') === 0) return part;
+      return scope + ' ' + part;
+    }).join(', ');
+  }
+  function scopeCardCss(css, scope) {
+    css = String(css || '').replace(/<\/style/gi, '<\\/style').trim();
+    if (!css) return '';
+    const host = document.createElement('style');
+    host.media = 'not all';
+    host.textContent = css;
+    document.head.appendChild(host);
+    try {
+      const sheet = host.sheet;
+      if (!sheet) return '';
+      const walk = function (rules) {
+        for (let i = 0; i < rules.length; i++) {
+          const r = rules[i];
+          if (!r) continue;
+          if (r.type === 1) {
+            try {
+              r.selectorText = cardScopeSelector(r.selectorText, scope);
+              // 用户卡片 CSS 要能压过 A 版默认样式（后者带 #page-chat + 多类名，特异性更高）；
+              // 与气泡 CSS 的 !important 口径一致——只在本作用域内抬优先级。
+              const ss = r.style;
+              for (let j = ss.length - 1; j >= 0; j--) {
+                const p = ss[j];
+                const v = ss.getPropertyValue(p);
+                if (v && ss.getPropertyPriority(p) !== 'important') ss.setProperty(p, v, 'important');
+              }
+            } catch (e) {}
+          } else if (r.type === 4 || r.type === 12 || (r.cssRules && r.type !== 7)) {
+            // @media / @supports / @layer / @container：递归补作用域；@keyframes 除外
+            try { walk(r.cssRules); } catch (e) {}
+          }
+        }
+      };
+      walk(sheet.cssRules);
+      const out = [];
+      for (let i = 0; i < sheet.cssRules.length; i++) {
+        const r = sheet.cssRules[i];
+        if (r && r.type === 3) continue; // @import 不执行
+        out.push(r.cssText);
+      }
+      return out.join('\n');
+    } catch (e) {
+      return '';
+    } finally {
+      host.remove();
+    }
+  }
+  function applyCardVars() {
+    const old = document.getElementById('cs-card-vars');
+    if (old) old.remove();
+    const g = cardGStore();
+    if (!g) return;
+    const accent = cardSafeHex(g.get(CARD_ACCENT_KEY)) || CARD_ACCENT_DEF;
+    let decl = '--ask-accent:' + accent + ';' +
+      '--ask-accent-ink:' + cardInkFor(accent) + ';' +
+      '--ask-accent-soft:' + (cardRgba(accent, 0.14) || 'rgba(232,143,163,.14)') + ';';
+    const bg = cardSafeHex(g.get(CARD_BG_KEY));
+    if (bg) decl += '--ask-card-bg:' + bg + ';';
+    const text = cardSafeHex(g.get(CARD_TEXT_KEY));
+    if (text) decl += '--ask-card-text:' + text + ';';
+    const sel = cardSafeHex(g.get(CARD_SEL_KEY));
+    if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+    const st = document.createElement('style');
+    st.id = 'cs-card-vars';
+    st.textContent = '#page-chat{' + decl + '}';
+    document.head.appendChild(st);
+  }
+  function applyCardCss() {
+    const old = document.getElementById('cs-card-custom');
+    if (old) old.remove();
+    const g = cardGStore();
+    const css = String(g ? (g.get(CARD_CSS_KEY) || '') : '');
+    const setVal = document.getElementById('cs-card-css-val');
+    if (setVal) setVal.textContent = css ? '已设置' : '默认';
+    if (!css) return;
+    let out = '';
+    try { out = scopeCardCss(css, '#page-chat'); } catch (e) { out = ''; }
+    if (!out) return;
+    const st = document.createElement('style');
+    st.id = 'cs-card-custom';
+    st.textContent = out;
+    document.head.appendChild(st);
+  }
+  function applyCardStyle() {
+    applyCardVars();
+    applyCardCss();
+  }
+  try { window.mochiApplyCardStyle = applyCardStyle; } catch (e) {}
   if (csCss) {
     csCss.addEventListener('click', () => {
       if (!window.openTCPanel) return;
@@ -2059,7 +2198,35 @@
       });
     });
   }
+  const csCardCss = row('cs-card-css');
+  if (csCardCss) {
+    csCardCss.addEventListener('click', () => {
+      if (!window.openTCPanel) return;
+      const g = cardGStore();
+      if (!g) { toast('存储接口不可用，请刷新后重试'); return; }
+      window.openTCPanel('卡片 CSS', '' +
+        '<div class="sm-fld-hint" style="margin-bottom:8px">全局卡片样式，所有联系人共用，只作用单聊问卡。可直接写选择器（如 <code>.msg-ask-card{...}</code>、<code>.ask-opt-btn{...}</code>、<code>.ask-line-who{...}</code>），系统会自动把选择器限定在 <code>#page-chat</code>，群聊不会生效。</div>' +
+        '<textarea id="cs-card-css-input" class="tc-input" rows="6" placeholder=".msg-ask-card{border-radius:18px}&#10;.ask-opt-btn{border-color:rgba(0,0,0,.12)}"></textarea>' +
+        '<div class="mail-actions"><button class="cc-tool" id="cs-card-css-clear">清空</button><button class="cc-tool" id="cs-card-css-ok">应用</button></div>');
+      const ta = document.getElementById('cs-card-css-input');
+      if (ta) ta.value = g.get(CARD_CSS_KEY) || '';
+      document.getElementById('cs-card-css-clear').addEventListener('click', () => {
+        try { g.remove(CARD_CSS_KEY); } catch (e) {}
+        document.getElementById('tc-mask').hidden = true;
+        applyCardCss();
+        toast('已清空卡片样式');
+      });
+      document.getElementById('cs-card-css-ok').addEventListener('click', () => {
+        const v = cssReadVal(document.getElementById('cs-card-css-input')).trim();
+        try { if (v) g.set(CARD_CSS_KEY, v); else g.remove(CARD_CSS_KEY); } catch (e) {}
+        document.getElementById('tc-mask').hidden = true;
+        applyCardCss();
+        toast(v ? '卡片样式已应用' : '已清空卡片样式');
+      });
+    });
+  }
   applyCss();
+  applyCardStyle();
 
   // ================= v3.18.x：聊天美化方案（全局保存，所有联系人桌面通用） =================
   // 用户需求：聊天设置里也能像手机桌面美化一样，把气泡颜色/CSS、壁纸、字体、时间轴等
@@ -2487,7 +2654,9 @@
   // ===== 恢复初始美化（#新）：一键抹回出厂观感 =====
   // 为什么加：用户写了自己的气泡 CSS 却看不出效果，怀疑是别的美化项在压它（典型是动过
   // 「气泡透明度」后 #732 的强制层用 !important 钉住 background，自定义背景就失效了）。
-  // 给两档：保留气泡 CSS（只重置其他项，纯粹用来对照 CSS 本身有没有问题）／全部恢复。
+  // 给三档：保留气泡 CSS / 保留卡片 CSS / 全部恢复。
+  // 用户 2026-10-27 定：默认把卡片 CSS + 卡片配色一起清掉；「保留卡片 CSS」只留 CSS，
+  // 配色回默认（不保留配色）；「保留气泡 CSS」只留气泡 CSS，卡片 CSS/配色清掉。
   // 范围只含观感键；壁纸全套（cs-bg / 铺满 / 位置 / 缩放）与自定义头像图一律不动，
   // 那是用户上传的图，删了找不回来——壁纸另有「移除聊天壁纸」。
   const CS_RESET_KEEP = ['cs-bg', 'cs-bg-fit', 'cs-bg-fullbars', 'cs-bg-pos-x', 'cs-bg-pos-y', 'cs-bg-size'];
@@ -2497,29 +2666,42 @@
   if (csResetBeauty) {
     csResetBeauty.addEventListener('click', () => {
       if (!window.openTCPanel) return;
-      const runReset = (keepCss) => {
+      const runReset = (keepBubbleCss, keepCardCss) => {
         CS_RESET_KEYS.forEach(k => {
-          if (keepCss && k === 'cs-bubble-css') return;
+          if (keepBubbleCss && k === 'cs-bubble-css') return;
           try { store.remove(k); } catch (e) {}
         });
+        const g = cardGStore();
+        if (g) {
+          CARD_GLOBAL_ALL.forEach(k => {
+            if (keepCardCss && k === CARD_CSS_KEY) return;
+            try { g.remove(k); } catch (e) {}
+          });
+        }
         try { applyCss(); } catch (e) {}
+        try { applyCardStyle(); } catch (e) {}
         try { applySettings(); } catch (e) {}
-        toast(keepCss ? '已恢复初始美化（气泡 CSS 已保留）' : '已恢复初始美化');
+        toast(keepCardCss ? '已恢复初始美化（卡片 CSS 已保留，配色已回默认）'
+          : keepBubbleCss ? '已恢复初始美化（气泡 CSS 已保留）'
+          : '已恢复初始美化');
       };
       window.openTCPanel('恢复初始美化', '' +
-        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想弄清「气泡 CSS 到底生效了没」，用「保留气泡 CSS」——其余项归零后若效果出现，说明之前是被滑块/颜色压住了。</div>' +
+        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
         '<div class="mail-actions">' +
         '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
         '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
+        '<button class="cc-tool" id="cs-reset-keepcardcss">保留卡片 CSS</button>' +
         '<button class="cc-tool" id="cs-reset-all" style="color:#d64545">全部恢复</button>' +
         '</div>');
       const closeTc = () => { try { document.getElementById('tc-mask').hidden = true; } catch (e) {} };
       const cBtn = document.getElementById('cs-reset-cancel');
       if (cBtn) cBtn.addEventListener('click', closeTc);
       const kBtn = document.getElementById('cs-reset-keepcss');
-      if (kBtn) kBtn.addEventListener('click', () => { runReset(true); closeTc(); });
+      if (kBtn) kBtn.addEventListener('click', () => { runReset(true, false); closeTc(); });
+      const ckBtn = document.getElementById('cs-reset-keepcardcss');
+      if (ckBtn) ckBtn.addEventListener('click', () => { runReset(false, true); closeTc(); });
       const aBtn = document.getElementById('cs-reset-all');
-      if (aBtn) aBtn.addEventListener('click', () => { runReset(false); closeTc(); });
+      if (aBtn) aBtn.addEventListener('click', () => { runReset(false, false); closeTc(); });
     });
   }
 
@@ -3971,7 +4153,7 @@
     // 不用原生 <input type=color>——真机上会被渲染成一大块（桌面抽屉 #527b 的坑）。
     let colorItems = [];
     let paletteHost = null;
-    const mkColorItem = (label, key, def, swatchList) => {
+    const mkColorItem = (label, key, def, swatchList, opts) => {
       const el = document.createElement('div');
       el.style.cssText = 'display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--card-border,#ddd);border-radius:9px;cursor:pointer;min-width:0';
       const sw = document.createElement('span');
@@ -3979,11 +4161,13 @@
       const tx = document.createElement('span');
       tx.textContent = label;
       tx.style.cssText = 'font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      const curGet = () => { try { return store.get(key) || def; } catch (e) { return def; } };
+      const st = (opts && opts.store) || store;
+      const applyFn = (opts && opts.apply) || applySettings;
+      const curGet = () => { try { return st.get(key) || def; } catch (e) { return def; } };
       const paint = () => { sw.style.background = curGet(); };
       const curSet = (v) => {
-        try { if (v === null) store.remove(key); else store.set(key, v); } catch (e) {}
-        applySettings(); paint();
+        try { if (v === null) st.remove(key); else st.set(key, v); } catch (e) {}
+        applyFn(); paint();
       };
       el.appendChild(sw); el.appendChild(tx); paint();
       el.addEventListener('click', () => {
@@ -4099,6 +4283,56 @@
         wrap.appendChild(mkPills('气泡字号', FONT_SIZES, () => store.get('cs-font-size') || '14px', v => { try { store.set('cs-font-size', v); } catch (e) {} applySettings(); }));
         wrap.appendChild(mkPills('气泡框大小', BUBBLE_SIZES, () => store.get('cs-bubble-size') || '11px 14px', v => { try { store.set('cs-bubble-size', v); } catch (e) {} applySettings(); }));
         wrap.appendChild(mkNote('气泡透明度只调底色，文字始终清晰；自定义气泡 CSS 写了 background 时，滑块值优先（动过滑块即覆盖 CSS）。'));
+        return wrap;
+      } },
+      { key: 'card', label: '卡片', build: () => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+        const g = cardGStore();
+        if (!g) {
+          wrap.appendChild(mkNote('卡片设置不可用：存储接口缺失，请刷新后重试。'));
+          return wrap;
+        }
+        const cs = {
+          get: (k) => g.get(k),
+          set: (k, v) => g.set(k, v),
+          remove: (k) => g.remove(k)
+        };
+        const cardPalette = [{ color: CARD_ACCENT_DEF, label: '粉' }].concat(BUBBLE_BG_COLORS);
+        wrap.appendChild(mkNote('问卡 A 版 · 全局共用，所有联系人同一套 · 只作用单聊。卡面/文字默认跟随气泡，改“默认”即回自动。'));
+        wrap.appendChild(mkGrid([
+          mkColorItem('强调色', CARD_ACCENT_KEY, CARD_ACCENT_DEF, cardPalette, { store: cs, apply: applyCardStyle }),
+          mkColorItem('卡面底色（默认跟气泡）', CARD_BG_KEY, DEF.outBg, BUBBLE_BG_COLORS, { store: cs, apply: applyCardStyle }),
+          mkColorItem('选中项底色（默认自动）', CARD_SEL_KEY, '#f0e9f7', BUBBLE_BG_COLORS, { store: cs, apply: applyCardStyle }),
+          mkColorItem('文字色（默认跟气泡）', CARD_TEXT_KEY, DEF.outInk, BUBBLE_INK_COLORS, { store: cs, apply: applyCardStyle })
+        ]));
+        paletteHost = document.createElement('div');
+        wrap.appendChild(paletteHost);
+        wrap.appendChild(mkNote('文字色和卡面底色保持明显深浅差；太接近会看不清。未选中项底色自动跟卡面，要单独改写到下面卡片 CSS 的 .ask-opt-btn / .ask-opt-row。'));
+        const cta = document.createElement('textarea');
+        cta.id = 'cs-card-drawer-css';
+        cta.className = 'tc-input';
+        cta.rows = 3;
+        cta.placeholder = '.msg-ask-card{border-radius:18px}' + '\n.ask-opt-btn{border-color:rgba(0,0,0,.12)}';
+        cta.style.cssText = 'width:100%;box-sizing:border-box;padding:9px 11px;font-size:12.5px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--bg-b,#fff);color:var(--ink,#111);resize:vertical';
+        try { cta.value = g.get(CARD_CSS_KEY) || ''; } catch (e) {}
+        let cardCssTimer = null;
+        cta.addEventListener('input', () => {
+          clearTimeout(cardCssTimer);
+          cardCssTimer = setTimeout(() => {
+            const v = String(cta.value || '').trim();
+            try { if (v) g.set(CARD_CSS_KEY, v); else g.remove(CARD_CSS_KEY); } catch (e) {}
+            applyCardCss();
+          }, 160);
+        });
+        wrap.appendChild(mkNote('卡片 CSS（边写边套用；选择器自动限定在 #page-chat，群聊不会生效）'));
+        wrap.appendChild(cta);
+        wrap.appendChild(mkAct('清空卡片 CSS', () => {
+          try { g.remove(CARD_CSS_KEY); } catch (e) {}
+          cta.value = '';
+          applyCardCss();
+          toast('已清空卡片样式');
+        }));
         return wrap;
       } },
       { key: 'bar', label: '栏位', build: () => {
