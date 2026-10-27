@@ -6763,6 +6763,9 @@ const FIX_SENTINELS = [
   // ==== 2026-10-27 #1582 聊天设置顶栏整块吸顶 ====
   { name: '#1582a 聊天设置标题栏+标签行整块吸顶（删＝标题栏又随内容滚走，只剩标签行）', file: 'css/setting.css', needle: '#page-chat-settings .cs-sticky-head {' },
   { name: '#1582b 聊天设置标题栏与标签行包进吸顶容器（删＝吸顶样式无处可挂，顶栏仍会滚没）', file: 'template.html', needle: 'class="cs-sticky-head"' },
+  // ==== 2026-10-27 #1583 桌面美化页顶栏吸顶 ====
+  { name: '#1583a 桌面美化页标题栏吸顶、标签行让出实测高度（删＝标题栏又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-theme .them-tabs { top:var(--theme-head-h, 60px); }' },
+  { name: '#1583b 桌面美化页顶栏高度同步（删＝--theme-head-h 恒为 60px，手机安全区/横屏下标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--theme-head-h', h + 'px');" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

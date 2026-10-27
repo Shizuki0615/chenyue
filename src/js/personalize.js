@@ -4934,6 +4934,22 @@ try {
     bar.style.display = 'flex';
   })();
 
+  // v8.59.4 用户 2026-10-27「桌面美化页顶栏也固定一下」：标题栏吸顶后，标签行必须让出它的实际高度，
+  // 否则两块同为 top:0 会叠在一起（标签压住返回键下半截，setting.css 里记过这个坑）。
+  // 高度随安全区/横竖屏/字号变化，写死 px 会偏；ResizeObserver 把实测值写进 --theme-head-h。
+  (function initThemeStickyHead() {
+    const page = document.getElementById('page-theme');
+    if (!page) return;
+    const head = page.querySelector('.chat-head');
+    if (!head) return;
+    const sync = () => {
+      const h = head.offsetHeight;
+      if (!page.hidden && h > 0) page.style.setProperty('--theme-head-h', h + 'px');
+    };
+    try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
+    sync();
+  })();
+
   // 手机桌面美化页：顶部标签切换分区（颜色/尺寸/背景/图标/方案），互斥显示
   (function initThemeTabs() {
     const tabsEl = document.getElementById('them-tabs');
