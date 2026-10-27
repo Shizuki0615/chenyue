@@ -547,6 +547,7 @@
             <div class="mw-info">
               <div class="mw-song" id="mw-song">Moonlit Dream</div>
               <div class="mw-artist" id="mw-artist">DLSS · shell（月光梦）</div>
+              <div class="mw-lyric" id="mw-lyric" hidden></div>
               <div class="mw-progress" id="mw-progress">
                 <div class="mw-bar" id="mw-bar"><div class="mw-fill" id="mw-fill"></div><span class="mw-knob" id="mw-knob"></span></div>
                 <div class="mw-times"><span id="mw-cur">0:00</span><span id="mw-dur">2:13</span></div>
@@ -4599,6 +4600,44 @@
           <button class="sm-pb-btn" id="sm-queue" title="播放队列">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h9"/></svg>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 歌词页（桌面音乐小框 / 歌曲「⋯」菜单进入；点任意一句做成歌词卡片） -->
+    <div class="page" id="page-music-lyric" hidden>
+      <div class="chat-head">
+        <span class="ch-back" id="lyric-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </span>
+        <span class="ch-name">歌词</span>
+        <button class="ch-more" id="lyric-import" title="导入歌词">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        </button>
+      </div>
+      <div class="lyric-top">
+        <div class="lyric-cover" id="lyric-cover">♪</div>
+        <div class="lyric-top-info">
+          <div class="lyric-title" id="lyric-title">未在播放</div>
+          <div class="lyric-sub" id="lyric-sub"></div>
+        </div>
+      </div>
+      <div class="lyric-scroll" id="lyric-scroll">
+        <div class="lyric-list" id="lyric-list"></div>
+        <div class="lyric-empty" id="lyric-empty" hidden>
+          <div class="lyric-empty-text" id="lyric-empty-text">还没找到这首歌的歌词</div>
+          <div class="lyric-empty-btns">
+            <button class="cc-tool" id="lyric-retry" type="button">重新获取</button>
+            <button class="cc-tool" id="lyric-manual" type="button">粘贴 / 导入歌词</button>
+          </div>
+        </div>
+      </div>
+      <div class="lyric-select-bar" id="lyric-select-bar" hidden>
+        <div class="lyric-select-line" id="lyric-select-line"></div>
+        <div class="lyric-select-btns">
+          <button class="cc-tool" id="lyric-send-chat" type="button">发给 TA</button>
+          <button class="cc-tool" id="lyric-send-feed" type="button">发朋友圈</button>
+          <button class="cc-tool" id="lyric-send-cancel" type="button">取消</button>
         </div>
       </div>
     </div>

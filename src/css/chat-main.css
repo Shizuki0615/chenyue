@@ -841,6 +841,18 @@ body.cs-sys-plain .msg-poke {
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
 .msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
 
+/* 歌词卡片（音乐模块「歌词传情」）：歌名/歌手 + 封面小图 + 引号歌词句，颜色跟随气泡表面 */
+.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:100%; }
+.msg-lyric-head { display:flex; align-items:center; gap:8px; }
+.msg-lyric-cover {
+  width:36px; height:36px; border-radius:8px; flex:0 0 auto; object-fit:cover;
+  background:var(--static-bg, rgba(0,0,0,.06)); display:block;
+}
+.msg-lyric-meta { min-width:0; }
+.msg-lyric-song { font-size:11px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-artist { font-size:10px; opacity:.55; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-line { font-size:15px; line-height:1.65; word-break:break-word; }
+
 /* 鎷嶄竴鎷嶆诞灞傚崱鐗囷紙搴曢儴鍗婃锛岄湶鍑洪《閮ㄨ亰澶╂秷鎭紝鏂逛究杈圭湅杈圭帺锛?   搴曢儴 96px锛氭偓鍋滃湪杈撳叆鏍忎笂鏂癸紝涓嶅帇浣?涓嶈鐩栬緭鍏ユ爮锛堣緭鍏ユ爮椤堕儴绾?82px锛?   v3.5.110锛歜ottom 鍔?safe-area锛屽叏闈㈠睆鍏ㄥ睆妯″紡涓嬩笌杈撳叆鏍忓悓姝ヤ笂绉伙紝涓嶉敊浣?   v3.10.x锛歠ixed 鈫?absolute鈥斺€旈敭鐩樺脊鍑烘椂闅忔敹缂╁悗鐨?.phone/#page-chat 鍋滈潬锛?   涓嶅啀閿氬畾鍏ㄩ珮 layout viewport 鎺夊埌杈撳叆鏍忎笅鏂癸紙璇﹁ .more-panel 澶勬敞閲婏級 */
 .poke-card {
   position:absolute; top:auto; bottom:calc(96px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px))); left:18px; right:18px;

@@ -1345,6 +1345,11 @@ box-shadow:0 6px 14px rgba(0,0,0,.30), inset 0 0 0 1px rgba(255,255,255,.08);
 .mw-info { flex:1; min-width:0; }
 .mw-song { font-size:16px; font-weight:700; letter-spacing:.5px; }
 .mw-artist { font-size:11px; color:var(--muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mw-lyric {
+margin-top:2px; font-size:10.5px; line-height:1.3; color:var(--muted);
+white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mw-lyric[hidden] { display:none; }
 .mw-progress { margin-top:10px; }
 .mw-bar {
 position:relative; height:4px; border-radius:99px; background:#e3e3e3;
@@ -2189,6 +2194,16 @@ background:rgba(0,0,0,.04); display:flex; align-items:center; justify-content:ce
 .msg-rps-name { font-size:11px; color:var(--muted); }
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
 .msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
+.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:100%; }
+.msg-lyric-head { display:flex; align-items:center; gap:8px; }
+.msg-lyric-cover {
+width:36px; height:36px; border-radius:8px; flex:0 0 auto; object-fit:cover;
+background:var(--static-bg, rgba(0,0,0,.06)); display:block;
+}
+.msg-lyric-meta { min-width:0; }
+.msg-lyric-song { font-size:11px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-artist { font-size:10px; opacity:.55; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-line { font-size:15px; line-height:1.65; word-break:break-word; }
 .poke-card {
 position:absolute; top:auto; bottom:calc(96px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px))); left:18px; right:18px;
 height:auto; max-height:48%;
@@ -6190,6 +6205,45 @@ box-shadow:0 2px 8px rgba(0,0,0,.18);
 }
 .sm-pb-play svg { width:19px; height:19px; }
 .sm-pb-btn { position:relative; }
+#page-music-lyric { overflow:hidden; background:var(--card-bg, #fff); }
+.lyric-top {
+display:flex; align-items:center; gap:12px; flex-shrink:0;
+padding:14px 18px 12px; border-bottom:1px solid var(--line);
+}
+.lyric-cover {
+width:54px; height:54px; border-radius:14px; flex-shrink:0;
+background-color:var(--static-bg, rgba(0,0,0,.04));
+background-size:cover; background-position:center;
+display:flex; align-items:center; justify-content:center;
+font-size:22px; color:var(--muted); overflow:hidden;
+}
+.lyric-top-info { flex:1; min-width:0; }
+.lyric-title { font-size:16px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lyric-sub { font-size:11px; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lyric-scroll { flex:1; min-height:0; overflow-y:auto; padding:16px 20px 96px; -webkit-overflow-scrolling:touch; }
+.lyric-list { display:flex; flex-direction:column; gap:2px; }
+.lyric-line {
+padding:8px 10px; border-radius:10px; text-align:left;
+font-size:15px; line-height:1.65; color:var(--muted);
+cursor:pointer; transition:background .15s, color .15s;
+-webkit-tap-highlight-color:transparent;
+}
+.lyric-line.on { color:var(--ink); font-weight:700; }
+.lyric-line.sel { background:rgba(244,182,194,.22); box-shadow:inset 0 0 0 1px rgba(244,182,194,.55); color:var(--ink); }
+.lyric-line:active { background:rgba(0,0,0,.04); }
+.lyric-empty { padding:72px 24px 24px; text-align:center; color:var(--muted); font-size:13px; line-height:1.8; }
+.lyric-loading { padding:72px 24px; text-align:center; color:var(--muted); font-size:13px; }
+.lyric-empty[hidden] { display:none; }
+.lyric-empty-btns { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+.lyric-select-bar {
+flex-shrink:0; display:flex; flex-direction:column; gap:8px;
+padding:10px 16px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));
+border-top:1px solid var(--line); background:var(--card-bg-97, #fff);
+}
+.lyric-select-bar[hidden] { display:none; }
+.lyric-select-line { font-size:13px; line-height:1.5; color:var(--ink); max-height:42px; overflow:hidden; }
+.lyric-select-btns { display:flex; gap:8px; }
+.lyric-select-btns .cc-tool { flex:1; }
 .sm-quick-actions { display:flex; gap:8px; }
 .sm-float {
 position:fixed; left:12px; top:80px; z-index:9999;
@@ -11511,7 +11565,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793099986195" data-version="v8.59.5">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793104078143" data-version="v8.60.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -11671,6 +11725,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="mw-info">
               <div class="mw-song" id="mw-song">Moonlit Dream</div>
               <div class="mw-artist" id="mw-artist">DLSS · shell（月光梦）</div>
+              <div class="mw-lyric" id="mw-lyric" hidden></div>
               <div class="mw-progress" id="mw-progress">
                 <div class="mw-bar" id="mw-bar"><div class="mw-fill" id="mw-fill"></div><span class="mw-knob" id="mw-knob"></span></div>
                 <div class="mw-times"><span id="mw-cur">0:00</span><span id="mw-dur">2:13</span></div>
@@ -13119,7 +13174,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.59.5</div>
+          <div class="val" id="about-ver-val">v8.60.1</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13210,7 +13265,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.59.5</div>
+      <div class="ver">Mochi 字卡传讯 v8.60.1</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13609,7 +13664,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.59.5</span>
+              <span class="lic-ver">v8.60.1</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -15723,6 +15778,44 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <button class="sm-pb-btn" id="sm-queue" title="播放队列">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h9"/></svg>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 歌词页（桌面音乐小框 / 歌曲「⋯」菜单进入；点任意一句做成歌词卡片） -->
+    <div class="page" id="page-music-lyric" hidden>
+      <div class="chat-head">
+        <span class="ch-back" id="lyric-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </span>
+        <span class="ch-name">歌词</span>
+        <button class="ch-more" id="lyric-import" title="导入歌词">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        </button>
+      </div>
+      <div class="lyric-top">
+        <div class="lyric-cover" id="lyric-cover">♪</div>
+        <div class="lyric-top-info">
+          <div class="lyric-title" id="lyric-title">未在播放</div>
+          <div class="lyric-sub" id="lyric-sub"></div>
+        </div>
+      </div>
+      <div class="lyric-scroll" id="lyric-scroll">
+        <div class="lyric-list" id="lyric-list"></div>
+        <div class="lyric-empty" id="lyric-empty" hidden>
+          <div class="lyric-empty-text" id="lyric-empty-text">还没找到这首歌的歌词</div>
+          <div class="lyric-empty-btns">
+            <button class="cc-tool" id="lyric-retry" type="button">重新获取</button>
+            <button class="cc-tool" id="lyric-manual" type="button">粘贴 / 导入歌词</button>
+          </div>
+        </div>
+      </div>
+      <div class="lyric-select-bar" id="lyric-select-bar" hidden>
+        <div class="lyric-select-line" id="lyric-select-line"></div>
+        <div class="lyric-select-btns">
+          <button class="cc-tool" id="lyric-send-chat" type="button">发给 TA</button>
+          <button class="cc-tool" id="lyric-send-feed" type="button">发朋友圈</button>
+          <button class="cc-tool" id="lyric-send-cancel" type="button">取消</button>
         </div>
       </div>
     </div>
@@ -23366,4 +23459,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvqlfo5v -->
+<!-- __MOCHI_EOF__ mvqnvdj3 -->

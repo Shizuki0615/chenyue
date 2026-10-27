@@ -738,6 +738,12 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
 .mw-info { flex:1; min-width:0; }
 .mw-song { font-size:16px; font-weight:700; letter-spacing:.5px; }
 .mw-artist { font-size:11px; color:var(--muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* 当前唱到的一句（歌词页入口）：10.5px 单行，撑高约 15px，仍在 190px 小部件高度内 */
+.mw-lyric {
+  margin-top:2px; font-size:10.5px; line-height:1.3; color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mw-lyric[hidden] { display:none; }
 .mw-progress { margin-top:10px; }
 .mw-bar {
   position:relative; height:4px; border-radius:99px; background:#e3e3e3;

@@ -1275,6 +1275,8 @@ if (m.inviteContent) s += '|I' + m.inviteContent;
 if (m.askQuestion) s += '|Q' + m.askQuestion;
 if (m.askFen != null) s += '|K' + m.askFen;
 if (m.dishName) s += '|D' + m.dishName;
+if (m.lyricSong) s += '|YS' + m.lyricSong;
+if (m.lyricArtist) s += '|YA' + m.lyricArtist;
 } catch (e) {}
 return s;
 }
@@ -4900,6 +4902,24 @@ m.dataset.pendingRead = '1';
 b.dataset.orig = rec.orig || retractSafeHtml(rec); // FIX #572d：仍是「快照优先」，无快照才走安全兜底（不再裸直出 rec.text）
 b.innerHTML = '<span style="opacity:.6;font-size:12px;cursor:pointer">' + (rec.side === 'out' ? '我' : '对方') + '撤回了一条消息</span>';
 bindToggle(b, rec.side);
+} else if (rec.special === 'lyric') {
+b.style.padding = '10px 12px';
+const lyricLineTxt = String(rec.lyricLine || rec.text || '');
+const lyricSongTxt = String(rec.lyricSong || '');
+const lyricArtistTxt = String(rec.lyricArtist || '');
+const lyricCoverTxt = String(rec.lyricCover || '');
+b.innerHTML = '<div class="msg-lyric-card">' +
+'<div class="msg-lyric-head">' +
+(lyricCoverTxt ? '<img class="msg-lyric-cover" src="' + attrEsc(lyricCoverTxt) + '" alt="">' : '') +
+'<div class="msg-lyric-meta">' +
+'<div class="msg-lyric-song">' + escTxt(lyricSongTxt || '歌词') + '</div>' +
+(lyricArtistTxt ? '<div class="msg-lyric-artist">' + escTxt(lyricArtistTxt) + '</div>' : '') +
+'</div></div>' +
+'<div class="msg-lyric-line">「' + escTxt(lyricLineTxt) + '」</div>' +
+'</div>';
+const lyricCoverEl = b.querySelector('.msg-lyric-cover');
+if (lyricCoverEl) lyricCoverEl.addEventListener('error', function () { this.style.display = 'none'; });
+maybeScrollChatBottom(rec.side);
 } else if (rec.type === 'sticker' || rec.type === 'image') {
 b.style.padding = '6px';
 b.style.background = '';
@@ -5651,6 +5671,24 @@ if (opts && opts.enter && !chatVisible()) enterChat();
 return r;
 };
 window.chatAddGift = function (rec) { if (!rec.ts) rec.ts = Date.now(); return addRec(rec); };
+window.chatAddLyricCard = function (data) {
+if (!data || !data.line) return null;
+const rec = {
+side: 'out',
+text: String(data.line),
+special: 'lyric',
+lyricLine: String(data.line),
+lyricSong: String(data.song || ''),
+lyricArtist: String(data.artist || ''),
+lyricCover: String(data.cover || '')
+};
+const r = addRec(rec);
+if (r) {
+try { scheduleReply(); } catch (e) {}
+try { if (window.logFish) window.logFish(); } catch (e) {}
+}
+return r;
+};
 function giftMetaOf(rec) {
 if (!rec || !rec.giftBoxId || !window.giftGiftMeta) return null;
 try { return window.giftGiftMeta(rec.giftBoxId); } catch (e) { return null; }

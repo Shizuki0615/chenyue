@@ -6769,6 +6769,14 @@ const FIX_SENTINELS = [
   // ==== 2026-10-27 #1584 设置主页大标题吸顶 ====
   { name: '#1584a 设置主页「设置」标题吸顶、标签行让出实测高度（删＝大标题又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-setting .set-title {' },
   { name: '#1584b 设置主页标题高度同步（删＝--set-head-h 恒为 46px，字号/安全区变化后标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--set-head-h', h + 'px');" },
+  // ==== 2026-10-27 #1585 音乐「歌词传情」 ====
+  { name: '#1585a 歌词页登记为全屏页（删＝歌词页底部被 tabbar 压住、状态栏不隐藏）', file: 'js/tabs.js', needle: "'page-music-lyric'" },
+  { name: '#1585b 歌词页整页结构在位（删＝歌曲头/滚动歌词/选中操作条无承载，点小框进不去）', file: 'template.html', needle: 'id="page-music-lyric"' },
+  { name: '#1585c 歌词缓存/自动拉取入口（删＝每次进歌词页都重新请求，或小框当前句永远空白）', file: 'js/music-player.js', needle: 'function ensureLyric(m, force, cb) {' },
+  { name: '#1585d 播放进度推动当前句（删＝小框当前句与歌词页高亮不随播放走）', file: 'js/music-player.js', needle: 'try { lyricTick(); }' },
+  { name: '#1585e 歌词卡片出站发送接口（删＝点「发给 TA」无效，消息会退回成普通文字）', file: 'js/chat.js', needle: 'window.chatAddLyricCard = function (data) {' },
+  { name: '#1585f 歌词卡片渲染分支（删＝聊天里只剩纯文字，歌名/封面/引号卡面丢失）', file: 'js/chat.js', needle: "rec.special === 'lyric'" },
+  { name: '#1585g 歌词卡片样式（删＝歌词卡无封面/歌名层级，退化成裸文字）', file: 'css/chat-main.css', needle: '.msg-lyric-card {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
