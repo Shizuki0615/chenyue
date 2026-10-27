@@ -1734,21 +1734,40 @@ if (!g) { toast('存储接口不可用，请刷新后重试'); return; }
 window.openTCPanel('卡片 CSS', '' +
 '<div class="sm-fld-hint" style="margin-bottom:8px">全局卡片样式，所有联系人共用，只作用单聊问卡。可直接写选择器（如 <code>.msg-ask-card{...}</code>、<code>.ask-opt-btn{...}</code>、<code>.ask-line-who{...}</code>），系统会自动把选择器限定在 <code>#page-chat</code>，群聊不会生效。</div>' +
 '<textarea id="cs-card-css-input" class="tc-input" rows="6" placeholder=".msg-ask-card{border-radius:18px}&#10;.ask-opt-btn{border-color:rgba(0,0,0,.12)}"></textarea>' +
-'<div class="mail-actions"><button class="cc-tool" id="cs-card-css-clear">清空</button><button class="cc-tool" id="cs-card-css-ok">应用</button></div>');
+'<div class="sm-fld-hint" style="margin:8px 0 4px">示例（点一下填进输入框，可再改）：</div>' +
+'<div class="mail-actions" style="margin-bottom:8px">' +
+'<button class="cc-tool" id="cs-card-ex1">卡面圆角</button>' +
+'<button class="cc-tool" id="cs-card-ex2">选项描边</button>' +
+'<button class="cc-tool" id="cs-card-ex3">分割线颜色</button>' +
+'</div>' +
+'<div class="mail-actions"><button class="cc-tool" id="cs-card-css-clear">恢复默认</button><button class="cc-tool" id="cs-card-css-ok">应用</button></div>');
 const ta = document.getElementById('cs-card-css-input');
 if (ta) ta.value = g.get(CARD_CSS_KEY) || '';
+const cardCssExamples = [
+'.msg-ask-card{border-radius:20px}',
+'.ask-opt-btn,.ask-opt-row{border-color:rgba(127,127,127,.32)}',
+'.msg-ask-lines{border-top-color:rgba(127,127,127,.32)}'
+];
+[['cs-card-ex1', 0], ['cs-card-ex2', 1], ['cs-card-ex3', 2]].forEach(([id, i]) => {
+const b = document.getElementById(id);
+if (!b || !ta) return;
+b.addEventListener('click', () => {
+const cur = String(ta.value || '').trim();
+ta.value = cur ? cur + '\n' + cardCssExamples[i] : cardCssExamples[i];
+});
+});
 document.getElementById('cs-card-css-clear').addEventListener('click', () => {
 try { g.remove(CARD_CSS_KEY); } catch (e) {}
 document.getElementById('tc-mask').hidden = true;
 applyCardCss();
-toast('已清空卡片样式');
+toast('已恢复默认卡片样式');
 });
 document.getElementById('cs-card-css-ok').addEventListener('click', () => {
 const v = cssReadVal(document.getElementById('cs-card-css-input')).trim();
 try { if (v) g.set(CARD_CSS_KEY, v); else g.remove(CARD_CSS_KEY); } catch (e) {}
 document.getElementById('tc-mask').hidden = true;
 applyCardCss();
-toast(v ? '卡片样式已应用' : '已清空卡片样式');
+toast(v ? '卡片样式已应用' : '已恢复默认卡片样式');
 });
 });
 }
