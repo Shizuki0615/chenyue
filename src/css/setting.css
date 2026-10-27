@@ -38,7 +38,16 @@
 }
 #page-chat-settings .cs-sticky-head .chat-head,
 #page-chat-settings .cs-sticky-head .them-tabs { position:static; }
-#page-theme .chat-head { position:static; }
+/* v8.59.4 用户 2026-10-27「桌面美化页也固定一下」：标题栏吸顶，标签行让出它的实测高度。
+   两块不能同为 top:0——标签只盖住标题上半部、返回键下半截露在下面（上面聊天设置那条同坑）。
+   --theme-head-h 由 personalize.js 的 ResizeObserver 写入（安全区/横竖屏/字号变化自动跟），
+   这里 60px 只是脚本还没跑时的兜底。 */
+#page-theme { --theme-head-h: 60px; }
+#page-theme .chat-head {
+  position:sticky; top:0; z-index:7;
+  background:var(--bg-b);
+}
+#page-theme .them-tabs { top:var(--theme-head-h, 60px); }
 [data-theme="dark"] .them-tabs { border-bottom-color:rgba(255,255,255,.12); }
 [data-theme="dark"] .them-tab { color:rgba(255,255,255,.38); }
 [data-theme="dark"] .them-tab.active { color:#fff; border-bottom-color:#fff; }
