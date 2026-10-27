@@ -6746,6 +6746,7 @@ const FIX_SENTINELS = [
   { name: '#1576 聊天美化方案纳入卡片 CSS/配色（删＝换方案不恢复卡片样式）', file: 'js/chat-settings.js', needle: "data[k] = (v === null || v === undefined) ? '' : String(v);" },
   { name: '#1577 设置页卡片配色入口（删＝设置页又找不到卡片配色）', file: 'template.html', needle: 'id="cs-card-colors"' },
   { name: '#1578 卡片配色入口直达边看边调卡片分区（删＝点开停回气泡分区）', file: 'js/chat-settings.js', needle: "csDrawerSec = 'card';" },
+  { name: '#1579 卡片 CSS 示例按钮（删＝示例入口消失，用户只能从零手写）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex1"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
