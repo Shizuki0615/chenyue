@@ -179,9 +179,17 @@
   .opt-box svg { width:10px; height:10px; }
   .opt.sel .opt-box { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 
-  .submit-row { display:flex; justify-content:flex-end; margin-top:9px; }
-  .col[data-variant="b"] .submit-row .send {
-    box-shadow:0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  .submit {
+    width:100%; height:42px; margin-top:8px; border:none; border-radius:12px;
+    background:var(--ink); color:var(--phone);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .submit svg { width:17px; height:17px; }
+  .col[data-variant="b"] .submit {
+    border-radius:14px;
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow:0 6px 14px color-mix(in srgb, var(--accent) 28%, transparent);
   }
 
   .quick {
@@ -340,7 +348,7 @@
         <div class="opt sel"><span class="opt-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="opt-t">日料</span></div>
         <div class="opt"><span class="opt-box"></span><span class="opt-t">家常菜</span></div>
       </div>
-      <div class="submit-row"><button class="send" type="button" aria-label="提交"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
+      <button class="submit" type="button" aria-label="提交"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
     </div>
     <div class="side"><div class="av">我</div><div class="time">21:13</div></div>
   </div>
