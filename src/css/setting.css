@@ -26,10 +26,19 @@
 .them-tabs { position:sticky; top:0; z-index:6; display:flex; gap:0; padding:8px 4px 0; background:var(--bg-b); border-bottom:1px solid rgba(0,0,0,.06); flex-shrink:0; }
 .them-tab { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:9px 0 8px; color:rgba(0,0,0,.35); border-bottom:2px solid transparent; border-radius:0; background:transparent; cursor:pointer; transition:color .15s,border-color .15s; }
 .them-tab.active { color:#111; border-bottom-color:#111; }
-/* 带标签页的设置页（聊天设置/手机桌面美化）：标题栏不吸附、随内容滚出，
+/* 带标签页的设置页（聊天设置/手机桌面美化）：标题栏原本不吸附、随内容滚出，
    滚动后吸顶的只剩 .them-tabs 一行。否则标题栏(.chat-head)与标签行同为 sticky top:0，
-   标签行只盖住标题栏上半部，返回按钮/标题一行下半截露在标签行下方，永远隐藏不干净 */
-#page-chat-settings .chat-head, #page-theme .chat-head { position:static; }
+   标签行只盖住标题栏上半部，返回按钮/标题一行下半截露在标签行下方，永远隐藏不干净。
+   v8.59.3 用户 2026-10-27 直派「聊天设置顶栏一扒拉就没有了」：聊天设置页改为
+   标题栏 + 标签行共用一个 sticky 容器整块吸顶（模板 .cs-sticky-head），两块在里面
+   改 static，不再各自 sticky 打架；桌面美化页保持原样，只吸标签行。 */
+#page-chat-settings .cs-sticky-head {
+  position:sticky; top:0; z-index:6; flex-shrink:0;
+  background:var(--bg-b);
+}
+#page-chat-settings .cs-sticky-head .chat-head,
+#page-chat-settings .cs-sticky-head .them-tabs { position:static; }
+#page-theme .chat-head { position:static; }
 [data-theme="dark"] .them-tabs { border-bottom-color:rgba(255,255,255,.12); }
 [data-theme="dark"] .them-tab { color:rgba(255,255,255,.38); }
 [data-theme="dark"] .them-tab.active { color:#fff; border-bottom-color:#fff; }

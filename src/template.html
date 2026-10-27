@@ -6801,6 +6801,9 @@
 
     <!-- 聊天设置（独立页面） -->
     <div class="page" id="page-chat-settings" hidden>
+      <!-- v8.59.3 用户 2026-10-27：标题栏「一扒拉就没有了」——标题栏与标签行包进同一个吸顶容器，
+           滚动时返回键/「聊天设置」/美化·功能·数据整块钉在顶部（样式见 setting.css #cs-sticky-head）。 -->
+      <div class="cs-sticky-head">
       <div class="chat-head">
         <span class="ch-back" id="cs-back">
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -6812,6 +6815,7 @@
         <div class="them-tab active" data-tab="beautify">美化</div>
         <div class="them-tab" data-tab="function">功能</div>
         <div class="them-tab" data-tab="data">数据</div>
+      </div>
       </div>
       <div class="them-sec" data-sec="beautify">
       <div class="gs-title" style="padding-top:2px">聊天美化方案</div>

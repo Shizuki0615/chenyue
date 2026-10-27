@@ -6760,6 +6760,9 @@ const FIX_SENTINELS = [
   { name: '#1581d 提示分区四项控件（删＝抽屉找不到分隔线/系统提示/正在输入入口）', file: 'js/chat-settings.js', needle: "{ key: 'tip', label: '提示'" },
   { name: '#1581e 提示四键纳入美化方案/备份/恢复（删＝换方案或恢复初始后提示样式残留）', file: 'js/chat-settings.js', needle: "'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell'," },
   { name: '#1581f body 状态类先比对再挂（删＝每点抽屉控件都脏化 class＝#938 那型闪屏回归）', file: 'js/chat-settings.js', needle: 'const syncBodyCls = (names, want) =>' },
+  // ==== 2026-10-27 #1582 聊天设置顶栏整块吸顶 ====
+  { name: '#1582a 聊天设置标题栏+标签行整块吸顶（删＝标题栏又随内容滚走，只剩标签行）', file: 'css/setting.css', needle: '#page-chat-settings .cs-sticky-head {' },
+  { name: '#1582b 聊天设置标题栏与标签行包进吸顶容器（删＝吸顶样式无处可挂，顶栏仍会滚没）', file: 'template.html', needle: 'class="cs-sticky-head"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
