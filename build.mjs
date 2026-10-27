@@ -1949,7 +1949,7 @@ const FIX_SENTINELS = [
   { name: '#764f 面板 hidden 真隐藏规则（删＝内联 display:flex 压过 UA，返回键置 hidden 面板不消失）', file: 'css/display-tune.css', needle: '#screen-adj-panel[hidden] { display: none !important; }' },
   { name: '#764g 工具区首位独立入口行（删＝功能又藏进诊断组不显眼，用户报「找不到」复发）', file: 'template.html', needle: '屏幕适配微调<span class="sub">' },
   { name: '#764h 返回键先关微调面板（删回不含＝安卓返回直接退页不关面板）', file: 'js/tabs.js', needle: "'screen-adj-panel'];" },
-  { name: '#764i 输入框 contenteditable 形态字号消费（删＝base.css 防 iOS 聚焦缩放的 .phone [contenteditable=16px] 截胡，文字轴对输入框永远无效——隔离构建真浏览器实测）', file: 'css/display-tune.css', needle: '.phone .chat-input[contenteditable="true"] { font-size: calc(15px + var(--mochi-text-adj, 0px)); }' },
+  { name: '#764i 输入框 contenteditable 形态字号消费（删＝base.css 防 iOS 聚焦缩放的 .phone [contenteditable=16px] 截胡，文字轴对输入框永远无效——隔离构建真浏览器实测；v8.60.0 改为先吃输入框字号变量）', file: 'css/display-tune.css', needle: '.phone .chat-input[contenteditable="true"] { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }' },
   // ==== 2026-09-18 信箱纯性能批（收口者按其 WORKLOG 委托补登）——该批曾被并行会话旧缓冲回写整文件打回 HEAD 一次，
   // 哨兵是唯一能拦住它再来一遍的东西；needle 均为「逻辑锚点」：实现被改坏即消失 ====
   { name: '信箱 load 解析缓存接线（删 cachedParse 调用＝每帧全量 JSON.parse 数百 KB dataURL 键，卡顿回归）', file: 'js/mail.js', needle: 'cachedParse(prefixFor(cid)' },
@@ -4264,8 +4264,8 @@ const FIX_SENTINELS = [
   { name: '#966f 群聊美化同值不重写守卫（删＝点同一个档仍重写 ~16 个变量＝#938 那型闪屏在群聊侧回流）', file: 'js/group-chat.js', needle: 'const gcSetVar = (el, name, value) =>' },
   { name: '#966g 群聊 time-style 类只摘挂着的那一个（删＝每点一次白摘 5 个不存在的 cs-time-* 类）', file: 'js/group-chat.js', needle: 'gcSetCls(page, wantTime, true);' },
   { name: '#949a 输入框保底 4em 可用宽（退回 min-width:0＝窄屏开语音+批量后输入框被按钮压成 0 宽无法输入）', file: 'css/chat-main.css', needle: 'min-width:4em' },
-  { name: '#949b 输入栏图标按钮放开收缩并保 30px 下限（退回 flex-shrink:0＝按钮一像素不让，挤压全部由输入框吸收）', file: 'css/chat-main.css', needle: 'min-width:30px' },
-  { name: '#949c 窄屏档输入栏间距收紧（删＝360px 级机型按钮收缩到下限后仍差一口气，发送键被顶出/输入框贴 0）', file: 'css/chat-main.css', needle: 'padding:12px 8px 12px 10px' },
+  { name: '#949b 输入栏图标按钮放开收缩并保 30px 下限（退回 flex-shrink:0＝按钮一像素不让，挤压全部由输入框吸收；v8.60.0 起下限随按钮大小档联动＝尺寸-8px，默认 38→30）', file: 'css/chat-main.css', needle: 'min-width:calc(var(--cs-input-btn-size, 38px) - 8px);' },
+  { name: '#949c 窄屏档输入栏间距收紧（删＝360px 级机型按钮收缩到下限后仍差一口气，发送键被顶出/输入框贴 0；v8.60.0 起上下内边距吃粗细档，左右仍锁死）', file: 'css/chat-main.css', needle: 'padding:var(--cs-input-pad-y, 12px) 8px var(--cs-input-pad-y, 12px) 10px;' },
   /* ==== 2026-09-21 #950 表情包大包 IDB 数组直存（用户实指「表情包库能超几十 MB」，既有 34.93MB/#172 实例；原保存链整包 JSON.stringify 压主线程＝包越大点按帧冻结越久，#943b 防抖只减次数不减单次重量）==== */
   { name: '#950a 大包按体积分流直存 IDB 数组（删＝几十 MB 包每次保存仍整包主线程序列化+读回再 parse）', file: 'js/chat.js', needle: "if (myeBytesEst() > MYE_DIRECT_LIMIT && window.idbSet) {" },
   { name: '#950b 防覆盖闸门读回类型感知（删＝数组形态的 hydrate 值被 JSON.parse 吞掉＝合并静默失败，盲写顶掉 IDB 全量）', file: 'js/chat.js', needle: "const full = typeof rawGate === 'string' ? JSON.parse(rawGate || 'null') : (rawGate || null);" },
@@ -6092,7 +6092,7 @@ const FIX_SENTINELS = [
   { name: '#1480i 草稿状态行点名单独限选的题数（删＝杆上读数被当成全卷统一上限，用户无从知道按题限已生效）', file: 'js/ta-ask.js', needle: "+ (nCap ? nCap + ' 题单独限选、其余' : '') +" },
   { name: '#1480j 手动作答的上限闸（删＝限 2 的题勾第 3 个照样上屏，用户侧与 TA 侧两套规矩）', file: 'js/chat.js', needle: "if (at < 0 && capN && picked.length >= capN) { toast('这题最多选 ' + capN + ' 个'); return; }" },
   { name: '#1480k 手动作答上限的取数（删＝capN 恒 0＝闸永远不关）', file: 'js/chat.js', needle: "const capN = (rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;" },
-  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；已随未答选项直接铺开重锚到提交条初始文案）', file: 'js/chat.js', needle: "submit.textContent = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');" },
+  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；v8.57.6 重锚：提交条改小飞机后，初始提示文案在 askMultiOptsHtml 的 submitHint）', file: 'js/chat.js', needle: "const submitHint = capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案';" },
   { name: '#1480m 尾日志压缩字段表带上 askMultiMax（删＝尾巴日志回放出的限选卡丢了按题上限，跨桌面/回收恢复后闸失效）', file: 'js/chat.js', needle: "'askType', 'askMultiMax', 'deskCk'" },
   { name: '#1480n 问卷格式说明写出按题限选写法（删＝页面上没有任何一处教「（多选·最多2）」，功能等于不存在）', file: 'template.html', needle: "个别题想另限就写成「（多选·最多2）」" },
   { name: '#1480o 「按题限选」文案随 #1502 章下线、落点回到问卷设置页说明（删＝功能说明也没了，用户无处得知「（多选·最多2）」写法）', file: 'template.html', needle: '也可写「（多选·最多2）」给这一题单独限个数' },
@@ -6729,6 +6729,54 @@ const FIX_SENTINELS = [
   { name: '#1569f 拆红包小窗打开/阶段切换（删＝点卡只渲染空窗，领取/拒收/确认阶段不显示）', file: 'js/chat.js', needle: 'function openRpOpen(rec, idx) {' },
   { name: '#1569g 拆红包小窗复用红包封面（删＝有封面也不铺，退回固定白底/红底）', file: 'js/chat.js', needle: "box.classList.add('has-cover')" },
   { name: '#1569h 领取按钮金币四角星图标（删＝领取图标退回圆圈加号）', file: 'template.html', needle: 'M12 5.5l1.4 5.1L18.5 12' },
+  // ==== 2026-10-27 #1570 问卡 A 版 + 全局卡片 CSS/配色 ====
+  { name: '#1570a 问卡 A 版卡面/选项/选色层（删＝退回旧问卡观感）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card:not(.msg-survey-card)' },
+  { name: '#1570b 多选提交键小飞机（删＝提交键退回文字）', file: 'js/chat.js', needle: 'ask-opt-submit-ic' },
+  { name: '#1570c 已答你/他胶囊 + 句尾勾（删＝退回「你：」纯文本、无勾）', file: 'js/chat.js', needle: 'ask-line-done' },
+  { name: '#1570d 卡片 CSS 全局根键/作用域注入（删＝卡片 CSS 输入不生效）', file: 'js/chat-settings.js', needle: 'cs-card-global-css' },
+  { name: '#1570e 卡片配色 4 项（删＝强调/卡面/选中/文字无法改）', file: 'js/chat-settings.js', needle: 'CARD_GLOBAL_ALL' },
+  { name: '#1570f 恢复初始美化新增保留卡片 CSS（删＝无法只留 CSS、配色回默认）', file: 'js/chat-settings.js', needle: 'cs-reset-keepcardcss' },
+  { name: '#1570g 全局卡片键不随 migrateLegacy 迁走（删＝切换联系人后卡片样式/配色丢失）', file: 'js/contacts.js', needle: "if (r.indexOf('cs-card-global-') === 0) return true;" },
+  { name: '#1570h 卡片 CSS 设置页入口（删＝设置页找不到卡片 CSS）', file: 'template.html', needle: 'id="cs-card-css"' },
+  { name: '#1570i 按题限选 askMultiMax 经 chatAddSystem/addIn 双白名单透传（删＝卡上不显示「最多 N 个」、限选闸失效；E2E 实捕）', file: 'js/chat.js', needle: 'askMultiMax: opts.askMultiMax' },
+  { name: '#1571 B 版已答卡题目/答复单分割线（删＝已答卡又变一整块无层次；30% 文字色）', file: 'css/chat-main.css', needle: 'border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);' },
+  { name: '#1572 问卡文字对比安全色（删＝浅气泡+白字时卡片文字看不清；E2E 实捕 #ffd6e0 白字 1.32:1）', file: 'js/chat-settings.js', needle: 'if (_csContrast(outInk, outBg) < 4.5) {' },
+  { name: '#1574 问卷摘要卡 A 版对齐（删＝问卷卡又退回旧卡面）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card.msg-survey-card,' },
+  { name: '#1575 问卷详情按钮改小圆箭头（删＝又退回文字按钮）', file: 'js/chat.js', needle: 'class="msg-survey-detail-btn" data-sv-detail="1" aria-label=' },
+  { name: '#1576 聊天美化方案纳入卡片 CSS/配色（删＝换方案不恢复卡片样式）', file: 'js/chat-settings.js', needle: "data[k] = (v === null || v === undefined) ? '' : String(v);" },
+  { name: '#1577 设置页卡片配色入口（删＝设置页又找不到卡片配色）', file: 'template.html', needle: 'id="cs-card-colors"' },
+  { name: '#1578 卡片配色入口直达边看边调卡片分区（删＝点开停回气泡分区）', file: 'js/chat-settings.js', needle: "csDrawerSec = 'card';" },
+  { name: '#1579 卡片 CSS 示例按钮（删＝示例入口消失，用户只能从零手写）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex1"' },
+  // ==== 2026-10-27 #1580 输入栏细节（圆角 / 输入框字号 / 按钮大小 / 粗细）====
+  { name: '#1580a 输入栏圆角/粗细变量消费（删＝圆角与粗细两档失效，退回固定胶囊/14px）', file: 'css/chat-main.css', needle: 'var(--cs-input-radius, 99px)' },
+  { name: '#1580b 输入框字号变量消费（删＝输入框字号档失效，display-tune 又钉死 15px）', file: 'css/display-tune.css', needle: '.chat-input { font-size: var(--cs-input-font, calc(15px + var(--mochi-text-adj, 0px))); }' },
+  { name: '#1580c 手机/平板通栏输入栏吃用户圆角与粗细（删＝真机上圆角/粗细两档无效，恒为 0/10px）', file: 'css/base.css', needle: 'border-radius: var(--cs-input-radius, 0);' },
+  { name: '#1580d 抽屉栏位四项控件（删＝输入栏圆角/字号/按钮/粗细入口消失）', file: 'js/chat-settings.js', needle: 'cs-input-btn-size' },
+  { name: '#1580e 输入栏四项纳入美化方案/备份/恢复（删＝换方案或恢复初始后输入栏细节残留）', file: 'js/chat-settings.js', needle: "'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y'," },
+  // ==== 2026-10-27 #1581 提示三组（时间分隔线 / 系统提示 / 正在输入）====
+  { name: '#1581a 时间分隔线三档 CSS（删＝分隔线只剩默认胶囊，细线夹字/纯文字失效）', file: 'css/chat-main.css', needle: 'body.cs-td-lines .msg-time-divider::before' },
+  { name: '#1581b 系统提示三档 CSS（删＝拍一拍/撤回/通知只剩默认灰底描边）', file: 'css/chat-main.css', needle: 'body.cs-sys-soft .msg-poke' },
+  { name: '#1581c 正在输入位置/样式 CSS（删＝居中与小胶囊两档失效）', file: 'css/chat-main.css', needle: 'body.cs-typing-center #chat-typing' },
+  { name: '#1581d 提示分区四项控件（删＝抽屉找不到分隔线/系统提示/正在输入入口）', file: 'js/chat-settings.js', needle: "{ key: 'tip', label: '提示'" },
+  { name: '#1581e 提示四键纳入美化方案/备份/恢复（删＝换方案或恢复初始后提示样式残留）', file: 'js/chat-settings.js', needle: "'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell'," },
+  { name: '#1581f body 状态类先比对再挂（删＝每点抽屉控件都脏化 class＝#938 那型闪屏回归）', file: 'js/chat-settings.js', needle: 'const syncBodyCls = (names, want) =>' },
+  // ==== 2026-10-27 #1582 聊天设置顶栏整块吸顶 ====
+  { name: '#1582a 聊天设置标题栏+标签行整块吸顶（删＝标题栏又随内容滚走，只剩标签行）', file: 'css/setting.css', needle: '#page-chat-settings .cs-sticky-head {' },
+  { name: '#1582b 聊天设置标题栏与标签行包进吸顶容器（删＝吸顶样式无处可挂，顶栏仍会滚没）', file: 'template.html', needle: 'class="cs-sticky-head"' },
+  // ==== 2026-10-27 #1583 桌面美化页顶栏吸顶 ====
+  { name: '#1583a 桌面美化页标题栏吸顶、标签行让出实测高度（删＝标题栏又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-theme .them-tabs { top:var(--theme-head-h, 60px); }' },
+  { name: '#1583b 桌面美化页顶栏高度同步（删＝--theme-head-h 恒为 60px，手机安全区/横屏下标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--theme-head-h', h + 'px');" },
+  // ==== 2026-10-27 #1584 设置主页大标题吸顶 ====
+  { name: '#1584a 设置主页「设置」标题吸顶、标签行让出实测高度（删＝大标题又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-setting .set-title {' },
+  { name: '#1584b 设置主页标题高度同步（删＝--set-head-h 恒为 46px，字号/安全区变化后标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--set-head-h', h + 'px');" },
+  // ==== 2026-10-27 #1585 音乐「歌词传情」 ====
+  { name: '#1585a 歌词页登记为全屏页（删＝歌词页底部被 tabbar 压住、状态栏不隐藏）', file: 'js/tabs.js', needle: "'page-music-lyric'" },
+  { name: '#1585b 歌词页整页结构在位（删＝歌曲头/滚动歌词/选中操作条无承载，点小框进不去）', file: 'template.html', needle: 'id="page-music-lyric"' },
+  { name: '#1585c 歌词缓存/自动拉取入口（删＝每次进歌词页都重新请求，或小框当前句永远空白）', file: 'js/music-player.js', needle: 'function ensureLyric(m, force, cb) {' },
+  { name: '#1585d 播放进度推动当前句（删＝小框当前句与歌词页高亮不随播放走）', file: 'js/music-player.js', needle: 'try { lyricTick(); }' },
+  { name: '#1585e 歌词卡片出站发送接口（删＝点「发给 TA」无效，消息会退回成普通文字）', file: 'js/chat.js', needle: 'window.chatAddLyricCard = function (data) {' },
+  { name: '#1585f 歌词卡片渲染分支（删＝聊天里只剩纯文字，歌名/封面/引号卡面丢失）', file: 'js/chat.js', needle: "rec.special === 'lyric'" },
+  { name: '#1585g 歌词卡片样式（删＝歌词卡无封面/歌名层级，退化成裸文字）', file: 'css/chat-main.css', needle: '.msg-lyric-card {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

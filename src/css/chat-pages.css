@@ -2882,6 +2882,47 @@ body.mail-emoji-mode #emoji-panel { bottom: calc(64px + var(--mochi-safe-bottom,
 .sm-pb-play svg { width:19px; height:19px; }
 /* 播放队列数量角标已在用户要求下移除（原 .sm-pb-btn .sm-pb-badge 黑色圆点） */
 .sm-pb-btn { position:relative; }
+/* ===== 歌词页（音乐模块） =====
+   整页只让 .lyric-scroll 滚动；顶栏/歌曲头/选中操作条固定，避免长词把操作按钮顶出屏幕。 */
+#page-music-lyric { overflow:hidden; background:var(--card-bg, #fff); }
+.lyric-top {
+  display:flex; align-items:center; gap:12px; flex-shrink:0;
+  padding:14px 18px 12px; border-bottom:1px solid var(--line);
+}
+.lyric-cover {
+  width:54px; height:54px; border-radius:14px; flex-shrink:0;
+  background-color:var(--static-bg, rgba(0,0,0,.04));
+  background-size:cover; background-position:center;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:var(--muted); overflow:hidden;
+}
+.lyric-top-info { flex:1; min-width:0; }
+.lyric-title { font-size:16px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lyric-sub { font-size:11px; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lyric-scroll { flex:1; min-height:0; overflow-y:auto; padding:16px 20px 96px; -webkit-overflow-scrolling:touch; }
+.lyric-list { display:flex; flex-direction:column; gap:2px; }
+.lyric-line {
+  padding:8px 10px; border-radius:10px; text-align:left;
+  font-size:15px; line-height:1.65; color:var(--muted);
+  cursor:pointer; transition:background .15s, color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.lyric-line.on { color:var(--ink); font-weight:700; }
+.lyric-line.sel { background:rgba(244,182,194,.22); box-shadow:inset 0 0 0 1px rgba(244,182,194,.55); color:var(--ink); }
+.lyric-line:active { background:rgba(0,0,0,.04); }
+.lyric-empty { padding:72px 24px 24px; text-align:center; color:var(--muted); font-size:13px; line-height:1.8; }
+.lyric-loading { padding:72px 24px; text-align:center; color:var(--muted); font-size:13px; }
+.lyric-empty[hidden] { display:none; }
+.lyric-empty-btns { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+.lyric-select-bar {
+  flex-shrink:0; display:flex; flex-direction:column; gap:8px;
+  padding:10px 16px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));
+  border-top:1px solid var(--line); background:var(--card-bg-97, #fff);
+}
+.lyric-select-bar[hidden] { display:none; }
+.lyric-select-line { font-size:13px; line-height:1.5; color:var(--ink); max-height:42px; overflow:hidden; }
+.lyric-select-btns { display:flex; gap:8px; }
+.lyric-select-btns .cc-tool { flex:1; }
 /* 管理音乐弹窗快捷操作（下一首播放 / 加入播放列表） */
 .sm-quick-actions { display:flex; gap:8px; }
 /* 悬浮小框（两行布局：上行 歌名/歌手/进度，下行 控制按钮） */

@@ -26,10 +26,28 @@
 .them-tabs { position:sticky; top:0; z-index:6; display:flex; gap:0; padding:8px 4px 0; background:var(--bg-b); border-bottom:1px solid rgba(0,0,0,.06); flex-shrink:0; }
 .them-tab { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:9px 0 8px; color:rgba(0,0,0,.35); border-bottom:2px solid transparent; border-radius:0; background:transparent; cursor:pointer; transition:color .15s,border-color .15s; }
 .them-tab.active { color:#111; border-bottom-color:#111; }
-/* 带标签页的设置页（聊天设置/手机桌面美化）：标题栏不吸附、随内容滚出，
+/* 带标签页的设置页（聊天设置/手机桌面美化）：标题栏原本不吸附、随内容滚出，
    滚动后吸顶的只剩 .them-tabs 一行。否则标题栏(.chat-head)与标签行同为 sticky top:0，
-   标签行只盖住标题栏上半部，返回按钮/标题一行下半截露在标签行下方，永远隐藏不干净 */
-#page-chat-settings .chat-head, #page-theme .chat-head { position:static; }
+   标签行只盖住标题栏上半部，返回按钮/标题一行下半截露在标签行下方，永远隐藏不干净。
+   v8.59.3 用户 2026-10-27 直派「聊天设置顶栏一扒拉就没有了」：聊天设置页改为
+   标题栏 + 标签行共用一个 sticky 容器整块吸顶（模板 .cs-sticky-head），两块在里面
+   改 static，不再各自 sticky 打架；桌面美化页保持原样，只吸标签行。 */
+#page-chat-settings .cs-sticky-head {
+  position:sticky; top:0; z-index:6; flex-shrink:0;
+  background:var(--bg-b);
+}
+#page-chat-settings .cs-sticky-head .chat-head,
+#page-chat-settings .cs-sticky-head .them-tabs { position:static; }
+/* v8.59.4 用户 2026-10-27「桌面美化页也固定一下」：标题栏吸顶，标签行让出它的实测高度。
+   两块不能同为 top:0——标签只盖住标题上半部、返回键下半截露在下面（上面聊天设置那条同坑）。
+   --theme-head-h 由 personalize.js 的 ResizeObserver 写入（安全区/横竖屏/字号变化自动跟），
+   这里 60px 只是脚本还没跑时的兜底。 */
+#page-theme { --theme-head-h: 60px; }
+#page-theme .chat-head {
+  position:sticky; top:0; z-index:7;
+  background:var(--bg-b);
+}
+#page-theme .them-tabs { top:var(--theme-head-h, 60px); }
 [data-theme="dark"] .them-tabs { border-bottom-color:rgba(255,255,255,.12); }
 [data-theme="dark"] .them-tab { color:rgba(255,255,255,.38); }
 [data-theme="dark"] .them-tab.active { color:#fff; border-bottom-color:#fff; }
@@ -39,7 +57,15 @@
 .them-tabs.sub .them-tab, .gc-set-tabs .them-tab { font-size:12px; padding:8px 0 7px; }
 /* v3.33.x：设置页顶部 tag 分类——与聊天设置/美化页同款 sticky，滚动时吸顶，
    标签下不再透出其他分区的 .set-group，避免视觉穿帮 */
-#page-setting .set-tabs, #set-tabs { position:sticky; top:0; }
+/* v8.59.5 用户 2026-10-27：设置主页也把「设置」大标题固定住，标签行让出标题实测高度。
+   搜索框保持在标题与标签之间、随内容滚走——它占一整行，跟着吸顶会把顶部压掉近三分之一屏。
+   回复设置 / 收藏页的头部本来就常驻（内容在 .gs-scroll / .fav-body 内部滚动），无需改动。 */
+#page-setting { --set-head-h: 46px; }
+#page-setting .set-title {
+  position:sticky; top:0; z-index:7;
+  background:var(--bg-b);
+}
+#page-setting .set-tabs, #set-tabs { position:sticky; top:var(--set-head-h, 46px); }
 /* .them-sec 默认 display:block（不写），切换靠 hidden 属性原生 display:none */
 /* 页面是 flex 纵向滚动容器：设置块禁止被 flex 压缩，内容超高时应滚动而非裁切/重叠 */
 .set-group, .gs-title, .set-title { flex-shrink:0; }
