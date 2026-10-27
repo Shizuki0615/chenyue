@@ -18,8 +18,7 @@
     --bubble:#dcc9f2; --bubble-ink:#241f2b; --bubble-muted:rgba(36,31,43,.62);
     --card-border:rgba(36,31,43,.08); --card-shadow:0 4px 14px rgba(36,31,43,.07);
     --a-top:rgba(255,255,255,.16);
-    --b-top:rgba(255,255,255,.72); --b-bottom:rgba(244,182,194,.6); --b-base:#fbe9f0;
-    --b-border:rgba(232,143,163,.3); --b-shadow:0 10px 26px rgba(232,143,163,.18);
+    --b-top:rgba(255,255,255,.35); --b-base:#fbe9f0;
     --opt-bg:rgba(255,255,255,.62); --opt-ink:#241f2b; --opt-border:rgba(36,31,43,.12);
     --opt-sel-bg:#fff; --opt-sel-border:#241f2b;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.15);
@@ -30,8 +29,7 @@
     --bubble:#fff; --bubble-ink:#222; --bubble-muted:rgba(34,34,34,.62);
     --card-border:rgba(0,0,0,.08); --card-shadow:0 4px 14px rgba(0,0,0,.06);
     --a-top:rgba(255,255,255,.8);
-    --b-top:rgba(255,255,255,.78); --b-bottom:rgba(244,182,194,.65); --b-base:#fdf4f7;
-    --b-border:rgba(232,143,163,.3); --b-shadow:0 10px 26px rgba(232,143,163,.18);
+    --b-top:rgba(255,255,255,.4); --b-base:#fdf4f7;
     --opt-bg:rgba(0,0,0,.025); --opt-ink:#222; --opt-border:rgba(0,0,0,.11);
     --opt-sel-bg:#fff; --opt-sel-border:#222;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.16);
@@ -42,8 +40,7 @@
     --bubble:#1d1d1d; --bubble-ink:#f1f1f1; --bubble-muted:rgba(241,241,241,.62);
     --card-border:rgba(255,255,255,.14); --card-shadow:0 6px 18px rgba(0,0,0,.45);
     --a-top:rgba(255,255,255,.06);
-    --b-top:rgba(255,255,255,.1); --b-bottom:rgba(240,163,181,.22); --b-base:#2a2226;
-    --b-border:rgba(240,163,181,.28); --b-shadow:0 10px 26px rgba(0,0,0,.4);
+    --b-top:rgba(255,255,255,.1); --b-base:#2a2226;
     --opt-bg:rgba(255,255,255,.06); --opt-ink:#f1f1f1; --opt-border:rgba(255,255,255,.22);
     --opt-sel-bg:rgba(255,255,255,.1); --opt-sel-border:#f1f1f1;
     --accent:#f0a3b5; --accent-ink:#2a2024; --accent-strong:#f0a3b5; --accent-soft:rgba(240,163,181,.14);
@@ -64,6 +61,22 @@
     padding:7px 12px; border-radius:999px; font:inherit; font-size:12px; cursor:pointer;
   }
   .segs button.on { background:var(--ink); color:var(--phone); border-color:var(--ink); }
+  .colors {
+    display:flex; flex-wrap:wrap; align-items:center; gap:9px 14px;
+    margin-top:12px; font-size:11px; color:var(--muted);
+  }
+  .colors label { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .colors input[type="color"] {
+    width:28px; height:24px; padding:0; border:1px solid var(--line);
+    border-radius:7px; background:var(--phone); cursor:pointer;
+  }
+  .colors input[type="color"]::-webkit-color-swatch-wrapper { padding:2px; }
+  .colors input[type="color"]::-webkit-color-swatch { border:none; border-radius:5px; }
+  .colors .reset {
+    border:1px solid var(--line); background:var(--phone); color:var(--ink);
+    padding:5px 10px; border-radius:999px; font:inherit; font-size:11px; cursor:pointer;
+  }
+  html[data-theme="dark"] .colors input[type="color"] { border-color:rgba(255,255,255,.32); }
 
   .stage {
     display:flex; gap:26px; justify-content:center; align-items:flex-start; flex-wrap:wrap;
@@ -76,7 +89,7 @@
     background:var(--ink); color:var(--phone);
     align-items:center; justify-content:center; font-size:12px;
   }
-  .col[data-variant="b"] .col-head b { background:linear-gradient(135deg,#f6bcc9,#e88fa3); color:#2a2024; }
+  .col[data-variant="b"] .col-head b { background:var(--accent); color:var(--accent-ink); }
 
   .phone {
     width:390px; max-width:100%; height:auto;
@@ -108,7 +121,7 @@
     display:flex; align-items:center; justify-content:center;
     border:1.5px solid rgba(255,255,255,.55);
   }
-  .col[data-variant="b"] .av { background:linear-gradient(135deg,#f7c9d4,#e88fa3); color:#4a2029; }
+  .col[data-variant="b"] .av { background:var(--accent); color:var(--accent-ink); }
   .time { font-size:10.5px; color:var(--muted); white-space:nowrap; }
 
   .card {
@@ -124,9 +137,10 @@
   }
   .col[data-variant="a"] .card > * { position:relative; z-index:1; }
   .col[data-variant="b"] .card {
-    border-radius:22px; border-color:var(--b-border);
-    background:linear-gradient(155deg, var(--b-top), var(--b-bottom)), var(--b-base);
-    box-shadow:var(--b-shadow);
+    border-radius:22px;
+    border-color:color-mix(in srgb, var(--accent) 35%, transparent);
+    background:linear-gradient(155deg, var(--b-top), transparent 72%), var(--b-base);
+    box-shadow:0 10px 26px color-mix(in srgb, var(--accent) 18%, transparent);
   }
   .q { font-size:15px; font-weight:700; line-height:1.6; letter-spacing:.1px; }
 
@@ -141,6 +155,10 @@
   .opt:active { transform:scale(.995); }
   .opt-t { flex:1; min-width:0; }
   .opt.sel { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); font-weight:600; }
+  .col[data-variant="a"] .opt.sel {
+    border-color:var(--opt-ink);
+    background:color-mix(in srgb, var(--opt-ink) 7%, var(--bubble));
+  }
   .col[data-variant="b"] .opt { border-radius:14px; }
   .col[data-variant="b"] .opt.sel { border-color:var(--accent); background:var(--accent-soft); }
   .opt-check {
@@ -160,13 +178,13 @@
 
   .submit {
     width:100%; height:42px; margin-top:8px; border:none; border-radius:12px;
-    background:var(--bubble-ink); color:var(--phone);
+    background:var(--ink); color:var(--phone);
     font:inherit; font-size:13px; font-weight:700; cursor:pointer;
   }
   .col[data-variant="b"] .submit {
     border-radius:14px;
-    background:linear-gradient(135deg,#f6bcc9,#e88fa3); color:#2a2024;
-    box-shadow:0 6px 14px rgba(232,143,163,.25);
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow:0 6px 14px color-mix(in srgb, var(--accent) 28%, transparent);
   }
 
   .quick {
@@ -177,6 +195,10 @@
   }
   .quick .chev { margin-left:auto; opacity:.45; font-size:17px; line-height:1; }
   .quick.is-press { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); }
+  .col[data-variant="a"] .quick.is-press {
+    border-color:var(--opt-ink);
+    background:color-mix(in srgb, var(--opt-ink) 7%, var(--bubble));
+  }
   .col[data-variant="b"] .quick { border-radius:14px; }
   .col[data-variant="b"] .quick.is-press { border-color:var(--accent); background:var(--accent-soft); }
 
@@ -188,13 +210,13 @@
   .inputbar .ph { flex:1; min-width:0; font-size:13px; color:var(--bubble-muted); }
   .send {
     width:38px; height:38px; border:none; border-radius:50%;
-    background:var(--bubble-ink); color:var(--phone);
+    background:var(--ink); color:var(--phone);
     display:flex; align-items:center; justify-content:center; flex:none;
   }
   .send svg { width:16px; height:16px; }
   .col[data-variant="b"] .send {
-    background:linear-gradient(135deg,#f6bcc9,#e88fa3); color:#2a2024;
-    box-shadow:0 4px 10px rgba(232,143,163,.3);
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow:0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .lines {
@@ -244,6 +266,12 @@
     .phone { border-radius:28px; }
     .top { padding:16px 16px 12px; }
     .top h1 { font-size:16px; }
+    .colors input[type="color"] { width:36px; height:36px; }
+    .round { width:36px; height:36px; }
+    .send { width:40px; height:40px; }
+  }
+  @media (max-width: 600px) {
+    .top { position:static; }
   }
 </style>
 </head>
@@ -255,6 +283,13 @@
     <button data-pick="lav" class="on">浅紫</button>
     <button data-pick="white">白</button>
     <button data-pick="dark">深色</button>
+  </div>
+  <div class="colors">
+    <label>强调色<input type="color" id="c-accent" value="#e88fa3"></label>
+    <label>A 卡面<input type="color" id="c-bubble" value="#dcc9f2"></label>
+    <label>B 卡面<input type="color" id="c-bbase" value="#fbe9f0"></label>
+    <label>文字<input type="color" id="c-text" value="#241f2b"></label>
+    <button class="reset" id="c-reset" type="button">跟随主题</button>
   </div>
 </header>
 
@@ -352,13 +387,106 @@
       body.appendChild(tpl.content.cloneNode(true));
     });
     var root = document.documentElement;
-    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-pick]'));
-    buttons.forEach(function (btn) {
+    var themeButtons = Array.prototype.slice.call(document.querySelectorAll('[data-pick]'));
+    var accent = document.getElementById('c-accent');
+    var bubble = document.getElementById('c-bubble');
+    var bbase = document.getElementById('c-bbase');
+    var text = document.getElementById('c-text');
+    var reset = document.getElementById('c-reset');
+    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--bubble-ink', '--opt-ink'];
+
+    function hexToRgb(hex) {
+      hex = String(hex || '').replace('#', '');
+      if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      if (hex.length !== 6) return { r: 0, g: 0, b: 0 };
+      return { r: parseInt(hex.slice(0, 2), 16), g: parseInt(hex.slice(2, 4), 16), b: parseInt(hex.slice(4, 6), 16) };
+    }
+    function toHex(v) {
+      v = String(v || '').trim();
+      if (v.charAt(0) === '#') {
+        if (v.length === 4) return '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+        return v.slice(0, 7);
+      }
+      var m = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      if (m) return '#' + [m[1], m[2], m[3]].map(function (n) {
+        n = Number(n).toString(16);
+        return n.length < 2 ? '0' + n : n;
+      }).join('');
+      return '#000000';
+    }
+    function shade(hex, amt) {
+      var c = hexToRgb(hex);
+      function ch(v) { return Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt))); }
+      return '#' + [ch(c.r), ch(c.g), ch(c.b)].map(function (n) {
+        n = n.toString(16);
+        return n.length < 2 ? '0' + n : n;
+      }).join('');
+    }
+    function rgba(hex, a) {
+      var c = hexToRgb(hex);
+      return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
+    }
+    function inkFor(hex) {
+      var c = hexToRgb(hex);
+      var lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+      return lum > 0.6 ? '#2a2024' : '#ffffff';
+    }
+    function clearOverrides() {
+      OVERRIDES.forEach(function (p) { root.style.removeProperty(p); });
+    }
+    function clearThemeOn() {
+      themeButtons.forEach(function (b) { b.classList.remove('on'); });
+    }
+    function syncInputs() {
+      var cs = getComputedStyle(root);
+      accent.value = toHex(cs.getPropertyValue('--accent').trim());
+      bubble.value = toHex(cs.getPropertyValue('--bubble').trim());
+      bbase.value = toHex(cs.getPropertyValue('--b-base').trim());
+      text.value = toHex(cs.getPropertyValue('--bubble-ink').trim());
+    }
+    function applyAccent() {
+      var c = accent.value;
+      root.style.setProperty('--accent', c);
+      root.style.setProperty('--accent-strong', shade(c, root.getAttribute('data-theme') === 'dark' ? 0.35 : -0.35));
+      root.style.setProperty('--accent-soft', rgba(c, 0.16));
+      root.style.setProperty('--accent-ink', inkFor(c));
+      clearThemeOn();
+    }
+    function applyBubble() {
+      root.style.setProperty('--bubble', bubble.value);
+      clearThemeOn();
+    }
+    function applyBBase() {
+      root.style.setProperty('--b-base', bbase.value);
+      clearThemeOn();
+    }
+    function applyText() {
+      var c = text.value;
+      root.style.setProperty('--bubble-ink', c);
+      root.style.setProperty('--opt-ink', c);
+      clearThemeOn();
+    }
+
+    themeButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
+        clearOverrides();
         root.setAttribute('data-theme', btn.getAttribute('data-pick'));
-        buttons.forEach(function (b) { b.classList.toggle('on', b === btn); });
+        themeButtons.forEach(function (b) { b.classList.toggle('on', b === btn); });
+        syncInputs();
       });
     });
+    accent.addEventListener('input', applyAccent);
+    bubble.addEventListener('input', applyBubble);
+    bbase.addEventListener('input', applyBBase);
+    text.addEventListener('input', applyText);
+    reset.addEventListener('click', function () {
+      clearOverrides();
+      syncInputs();
+      themeButtons.forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-pick') === root.getAttribute('data-theme'));
+      });
+    });
+    syncInputs();
   })();
 </script>
 </body>
