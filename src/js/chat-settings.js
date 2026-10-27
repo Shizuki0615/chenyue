@@ -41,6 +41,15 @@
     const c = cardRgb(v);
     return c ? 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')' : '';
   }
+  function cardShade(v, amt) {
+    const c = cardRgb(v);
+    if (!c) return v;
+    const ch = (x) => Math.max(0, Math.min(255, Math.round(amt < 0 ? x * (1 + amt) : x + (255 - x) * amt)));
+    return '#' + [ch(c.r), ch(c.g), ch(c.b)].map((n) => {
+      n = n.toString(16);
+      return n.length < 2 ? '0' + n : n;
+    }).join('');
+  }
   const root = document.documentElement;
   const body = document.getElementById('chat-body');
   if (!body) return;
@@ -736,6 +745,8 @@
     _ensureBubbleContrast();
     applyChatBarInk();
     applyChatSurfaces(inBg, outBg);
+    // 问卡 A 版：气泡色/联系人切换后重算卡片文字的对比安全色（函数声明提升，此处可调用）
+    try { applyCardVars(); } catch (e) {}
     // #732：滑块值变化时同步刷新「气泡 CSS 强制生效层」——挂在这里是因为所有入口
     // （设置页滑块 / 边看边调抽屉 / 导入美化方案）最终都走 applySettings()，
     // 挂一处即全覆盖，不会漏入口。函数定义在下方 applyCss 段（函数声明提升，此处可调用）。
@@ -2134,13 +2145,12 @@
     }
   }
   function applyCardVars() {
-    const old = document.getElementById('cs-card-vars');
-    if (old) old.remove();
     const g = cardGStore();
     if (!g) return;
     const accent = cardSafeHex(g.get(CARD_ACCENT_KEY)) || CARD_ACCENT_DEF;
     let decl = '--ask-accent:' + accent + ';' +
       '--ask-accent-ink:' + cardInkFor(accent) + ';' +
+      '--ask-accent-strong:' + cardShade(accent, -0.35) + ';' +
       '--ask-accent-soft:' + (cardRgba(accent, 0.14) || 'rgba(232,143,163,.14)') + ';';
     const bg = cardSafeHex(g.get(CARD_BG_KEY));
     if (bg) decl += '--ask-card-bg:' + bg + ';';
@@ -2148,9 +2158,31 @@
     if (text) decl += '--ask-card-text:' + text + ';';
     const sel = cardSafeHex(g.get(CARD_SEL_KEY));
     if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+    // 文字没自定义时，卡面读气泡字色；若气泡字色对自己的底太淡（用户自定义浅色气泡+白字），
+    // 问卡跟着盲读会看不清（E2E 实捕 #ffd6e0 配白字仅 1.32:1）。这里按当前联系人气泡色算对比，
+    // 低于 4.5 就只在问卡侧换成黑/白安全字色——普通气泡仍走 _ensureBubbleContrast，互不覆盖。
+    let sideRules = '';
+    if (!text) {
+      const outBg = cardSafeHex(bg || store.get('cs-out-bg')) || '#111111';
+      const outInk = cardSafeHex(store.get('cs-out-ink')) || '#ffffff';
+      if (_csContrast(outInk, outBg) < 4.5) {
+        sideRules += '#page-chat .msg-ask.msg-ask-out{--ask-side-text:' + _csHiInk(outBg) + ';}';
+      }
+      const inBg = cardSafeHex(bg || store.get('cs-in-bg')) || '#ffffff';
+      const inInk = cardSafeHex(store.get('cs-in-ink')) || '#111111';
+      if (_csContrast(inInk, inBg) < 4.5) {
+        sideRules += '#page-chat .msg-ask.msg-ask-in{--ask-side-text:' + _csHiInk(inBg) + ';}';
+      }
+    }
+    const css = '#page-chat{' + decl + '}' + sideRules;
+    const old = document.getElementById('cs-card-vars');
+    if (old) {
+      if (old.textContent !== css) old.textContent = css;
+      return;
+    }
     const st = document.createElement('style');
     st.id = 'cs-card-vars';
-    st.textContent = '#page-chat{' + decl + '}';
+    st.textContent = css;
     document.head.appendChild(st);
   }
   function applyCardCss() {

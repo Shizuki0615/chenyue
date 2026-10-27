@@ -36,6 +36,15 @@ function cardRgba(v, a) {
 const c = cardRgb(v);
 return c ? 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')' : '';
 }
+function cardShade(v, amt) {
+const c = cardRgb(v);
+if (!c) return v;
+const ch = (x) => Math.max(0, Math.min(255, Math.round(amt < 0 ? x * (1 + amt) : x + (255 - x) * amt)));
+return '#' + [ch(c.r), ch(c.g), ch(c.b)].map((n) => {
+n = n.toString(16);
+return n.length < 2 ? '0' + n : n;
+}).join('');
+}
 const root = document.documentElement;
 const body = document.getElementById('chat-body');
 if (!body) return;
@@ -497,6 +506,7 @@ if (rm) rm.hidden = !bg;
 _ensureBubbleContrast();
 applyChatBarInk();
 applyChatSurfaces(inBg, outBg);
+try { applyCardVars(); } catch (e) {}
 try { applyCssEnforce(); } catch (e) {}
 }
 window.applyChatSettings = applySettings;
@@ -1629,13 +1639,12 @@ host.remove();
 }
 }
 function applyCardVars() {
-const old = document.getElementById('cs-card-vars');
-if (old) old.remove();
 const g = cardGStore();
 if (!g) return;
 const accent = cardSafeHex(g.get(CARD_ACCENT_KEY)) || CARD_ACCENT_DEF;
 let decl = '--ask-accent:' + accent + ';' +
 '--ask-accent-ink:' + cardInkFor(accent) + ';' +
+'--ask-accent-strong:' + cardShade(accent, -0.35) + ';' +
 '--ask-accent-soft:' + (cardRgba(accent, 0.14) || 'rgba(232,143,163,.14)') + ';';
 const bg = cardSafeHex(g.get(CARD_BG_KEY));
 if (bg) decl += '--ask-card-bg:' + bg + ';';
@@ -1643,9 +1652,28 @@ const text = cardSafeHex(g.get(CARD_TEXT_KEY));
 if (text) decl += '--ask-card-text:' + text + ';';
 const sel = cardSafeHex(g.get(CARD_SEL_KEY));
 if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+let sideRules = '';
+if (!text) {
+const outBg = cardSafeHex(bg || store.get('cs-out-bg')) || '#111111';
+const outInk = cardSafeHex(store.get('cs-out-ink')) || '#ffffff';
+if (_csContrast(outInk, outBg) < 4.5) {
+sideRules += '#page-chat .msg-ask.msg-ask-out{--ask-side-text:' + _csHiInk(outBg) + ';}';
+}
+const inBg = cardSafeHex(bg || store.get('cs-in-bg')) || '#ffffff';
+const inInk = cardSafeHex(store.get('cs-in-ink')) || '#111111';
+if (_csContrast(inInk, inBg) < 4.5) {
+sideRules += '#page-chat .msg-ask.msg-ask-in{--ask-side-text:' + _csHiInk(inBg) + ';}';
+}
+}
+const css = '#page-chat{' + decl + '}' + sideRules;
+const old = document.getElementById('cs-card-vars');
+if (old) {
+if (old.textContent !== css) old.textContent = css;
+return;
+}
 const st = document.createElement('style');
 st.id = 'cs-card-vars';
-st.textContent = '#page-chat{' + decl + '}';
+st.textContent = css;
 document.head.appendChild(st);
 }
 function applyCardCss() {
