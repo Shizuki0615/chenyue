@@ -8596,7 +8596,13 @@ font-size: 10px; line-height: 18px; padding: 0; cursor: pointer;
 .them-tabs { position:sticky; top:0; z-index:6; display:flex; gap:0; padding:8px 4px 0; background:var(--bg-b); border-bottom:1px solid rgba(0,0,0,.06); flex-shrink:0; }
 .them-tab { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:9px 0 8px; color:rgba(0,0,0,.35); border-bottom:2px solid transparent; border-radius:0; background:transparent; cursor:pointer; transition:color .15s,border-color .15s; }
 .them-tab.active { color:#111; border-bottom-color:#111; }
-#page-chat-settings .chat-head, #page-theme .chat-head { position:static; }
+#page-chat-settings .cs-sticky-head {
+position:sticky; top:0; z-index:6; flex-shrink:0;
+background:var(--bg-b);
+}
+#page-chat-settings .cs-sticky-head .chat-head,
+#page-chat-settings .cs-sticky-head .them-tabs { position:static; }
+#page-theme .chat-head { position:static; }
 [data-theme="dark"] .them-tabs { border-bottom-color:rgba(255,255,255,.12); }
 [data-theme="dark"] .them-tab { color:rgba(255,255,255,.38); }
 [data-theme="dark"] .them-tab.active { color:#fff; border-bottom-color:#fff; }
@@ -11495,7 +11501,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793096589635" data-version="v8.59.2">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793098125853" data-version="v8.59.3">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13103,7 +13109,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.59.2</div>
+          <div class="val" id="about-ver-val">v8.59.3</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13194,7 +13200,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.59.2</div>
+      <div class="ver">Mochi 字卡传讯 v8.59.3</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13593,7 +13599,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.59.2</span>
+              <span class="lic-ver">v8.59.3</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -17909,6 +17915,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 
     <!-- 聊天设置（独立页面） -->
     <div class="page" id="page-chat-settings" hidden>
+      <!-- v8.59.3 用户 2026-10-27：标题栏「一扒拉就没有了」——标题栏与标签行包进同一个吸顶容器，
+           滚动时返回键/「聊天设置」/美化·功能·数据整块钉在顶部（样式见 setting.css #cs-sticky-head）。 -->
+      <div class="cs-sticky-head">
       <div class="chat-head">
         <span class="ch-back" id="cs-back">
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -17920,6 +17929,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="them-tab active" data-tab="beautify">美化</div>
         <div class="them-tab" data-tab="function">功能</div>
         <div class="them-tab" data-tab="data">数据</div>
+      </div>
       </div>
       <div class="them-sec" data-sec="beautify">
       <div class="gs-title" style="padding-top:2px">聊天美化方案</div>
@@ -23346,4 +23356,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvqjevcz -->
+<!-- __MOCHI_EOF__ mvqkbspp -->
