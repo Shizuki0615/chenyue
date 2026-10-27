@@ -2158,6 +2158,10 @@
     if (text) decl += '--ask-card-text:' + text + ';';
     const sel = cardSafeHex(g.get(CARD_SEL_KEY));
     if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+    const colorsVal = document.getElementById('cs-card-colors-val');
+    if (colorsVal) {
+      colorsVal.textContent = (g.get(CARD_ACCENT_KEY) || g.get(CARD_BG_KEY) || g.get(CARD_SEL_KEY) || g.get(CARD_TEXT_KEY)) ? '已自定义' : '默认';
+    }
     // 文字没自定义时，卡面读气泡字色；若气泡字色对自己的底太淡（用户自定义浅色气泡+白字），
     // 问卡跟着盲读会看不清（E2E 实捕 #ffd6e0 配白字仅 1.32:1）。这里按当前联系人气泡色算对比，
     // 低于 4.5 就只在问卡侧换成黑/白安全字色——普通气泡仍走 _ensureBubbleContrast，互不覆盖。
@@ -2255,6 +2259,12 @@
         applyCardCss();
         toast(v ? '卡片样式已应用' : '已清空卡片样式');
       });
+    });
+  }
+  const csCardColors = row('cs-card-colors');
+  if (csCardColors) {
+    csCardColors.addEventListener('click', () => {
+      try { if (window.openChatBeautyCardDrawer) window.openChatBeautyCardDrawer(); } catch (e) {}
     });
   }
   applyCss();
@@ -4053,6 +4063,12 @@
     body.appendChild(mk(true, '我的气泡也长这样～'));
   }
   let csDrawerSec = 'bubble';
+  // v8.58.9：设置页「卡片配色」入口——直接把边看边调停在「卡片」分区
+  function openChatBeautyCardDrawer() {
+    csDrawerSec = 'card';
+    openChatBeautyDrawer();
+  }
+  try { window.openChatBeautyCardDrawer = openChatBeautyCardDrawer; } catch (e) {}
   function openChatBeautyDrawer() {
     // 1) 切到聊天页——消息已在 DOM 里，直接看真效果（与桌面抽屉同款导航口径）
     try {

@@ -1652,6 +1652,10 @@ const text = cardSafeHex(g.get(CARD_TEXT_KEY));
 if (text) decl += '--ask-card-text:' + text + ';';
 const sel = cardSafeHex(g.get(CARD_SEL_KEY));
 if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+const colorsVal = document.getElementById('cs-card-colors-val');
+if (colorsVal) {
+colorsVal.textContent = (g.get(CARD_ACCENT_KEY) || g.get(CARD_BG_KEY) || g.get(CARD_SEL_KEY) || g.get(CARD_TEXT_KEY)) ? '已自定义' : '默认';
+}
 let sideRules = '';
 if (!text) {
 const outBg = cardSafeHex(bg || store.get('cs-out-bg')) || '#111111';
@@ -1746,6 +1750,12 @@ document.getElementById('tc-mask').hidden = true;
 applyCardCss();
 toast(v ? '卡片样式已应用' : '已清空卡片样式');
 });
+});
+}
+const csCardColors = row('cs-card-colors');
+if (csCardColors) {
+csCardColors.addEventListener('click', () => {
+try { if (window.openChatBeautyCardDrawer) window.openChatBeautyCardDrawer(); } catch (e) {}
 });
 }
 applyCss();
@@ -3217,6 +3227,11 @@ body.appendChild(mk(false, '这是一条示例气泡（仅供预览，不会发�
 body.appendChild(mk(true, '我的气泡也长这样～'));
 }
 let csDrawerSec = 'bubble';
+function openChatBeautyCardDrawer() {
+csDrawerSec = 'card';
+openChatBeautyDrawer();
+}
+try { window.openChatBeautyCardDrawer = openChatBeautyCardDrawer; } catch (e) {}
 function openChatBeautyDrawer() {
 try {
 document.querySelectorAll('.page').forEach(pg => { if (!pg.hidden) pg.hidden = true; });
