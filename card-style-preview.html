@@ -20,7 +20,7 @@
     --a-top:rgba(255,255,255,.16);
     --b-top:rgba(255,255,255,.35); --b-base:#fbe9f0;
     --opt-bg:#fdf9fb; --opt-ink:#241f2b; --opt-border:rgba(36,31,43,.12);
-    --opt-sel-bg:#fff; --opt-sel-border:#241f2b;
+    --opt-sel-bg:#f0e9f7; --opt-sel-border:#241f2b;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.15);
     --line:rgba(36,31,43,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.18);
   }
@@ -31,7 +31,7 @@
     --a-top:rgba(255,255,255,.8);
     --b-top:rgba(255,255,255,.4); --b-base:#fdf4f7;
     --opt-bg:#fbf9f5; --opt-ink:#222; --opt-border:rgba(0,0,0,.11);
-    --opt-sel-bg:#fff; --opt-sel-border:#222;
+    --opt-sel-bg:#f1ede5; --opt-sel-border:#222;
     --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.16);
     --line:rgba(0,0,0,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.14);
   }
@@ -42,7 +42,7 @@
     --a-top:rgba(255,255,255,.06);
     --b-top:rgba(255,255,255,.1); --b-base:#2a2226;
     --opt-bg:#242424; --opt-ink:#f1f1f1; --opt-border:rgba(255,255,255,.22);
-    --opt-sel-bg:rgba(255,255,255,.1); --opt-sel-border:#f1f1f1;
+    --opt-sel-bg:#303030; --opt-sel-border:#f1f1f1;
     --accent:#f0a3b5; --accent-ink:#2a2024; --accent-strong:#f0a3b5; --accent-soft:rgba(240,163,181,.14);
     --line:rgba(255,255,255,.1); --phone-shadow:0 24px 70px rgba(0,0,0,.6);
   }
@@ -160,10 +160,10 @@
   .opt.sel { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); font-weight:600; }
   .col[data-variant="a"] .opt.sel {
     border-color:var(--opt-ink);
-    background:color-mix(in srgb, var(--opt-ink) 7%, var(--opt-bg));
+    background:var(--opt-sel-bg);
   }
   .col[data-variant="b"] .opt { border-radius:14px; }
-  .col[data-variant="b"] .opt.sel { border-color:var(--accent); background:var(--accent-soft); }
+  .col[data-variant="b"] .opt.sel { border-color:var(--accent); background:var(--opt-sel-bg); }
   .opt-check {
     width:19px; height:19px; border-radius:50%; flex:none;
     background:var(--accent); color:var(--accent-ink);
@@ -286,7 +286,7 @@
     <label>强调色<input type="color" id="c-accent" value="#e88fa3"></label>
     <label>A 卡面<input type="color" id="c-bubble" value="#dcc9f2"></label>
     <label>B 卡面<input type="color" id="c-bbase" value="#fbe9f0"></label>
-    <label>选项底色<input type="color" id="c-opt" value="#fdf9fb"></label>
+    <label>选中项底色<input type="color" id="c-opt" value="#f0e9f7"></label>
     <label>文字<input type="color" id="c-text" value="#241f2b"></label>
     <button class="reset" id="c-reset" type="button">跟随主题</button>
   </div>
@@ -393,7 +393,7 @@
     var opt = document.getElementById('c-opt');
     var text = document.getElementById('c-text');
     var reset = document.getElementById('c-reset');
-    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--opt-bg', '--bubble-ink', '--opt-ink'];
+    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--opt-sel-bg', '--bubble-ink', '--opt-ink'];
 
     function hexToRgb(hex) {
       hex = String(hex || '').replace('#', '');
@@ -442,7 +442,7 @@
       accent.value = toHex(cs.getPropertyValue('--accent').trim());
       bubble.value = toHex(cs.getPropertyValue('--bubble').trim());
       bbase.value = toHex(cs.getPropertyValue('--b-base').trim());
-      opt.value = toHex(cs.getPropertyValue('--opt-bg').trim());
+      opt.value = toHex(cs.getPropertyValue('--opt-sel-bg').trim());
       text.value = toHex(cs.getPropertyValue('--bubble-ink').trim());
     }
     function applyAccent() {
@@ -462,7 +462,7 @@
       clearThemeOn();
     }
     function applyOpt() {
-      root.style.setProperty('--opt-bg', opt.value);
+      root.style.setProperty('--opt-sel-bg', opt.value);
       clearThemeOn();
     }
     function applyText() {
