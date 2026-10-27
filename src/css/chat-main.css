@@ -1822,7 +1822,7 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 #page-chat .msg-ask.msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
 #page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart {
   right: auto;
-  left: 14px;
+  left: 10px;
 }
 #page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
 #page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
