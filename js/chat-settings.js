@@ -59,6 +59,15 @@ t._timer = setTimeout(() => { t.className = 'cc-toast'; }, 2000);
 const chatPage = document.getElementById('page-chat');
 const setVar = (el, name, value) => { if (!el) return; const v = String(value); if (el.style.getPropertyValue(name) !== v) el.style.setProperty(name, v); };
 const delVar = (el, name) => { if (el && el.style.getPropertyValue(name) !== '') el.style.removeProperty(name); };
+const syncBodyCls = (names, want) => {
+let cur = '';
+for (let i = 0; i < names.length; i++) {
+if (document.body.classList.contains(names[i])) { cur = names[i]; break; }
+}
+if (cur === want) return;
+names.forEach(n => document.body.classList.remove(n));
+if (want) document.body.classList.add(want);
+};
 function csBgLayer() {
 if (!chatPage) return null;
 let l = document.getElementById('cs-bg-layer');
@@ -451,6 +460,14 @@ TIME_STYLES.forEach(s => document.body.classList.remove('cs-time-' + s.value));
 if (wantTimeCls) document.body.classList.add(wantTimeCls);
 }
 set('cs-time-style-val', tsLabel);
+const tdStyle = store.get('cs-time-divider-style') || '';
+syncBodyCls(['cs-td-lines', 'cs-td-plain'], tdStyle === 'lines' ? 'cs-td-lines' : (tdStyle === 'plain' ? 'cs-td-plain' : ''));
+const sysStyle = store.get('cs-sys-style') || '';
+syncBodyCls(['cs-sys-soft', 'cs-sys-plain'], sysStyle === 'soft' ? 'cs-sys-soft' : (sysStyle === 'plain' ? 'cs-sys-plain' : ''));
+const typingPos = store.get('cs-typing-pos') || 'left';
+syncBodyCls(['cs-typing-center'], typingPos === 'center' ? 'cs-typing-center' : '');
+const typingShell = store.get('cs-typing-shell') || '';
+syncBodyCls(['cs-typing-capsule'], typingShell === 'capsule' ? 'cs-typing-capsule' : '');
 const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
 set('cs-mark-pos-val', fmtOff(markDX, markDY));
 set('cs-time-pos-val', fmtOff(timeDX, timeDY));
@@ -1793,6 +1810,7 @@ const CHAT_SCHEMES_KEY = 'chat-beauty-schemes';
 const CHAT_BEAUTY_KEYS = [
 'cs-bg', 'cs-bubble-css', 'cs-font', 'cs-font-size', 'cs-bubble-size',
 'cs-bubble-radius', 'cs-av-shape', 'cs-time-style', 'cs-time-ink', 'cs-typing-ink',
+'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell',
 'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
 'cs-mark-ink',
 'cs-send-bg', 'cs-send-ink', 'cs-send-show',
@@ -2218,7 +2236,7 @@ toast(keepCardCss ? '已恢复初始美化（卡片 CSS 已保留，配色已回
 : '已恢复初始美化');
 };
 window.openTCPanel('恢复初始美化', '' +
-'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
+'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、分隔线/系统提示/正在输入样式、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
 '<div class="mail-actions">' +
 '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
 '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
@@ -3726,6 +3744,43 @@ mkColorItem('时间轴文字色', 'cs-time-ink', DEF.timeInk, BUBBLE_INK_COLORS)
 paletteHost = document.createElement('div');
 wrap.appendChild(paletteHost);
 wrap.appendChild(mkNote('想逐项精调（含「同步到全部桌面」「恢复默认」等）回聊天设置→美化，点对应一行即可。'));
+return wrap;
+} },
+{ key: 'tip', label: '提示', build: () => {
+const wrap = document.createElement('div');
+wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+wrap.appendChild(mkNote('时间分隔线只在「字体 · 其他 → 时间轴样式」选到「时间分隔线」时出现；这三组的颜色仍跟「时间轴文字色 / 系统事件文字色 / 正在输入颜色」。'));
+wrap.appendChild(mkPills('时间分隔线', [
+{ label: '胶囊（默认）', value: '' },
+{ label: '细线夹字', value: 'lines' },
+{ label: '纯文字', value: 'plain' }
+], () => store.get('cs-time-divider-style') || '', v => {
+try { if (v) store.set('cs-time-divider-style', v); else store.remove('cs-time-divider-style'); } catch (e) {}
+applySettings();
+if (window.chatReRenderTime) { try { window.chatReRenderTime(); } catch (e) {} }
+}));
+wrap.appendChild(mkPills('系统提示', [
+{ label: '默认（灰底描边）', value: '' },
+{ label: '轻底无边框', value: 'soft' },
+{ label: '纯文字', value: 'plain' }
+], () => store.get('cs-sys-style') || '', v => {
+try { if (v) store.set('cs-sys-style', v); else store.remove('cs-sys-style'); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('正在输入位置', [
+{ label: '左侧（默认）', value: 'left' },
+{ label: '居中', value: 'center' }
+], () => store.get('cs-typing-pos') || 'left', v => {
+try { if (v === 'left') store.remove('cs-typing-pos'); else store.set('cs-typing-pos', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('正在输入样式', [
+{ label: '纯文字（默认）', value: '' },
+{ label: '小胶囊', value: 'capsule' }
+], () => store.get('cs-typing-shell') || '', v => {
+try { if (v) store.set('cs-typing-shell', v); else store.remove('cs-typing-shell'); } catch (e) {}
+applySettings();
+}));
 return wrap;
 } },
 { key: 'tune', label: '微调', build: () => {
