@@ -612,6 +612,19 @@
     if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
     set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
     set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
+    // v8.60.0 输入栏细节（边看边调 → 栏位四项）：圆角 / 输入框字号 / 按钮大小 / 整条粗细。
+    // 默认档一律不写变量——宽屏回落胶囊 99px、输入框 15px+文字轴、按钮 38px、粗细 14px；
+    // 手机通栏在自己的满宽规则里回落 0 / 10px+safe（base.css），由 CSS 分环境决定，
+    // 不把桌面默认值写死到 :root 再搬到手机上。
+    const inputRadius = store.get('cs-input-radius') || '';
+    if (inputRadius) setVar(root, '--cs-input-radius', inputRadius); else delVar(root, '--cs-input-radius');
+    const inputFont = store.get('cs-input-font') || '';
+    if (!inputFont) delVar(root, '--cs-input-font');
+    else if (inputFont === 'follow') setVar(root, '--cs-input-font', 'calc(var(--chat-font-size, 14px) + var(--mochi-text-adj, 0px))');
+    else setVar(root, '--cs-input-font', inputFont);
+    setVar(root, '--cs-input-btn-size', store.get('cs-input-btn-size') || '38px');
+    const inputPadY = store.get('cs-input-pad-y') || '';
+    if (inputPadY) setVar(root, '--cs-input-pad-y', inputPadY); else delVar(root, '--cs-input-pad-y');
     set('cs-event-ink-val', eventInk === DEF.eventInk ? '默认 ' + DEF.eventInk : eventInk);
     set('cs-name-ink-val', nameInk === DEF.nameInk ? '默认 ' + DEF.nameInk : nameInk);
     // 双方气泡颜色/文字颜色当前值回显（默认值显示「默认 #色值」，让用户知道默认颜色）
@@ -2301,6 +2314,8 @@
     // v8.44：主动发送标识颜色（观感项，方案/备份/恢复初始美化一起走）
     'cs-mark-ink',
     'cs-send-bg', 'cs-send-ink', 'cs-send-show',
+    // v8.60.0 输入栏细节：圆角 / 输入框字号 / 按钮大小 / 整条粗细（观感项，方案/备份/恢复一起走）
+    'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y',
     // #1026：输入框提示文字（颜色 + 显隐）——观感项，方案切换时要一起走
     'cs-ph-ink', 'cs-ph-show',
     // 系统事件文字颜色 + 顶部昵称颜色
@@ -2769,7 +2784,7 @@
           : '已恢复初始美化');
       };
       window.openTCPanel('恢复初始美化', '' +
-        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
+        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
         '<div class="mail-actions">' +
         '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
         '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
@@ -4441,6 +4456,44 @@
             try { store.set('cs-send-show', v); } catch (e) {}
             applySettings();
           }));
+        // v8.60.0 输入栏细节（用户 2026-10-27 选定四项）：圆角 / 输入框字号 / 按钮大小 / 整条粗细。
+        // 全写 :root 变量，默认档不写——宽屏胶囊 99px、手机通栏 0，粗细 14px / 手机 10px+safe，
+        // 由 CSS 分环境回落，同一套设置在模拟器和真机上都不跑偏。
+        wrap.appendChild(mkPills('输入栏圆角', [
+          { label: '默认（宽屏胶囊 / 手机通栏）', value: '' },
+          { label: '大圆角', value: '20px' },
+          { label: '标准', value: '14px' },
+          { label: '小圆角', value: '8px' },
+          { label: '直角', value: '0px' }
+        ], () => store.get('cs-input-radius') || '', v => {
+          try { if (v) store.set('cs-input-radius', v); else store.remove('cs-input-radius'); } catch (e) {}
+          applySettings();
+        }));
+        wrap.appendChild(mkPills('输入框字号', [
+          { label: '跟随气泡', value: 'follow' },
+          { label: '小', value: '13px' },
+          { label: '标准', value: '15px' },
+          { label: '大', value: '17px' }
+        ], () => store.get('cs-input-font') || '15px', v => {
+          try { if (v === '15px') store.remove('cs-input-font'); else store.set('cs-input-font', v); } catch (e) {}
+          applySettings();
+        }));
+        wrap.appendChild(mkPills('按钮大小', [
+          { label: '小', value: '34px' },
+          { label: '标准', value: '38px' },
+          { label: '大', value: '42px' }
+        ], () => store.get('cs-input-btn-size') || '38px', v => {
+          try { store.set('cs-input-btn-size', v); } catch (e) {}
+          applySettings();
+        }));
+        wrap.appendChild(mkPills('输入栏粗细', [
+          { label: '紧凑', value: '8px' },
+          { label: '默认', value: '' },
+          { label: '宽松', value: '18px' }
+        ], () => store.get('cs-input-pad-y') || '', v => {
+          try { if (v) store.set('cs-input-pad-y', v); else store.remove('cs-input-pad-y'); } catch (e) {}
+          applySettings();
+        }));
         // #731：壁纸铺满方式 + 壁纸延伸到栏位（都在「栏位」区，改哪看哪）
         // #783（用户 2026-09-18：「边看边调里不能上传背景图片啊」）：抽屉里此前只有档位/位置/
         // 缩放，换图入口却留在聊天设置页（抽屉开着时那一页是隐藏的）＝能调不能换。这两按钮

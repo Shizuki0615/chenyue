@@ -420,6 +420,15 @@ const sendBtn = document.getElementById('chat-send');
 if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
 set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
 set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
+const inputRadius = store.get('cs-input-radius') || '';
+if (inputRadius) setVar(root, '--cs-input-radius', inputRadius); else delVar(root, '--cs-input-radius');
+const inputFont = store.get('cs-input-font') || '';
+if (!inputFont) delVar(root, '--cs-input-font');
+else if (inputFont === 'follow') setVar(root, '--cs-input-font', 'calc(var(--chat-font-size, 14px) + var(--mochi-text-adj, 0px))');
+else setVar(root, '--cs-input-font', inputFont);
+setVar(root, '--cs-input-btn-size', store.get('cs-input-btn-size') || '38px');
+const inputPadY = store.get('cs-input-pad-y') || '';
+if (inputPadY) setVar(root, '--cs-input-pad-y', inputPadY); else delVar(root, '--cs-input-pad-y');
 set('cs-event-ink-val', eventInk === DEF.eventInk ? '默认 ' + DEF.eventInk : eventInk);
 set('cs-name-ink-val', nameInk === DEF.nameInk ? '默认 ' + DEF.nameInk : nameInk);
 set('cs-out-bg-val', outBg === DEF.outBg ? '默认 ' + DEF.outBg : outBg);
@@ -1787,6 +1796,7 @@ const CHAT_BEAUTY_KEYS = [
 'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
 'cs-mark-ink',
 'cs-send-bg', 'cs-send-ink', 'cs-send-show',
+'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y',
 'cs-ph-ink', 'cs-ph-show',
 'cs-event-ink', 'cs-name-ink',
 'cs-head-opacity', 'cs-input-opacity', 'cs-bubble-opacity', 'cs-head-inset', 'cs-input-inset',
@@ -2208,7 +2218,7 @@ toast(keepCardCss ? '已恢复初始美化（卡片 CSS 已保留，配色已回
 : '已恢复初始美化');
 };
 window.openTCPanel('恢复初始美化', '' +
-'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
+'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
 '<div class="mail-actions">' +
 '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
 '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
@@ -3574,6 +3584,41 @@ wrap.appendChild(mkNote('这两条位置滑杆拖着就能把顶栏/输入栏上
 wrap.appendChild(mkPills('发送按钮', [{ label: '显示', value: 'show' }, { label: '隐藏（回车发送）', value: 'hide' }],
 () => store.get('cs-send-show') || 'show', v => {
 try { store.set('cs-send-show', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入栏圆角', [
+{ label: '默认（宽屏胶囊 / 手机通栏）', value: '' },
+{ label: '大圆角', value: '20px' },
+{ label: '标准', value: '14px' },
+{ label: '小圆角', value: '8px' },
+{ label: '直角', value: '0px' }
+], () => store.get('cs-input-radius') || '', v => {
+try { if (v) store.set('cs-input-radius', v); else store.remove('cs-input-radius'); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入框字号', [
+{ label: '跟随气泡', value: 'follow' },
+{ label: '小', value: '13px' },
+{ label: '标准', value: '15px' },
+{ label: '大', value: '17px' }
+], () => store.get('cs-input-font') || '15px', v => {
+try { if (v === '15px') store.remove('cs-input-font'); else store.set('cs-input-font', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('按钮大小', [
+{ label: '小', value: '34px' },
+{ label: '标准', value: '38px' },
+{ label: '大', value: '42px' }
+], () => store.get('cs-input-btn-size') || '38px', v => {
+try { store.set('cs-input-btn-size', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入栏粗细', [
+{ label: '紧凑', value: '8px' },
+{ label: '默认', value: '' },
+{ label: '宽松', value: '18px' }
+], () => store.get('cs-input-pad-y') || '', v => {
+try { if (v) store.set('cs-input-pad-y', v); else store.remove('cs-input-pad-y'); } catch (e) {}
 applySettings();
 }));
 {

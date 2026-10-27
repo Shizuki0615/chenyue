@@ -501,7 +501,9 @@ body.cs-time-divider .msg-time-divider { display:flex; }
 
 .chat-input-row {
   display:flex; align-items:center; gap:8px;
-  border-radius:99px; padding:14px 12px 14px 16px; flex-shrink:0; margin-top:8px;
+  /* v8.60.0 输入栏细节（聊天设置 → 美化 → 边看边调 → 栏位）：圆角/粗细读 :root 变量。
+     未设置时不写变量＝宽屏回落胶囊 99px / 14px；手机通栏在自己的满宽规则里另给默认（base.css）。 */
+  border-radius:var(--cs-input-radius, 99px); padding:var(--cs-input-pad-y, 14px) 12px var(--cs-input-pad-y, 14px) 16px; flex-shrink:0; margin-top:8px;
   /* v3.5.89 缁熶竴妗岄潰鐧借壊绠€绾﹂鏍硷紙鍚?.glass锛夛細鐧藉簳 + 娣¤竟 + 杞婚槾褰?*/
   background:rgba(255,255,255,.92);
   border:1px solid rgba(0,0,0,.1);
@@ -536,14 +538,14 @@ body.cs-time-divider .msg-time-divider { display:flex; }
 }
 .chat-send {
   outline:none; cursor:pointer; flex-shrink:0;
-  width:38px; height:38px; border-radius:50%;
+  width:var(--cs-input-btn-size, 38px); height:var(--cs-input-btn-size, 38px); border-radius:50%;
   background:var(--send-bg, var(--cs-out-surface, var(--msg-out-bg, #111111))); color:var(--send-ink, #ffffff);
   border:1px solid rgba(0,0,0,.1);
   box-shadow:0 1px 4px rgba(0,0,0,.04);
   display:flex; align-items:center; justify-content:center;
   padding:0;
 }
-.chat-send svg { width:20px; height:20px; }
+.chat-send svg { width:calc(var(--cs-input-btn-size, 38px) * .526); height:calc(var(--cs-input-btn-size, 38px) * .526); }
 .chat-send:disabled { opacity:.45; cursor:default; }
 
 /* 鍏ㄥ睆鑱婂ぉ锛氬ご閮?娑堟伅/杈撳叆鏍忓乏鍙?18px 瀵归綈锛岃儗鏅摵婊?*/
@@ -645,18 +647,18 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .ch-input-btn {
   /* #949：flex-shrink 放开（收缩下限 30px 保持可点）——输入栏按钮偏多＋窄屏时按钮先于输入框收缩，
      不再把 flex:1 的输入框挤成 0 宽；宽屏空间富余时永不触发，外观零变化。 */
-  width:38px; height:38px; border-radius:50%; cursor:pointer; flex-shrink:1; min-width:30px;
+  width:var(--cs-input-btn-size, 38px); height:var(--cs-input-btn-size, 38px); border-radius:50%; cursor:pointer; flex-shrink:1; min-width:calc(var(--cs-input-btn-size, 38px) - 8px);
   background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1);
   color:#555; box-shadow:0 1px 4px rgba(0,0,0,.04);
   display:flex; align-items:center; justify-content:center;
   -webkit-tap-highlight-color:transparent;
 }
 .ch-input-btn:active { background:rgba(0,0,0,.08); }
-.ch-input-btn svg { width:20px; height:20px; }
+.ch-input-btn svg { width:calc(var(--cs-input-btn-size, 38px) * .526); height:calc(var(--cs-input-btn-size, 38px) * .526); }
 /* #949：窄屏档——间距与发送键内边距收紧，配合按钮收缩下限，
    360px 屏开满「语音＋批量」后输入框仍保有 4em 以上可用宽（单聊/群聊两排同吃）。 */
 @media (max-width: 480px) {
-  .chat-input-row { gap:5px; padding:12px 8px 12px 10px; }
+  .chat-input-row { gap:5px; padding:var(--cs-input-pad-y, 12px) 8px var(--cs-input-pad-y, 12px) 10px; }
 }
 
 /* 鎷嶄竴鎷?/ 鎹㈠ご鍍忥細灞呬腑鐏板瓧灏忓崱鐗囷紙鍙€夐檮甯︿竴寮犲ご鍍忓浘锛?*/
