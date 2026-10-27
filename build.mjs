@@ -6783,6 +6783,7 @@ const FIX_SENTINELS = [
   { name: '#1586c 他发歌词概率设置（删＝音乐设置里没有开关，用户无法调/关）', file: 'js/music-player.js', needle: "bindProbStep('sm-set-lyricprob', 'taLyricProb', 35, 100);" },
   { name: '#1586d 歌词卡支持 TA 发来（删＝自动歌词只能作为我发出的消息）', file: 'js/chat.js', needle: "const side = data.side === 'in' ? 'in' : 'out';" },
   { name: '#1586e 多句歌词换行渲染（删＝连续 2~3 句挤成一行）', file: 'js/chat.js', needle: 'escTxtBr(lyricLineTxt)' },
+  { name: '#1586f 他发歌词的入站提示音（删＝歌词卡只弹横幅/未读，不响普通消息音）', file: 'js/chat.js', needle: "if (r && side === 'in' && data.silent !== true && window.playSfx)" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
