@@ -1884,9 +1884,34 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   border-top: 1px solid rgba(127,127,127,.30);
   border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
 }
-#page-chat .msg-ask .msg-survey-card > .msg-fav-heart {
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn {
   position: absolute;
   right: 8px;
+  bottom: 6px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+  font-size: 0;
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn svg,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn svg { width: 15px; height: 15px; }
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn:active,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn:active {
+  background: var(--ask-side-sel);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart {
+  position: absolute;
+  right: 44px;
   bottom: 6px;
   margin: 0;
   width: 30px;

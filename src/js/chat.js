@@ -5799,8 +5799,9 @@ return '<div class="msg-ask-card msg-survey-card' + (done ? ' done' : ' answered
 '<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他 作答中 · 已答 ' + nDone + '/' + qs.length : '等待 他 作答')) + '</div>' +
 '<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + moreHtml + '</div>' +
 // 2026-10-26：查看详情独立小圆按钮，收藏心形常驻，整卡不再点出详情
+// v8.58.7：详情按钮改为与问卡同款小圆箭头（只留图标，aria-label 保留语义）
 '<div class="msg-survey-actions">' +
-'<button type="button" class="msg-survey-detail-btn" data-sv-detail="1">' + (done ? '查看问卷详情' : '查看作答进度') + '</button>' +
+'<button type="button" class="msg-survey-detail-btn" data-sv-detail="1" aria-label="' + (done ? '查看问卷详情' : '查看作答进度') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
 '</div>' +
 favHeartHtml(rec) +
 '</div>';
