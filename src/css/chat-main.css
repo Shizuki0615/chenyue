@@ -1818,12 +1818,6 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
-/* B 版（用户 2026-10-27 定）：入站（他那边）收藏心形挪到左下；出站（我这边）心形与箭头保持右下 */
-#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
-#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart {
-  right: auto;
-  left: 10px;
-}
 #page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
 #page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
 #page-chat .msg-ask .msg-ask-view-arrow {
@@ -1841,6 +1835,77 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   opacity: 1;
 }
 #page-chat .msg-ask .msg-ask-view-arrow svg { width: 15px; height: 15px; }
+
+/* ===== v8.58.6 问卷摘要卡 A 版对齐 =====
+   只对齐卡面/字体/分割线/收藏位置；详情按钮与问卷逻辑不动。 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.msg-survey-card,
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.msg-survey-card {
+  background: var(--ask-side-bg);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10), transparent 42%);
+  color: var(--ask-side-text);
+  border: 1px solid rgba(127,127,127,.18);
+  border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
+  border-radius: var(--chat-bubble-radius, 18px);
+  padding: var(--chat-bubble-pad, 11px 14px);
+  padding-bottom: 44px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
+  position: relative;
+  text-align: left;
+}
+#page-chat .msg-ask .msg-survey-head {
+  font-size: calc(var(--chat-font-size, 14px) + 1px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ask-side-text);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-survey-status {
+  color: var(--ask-side-text);
+  opacity: .55;
+}
+#page-chat .msg-ask .msg-survey-list {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask .msg-survey-item { font-size: 13.5px; color: var(--ask-side-text); }
+#page-chat .msg-ask .msg-survey-q { font-weight: 600; color: var(--ask-side-text); }
+#page-chat .msg-ask.msg-ask-out .msg-survey-a,
+#page-chat .msg-ask.msg-ask-in .msg-survey-a {
+  font-size: 12.5px;
+  color: var(--ask-side-text);
+  opacity: .9;
+}
+#page-chat .msg-ask .msg-survey-more { color: var(--ask-side-text); opacity: .55; }
+#page-chat .msg-ask .msg-survey-actions {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  gap: 0;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart .msg-fav-heart-txt { display: none; }
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart svg { width: 14px; height: 14px; }
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart.is-fav {
+  background: var(--ask-accent-soft, rgba(232,143,163,.14));
+  color: var(--ask-accent-strong, var(--ask-accent, #e88fa3));
+  opacity: 1;
+}
 
 /* ===== TA鐨勫皬闂 ===== */
 /* 鑱婂ぉ閲岀殑閫夋嫨棰樺崱鐗?*/
