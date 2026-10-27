@@ -841,8 +841,9 @@ body.cs-sys-plain .msg-poke {
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
 .msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
 
-/* 歌词卡片（音乐模块「歌词传情」）：歌名/歌手 + 封面小图 + 引号歌词句，颜色跟随气泡表面 */
-.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:100%; }
+/* 歌词卡片（音乐模块「歌词传情」）：歌名/歌手 + 封面小图 + 引号歌词句，颜色跟随气泡表面
+   限宽 230px：长歌词在卡内换行，不再把气泡撑到聊天宽度上限；短歌词仍按内容收窄。 */
+.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:min(100%, 230px); }
 .msg-lyric-head { display:flex; align-items:center; gap:8px; }
 .msg-lyric-cover {
   width:36px; height:36px; border-radius:8px; flex:0 0 auto; object-fit:cover;
