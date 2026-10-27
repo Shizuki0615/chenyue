@@ -6744,6 +6744,8 @@ const FIX_SENTINELS = [
   { name: '#1574 问卷摘要卡 A 版对齐（删＝问卷卡又退回旧卡面）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card.msg-survey-card,' },
   { name: '#1575 问卷详情按钮改小圆箭头（删＝又退回文字按钮）', file: 'js/chat.js', needle: 'class="msg-survey-detail-btn" data-sv-detail="1" aria-label=' },
   { name: '#1576 聊天美化方案纳入卡片 CSS/配色（删＝换方案不恢复卡片样式）', file: 'js/chat-settings.js', needle: "data[k] = (v === null || v === undefined) ? '' : String(v);" },
+  { name: '#1577 设置页卡片配色入口（删＝设置页又找不到卡片配色）', file: 'template.html', needle: 'id="cs-card-colors"' },
+  { name: '#1578 卡片配色入口直达边看边调卡片分区（删＝点开停回气泡分区）', file: 'js/chat-settings.js', needle: "csDrawerSec = 'card';" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
