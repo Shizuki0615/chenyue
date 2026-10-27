@@ -73,6 +73,17 @@
   // #923 家族同一口径；值确实变了的路径一字不动，不碰任何机型/内核判断。
   const setVar = (el, name, value) => { if (!el) return; const v = String(value); if (el.style.getPropertyValue(name) !== v) el.style.setProperty(name, v); };
   const delVar = (el, name) => { if (el && el.style.getPropertyValue(name) !== '') el.style.removeProperty(name); };
+  // v8.61.0：body 状态类切换也走「先比对再挂」（与 #938 同口径）——applySettings 被所有抽屉控件共用，
+  // 每点一次都无条件 remove/add 会脏化 body 的 class 属性＝全文档样式重算，手机上就是那一帧闪屏。
+  const syncBodyCls = (names, want) => {
+    let cur = '';
+    for (let i = 0; i < names.length; i++) {
+      if (document.body.classList.contains(names[i])) { cur = names[i]; break; }
+    }
+    if (cur === want) return;
+    names.forEach(n => document.body.classList.remove(n));
+    if (want) document.body.classList.add(want);
+  };
   // FIX 2026-09-18 #762：聊天壁纸「铺满方式」四档全废、连默认档都不再铺满（用户实报），
   // 根治＝把壁纸从「画在 #page-chat 自己身上」改成「画在它的一个常驻子层上」。
   //
@@ -658,6 +669,16 @@
       if (wantTimeCls) document.body.classList.add(wantTimeCls);
     }
     set('cs-time-style-val', tsLabel);
+    // v8.61.0 提示三组（边看边调 → 提示）：时间分隔线样式 / 系统提示样式 / 正在输入位置与样式。
+    // 与上面时间轴同口径——先比对再挂类，默认档一律不挂。
+    const tdStyle = store.get('cs-time-divider-style') || '';
+    syncBodyCls(['cs-td-lines', 'cs-td-plain'], tdStyle === 'lines' ? 'cs-td-lines' : (tdStyle === 'plain' ? 'cs-td-plain' : ''));
+    const sysStyle = store.get('cs-sys-style') || '';
+    syncBodyCls(['cs-sys-soft', 'cs-sys-plain'], sysStyle === 'soft' ? 'cs-sys-soft' : (sysStyle === 'plain' ? 'cs-sys-plain' : ''));
+    const typingPos = store.get('cs-typing-pos') || 'left';
+    syncBodyCls(['cs-typing-center'], typingPos === 'center' ? 'cs-typing-center' : '');
+    const typingShell = store.get('cs-typing-shell') || '';
+    syncBodyCls(['cs-typing-capsule'], typingShell === 'capsule' ? 'cs-typing-capsule' : '');
     // #728：标识 / 时间轴位置微调回显（全 0 显示「默认」）
     const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
     set('cs-mark-pos-val', fmtOff(markDX, markDY));
@@ -2310,6 +2331,8 @@
   const CHAT_BEAUTY_KEYS = [
     'cs-bg', 'cs-bubble-css', 'cs-font', 'cs-font-size', 'cs-bubble-size',
     'cs-bubble-radius', 'cs-av-shape', 'cs-time-style', 'cs-time-ink', 'cs-typing-ink',
+    // v8.61.0 提示三组：分隔线样式 / 系统提示样式 / 正在输入位置与样式（观感项，方案/备份/恢复一起走）
+    'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell',
     'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
     // v8.44：主动发送标识颜色（观感项，方案/备份/恢复初始美化一起走）
     'cs-mark-ink',
@@ -2784,7 +2807,7 @@
           : '已恢复初始美化');
       };
       window.openTCPanel('恢复初始美化', '' +
-        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
+        '<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、分隔线/系统提示/正在输入样式、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
         '<div class="mail-actions">' +
         '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
         '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
@@ -4616,6 +4639,46 @@
         // #783：换壁纸入口已搬进「栏位」分区（与铺满方式/位置/缩放同区，改哪看哪），
         // 这里这条「先关抽屉、再程序点隐藏的设置页行」的旧路子删掉——同一抽屉两套入口、行为还不一样。
         wrap.appendChild(mkNote('想逐项精调（含「同步到全部桌面」「恢复默认」等）回聊天设置→美化，点对应一行即可。'));
+        return wrap;
+      } },
+      // v8.61.0 用户 2026-10-27 定：时间分隔 / 系统提示 / 正在输入 三组轻量美化，集中放在「提示」分区。
+      // 分隔线只在时间轴样式选「时间分隔线」时可见，所以先给一句说明；三组颜色继续复用既有色项，不另开色板。
+      { key: 'tip', label: '提示', build: () => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+        wrap.appendChild(mkNote('时间分隔线只在「字体 · 其他 → 时间轴样式」选到「时间分隔线」时出现；这三组的颜色仍跟「时间轴文字色 / 系统事件文字色 / 正在输入颜色」。'));
+        wrap.appendChild(mkPills('时间分隔线', [
+          { label: '胶囊（默认）', value: '' },
+          { label: '细线夹字', value: 'lines' },
+          { label: '纯文字', value: 'plain' }
+        ], () => store.get('cs-time-divider-style') || '', v => {
+          try { if (v) store.set('cs-time-divider-style', v); else store.remove('cs-time-divider-style'); } catch (e) {}
+          applySettings();
+          // 分隔条 DOM 只有切到「时间分隔线」档时才插；重渲染一次保证当场能看到新样式
+          if (window.chatReRenderTime) { try { window.chatReRenderTime(); } catch (e) {} }
+        }));
+        wrap.appendChild(mkPills('系统提示', [
+          { label: '默认（灰底描边）', value: '' },
+          { label: '轻底无边框', value: 'soft' },
+          { label: '纯文字', value: 'plain' }
+        ], () => store.get('cs-sys-style') || '', v => {
+          try { if (v) store.set('cs-sys-style', v); else store.remove('cs-sys-style'); } catch (e) {}
+          applySettings();
+        }));
+        wrap.appendChild(mkPills('正在输入位置', [
+          { label: '左侧（默认）', value: 'left' },
+          { label: '居中', value: 'center' }
+        ], () => store.get('cs-typing-pos') || 'left', v => {
+          try { if (v === 'left') store.remove('cs-typing-pos'); else store.set('cs-typing-pos', v); } catch (e) {}
+          applySettings();
+        }));
+        wrap.appendChild(mkPills('正在输入样式', [
+          { label: '纯文字（默认）', value: '' },
+          { label: '小胶囊', value: 'capsule' }
+        ], () => store.get('cs-typing-shell') || '', v => {
+          try { if (v) store.set('cs-typing-shell', v); else store.remove('cs-typing-shell'); } catch (e) {}
+          applySettings();
+        }));
         return wrap;
       } },
       // #728：标识 / 时间轴位置微调——用户上传自定义气泡 CSS 后气泡的 padding/尺寸变了，

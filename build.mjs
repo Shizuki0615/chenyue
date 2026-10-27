@@ -6753,6 +6753,13 @@ const FIX_SENTINELS = [
   { name: '#1580c 手机/平板通栏输入栏吃用户圆角与粗细（删＝真机上圆角/粗细两档无效，恒为 0/10px）', file: 'css/base.css', needle: 'border-radius: var(--cs-input-radius, 0);' },
   { name: '#1580d 抽屉栏位四项控件（删＝输入栏圆角/字号/按钮/粗细入口消失）', file: 'js/chat-settings.js', needle: 'cs-input-btn-size' },
   { name: '#1580e 输入栏四项纳入美化方案/备份/恢复（删＝换方案或恢复初始后输入栏细节残留）', file: 'js/chat-settings.js', needle: "'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y'," },
+  // ==== 2026-10-27 #1581 提示三组（时间分隔线 / 系统提示 / 正在输入）====
+  { name: '#1581a 时间分隔线三档 CSS（删＝分隔线只剩默认胶囊，细线夹字/纯文字失效）', file: 'css/chat-main.css', needle: 'body.cs-td-lines .msg-time-divider::before' },
+  { name: '#1581b 系统提示三档 CSS（删＝拍一拍/撤回/通知只剩默认灰底描边）', file: 'css/chat-main.css', needle: 'body.cs-sys-soft .msg-poke' },
+  { name: '#1581c 正在输入位置/样式 CSS（删＝居中与小胶囊两档失效）', file: 'css/chat-main.css', needle: 'body.cs-typing-center #chat-typing' },
+  { name: '#1581d 提示分区四项控件（删＝抽屉找不到分隔线/系统提示/正在输入入口）', file: 'js/chat-settings.js', needle: "{ key: 'tip', label: '提示'" },
+  { name: '#1581e 提示四键纳入美化方案/备份/恢复（删＝换方案或恢复初始后提示样式残留）', file: 'js/chat-settings.js', needle: "'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell'," },
+  { name: '#1581f body 状态类先比对再挂（删＝每点抽屉控件都脏化 class＝#938 那型闪屏回归）', file: 'js/chat-settings.js', needle: 'const syncBodyCls = (names, want) =>' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

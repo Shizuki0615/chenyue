@@ -246,6 +246,18 @@ body.cs-time-divider .msg-time-divider { display:flex; }
   font-size:10px; line-height:1; color:var(--msg-event-ink, var(--msg-time-ink, #111111));
   letter-spacing:.3px; opacity:.6; white-space:nowrap;
 }
+/* v8.61.0 时间分隔线三档（聊天设置 → 美化 → 边看边调 → 提示）：body 挂 cs-td-* 类。
+   只在「时间轴样式 = 时间分隔线」时可见；颜色仍吃时间轴/系统事件文字色。 */
+body.cs-td-lines .msg-time-divider { gap:10px; align-items:center; }
+body.cs-td-lines .msg-time-divider::before,
+body.cs-td-lines .msg-time-divider::after {
+  content:''; flex:1; min-width:12px; height:1px;
+  background:rgba(127,127,127,.22); /* 老内核回退 */
+  background:color-mix(in srgb, var(--msg-event-ink, var(--msg-time-ink, #111111)) 22%, transparent);
+}
+body.cs-td-lines .msg-time-divider span,
+body.cs-td-plain .msg-time-divider span { background:transparent; padding:2px 0; }
+body.cs-td-plain .msg-time-divider span { opacity:.65; }
 /* 鑱旂郴浜烘鍦ㄨ緭鍏ワ細姝ｅ父娴佸崰浣嶏紝鏃犻渶棰濆鐣欑櫧琛ュ伩锛堟鍓嶆诞灞傛柟妗堝凡绉婚櫎锛?*/
 
 /* 鑱旂郴浜恒€屾鍦ㄨ緭鍏ャ€嶇姸鎬侊細娑堟伅鍖轰笌杈撳叆鏍忎箣闂寸殑鍐呭祵鏉★紙姝ｅ父娴侊紝涓嶉伄鎸′换浣曟秷鎭級
@@ -273,6 +285,13 @@ body.cs-time-divider .msg-time-divider { display:flex; }
   pointer-events:none;
 }
 .chat-typing[hidden] { display:none; }
+/* v8.61.0 正在输入位置/样式（body 挂 cs-typing-center / cs-typing-capsule）：
+   默认栏位左侧纯文字；居中只改自身对齐，不动消息区几何。 */
+body.cs-typing-center #chat-typing { align-self:center; text-align:center; }
+body.cs-typing-capsule #chat-typing {
+  padding:2px 10px 3px; border-radius:999px;
+  background:rgba(127,127,127,.10);
+}
 /* 娑堟伅鍖哄簳閮ㄧ暀鐧斤紝鏈€鍚庝竴鏉℃秷鎭笉璐磋緭鍏ユ爮 */
 .chat-body { padding-bottom:24px; }
 
@@ -675,6 +694,16 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   width:42px; height:42px; border-radius:50%; object-fit:cover;
   border:1px solid rgba(0,0,0,.1);
   box-shadow:0 1px 4px rgba(0,0,0,.1);
+}
+/* v8.61.0 系统提示三档（聊天设置 → 美化 → 边看边调 → 提示）：拍一拍/撤回/来信通知/游戏居中提示共用。
+   轻底＝去描边、底更淡；纯文字＝无底无框只留小字。边框只改颜色不改宽度，几何不动。 */
+body.cs-sys-soft .msg-poke {
+  background:rgba(127,127,127,.06); /* 老内核回退 */
+  background:color-mix(in srgb, var(--msg-event-ink, #8a8a8a) 7%, transparent);
+  border-color:transparent;
+}
+body.cs-sys-plain .msg-poke {
+  background:transparent; border-color:transparent; padding:2px 0;
 }
 /* v3.10.x锛氫俊浠堕€氱煡锛堝啓淇?鍥炰俊/鏉ヤ俊/鍥炰俊鍒拌揪锛夊彲鐐瑰嚮鐩磋揪淇＄鈥斺€?   鍔犱笅鍒掕櫄绾挎彁绀哄彲鐐癸紝鎸変笅鍙嶉鍙樻繁 */
 .msg-poke.mail-notice { cursor:pointer; }
