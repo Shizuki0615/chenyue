@@ -2304,18 +2304,39 @@
     if (!data || typeof data !== 'object') return 0;
     let n = 0;
     CHAT_BEAUTY_KEYS.forEach(k => { if (data[k] !== undefined) n++; });
+    CARD_GLOBAL_ALL.forEach(k => { if (data[k] !== undefined) n++; });
     return n;
   };
   const collectChatBeauty = () => {
     const data = {};
     CHAT_BEAUTY_KEYS.forEach(k => { const v = store.get(k); if (v !== null && v !== undefined && v !== '') data[k] = v; });
+    // v8.58.8：卡片 CSS + 4 个配色是全局根键，也纳入方案；空值也带上，
+    // 应用新方案时才能把当前卡片样式恢复成方案保存时的状态（旧方案没有这些键，保持现状）。
+    const g = cardGStore();
+    if (g) {
+      CARD_GLOBAL_ALL.forEach(k => {
+        let v = null;
+        try { v = g.get(k); } catch (e) {}
+        data[k] = (v === null || v === undefined) ? '' : String(v);
+      });
+    }
     data['__kind__'] = CHAT_BEAUTY_KIND;
     return data;
   };
   const applyChatBeautyData = (data) => {
     let n = 0;
     CHAT_BEAUTY_KEYS.forEach(k => { if (data[k] !== undefined) { store.set(k, data[k]); n++; } });
+    const g = cardGStore();
+    if (g) {
+      CARD_GLOBAL_ALL.forEach(k => {
+        if (data[k] === undefined) return;
+        const v = data[k];
+        try { if (v === '' || v === null) g.remove(k); else g.set(k, v); } catch (e) {}
+        n++;
+      });
+    }
     try { applySettings(); applyCss(); applyFont(); } catch (e) {}
+    try { applyCardStyle(); } catch (e) {}
     try { csFontChanged(); } catch (e) {}
     return n;
   };
@@ -2366,7 +2387,7 @@
       applyChatBeautyData(s.data || {});
       hideChatSchemeModal(m);
       toast('已应用「' + s.name + '」，当前聊天立即生效');
-    }, { noInput: true, staticText: '将覆盖当前联系人桌面的聊天美化设置，立即生效', pills: [{ label: '应用', value: 'ok' }] });
+    }, { noInput: true, staticText: '将覆盖当前联系人桌面的聊天美化设置与全局卡片 CSS/配色，立即生效', pills: [{ label: '应用', value: 'ok' }] });
     if (ctl && ctl.pills) ctl.pills([{ label: '应用', value: 'ok' }], 'ok');
   }
   function deleteChatScheme(idx, m) {
@@ -2447,7 +2468,7 @@
       doExport(data);
     }, {
       noInput: true,
-      staticText: '选择要导出的聊天美化方案：\n· 当前设置：导出当前正在使用的聊天美化\n· 已保存方案：导出对应方案（含气泡/壁纸/字体）',
+      staticText: '选择要导出的聊天美化方案：\n· 当前设置：导出当前正在使用的聊天美化\n· 已保存方案：导出对应方案（含气泡/壁纸/字体/卡片 CSS 与配色）',
       pills: pills,
     });
   }
@@ -2523,6 +2544,7 @@
     if (data['cs-bg']) out.push('壁纸');
     const av = data['cs-av-shape'];
     if (av) out.push('头像 ' + ({ circle: '圆形', round: '圆角', square: '方形' }[av] || av));
+    if (CARD_GLOBAL_ALL.some(k => data[k] !== undefined && data[k] !== '')) out.push('卡片配色/CSS');
     return out;
   }
   // 保存方案的确认弹窗：实时预览 + 当前设置摘要 + 命名（可视可确认再存）
@@ -2627,7 +2649,7 @@
     const box = document.createElement('div');
     box.style.cssText = 'width:min(92vw,420px);max-height:80vh;display:flex;flex-direction:column;background:var(--card-bg,#fff);color:var(--ink,#111);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.2)';
     const head = document.createElement('div');
-    head.innerHTML = '<div style="font-size:16px;font-weight:600;margin-bottom:4px">聊天美化方案</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">方案在所有联系人桌面通用（含气泡颜色/CSS、背景图、字体、时间轴等），点「应用」一键切换当前聊天外观</div>';
+    head.innerHTML = '<div style="font-size:16px;font-weight:600;margin-bottom:4px">聊天美化方案</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">方案在所有联系人桌面通用（含气泡颜色/CSS、背景图、字体、时间轴、卡片 CSS/配色等），点「应用」一键切换当前聊天外观</div>';
     box.appendChild(head);
     const list = document.createElement('div'); list.className = 'cm-list';
     list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0';

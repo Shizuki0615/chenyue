@@ -6743,6 +6743,7 @@ const FIX_SENTINELS = [
   { name: '#1572 问卡文字对比安全色（删＝浅气泡+白字时卡片文字看不清；E2E 实捕 #ffd6e0 白字 1.32:1）', file: 'js/chat-settings.js', needle: 'if (_csContrast(outInk, outBg) < 4.5) {' },
   { name: '#1574 问卷摘要卡 A 版对齐（删＝问卷卡又退回旧卡面）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card.msg-survey-card,' },
   { name: '#1575 问卷详情按钮改小圆箭头（删＝又退回文字按钮）', file: 'js/chat.js', needle: 'class="msg-survey-detail-btn" data-sv-detail="1" aria-label=' },
+  { name: '#1576 聊天美化方案纳入卡片 CSS/配色（删＝换方案不恢复卡片样式）', file: 'js/chat-settings.js', needle: "data[k] = (v === null || v === undefined) ? '' : String(v);" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
