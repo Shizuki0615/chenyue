@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="lav">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>问卡美化样张 · A / B</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    background: var(--page);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  html[data-theme="lav"] {
+    --page:#ece7df; --phone:#fffdf9; --ink:#241f2b; --muted:#6f6878;
+    --bubble:#dcc9f2; --bubble-ink:#241f2b; --bubble-muted:rgba(36,31,43,.62);
+    --card-border:rgba(36,31,43,.08); --card-shadow:0 4px 14px rgba(36,31,43,.07);
+    --a-top:rgba(255,255,255,.16);
+    --b-top:rgba(255,255,255,.35); --b-base:#fbe9f0;
+    --opt-bg:#fdf9fb; --opt-ink:#241f2b; --opt-border:rgba(36,31,43,.12);
+    --opt-sel-bg:#f0e9f7; --opt-sel-border:#241f2b;
+    --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.15);
+    --line:rgba(36,31,43,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.18);
+  }
+  html[data-theme="white"] {
+    --page:#f3efe8; --phone:#f7f2ea; --ink:#222; --muted:#6f6878;
+    --bubble:#fff; --bubble-ink:#222; --bubble-muted:rgba(34,34,34,.62);
+    --card-border:rgba(0,0,0,.08); --card-shadow:0 4px 14px rgba(0,0,0,.06);
+    --a-top:rgba(255,255,255,.8);
+    --b-top:rgba(255,255,255,.4); --b-base:#fdf4f7;
+    --opt-bg:#fbf9f5; --opt-ink:#222; --opt-border:rgba(0,0,0,.11);
+    --opt-sel-bg:#f1ede5; --opt-sel-border:#222;
+    --accent:#e88fa3; --accent-ink:#2a2024; --accent-strong:#8f3d52; --accent-soft:rgba(232,143,163,.16);
+    --line:rgba(0,0,0,.08); --phone-shadow:0 20px 60px rgba(36,31,43,.14);
+  }
+  html[data-theme="dark"] {
+    --page:#0f0f0f; --phone:#161616; --ink:#f1f1f1; --muted:#b0b0b0;
+    --bubble:#1d1d1d; --bubble-ink:#f1f1f1; --bubble-muted:rgba(241,241,241,.62);
+    --card-border:rgba(255,255,255,.14); --card-shadow:0 6px 18px rgba(0,0,0,.45);
+    --a-top:rgba(255,255,255,.06);
+    --b-top:rgba(255,255,255,.1); --b-base:#2a2226;
+    --opt-bg:#242424; --opt-ink:#f1f1f1; --opt-border:rgba(255,255,255,.22);
+    --opt-sel-bg:#303030; --opt-sel-border:#f1f1f1;
+    --accent:#f0a3b5; --accent-ink:#2a2024; --accent-strong:#f0a3b5; --accent-soft:rgba(240,163,181,.14);
+    --line:rgba(255,255,255,.1); --phone-shadow:0 24px 70px rgba(0,0,0,.6);
+  }
+
+  .top {
+    position: sticky; top:0; z-index:10;
+    padding:22px 20px 16px;
+    background:var(--page);
+    border-bottom:1px solid var(--line);
+  }
+  .top h1 { margin:0; font-size:18px; letter-spacing:.2px; }
+  .top .sub { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.6; }
+  .segs { display:flex; gap:6px; margin-top:12px; }
+  .segs button {
+    border:1px solid var(--line); background:var(--phone); color:var(--ink);
+    padding:7px 12px; border-radius:999px; font:inherit; font-size:12px; cursor:pointer;
+  }
+  .segs button.on { background:var(--ink); color:var(--phone); border-color:var(--ink); }
+  .colors {
+    display:flex; flex-wrap:wrap; align-items:center; gap:9px 14px;
+    margin-top:12px; font-size:11px; color:var(--muted);
+  }
+  .colors label { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .colors input[type="color"] {
+    width:28px; height:24px; padding:0; border:1px solid var(--line);
+    border-radius:7px; background:var(--phone); cursor:pointer;
+  }
+  .colors input[type="color"]::-webkit-color-swatch-wrapper { padding:2px; }
+  .colors input[type="color"]::-webkit-color-swatch { border:none; border-radius:5px; }
+  .colors .reset {
+    border:1px solid var(--line); background:var(--phone); color:var(--ink);
+    padding:5px 10px; border-radius:999px; font:inherit; font-size:11px; cursor:pointer;
+  }
+  html[data-theme="dark"] .colors input[type="color"] { border-color:rgba(255,255,255,.32); }
+
+  .stage {
+    display:flex; gap:26px; justify-content:center; align-items:flex-start; flex-wrap:wrap;
+    padding:22px 18px 12px;
+  }
+  .col { width:390px; max-width:100%; }
+  .col-head { display:flex; align-items:center; gap:8px; margin:0 2px 10px; font-size:13px; color:var(--ink); }
+  .col-head b {
+    display:inline-flex; width:24px; height:24px; border-radius:8px;
+    background:var(--ink); color:var(--phone);
+    align-items:center; justify-content:center; font-size:12px;
+  }
+  .col-head .picked, .col-head .alt { font-size:10px; padding:2px 7px; border-radius:999px; }
+  .col-head .picked { background:var(--accent-soft); color:var(--accent-strong); }
+  .col-head .alt { background:rgba(127,127,127,.1); color:var(--muted); }
+  .col[data-variant="b"] .col-head b { background:var(--accent); color:var(--accent-ink); }
+
+  .phone {
+    width:390px; max-width:100%; height:auto;
+    background:var(--phone); border:1px solid var(--line); border-radius:34px;
+    box-shadow:var(--phone-shadow); overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .chat-head {
+    display:flex; align-items:center; gap:7px;
+    padding:15px 16px 13px; border-bottom:1px solid var(--line);
+    background:var(--phone); flex:none;
+  }
+  .chat-head .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+  .chat-head b { font-size:14px; }
+  .chat-head .online { font-size:11px; color:var(--muted); }
+  .chat-head .dots { margin-left:auto; color:var(--muted); font-size:18px; letter-spacing:2px; }
+  .chat-body { flex:1; min-height:0; overflow:visible; padding:14px 14px 22px; }
+
+  .date { text-align:center; font-size:10px; color:var(--muted); margin:2px 0 14px; }
+  .msg {
+    display:flex; align-items:flex-start; gap:8px;
+    width:78%; margin-left:auto; margin-bottom:15px;
+  }
+  .side { width:40px; flex:none; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .av {
+    width:38px; height:38px; border-radius:50%;
+    background:linear-gradient(135deg,#d8c4ee,#bca2e0);
+    color:#fff; font-size:13px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    border:1.5px solid rgba(255,255,255,.55);
+  }
+  .col[data-variant="b"] .av { background:var(--accent); color:var(--accent-ink); }
+  .time { font-size:10.5px; color:var(--muted); white-space:nowrap; }
+
+  .card {
+    position:relative; overflow:hidden; flex:1; min-width:0;
+    padding:14px; border-radius:18px;
+    background:var(--bubble); border:1px solid var(--card-border);
+    box-shadow:var(--card-shadow); color:var(--bubble-ink);
+  }
+  .col[data-variant="a"] .card::before {
+    content:''; position:absolute; inset:0; border-radius:inherit;
+    background:linear-gradient(180deg, var(--a-top), transparent 42%);
+    pointer-events:none;
+  }
+  .col[data-variant="a"] .card > * { position:relative; z-index:1; }
+  .col[data-variant="b"] .card {
+    border-radius:22px;
+    border-color:color-mix(in srgb, var(--accent) 35%, transparent);
+    background:linear-gradient(155deg, var(--b-top), transparent 72%), var(--b-base);
+    box-shadow:0 10px 26px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .q { font-size:15px; font-weight:700; line-height:1.6; letter-spacing:.1px; }
+
+  .opts { display:flex; flex-direction:column; gap:7px; margin-top:10px; }
+  .opt {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px; border-radius:12px;
+    background:var(--opt-bg); border:1px solid var(--opt-border);
+    color:var(--opt-ink); font-size:13.5px; line-height:1.4;
+    transition:border-color .16s ease, background .16s ease, transform .12s ease;
+  }
+  .opt:active { transform:scale(.995); }
+  .opt-t { flex:1; min-width:0; }
+  .opt.sel { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); font-weight:600; }
+  .col[data-variant="a"] .opt.sel {
+    border-color:var(--opt-ink);
+    background:var(--opt-sel-bg);
+  }
+  .col[data-variant="b"] .opt { border-radius:14px; }
+  .col[data-variant="b"] .opt.sel { border-color:var(--accent); background:var(--opt-sel-bg); }
+  .opt-check {
+    width:19px; height:19px; border-radius:50%; flex:none;
+    background:var(--accent); color:var(--accent-ink);
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .opt-check svg { width:11px; height:11px; }
+  .opt-box {
+    width:17px; height:17px; border-radius:5px; flex:none;
+    border:1.5px solid var(--opt-border);
+    display:inline-flex; align-items:center; justify-content:center;
+    color:transparent;
+  }
+  .opt-box svg { width:10px; height:10px; }
+  .opt.sel .opt-box { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+
+  .submit {
+    width:100%; height:42px; margin-top:8px; border:none; border-radius:12px;
+    background:var(--ink); color:var(--phone);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .submit svg { width:17px; height:17px; }
+  .col[data-variant="b"] .submit {
+    border-radius:14px;
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow:0 6px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  .quick {
+    display:flex; align-items:center; gap:8px;
+    padding:11px 12px; margin-top:7px; border-radius:12px;
+    background:var(--opt-bg); border:1px solid var(--opt-border);
+    color:var(--opt-ink); font-size:13.5px; line-height:1.4;
+  }
+  .quick .chev { margin-left:auto; opacity:.45; font-size:17px; line-height:1; }
+  .quick.is-press { border-color:var(--opt-sel-border); background:var(--opt-sel-bg); }
+  .col[data-variant="a"] .quick.is-press {
+    border-color:var(--opt-ink);
+    background:color-mix(in srgb, var(--opt-ink) 7%, var(--opt-bg));
+  }
+  .col[data-variant="b"] .quick { border-radius:14px; }
+  .col[data-variant="b"] .quick.is-press { border-color:var(--accent); background:var(--accent-soft); }
+
+  .inputbar {
+    display:flex; align-items:center; gap:8px;
+    margin-top:10px; padding:5px 5px 5px 12px;
+    border-radius:999px; background:var(--opt-bg); border:1px solid var(--opt-border);
+  }
+  .inputbar .ph { flex:1; min-width:0; font-size:13px; color:var(--bubble-muted); }
+  .send {
+    width:38px; height:38px; border:none; border-radius:50%;
+    background:var(--ink); color:var(--phone);
+    display:flex; align-items:center; justify-content:center; flex:none;
+    cursor:pointer;
+  }
+  .send svg { width:16px; height:16px; }
+  .col[data-variant="b"] .send {
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow:0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .lines {
+    margin-top:10px; padding-top:9px; border-top:1px solid var(--line);
+    display:flex; flex-direction:column; gap:7px;
+  }
+  .line { display:flex; align-items:flex-start; gap:6px; font-size:13px; line-height:1.45; }
+  .who {
+    flex:none; font-size:10px; font-weight:700; padding:2px 6px; border-radius:999px;
+    background:rgba(127,127,127,.12); color:var(--bubble-muted);
+  }
+  .col[data-variant="b"] .who.you { background:var(--accent-soft); color:var(--accent-strong); }
+  .line-t { flex:1; min-width:0; word-break:break-word; }
+  .line-done {
+    flex:none; width:16px; height:16px; border-radius:50%;
+    background:var(--accent); color:var(--accent-ink);
+    display:inline-flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .line-done svg { width:9px; height:9px; }
+  .card-foot {
+    display:flex; justify-content:flex-end; gap:6px;
+    margin-top:10px; padding-top:8px; border-top:1px solid var(--line);
+  }
+  .round {
+    width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--opt-border); background:var(--opt-bg);
+    color:var(--bubble-muted);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; padding:0;
+  }
+  .round svg { width:15px; height:15px; }
+  .round.heart { color:var(--accent-strong); }
+  .col[data-variant="b"] .round { background:var(--accent-soft); border-color:transparent; }
+
+  .legend {
+    max-width:820px; margin:8px auto 42px; padding:0 22px;
+    color:var(--muted); font-size:12px; line-height:1.85;
+  }
+  .legend b { color:var(--ink); }
+  .legend .chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 0; }
+  .legend .chips span {
+    border:1px solid var(--line); background:var(--phone); color:var(--ink);
+    padding:3px 8px; border-radius:999px; font-size:11px;
+  }
+  @media (max-width: 840px) {
+    .stage { padding:16px 12px 8px; gap:18px; }
+    .phone { border-radius:28px; }
+    .top { padding:16px 16px 12px; }
+    .top h1 { font-size:16px; }
+    .colors input[type="color"] { width:36px; height:36px; }
+    .round { width:36px; height:36px; }
+    .send { width:40px; height:40px; }
+  }
+  @media (max-width: 600px) {
+    .top { position:static; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>问卡美化样张 · A / B</h1>
+  <div class="sub">已选 A 纸感极简，B 只做对照。只做问卡家族：单选 / 多选 / P1 快捷行 / P2 文字作答 / 已答。</div>
+  <div class="segs">
+    <button data-pick="lav" class="on">浅紫</button>
+    <button data-pick="white">白</button>
+    <button data-pick="dark">深色</button>
+  </div>
+  <div class="colors">
+    <label>强调色<input type="color" id="c-accent" value="#e88fa3"></label>
+    <label>A 卡面<input type="color" id="c-bubble" value="#dcc9f2"></label>
+    <label>B 卡面<input type="color" id="c-bbase" value="#fbe9f0"></label>
+    <label>选中项底色<input type="color" id="c-opt" value="#f0e9f7"></label>
+    <label>文字<input type="color" id="c-text" value="#241f2b"></label>
+    <button class="reset" id="c-reset" type="button">跟随主题</button>
+  </div>
+</header>
+
+<main class="stage">
+  <section class="col" data-variant="a">
+    <div class="col-head"><b>A</b><span>纸感极简</span><span class="picked">已选</span></div>
+    <div class="phone">
+      <div class="chat-head"><span class="dot"></span><b>他</b><span class="online">在线</span><span class="dots">⋯</span></div>
+      <div class="chat-body"></div>
+    </div>
+  </section>
+  <section class="col" data-variant="b">
+    <div class="col-head"><b>B</b><span>轻甜卡片</span><span class="alt">对照</span></div>
+    <div class="phone">
+      <div class="chat-head"><span class="dot"></span><b>他</b><span class="online">在线</span><span class="dots">⋯</span></div>
+      <div class="chat-body"></div>
+    </div>
+  </section>
+</main>
+
+<div class="legend">
+  <b>两版共同保留：</b>选中勾、你/他小标签、句尾勾、心形/回看小圆按钮。<br>
+  <b>两版都没加：</b>选项序号、卡头类型小标、头像拍一拍。红包和问卷不在这一轮样张里。
+  <div class="chips"><span>选中勾</span><span>你/他标签</span><span>句尾勾</span><span>小圆按钮</span></div>
+</div>
+
+<template id="chat-tpl">
+  <div class="date">今天 21:12</div>
+
+  <div class="msg">
+    <div class="card">
+      <div class="q">周末想去哪儿？</div>
+      <div class="opts">
+        <div class="opt"><span class="opt-t">海边</span></div>
+        <div class="opt sel"><span class="opt-t">山里</span><span class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span></div>
+        <div class="opt"><span class="opt-t">在家</span></div>
+        <div class="opt"><span class="opt-t">你定</span></div>
+      </div>
+    </div>
+    <div class="side"><div class="av">我</div><div class="time">21:12</div></div>
+  </div>
+
+  <div class="msg">
+    <div class="card">
+      <div class="q">今天想吃什么？</div>
+      <div class="opts">
+        <div class="opt sel"><span class="opt-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="opt-t">火锅</span></div>
+        <div class="opt"><span class="opt-box"></span><span class="opt-t">烧烤</span></div>
+        <div class="opt sel"><span class="opt-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="opt-t">日料</span></div>
+        <div class="opt"><span class="opt-box"></span><span class="opt-t">家常菜</span></div>
+      </div>
+      <button class="submit" type="button" aria-label="提交"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </div>
+    <div class="side"><div class="av">我</div><div class="time">21:13</div></div>
+  </div>
+
+  <div class="msg">
+    <div class="card">
+      <div class="q">现在想干嘛？</div>
+      <div class="quick is-press"><span>陪我聊会儿</span><span class="chev">›</span></div>
+      <div class="quick"><span>一起听歌</span><span class="chev">›</span></div>
+      <div class="quick"><span>各自忙会儿</span><span class="chev">›</span></div>
+    </div>
+    <div class="side"><div class="av">我</div><div class="time">21:14</div></div>
+  </div>
+
+  <div class="msg">
+    <div class="card">
+      <div class="q">今天有什么想告诉我的？</div>
+      <div class="inputbar"><span class="ph">说点什么…</span><button class="send" type="button" aria-label="发送"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>
+    </div>
+    <div class="side"><div class="av">我</div><div class="time">21:15</div></div>
+  </div>
+
+  <div class="msg">
+    <div class="card">
+      <div class="q">要不要一起看部电影？</div>
+      <div class="lines">
+        <div class="line"><span class="who you">你</span><span class="line-t">好呀</span><span class="line-done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span></div>
+        <div class="line"><span class="who ta">他</span><span class="line-t">那我来挑</span></div>
+      </div>
+      <div class="card-foot">
+        <button class="round heart" type="button" aria-label="收藏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></button>
+        <button class="round chev" type="button" aria-label="查看选项"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+    <div class="side"><div class="av">我</div><div class="time">21:16</div></div>
+  </div>
+</template>
+
+<script>
+  (function () {
+    var tpl = document.getElementById('chat-tpl');
+    document.querySelectorAll('.chat-body').forEach(function (body) {
+      body.appendChild(tpl.content.cloneNode(true));
+    });
+    var root = document.documentElement;
+    var themeButtons = Array.prototype.slice.call(document.querySelectorAll('[data-pick]'));
+    var accent = document.getElementById('c-accent');
+    var bubble = document.getElementById('c-bubble');
+    var bbase = document.getElementById('c-bbase');
+    var opt = document.getElementById('c-opt');
+    var text = document.getElementById('c-text');
+    var reset = document.getElementById('c-reset');
+    var OVERRIDES = ['--accent', '--accent-strong', '--accent-soft', '--accent-ink', '--bubble', '--b-base', '--opt-sel-bg', '--bubble-ink', '--opt-ink'];
+
+    function hexToRgb(hex) {
+      hex = String(hex || '').replace('#', '');
+      if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      if (hex.length !== 6) return { r: 0, g: 0, b: 0 };
+      return { r: parseInt(hex.slice(0, 2), 16), g: parseInt(hex.slice(2, 4), 16), b: parseInt(hex.slice(4, 6), 16) };
+    }
+    function toHex(v) {
+      v = String(v || '').trim();
+      if (v.charAt(0) === '#') {
+        if (v.length === 4) return '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+        return v.slice(0, 7);
+      }
+      var m = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      if (m) return '#' + [m[1], m[2], m[3]].map(function (n) {
+        n = Number(n).toString(16);
+        return n.length < 2 ? '0' + n : n;
+      }).join('');
+      return '#000000';
+    }
+    function shade(hex, amt) {
+      var c = hexToRgb(hex);
+      function ch(v) { return Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt))); }
+      return '#' + [ch(c.r), ch(c.g), ch(c.b)].map(function (n) {
+        n = n.toString(16);
+        return n.length < 2 ? '0' + n : n;
+      }).join('');
+    }
+    function rgba(hex, a) {
+      var c = hexToRgb(hex);
+      return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
+    }
+    function inkFor(hex) {
+      var c = hexToRgb(hex);
+      var lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+      return lum > 0.6 ? '#2a2024' : '#ffffff';
+    }
+    function clearOverrides() {
+      OVERRIDES.forEach(function (p) { root.style.removeProperty(p); });
+    }
+    function clearThemeOn() {
+      themeButtons.forEach(function (b) { b.classList.remove('on'); });
+    }
+    function syncInputs() {
+      var cs = getComputedStyle(root);
+      accent.value = toHex(cs.getPropertyValue('--accent').trim());
+      bubble.value = toHex(cs.getPropertyValue('--bubble').trim());
+      bbase.value = toHex(cs.getPropertyValue('--b-base').trim());
+      opt.value = toHex(cs.getPropertyValue('--opt-sel-bg').trim());
+      text.value = toHex(cs.getPropertyValue('--bubble-ink').trim());
+    }
+    function applyAccent() {
+      var c = accent.value;
+      root.style.setProperty('--accent', c);
+      root.style.setProperty('--accent-strong', shade(c, root.getAttribute('data-theme') === 'dark' ? 0.35 : -0.35));
+      root.style.setProperty('--accent-soft', rgba(c, 0.16));
+      root.style.setProperty('--accent-ink', inkFor(c));
+      clearThemeOn();
+    }
+    function applyBubble() {
+      root.style.setProperty('--bubble', bubble.value);
+      clearThemeOn();
+    }
+    function applyBBase() {
+      root.style.setProperty('--b-base', bbase.value);
+      clearThemeOn();
+    }
+    function applyOpt() {
+      root.style.setProperty('--opt-sel-bg', opt.value);
+      clearThemeOn();
+    }
+    function applyText() {
+      var c = text.value;
+      root.style.setProperty('--bubble-ink', c);
+      root.style.setProperty('--opt-ink', c);
+      clearThemeOn();
+    }
+
+    themeButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        clearOverrides();
+        root.setAttribute('data-theme', btn.getAttribute('data-pick'));
+        themeButtons.forEach(function (b) { b.classList.toggle('on', b === btn); });
+        syncInputs();
+      });
+    });
+    accent.addEventListener('input', applyAccent);
+    bubble.addEventListener('input', applyBubble);
+    bbase.addEventListener('input', applyBBase);
+    opt.addEventListener('input', applyOpt);
+    text.addEventListener('input', applyText);
+    reset.addEventListener('click', function () {
+      clearOverrides();
+      syncInputs();
+      themeButtons.forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-pick') === root.getAttribute('data-theme'));
+      });
+    });
+    syncInputs();
+  })();
+</script>
+</body>
+</html>

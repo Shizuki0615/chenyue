@@ -5917,13 +5917,15 @@ if (Array.isArray(r)) return r.filter(s => typeof s === 'string' && s.trim()).ma
 if (typeof r === 'string') return r.split(';').map(s => s.trim()).filter(Boolean);
 return [];
 }
-// 已答统一两行：你：xxxx / 他：xxxx（左对齐，无对勾；接收侧选项默认收起且不再回看）
+const ASK_LINE_DONE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+const ASK_SUBMIT_PLANE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+// 已答统一两行：你 / 他 标签 + 正文（用户定稿：标签做成小胶囊，你行句尾加小勾）
 function askAnsweredLinesHtml(youText, taText) {
 const y = String(youText == null ? '' : youText);
 const t = String(taText == null ? '' : taText);
 let html = '<div class="msg-ask-lines">';
-if (y) html += '<div class="ask-line"><span class="ask-line-who">你：</span><span class="ask-line-txt">' + escTxt(y) + '</span></div>';
-if (t) html += '<div class="ask-line"><span class="ask-line-who">他：</span><span class="ask-line-txt">' + escTxt(t) + '</span></div>';
+if (y) html += '<div class="ask-line"><span class="ask-line-who">你</span><span class="ask-line-txt">' + escTxt(y) + '</span><span class="ask-line-done" aria-hidden="true">' + ASK_LINE_DONE_SVG + '</span></div>';
+if (t) html += '<div class="ask-line"><span class="ask-line-who">他</span><span class="ask-line-txt">' + escTxt(t) + '</span></div>';
 html += '</div>';
 return html;
 }
@@ -5947,7 +5949,11 @@ const t = String((o && o.t) || '');
 rows += '<div class="ask-opt-row ask-opt-chk' + (i >= 6 ? ' ask-opt-extra' : '') + '" data-ask-opt="' + i + '"' + (i >= 6 ? ' hidden' : '') + '><span class="ask-opt-box"></span><span class="ask-opt-t">' + escTxt(t) + '</span></div>';
 }
 if (opts.length > 6) rows += '<button type="button" class="ask-opt-more" data-ask-more="1">展开全部（' + opts.length + '）</button>';
-rows += '<button type="button" class="ask-opt-submit" data-ask-submit="1" disabled>' + (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案') + '</button>';
+const submitHint = capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案';
+rows += '<button type="button" class="ask-opt-submit" data-ask-submit="1" disabled aria-label="' + submitHint + '">' +
+  '<span class="ask-opt-submit-txt">' + submitHint + '</span>' +
+  '<span class="ask-opt-submit-ic" aria-hidden="true">' + ASK_SUBMIT_PLANE_SVG + '</span>' +
+  '</button>';
 return '<div class="msg-ask-opts is-multi">' + rows + '</div>';
 }
 // 出站「我问 TA」：选项默认折叠，展开后只读（不显示 ~TA回应，避免剧透）
@@ -6010,8 +6016,13 @@ function askSyncMultiSubmit(root, capN) {
 const submit = root.querySelector('.ask-opt-submit');
 if (!submit) return;
 const picked = root.querySelectorAll('.ask-opt-chk.on').length;
+const hint = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');
 submit.disabled = !picked;
-submit.textContent = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');
+submit.classList.toggle('is-ready', picked > 0);
+submit.setAttribute('aria-label', hint);
+submit.title = hint;
+const txt = submit.querySelector('.ask-opt-submit-txt');
+if (txt) txt.textContent = hint;
 }
 function askBindOptions(root, rec, idx) {
 if (!root || !rec) return;
@@ -7479,7 +7490,7 @@ opts = opts || {};
   const _tagExtra = Array.isArray(opts.tagExtra) ? opts.tagExtra.filter(md => md && String(md.tag || '').trim()).map(md => ({ tag: String(md.tag), label: md.label == null ? '' : String(md.label) })) : null;
   const _tagMerged = (_tagExtra && _tagExtra.length) ? (_tagMood ? _tagMood.concat(_tagExtra) : _tagExtra) : _tagMood;
   // v3.16.x：gInv = 联系人主动邀请的游戏类型（pong/snake/rps），随消息持久化供小游戏记录识别
-	return addRec({ side: 'in', text: text, initiative: opts.initiative, special: opts.special, rateAllow: opts.rateAllow, game: opts.game, quote: opts.quote, qidx: opts.qidx, type: opts.type, img: opts.img, parts: opts.parts, mailNotice: opts.mailNotice, gInv: opts.gInv, silent: opts.silent, nightAllow: opts.nightAllow, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers, dedupExempt: opts.dedupExempt, nickKeep: opts.nickKeep, mood: opts.mood || _tagMerged || undefined });
+	return addRec({ side: 'in', text: text, initiative: opts.initiative, special: opts.special, rateAllow: opts.rateAllow, game: opts.game, quote: opts.quote, qidx: opts.qidx, type: opts.type, img: opts.img, parts: opts.parts, mailNotice: opts.mailNotice, gInv: opts.gInv, silent: opts.silent, nightAllow: opts.nightAllow, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askMultiMax: opts.askMultiMax, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers, dedupExempt: opts.dedupExempt, nickKeep: opts.nickKeep, mood: opts.mood || _tagMerged || undefined });
 }
 // v3.27.x：对话型回复补「正在输入」过渡——TA 回应先 showTyping 再落地，消除气泡凭空冒出的突兀感。
 // items 可为单条文本或数组（数组=逐条连发，条与条之间再出一次 typing）。仅当前桌面生效：期间切走
@@ -7575,7 +7586,7 @@ opts = opts || {};
 // 音乐互动等）经此处放行；不透传则调用方写的豁免标记会被本函数的白名单就地吞掉。
 opts.nightAllow = opts.nightAllow === true;
 	opts.rateAllow = opts.rateAllow === true; // #1341：限流的豁免位同要经本白名单透传
-return addIn(text, { special: opts.special || 'poke', silent: opts.silent, nightAllow: opts.nightAllow, rateAllow: opts.rateAllow, img: opts.img, mailNotice: opts.mailNotice, nickKeep: opts.nickKeep, game: opts.game, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askTs: opts.askTs, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers });
+return addIn(text, { special: opts.special || 'poke', silent: opts.silent, nightAllow: opts.nightAllow, rateAllow: opts.rateAllow, img: opts.img, mailNotice: opts.mailNotice, nickKeep: opts.nickKeep, game: opts.game, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askMultiMax: opts.askMultiMax, askTs: opts.askTs, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers });
 };
 window.chatAddIn = function (text, opts) {
 // FIX 2026-09-15 #492：opts.follow = 用户主动通道（帮我决定/多人决定结果发到聊天）——落聊天

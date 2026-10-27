@@ -6092,7 +6092,7 @@ const FIX_SENTINELS = [
   { name: '#1480i 草稿状态行点名单独限选的题数（删＝杆上读数被当成全卷统一上限，用户无从知道按题限已生效）', file: 'js/ta-ask.js', needle: "+ (nCap ? nCap + ' 题单独限选、其余' : '') +" },
   { name: '#1480j 手动作答的上限闸（删＝限 2 的题勾第 3 个照样上屏，用户侧与 TA 侧两套规矩）', file: 'js/chat.js', needle: "if (at < 0 && capN && picked.length >= capN) { toast('这题最多选 ' + capN + ' 个'); return; }" },
   { name: '#1480k 手动作答上限的取数（删＝capN 恒 0＝闸永远不关）', file: 'js/chat.js', needle: "const capN = (rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;" },
-  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；已随未答选项直接铺开重锚到提交条初始文案）', file: 'js/chat.js', needle: "submit.textContent = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');" },
+  { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；v8.57.6 重锚：提交条改小飞机后，初始提示文案在 askMultiOptsHtml 的 submitHint）', file: 'js/chat.js', needle: "const submitHint = capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案';" },
   { name: '#1480m 尾日志压缩字段表带上 askMultiMax（删＝尾巴日志回放出的限选卡丢了按题上限，跨桌面/回收恢复后闸失效）', file: 'js/chat.js', needle: "'askType', 'askMultiMax', 'deskCk'" },
   { name: '#1480n 问卷格式说明写出按题限选写法（删＝页面上没有任何一处教「（多选·最多2）」，功能等于不存在）', file: 'template.html', needle: "个别题想另限就写成「（多选·最多2）」" },
   { name: '#1480o 「按题限选」文案随 #1502 章下线、落点回到问卷设置页说明（删＝功能说明也没了，用户无处得知「（多选·最多2）」写法）', file: 'template.html', needle: '也可写「（多选·最多2）」给这一题单独限个数' },
@@ -6729,6 +6729,19 @@ const FIX_SENTINELS = [
   { name: '#1569f 拆红包小窗打开/阶段切换（删＝点卡只渲染空窗，领取/拒收/确认阶段不显示）', file: 'js/chat.js', needle: 'function openRpOpen(rec, idx) {' },
   { name: '#1569g 拆红包小窗复用红包封面（删＝有封面也不铺，退回固定白底/红底）', file: 'js/chat.js', needle: "box.classList.add('has-cover')" },
   { name: '#1569h 领取按钮金币四角星图标（删＝领取图标退回圆圈加号）', file: 'template.html', needle: 'M12 5.5l1.4 5.1L18.5 12' },
+  // ==== 2026-10-27 #1570 问卡 A 版 + 全局卡片 CSS/配色 ====
+  { name: '#1570a 问卡 A 版卡面/选项/选色层（删＝退回旧问卡观感）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask.msg-ask-out .msg-ask-card:not(.msg-survey-card)' },
+  { name: '#1570b 多选提交键小飞机（删＝提交键退回文字）', file: 'js/chat.js', needle: 'ask-opt-submit-ic' },
+  { name: '#1570c 已答你/他胶囊 + 句尾勾（删＝退回「你：」纯文本、无勾）', file: 'js/chat.js', needle: 'ask-line-done' },
+  { name: '#1570d 卡片 CSS 全局根键/作用域注入（删＝卡片 CSS 输入不生效）', file: 'js/chat-settings.js', needle: 'cs-card-global-css' },
+  { name: '#1570e 卡片配色 4 项（删＝强调/卡面/选中/文字无法改）', file: 'js/chat-settings.js', needle: 'CARD_GLOBAL_ALL' },
+  { name: '#1570f 恢复初始美化新增保留卡片 CSS（删＝无法只留 CSS、配色回默认）', file: 'js/chat-settings.js', needle: 'cs-reset-keepcardcss' },
+  { name: '#1570g 全局卡片键不随 migrateLegacy 迁走（删＝切换联系人后卡片样式/配色丢失）', file: 'js/contacts.js', needle: "if (r.indexOf('cs-card-global-') === 0) return true;" },
+  { name: '#1570h 卡片 CSS 设置页入口（删＝设置页找不到卡片 CSS）', file: 'template.html', needle: 'id="cs-card-css"' },
+  { name: '#1570i 按题限选 askMultiMax 经 chatAddSystem/addIn 双白名单透传（删＝卡上不显示「最多 N 个」、限选闸失效；E2E 实捕）', file: 'js/chat.js', needle: 'askMultiMax: opts.askMultiMax' },
+  { name: '#1571 B 版已答卡题目/答复单分割线（删＝已答卡又变一整块无层次；30% 文字色）', file: 'css/chat-main.css', needle: 'border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);' },
+  { name: '#1572 问卡文字对比安全色（删＝浅气泡+白字时卡片文字看不清；E2E 实捕 #ffd6e0 白字 1.32:1）', file: 'js/chat-settings.js', needle: 'if (_csContrast(outInk, outBg) < 4.5) {' },
+  { name: '#1573 B 版入站收藏心形左下（删＝他那边又回到右下）', file: 'css/chat-main.css', needle: 'msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

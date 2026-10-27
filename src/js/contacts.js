@@ -252,6 +252,9 @@
     if (r.indexOf('narc-') === 0) return true;
     // 我的档案：myarc 根键（全局唯一 JSON，my-arc.js）同理不可迁移
     if (r.indexOf('myarc') === 0) return true;
+    // v8.57.6：问卡 A 版卡片 CSS 与卡片配色是全局根键（所有联系人共用一份，只作用单聊），
+    // 绝不能当旧顶层业务键迁进 default 桌面，否则切换联系人后卡片样式/配色读不到。
+    if (r.indexOf('cs-card-global-') === 0) return true;
     // FIX 2026-09-25 #1293：屏幕适配微调七轴（mobile-adapt.js #707/#764/#794）出生即根命名空间
     // ——屏幕是设备属性、跨桌面共用，读取方 loadAdj 只认 xy-home-v2:screen-adj-<axis>。此前整族
     // 既不在 EXCLUDE 也没有前缀守卫 → migrateLegacy 每次启动把根键当旧顶层业务键迁进 default 桌面

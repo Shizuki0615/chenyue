@@ -1642,6 +1642,206 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 .msg-survey-detail-btn:active { opacity:.8; }
 
+/* ===== v8.57.6 问卡 A 版（用户定稿）=====
+   卡面继续读气泡底色/字色；A 版只叠细边、轻阴影、白纸选项与选色层。
+   配色/卡片 CSS 由全局根键 cs-card-global-* 注入（chat-settings.js），只作用 #page-chat。
+   --ask-* 未设置时回退到气泡变量：入站跟联系人、出站跟我的气泡，老桌面零感。 */
+#page-chat .msg-ask.msg-ask-out {
+  --ask-side-bg: var(--ask-card-bg, var(--cs-out-surface, var(--msg-out-bg, #111111)));
+  --ask-side-text: var(--ask-card-text, var(--msg-out-ink, #ffffff));
+  --ask-opt-bg: rgba(255,255,255,.28);
+  --ask-opt-bg: color-mix(in srgb, var(--ask-side-bg) 72%, #ffffff);
+  --ask-side-sel: var(--ask-card-sel-bg, rgba(127,127,127,.14));
+  --ask-side-sel: var(--ask-card-sel-bg, color-mix(in srgb, var(--ask-side-text) 7%, var(--ask-opt-bg)));
+}
+#page-chat .msg-ask.msg-ask-in {
+  --ask-side-bg: var(--ask-card-bg, var(--cs-in-surface, var(--msg-in-bg, #ffffff)));
+  --ask-side-text: var(--ask-card-text, var(--msg-in-ink, #111111));
+  --ask-opt-bg: rgba(255,255,255,.28);
+  --ask-opt-bg: color-mix(in srgb, var(--ask-side-bg) 72%, #ffffff);
+  --ask-side-sel: var(--ask-card-sel-bg, rgba(127,127,127,.14));
+  --ask-side-sel: var(--ask-card-sel-bg, color-mix(in srgb, var(--ask-side-text) 7%, var(--ask-opt-bg)));
+}
+
+#page-chat .msg-ask.msg-ask-out .msg-ask-card:not(.msg-survey-card),
+#page-chat .msg-ask.msg-ask-out .msg-choose-card,
+#page-chat .msg-ask.msg-ask-in .msg-ask-card:not(.msg-survey-card),
+#page-chat .msg-ask.msg-ask-in .msg-choose-card {
+  background: var(--ask-side-bg);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10), transparent 42%);
+  color: var(--ask-side-text);
+  border: 1px solid rgba(127,127,127,.18);
+  border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
+  border-radius: var(--chat-bubble-radius, 18px);
+  padding: var(--chat-bubble-pad, 11px 14px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
+  text-align: left;
+}
+#page-chat .msg-ask.msg-ask-out .msg-ask-q,
+#page-chat .msg-ask.msg-ask-in .msg-ask-q {
+  color: var(--ask-side-text);
+  font-size: calc(var(--chat-font-size, 14px) + 1px);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+#page-chat .msg-ask .ask-opt-btn,
+#page-chat .msg-ask .ask-opt-row,
+#page-chat .msg-ask .ask-opt-static {
+  background: rgba(255,255,255,.28);
+  background: var(--ask-opt-bg);
+  border: 1px solid rgba(127,127,127,.20);
+  border-color: color-mix(in srgb, var(--ask-side-text) 14%, transparent);
+  border-radius: 12px;
+  color: var(--ask-side-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 10px 12px;
+}
+#page-chat .msg-ask .ask-opt-btn:active,
+#page-chat .msg-ask .ask-opt-row:active {
+  background: var(--ask-side-sel);
+}
+#page-chat .msg-ask .ask-opt-chk.on,
+#page-chat .msg-ask .ask-opt-view.on {
+  background: var(--ask-side-sel);
+  border-color: var(--ask-side-text);
+  color: var(--ask-side-text);
+  font-weight: 600;
+}
+#page-chat .msg-ask .ask-opt-view.off { opacity: .78; }
+#page-chat .msg-ask .ask-opt-view.off .ask-opt-reply { opacity: .72; }
+#page-chat .msg-ask .ask-opt-box {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border-color: rgba(127,127,127,.5);
+  border-color: color-mix(in srgb, var(--ask-side-text) 32%, transparent);
+}
+#page-chat .msg-ask .ask-opt-chk.on .ask-opt-box {
+  background: var(--ask-accent, #e88fa3);
+  border-color: var(--ask-accent, #e88fa3);
+}
+#page-chat .msg-ask .ask-opt-chk.on .ask-opt-box::after {
+  border-color: var(--ask-accent-ink, #2a2024);
+}
+
+#page-chat .msg-ask .ask-opt-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ask-side-text);
+  color: var(--ask-side-bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+#page-chat .msg-ask .ask-opt-submit svg { width: 18px; height: 18px; }
+#page-chat .msg-ask .ask-opt-submit-ic { display: none; align-items: center; justify-content: center; }
+#page-chat .msg-ask .ask-opt-submit.is-ready .ask-opt-submit-txt { display: none; }
+#page-chat .msg-ask .ask-opt-submit.is-ready .ask-opt-submit-ic { display: inline-flex; }
+
+#page-chat .msg-ask .msg-ask-lines {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask .ask-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--ask-side-text);
+}
+#page-chat .msg-ask .ask-line-who {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(127,127,127,.12);
+  opacity: .75;
+}
+#page-chat .msg-ask .ask-line-txt { flex: 1; min-width: 0; opacity: .95; }
+#page-chat .msg-ask .ask-line-done {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ask-accent, #e88fa3);
+  color: var(--ask-accent-ink, #2a2024);
+}
+#page-chat .msg-ask .ask-line-done svg { width: 9px; height: 9px; }
+
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card),
+#page-chat .msg-ask .msg-choose-card.answered,
+#page-chat .msg-ask .msg-ask-card.answered.has-ask-arrow {
+  position: relative;
+  padding-bottom: 44px;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart {
+  position: absolute;
+  right: 44px;
+  bottom: 6px;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  gap: 0;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart .msg-fav-heart-txt,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart .msg-fav-heart-txt { display: none; }
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart svg,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart svg { width: 14px; height: 14px; }
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart.is-fav,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart.is-fav {
+  background: var(--ask-accent-soft, rgba(232,143,163,.14));
+  color: var(--ask-accent-strong, var(--ask-accent, #e88fa3));
+  opacity: 1;
+}
+#page-chat .msg-ask.msg-ask-out .msg-fav-time,
+#page-chat .msg-ask.msg-ask-in .msg-fav-time {
+  color: var(--ask-side-text);
+  opacity: .6;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
+/* B 版（用户 2026-10-27 定）：入站（他那边）收藏心形挪到左下；出站（我这边）心形与箭头保持右下 */
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart {
+  right: auto;
+  left: 8px;
+}
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
+#page-chat .msg-ask .msg-ask-view-arrow {
+  right: 8px;
+  bottom: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-ask-view-arrow:active {
+  background: var(--ask-side-sel);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-ask-view-arrow svg { width: 15px; height: 15px; }
+
 /* ===== TA鐨勫皬闂 ===== */
 /* 鑱婂ぉ閲岀殑閫夋嫨棰樺崱鐗?*/
 .msg-choose-card {
