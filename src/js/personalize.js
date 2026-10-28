@@ -3786,6 +3786,69 @@ try {
   }
   document.addEventListener('contact-switched', applyAppNameColor);
 
+  // 2026-10-28：图标与底栏图案颜色——一处颜色同时改桌面图标线条（.app-ico svg 的 stroke）
+  // 与底栏图标线条（.tab 的 currentColor）。底栏未选中用同色半透明，保留选中/未选中的层次；
+  // 注入 style 只在设置后存在，恢复默认即摘除、回到 --ink/--muted 跟随主题与深色模式。
+  // 深色模式同样生效（用户显式选的颜色优先，符合「深浅色都生效」口径）。
+  const iconInkRow = document.getElementById('row-icon-ink');
+  const iconInkVal = document.getElementById('icon-ink-val');
+  const ICON_INK_KEY = 'icon-ink-color';
+  const iconInkValOf = () => { try { return store.get(ICON_INK_KEY) || ''; } catch (e) { return ''; } };
+  function applyIconInkColor() {
+    const old = document.getElementById('icon-ink-color-style');
+    if (old) old.remove();
+    const c = iconInkValOf();
+    if (iconInkVal) iconInkVal.textContent = c ? c.toUpperCase() : '默认';
+    if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) return;
+    const st = document.createElement('style');
+    st.id = 'icon-ink-color-style';
+    st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
+      + '.tabbar .tab{color:' + c + ' !important;}'
+      + '.tabbar .tab.active{color:' + c + ' !important;}'
+      + '.tabbar .tab svg{stroke-opacity:.55;}'
+      + '.tabbar .tab.active svg{stroke-opacity:1;}';
+    document.head.appendChild(st);
+  }
+  applyIconInkColor();
+  if (iconInkRow) {
+    const iconInkSwatches = [
+      { color: '#111111', label: '默认黑' },
+      { color: '#333333', label: '深灰' },
+      { color: '#555555', label: '中灰' },
+      { color: '#777777', label: '浅中灰' },
+      { color: '#999999', label: '中浅灰' },
+      { color: '#bbbbbb', label: '浅灰' },
+      { color: '#ffffff', label: '纯白' },
+      { color: '#e05555', label: '樱花粉' },
+      { color: '#cc5555', label: '珊瑚红' },
+      { color: '#e8753a', label: '暖橘' },
+      { color: '#f0a020', label: '琥珀金' },
+      { color: '#2e8b57', label: '薄荷绿' },
+      { color: '#4a9d5e', label: '森绿' },
+      { color: '#3a7bd5', label: '天蓝' },
+      { color: '#7b5fd6', label: '紫罗兰' },
+      { color: '#d6459d', label: '玫红' },
+    ];
+    iconInkRow.addEventListener('click', () => {
+      if (!window.openModal) return;
+      const current = iconInkValOf();
+      window.openModal('图标与底栏线条颜色', '', (v) => {
+        if (v === '__reset__') { store.remove(ICON_INK_KEY); applyIconInkColor(); return; }
+        const color = (typeof v === 'number' && iconInkSwatches[v]) ? iconInkSwatches[v].color : v;
+        if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
+        store.set(ICON_INK_KEY, color);
+        applyIconInkColor();
+      }, {
+        colorPicker: true,
+        noInput: true,
+        color: current,
+        swatches: iconInkSwatches,
+        pills: [{ label: '恢复默认', value: '__reset__' }],
+      });
+    });
+  }
+  document.addEventListener('contact-switched', applyIconInkColor);
+
   // ===== 2026-10-28 桌面小组件 / 图标 自定义 CSS =====
   // 与聊天气泡 CSS 同一套用法：直接写声明时自动包到默认目标；写选择器时统一补
   // #page-phone 前缀，只作用手机桌面页（聊天/群聊/设置页不会被误伤）。per-cid store，
@@ -4365,6 +4428,8 @@ try {
     'desk-widget-css', 'desk-icon-css',
     'widget-bg-color', 'widget-border-color', 'widget-btn-color', 'widget-btn-text-color', 'widget-heart-color',
     'app-name-color',
+    // 2026-10-28：图标与底栏线条颜色
+    'icon-ink-color',
     // #769：底部导航栏样式键（图片本体 tab-icon-<page> 为动态键，在 collectBeauty 单独收集）
     'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size',
     'tab-icon-opacity',
@@ -4506,7 +4571,7 @@ try {
   }
   // v3.17.x：美化数据写入当前桌面（导入 / 应用方案共用），含动态键与全局主题
   // v3.27.x：方案部分应用（C）——scope='color'|'bg'|'layout'|'all'，默认 all 完全兼容现有
-  const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
+  const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','icon-ink-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
   const SCOPE_BG_KEYS = ['phone-bg','phone-bg-preset','phone-bg-solid','phone-bg-pos-x','phone-bg-pos-y','phone-bg-size','bg-blur','bg-mask-op'];
   const SCOPE_LAYOUT_KEYS = ['desk-layout','desk-page-count','desk-images','desk-texts','desk-countdowns'];
   const applyBeautyData = (data, scope) => {
@@ -5661,6 +5726,7 @@ try {
       ['row-widget-btn', () => { store.remove('widget-btn-color'); document.documentElement.style.removeProperty('--widget-btn'); paintBeautyVal(widgetBtnVal, '', '#111111', '默认黑'); }],
       ['row-widget-btn-text', () => { store.remove('widget-btn-text-color'); document.documentElement.style.removeProperty('--widget-btn-text'); paintBeautyVal(widgetBtnTextVal, '', '#ffffff', '默认白'); }],
       ['row-app-name-color', () => { store.remove(APP_NAME_COLOR_KEY); applyAppNameColor(); }],
+      ['row-icon-ink', () => { store.remove(ICON_INK_KEY); applyIconInkColor(); }],
       ['row-widget-heart', () => { store.remove('widget-heart-color'); document.documentElement.style.removeProperty('--widget-heart'); paintBeautyVal(widgetHeartVal, '', '#111111', '默认黑'); }]
     ];
     rows.forEach(function (pair) {
