@@ -853,7 +853,8 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    47~59px 是系统状态栏区域，硬编码 12px 会被状态栏盖住/顶进灵动岛（同类元素
    .ver-update-bar/.sm-float 均已避让，仅此处遗漏）；浏览器内 env() 返回 0，行为不变 */
 .desk-msg {
-  position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
+  /* 顶部横幅往下让开状态栏：原来只留 12px，真机上会压在时间/品牌那一行上 */
+  position:fixed; top:calc(44px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
   /* v3.5.127：z 从 300 降到 89——不再盖过弹层（modal 90/tc 85/qa 88/call 95），
      否则 TA 来消息时横幅压在弹窗/来电面板上面 */
   z-index:89; width:min(320px, calc(100% - 24px));
