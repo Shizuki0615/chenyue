@@ -1564,7 +1564,8 @@
         <div class="them-tab" data-tab="diag">信息诊断</div>
         <div class="them-tab" data-tab="about">关于</div>
       </div>
-      <!-- 通用：全屏模式（置顶独立组） + 数据备份（导出/导入） + 联系人 / 桌面 + 入口行为 + 深色模式 / 手机桌面美化 -->
+      <!-- 通用：全屏模式（置顶独立组） + 数据备份（导出/导入） + 深色模式 / 手机桌面美化 + 联系人 / 桌面 + 入口行为 -->
+      <!-- 2026-10-28 用户指定：深色模式 / 手机桌面美化紧跟导出/导入，放在联系人 / 桌面之前 -->
       <div class="them-sec" data-sec="basic">
       <!-- FIX 2026-09-20 #927：全屏模式自「系统」段提到通用首位、独立成组（用户：设置里的全屏模式要放在最前面一个显眼独立的地方）；
            行下小字首条写明「切后台会自动退出全屏＝设备限制、不是 bug」（原只在常见问题里，用户当 bug 报） -->
@@ -1587,6 +1588,18 @@
         <div class="set-row" id="row-import">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></div>
           <div class="txt">导入数据<span class="sub">点开可选「仅聊天记录」：只恢复各桌面联系人与群聊，其他数据不动</span></div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </div>
+      <div class="set-group glass">
+        <div class="set-row" id="row-theme-mode">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
+          <div class="txt">深色模式</div>
+          <div class="val" id="theme-mode-val">关闭</div>
+        </div>
+        <div class="set-row" id="row-appearance">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg></div>
+          <div class="txt">手机桌面美化</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </div>
@@ -1628,18 +1641,6 @@
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></div>
           <div class="txt">默认进入的桌面<span class="sub">开启后每次打开直接进入所选联系人桌面</span></div>
           <div class="val" id="entry-default-contact-val">关闭</div>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-        </div>
-      </div>
-      <div class="set-group glass">
-        <div class="set-row" id="row-theme-mode">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
-          <div class="txt">深色模式</div>
-          <div class="val" id="theme-mode-val">关闭</div>
-        </div>
-        <div class="set-row" id="row-appearance">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg></div>
-          <div class="txt">手机桌面美化</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </div>
