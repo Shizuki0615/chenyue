@@ -6556,7 +6556,7 @@ const FIX_SENTINELS = [
   { name: '#1547n 夜间免打扰闸（删＝半夜生成他的批注/回应）', file: 'js/reading.js', needle: 'function rdNightGuard() {' },
   { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
   { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
-  { name: '#1547q 聊天「更多 → 互动」入口（删＝只剩桌面图标一条入口）', file: 'template.html', needle: 'id="more-reading" data-mcat="chat"' },
+  // #1547q 已于 2026-10-28 随用户要求删除「更多 → 互动」读书入口而退场（桌面图标仍是主要入口，见 #1591a 回流哨兵）
   { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
@@ -6812,6 +6812,13 @@ const FIX_SENTINELS = [
   { name: '#1590h 快捷邀请只随邀请他模式显示（删＝问问TA 面板也挂着一起听歌/读书）', file: 'js/chat.js', needle: 'if (quickInv) quickInv.hidden = !isInvite;' },
   { name: '#1590i 快捷邀请发送时钉死类型（删＝类型又回到靠话术关键词猜）', file: 'js/chat.js', needle: 'sendInviteContent(content, kind);' },
   { name: '#1590j 快捷邀请样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出按钮）', file: 'css/chat-main.css', needle: '.chat-ask-quick[hidden] { display:none; }' },
+  { name: '#1590k 邀请字卡编辑开关（删＝✎/✕ 又常显，没有开关可关）', file: 'js/chat.js', needle: '\'emoji-g-chip inv-g-edit\'' },
+  { name: '#1590l 编辑态点卡不发送（删＝想改字卡却把邀请发了出去）', file: 'js/chat.js', needle: 'if (!tiInviteEdit) item.addEventListener(\'click\', () => { sendInviteContent(c); });' },
+  { name: '#1590m 打开面板重置编辑开关（删＝上次开着编辑，下次打开仍露 ✎/✕）', file: 'js/chat.js', needle: 'if (isInvite) tiInviteEdit = false;' },
+  { name: '#1590n 编辑开关样式（删＝开关与批量管理外观不一致）', file: 'css/chat-main.css', needle: '.inv-g-edit.on {' },
+  // ==== 2026-10-28 #1591 互动面板移除读书入口（桌面读书图标与读书模块保留） ====
+  { name: '#1591a 互动里不再有读书入口（回流＝聊天更多又长出一颗读书）', file: 'template.html', needle: 'id="more-reading"', absent: true },
+  { name: '#1591b reading.js 不再接 more-reading（回流＝已删入口又接上开页）', file: 'js/reading.js', needle: 'el.closest(\'#more-reading\')', absent: true },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

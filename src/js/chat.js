@@ -12134,6 +12134,8 @@ const invGroups = document.getElementById('invite-groups');
 const invList = document.getElementById('invite-list');
 const invSave = document.getElementById('chat-ask-save');
 const isInvite = chatAskMode === 'invite';
+	// 2026-10-28：编辑开关每次打开「邀请他」面板都从关闭起（不怕上次开着忘了关）
+	if (isInvite) tiInviteEdit = false;
 	if (invGroups) invGroups.hidden = !isInvite;
 	if (invList) invList.hidden = !isInvite;
 	if (invSave) invSave.hidden = !isInvite;
@@ -12621,6 +12623,8 @@ return myInviteCurGroup;
 // v3.x：邀请TA ——批量管理模式态（预设为系统内置分组：仅自建分组可进批量，可重命名/删除分组）
 let tiInviteBatch = false;   // 批量管理模式开关
 let tiInviteSel = new Set(); // 批量勾选：当前自建分组内字卡下标集合
+// 2026-10-28：编辑开关——默认关闭，只有打开才露 ✎/✕ 且点卡不发送（每次打开面板重置为关闭）
+let tiInviteEdit = false;
 function renderInviteBank() {
 const wrap = document.getElementById('invite-groups');
 const list = document.getElementById('invite-list');
@@ -12664,6 +12668,13 @@ add.textContent = '＋ 分组';
 add.title = '新建我的邀请分组';
 add.addEventListener('click', (e) => { e.stopPropagation(); myInviteNewGroup(); });
 wrap.appendChild(add);
+// 2026-10-28：编辑开关 chip（顶部分组栏右侧）——关闭时字卡只有「点卡发送」，打开才露修改/删除
+const editChip = document.createElement('span');
+editChip.className = 'emoji-g-chip inv-g-edit' + (tiInviteEdit ? ' on' : '');
+editChip.textContent = tiInviteEdit ? '完成' : '编辑';
+editChip.title = '编辑开关：打开后才能修改/删除邀请字卡（编辑时点卡不发送）';
+editChip.addEventListener('click', (e) => { e.stopPropagation(); toggleInviteEdit(); });
+wrap.appendChild(editChip);
 // v3.x：批量管理 chip（顶部分组栏右侧）——进入后批量勾选字卡，亦可在自建分组上 ✎重命名/✕删除
 const batch = document.createElement('span');
 batch.className = 'emoji-g-chip inv-g-batch' + (tiInviteBatch ? ' on' : '');
@@ -12705,10 +12716,12 @@ return;
 }
 cur.cards.forEach((c, i) => {
 const item = document.createElement('div');
-item.className = 'cc-item glass';
+item.className = 'cc-item glass' + (tiInviteEdit ? ' inv-editing' : '');
 item.innerHTML = '<div class="cc-txt"><div class="t">' + escTxt(c) + '</div></div>';
-	// v3.28：所有分组（含预设）的字卡都给「修改/删除」按钮——预设分组已持久化，myInviteEdit/myInviteDel 可直接写回（用户反馈预设字卡没法单独编辑）
-	item.addEventListener('click', () => { sendInviteContent(c); });
+	// 2026-10-28：编辑开关关闭＝点卡直接发送；打开＝卡片只用于修改/删除，点卡不发送。
+	// 预设分组已持久化（v3.28），开关打开时同样可改可删。
+	if (!tiInviteEdit) item.addEventListener('click', () => { sendInviteContent(c); });
+	if (tiInviteEdit) {
 	const ops = document.createElement('div');
 ops.className = 'poke-card-ops';
 const eb = document.createElement('button');
@@ -12726,6 +12739,7 @@ db.addEventListener('click', (e) => { e.stopPropagation(); myInviteDel(i, c); })
 ops.appendChild(eb);
 	ops.appendChild(db);
 	item.appendChild(ops);
+	}
 	list.appendChild(item);
 	});
 }
@@ -12738,8 +12752,16 @@ toast('预设为系统内置分组，请切换到自建分组后批量管理');
 return;
 }
 tiInviteBatch = !tiInviteBatch;
+tiInviteEdit = false; // 编辑开关与批量管理互斥
 tiInviteSel.clear();
 renderInviteBank();
+}
+// 2026-10-28：编辑开关——打开后才露修改/删除，且编辑态点卡不发送
+function toggleInviteEdit() {
+tiInviteEdit = !tiInviteEdit;
+if (tiInviteEdit) { tiInviteBatch = false; tiInviteSel.clear(); }
+renderInviteBank();
+if (tiInviteEdit) toast('编辑模式：点 ✎ 修改、✕ 删除；点「完成」退出');
 }
 function myInviteCurGroupArr() {
 const g = myInviteG().find(x => Array.isArray(x) && Array.isArray(x[1]) && x[0] === myInviteCurGroup);

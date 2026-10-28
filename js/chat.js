@@ -9425,6 +9425,7 @@ const invGroups = document.getElementById('invite-groups');
 const invList = document.getElementById('invite-list');
 const invSave = document.getElementById('chat-ask-save');
 const isInvite = chatAskMode === 'invite';
+if (isInvite) tiInviteEdit = false;
 if (invGroups) invGroups.hidden = !isInvite;
 if (invList) invList.hidden = !isInvite;
 if (invSave) invSave.hidden = !isInvite;
@@ -9837,6 +9838,7 @@ return myInviteCurGroup;
 }
 let tiInviteBatch = false;   // 批量管理模式开关
 let tiInviteSel = new Set(); // 批量勾选：当前自建分组内字卡下标集合
+let tiInviteEdit = false;
 function renderInviteBank() {
 const wrap = document.getElementById('invite-groups');
 const list = document.getElementById('invite-list');
@@ -9879,6 +9881,12 @@ add.textContent = '＋ 分组';
 add.title = '新建我的邀请分组';
 add.addEventListener('click', (e) => { e.stopPropagation(); myInviteNewGroup(); });
 wrap.appendChild(add);
+const editChip = document.createElement('span');
+editChip.className = 'emoji-g-chip inv-g-edit' + (tiInviteEdit ? ' on' : '');
+editChip.textContent = tiInviteEdit ? '完成' : '编辑';
+editChip.title = '编辑开关：打开后才能修改/删除邀请字卡（编辑时点卡不发送）';
+editChip.addEventListener('click', (e) => { e.stopPropagation(); toggleInviteEdit(); });
+wrap.appendChild(editChip);
 const batch = document.createElement('span');
 batch.className = 'emoji-g-chip inv-g-batch' + (tiInviteBatch ? ' on' : '');
 batch.textContent = tiInviteBatch ? '完成' : '批量管理';
@@ -9919,9 +9927,10 @@ return;
 }
 cur.cards.forEach((c, i) => {
 const item = document.createElement('div');
-item.className = 'cc-item glass';
+item.className = 'cc-item glass' + (tiInviteEdit ? ' inv-editing' : '');
 item.innerHTML = '<div class="cc-txt"><div class="t">' + escTxt(c) + '</div></div>';
-item.addEventListener('click', () => { sendInviteContent(c); });
+if (!tiInviteEdit) item.addEventListener('click', () => { sendInviteContent(c); });
+if (tiInviteEdit) {
 const ops = document.createElement('div');
 ops.className = 'poke-card-ops';
 const eb = document.createElement('button');
@@ -9939,6 +9948,7 @@ db.addEventListener('click', (e) => { e.stopPropagation(); myInviteDel(i, c); })
 ops.appendChild(eb);
 ops.appendChild(db);
 item.appendChild(ops);
+}
 list.appendChild(item);
 });
 }
@@ -9951,8 +9961,15 @@ toast('预设为系统内置分组，请切换到自建分组后批量管理');
 return;
 }
 tiInviteBatch = !tiInviteBatch;
+tiInviteEdit = false; // 编辑开关与批量管理互斥
 tiInviteSel.clear();
 renderInviteBank();
+}
+function toggleInviteEdit() {
+tiInviteEdit = !tiInviteEdit;
+if (tiInviteEdit) { tiInviteBatch = false; tiInviteSel.clear(); }
+renderInviteBank();
+if (tiInviteEdit) toast('编辑模式：点 ✎ 修改、✕ 删除；点「完成」退出');
 }
 function myInviteCurGroupArr() {
 const g = myInviteG().find(x => Array.isArray(x) && Array.isArray(x[1]) && x[0] === myInviteCurGroup);

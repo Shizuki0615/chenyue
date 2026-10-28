@@ -5764,14 +5764,6 @@
       rdOpen();
       return;
     }
-    // 聊天「更多 → 互动」里的入口：先收起面板再开页，和桌面图标走同一条路径
-    if (el.closest('#more-reading')) {
-      e.preventDefault();
-      const mp = document.getElementById('chat-more-panel');
-      if (mp) mp.hidden = true;
-      rdOpen();
-      return;
-    }
     if (el.closest('#rd-hero-go')) {
       e.preventDefault();
       const btn = document.getElementById('rd-hero-go');
