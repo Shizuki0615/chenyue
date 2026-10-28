@@ -6800,6 +6800,7 @@ const FIX_SENTINELS = [
   { name: '#1589c 桌面 CSS 作用域（删＝用户选择器逃出桌面页，污染聊天/全局）', file: 'js/personalize.js', needle: 'function scopeDeskCss(css, fallbackSel) {' },
   { name: '#1589d 桌面 CSS 随联系人切换重应用（删＝切桌面后仍套上一个桌面的 CSS）', file: 'js/personalize.js', needle: 'try { applyDeskWidgetCss(); } catch (e) {}' },
   { name: '#1589e 桌面 CSS 随美化方案/恢复默认（删＝方案导入导出、恢复全部默认漏掉 CSS）', file: 'js/personalize.js', needle: '\'desk-widget-css\', \'desk-icon-css\',' },
+  { name: '#1589f 小组件选择器插入（删＝组件下拉/插入按钮消失，又回到手写选择器）', file: 'js/personalize.js', needle: 'function insertDeskWidgetSelector(ta, type) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
