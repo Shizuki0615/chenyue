@@ -2986,6 +2986,64 @@ pills: [{ label: '自动跟随深色', value: 'auto' }, { label: '恢复默认',
 });
 }
 document.addEventListener('contact-switched', applyAppNameColor);
+const iconInkRow = document.getElementById('row-icon-ink');
+const iconInkVal = document.getElementById('icon-ink-val');
+const ICON_INK_KEY = 'icon-ink-color';
+const iconInkValOf = () => { try { return store.get(ICON_INK_KEY) || ''; } catch (e) { return ''; } };
+function applyIconInkColor() {
+const old = document.getElementById('icon-ink-color-style');
+if (old) old.remove();
+const c = iconInkValOf();
+if (iconInkVal) iconInkVal.textContent = c ? c.toUpperCase() : '默认';
+if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) return;
+const st = document.createElement('style');
+st.id = 'icon-ink-color-style';
+st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
++ '.tabbar .tab{color:' + c + ' !important;}'
++ '.tabbar .tab.active{color:' + c + ' !important;}'
++ '.tabbar .tab svg{stroke-opacity:.55;}'
++ '.tabbar .tab.active svg{stroke-opacity:1;}';
+document.head.appendChild(st);
+}
+applyIconInkColor();
+if (iconInkRow) {
+const iconInkSwatches = [
+{ color: '#111111', label: '默认黑' },
+{ color: '#333333', label: '深灰' },
+{ color: '#555555', label: '中灰' },
+{ color: '#777777', label: '浅中灰' },
+{ color: '#999999', label: '中浅灰' },
+{ color: '#bbbbbb', label: '浅灰' },
+{ color: '#ffffff', label: '纯白' },
+{ color: '#e05555', label: '樱花粉' },
+{ color: '#cc5555', label: '珊瑚红' },
+{ color: '#e8753a', label: '暖橘' },
+{ color: '#f0a020', label: '琥珀金' },
+{ color: '#2e8b57', label: '薄荷绿' },
+{ color: '#4a9d5e', label: '森绿' },
+{ color: '#3a7bd5', label: '天蓝' },
+{ color: '#7b5fd6', label: '紫罗兰' },
+{ color: '#d6459d', label: '玫红' },
+];
+iconInkRow.addEventListener('click', () => {
+if (!window.openModal) return;
+const current = iconInkValOf();
+window.openModal('图标与底栏线条颜色', '', (v) => {
+if (v === '__reset__') { store.remove(ICON_INK_KEY); applyIconInkColor(); return; }
+const color = (typeof v === 'number' && iconInkSwatches[v]) ? iconInkSwatches[v].color : v;
+if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
+store.set(ICON_INK_KEY, color);
+applyIconInkColor();
+}, {
+colorPicker: true,
+noInput: true,
+color: current,
+swatches: iconInkSwatches,
+pills: [{ label: '恢复默认', value: '__reset__' }],
+});
+});
+}
+document.addEventListener('contact-switched', applyIconInkColor);
 const DESK_WIDGET_CSS_KEY = 'desk-widget-css';
 const DESK_ICON_CSS_KEY = 'desk-icon-css';
 const DESK_CSS_ROOT = '#page-phone';
@@ -3505,6 +3563,7 @@ const BEAUTY_KEYS = [
 'desk-widget-css', 'desk-icon-css',
 'widget-bg-color', 'widget-border-color', 'widget-btn-color', 'widget-btn-text-color', 'widget-heart-color',
 'app-name-color',
+'icon-ink-color',
 'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size',
 'tab-icon-opacity',
 'desk-layout', 'desk-page-count',
@@ -3627,7 +3686,7 @@ pills: pills,
 });
 });
 }
-const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
+const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','icon-ink-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
 const SCOPE_BG_KEYS = ['phone-bg','phone-bg-preset','phone-bg-solid','phone-bg-pos-x','phone-bg-pos-y','phone-bg-size','bg-blur','bg-mask-op'];
 const SCOPE_LAYOUT_KEYS = ['desk-layout','desk-page-count','desk-images','desk-texts','desk-countdowns'];
 const applyBeautyData = (data, scope) => {
@@ -4609,6 +4668,7 @@ const rows = [
 ['row-widget-btn', () => { store.remove('widget-btn-color'); document.documentElement.style.removeProperty('--widget-btn'); paintBeautyVal(widgetBtnVal, '', '#111111', '默认黑'); }],
 ['row-widget-btn-text', () => { store.remove('widget-btn-text-color'); document.documentElement.style.removeProperty('--widget-btn-text'); paintBeautyVal(widgetBtnTextVal, '', '#ffffff', '默认白'); }],
 ['row-app-name-color', () => { store.remove(APP_NAME_COLOR_KEY); applyAppNameColor(); }],
+['row-icon-ink', () => { store.remove(ICON_INK_KEY); applyIconInkColor(); }],
 ['row-widget-heart', () => { store.remove('widget-heart-color'); document.documentElement.style.removeProperty('--widget-heart'); paintBeautyVal(widgetHeartVal, '', '#111111', '默认黑'); }]
 ];
 rows.forEach(function (pair) {

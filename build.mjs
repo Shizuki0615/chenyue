@@ -6841,6 +6841,12 @@ const FIX_SENTINELS = [
   // ==== 2026-10-28 #1594 聊天互动按钮改名「头像昵称」 ====
   { name: '#1594a 互动入口按钮显示「头像昵称」（删＝又回到长名「头像和昵称互动」）', file: 'template.html', needle: '<span>头像昵称</span>' },
   { name: '#1594b 旧长名不再出现在该按钮（回流＝改回「头像和昵称互动」）', file: 'template.html', needle: '<span>头像和昵称互动</span>', absent: true },
+  // ==== 2026-10-28 #1595 图标与底栏图案颜色 ====
+  { name: '#1595a 图标与底栏线条颜色入口（删＝设置页没有这条颜色项）', file: 'template.html', needle: 'id="row-icon-ink"' },
+  { name: '#1595b 线条颜色应用函数（删＝选了颜色也不生效）', file: 'js/personalize.js', needle: 'function applyIconInkColor() {' },
+  { name: '#1595c 底栏未选中同色半透明（删＝未选中图标与选中同亮，分不清当前分区）', file: 'js/personalize.js', needle: '.tabbar .tab svg{stroke-opacity:.55;}' },
+  { name: '#1595d 线条颜色键随美化方案（删＝导出/导入、撤销与恢复默认漏掉该颜色）', file: 'js/personalize.js', needle: '\'icon-ink-color\'' },
+  { name: '#1595e 线条颜色随联系人切换重应用（删＝切桌面后仍套上一个桌面的线条颜色）', file: 'js/personalize.js', needle: 'document.addEventListener(\'contact-switched\', applyIconInkColor);' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
