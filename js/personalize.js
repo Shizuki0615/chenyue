@@ -2991,6 +2991,22 @@ const DESK_ICON_CSS_KEY = 'desk-icon-css';
 const DESK_CSS_ROOT = '#page-phone';
 const DESK_WIDGET_CSS_TARGET = '[data-card-bg]';
 const DESK_ICON_CSS_TARGET = '.app .app-ico';
+const DESK_CSS_WIDGETS = [
+{ type: 'deco', name: '纪念日卡' },
+{ type: 'quote', name: '今日情话' },
+{ type: 'fish', name: '已摸鱼' },
+{ type: 'checkin', name: '打卡横幅' },
+{ type: 'music', name: '音乐播放器' },
+{ type: 'memo', name: '今日备忘' },
+{ type: 'mood', name: '今天的心情' },
+{ type: 'week', name: '本周日常' },
+{ type: 'weekend', name: '周末倒计时' },
+{ type: 'desk-clock', name: '时钟' },
+{ type: 'desk-calendar', name: '日历' },
+{ type: 'desk-timer', name: '倒计时' },
+{ type: 'desk-anniv', name: '桌面纪念日' },
+{ type: 'desk-period', name: '经期' },
+];
 const deskDeclsImportant = (decl) => String(decl || '').split(';').map(function (part) {
 const s = part.trim();
 if (!s) return '';
@@ -3073,6 +3089,85 @@ applyDeskCss(DESK_WIDGET_CSS_KEY, 'desk-widget-css-style', 'widget-css-val', DES
 function applyDeskIconCss() {
 applyDeskCss(DESK_ICON_CSS_KEY, 'desk-icon-css-style', 'icon-css-val', DESK_ICON_CSS_TARGET);
 }
+function deskCssReadVal(el) {
+if (!el) return '';
+let v = '';
+try { v = el.value || ''; } catch (e) {}
+if (String(v).trim()) return String(v);
+try {
+const box = el.__ceBox || (el.parentNode && el.parentNode.querySelector('.ce-box[data-for="' + (el.id || '') + '"]'));
+if (box) {
+const t = (box.innerText || box.textContent || '');
+if (String(t).trim()) return String(t);
+}
+} catch (e) {}
+return v;
+}
+function setDeskCssCaret(ta, pos) {
+if (!ta) return;
+try { ta.focus(); } catch (e) {}
+const box = ta.__ceBox;
+if (box) {
+try {
+const text = box.textContent || '';
+const p = Math.max(0, Math.min(pos, text.length));
+const range = document.createRange();
+const walker = document.createTreeWalker(box, 4 /* SHOW_TEXT */, null, false);
+let node, offset = 0, placed = false;
+while ((node = walker.nextNode())) {
+const len = node.nodeValue ? node.nodeValue.length : 0;
+if (p <= offset + len) {
+range.setStart(node, Math.max(0, p - offset));
+range.collapse(true);
+placed = true;
+break;
+}
+offset += len;
+}
+const sel = window.getSelection();
+if (!sel) return;
+sel.removeAllRanges();
+if (placed) sel.addRange(range);
+else {
+range.selectNodeContents(box);
+range.collapse(false);
+sel.addRange(range);
+}
+return;
+} catch (e) {}
+}
+try { ta.setSelectionRange(pos, pos); } catch (e) {}
+}
+function insertDeskWidgetSelector(ta, type) {
+if (!ta || !type) return;
+const sel = '[data-card-bg="' + type + '"]';
+const cur = deskCssReadVal(ta);
+if (cur.indexOf(sel + ' {') >= 0) {
+const s = cur.lastIndexOf(sel + ' {');
+const line = cur.indexOf('\n', s);
+const p = line >= 0 ? line + 3 : cur.length;
+setDeskCssCaret(ta, p);
+return;
+}
+const block = sel + ' {\n  \n}';
+let next;
+if (!cur.trim()) {
+next = block;
+} else if (cur.indexOf('{') < 0) {
+const body = cur.trim().split('\n').map(function (line) { return '  ' + line; }).join('\n');
+next = DESK_WIDGET_CSS_TARGET + ' {\n' + body + '\n}\n\n' + block;
+} else {
+next = cur.replace(/\s+$/, '') + '\n\n' + block;
+}
+ta.value = next;
+const start = next.lastIndexOf(sel + ' {');
+let pos = next.length - 2;
+if (start >= 0) {
+const line = next.indexOf('\n', start);
+if (line >= 0) pos = line + 3;
+}
+setDeskCssCaret(ta, pos);
+}
 function bindDeskCssRow(opts) {
 const row = document.getElementById(opts.rowId);
 if (!row) return;
@@ -3081,13 +3176,30 @@ if (!window.openTCPanel) {
 try { toast('样式编辑器还没加载上，请刷新页面再试'); } catch (e) {}
 return;
 }
+const pickerHtml = opts.picker ? (
+'<div class="sm-fld-hint" style="margin:8px 0 4px">单独改某个小组件：选组件 → 插入选择器 → 在括号里写样式；其他组件不受影响。</div>' +
+'<div style="display:flex;gap:6px;margin-bottom:8px">' +
+'<select id="desk-widget-css-target" class="tc-input" style="flex:1;width:auto;min-width:0;padding:8px 10px;font-size:12.5px">' +
+DESK_CSS_WIDGETS.map(function (w) { return '<option value="' + w.type + '">' + w.name + '</option>'; }).join('') +
+'</select>' +
+'<button class="cc-tool" id="desk-widget-css-insert" style="flex:none;width:auto;padding:8px 12px;font-size:12px">插入选择器</button>' +
+'</div>'
+) : '';
 window.openTCPanel(opts.title, '' +
 '<div class="sm-fld-hint" style="margin-bottom:8px">' + opts.hint + '</div>' +
+pickerHtml +
 '<textarea id="' + opts.inputId + '" class="tc-input" rows="6" placeholder="' + opts.placeholder + '"></textarea>' +
 '<div class="mail-actions"><button class="cc-tool" id="' + opts.clearId + '">清空</button><button class="cc-tool" id="' + opts.okId + '">应用</button></div>');
 const ta = document.getElementById(opts.inputId);
 if (ta) {
 try { ta.value = store.get(opts.key) || ''; } catch (e) { ta.value = ''; }
+}
+const targetSel = document.getElementById('desk-widget-css-target');
+const insertBtn = document.getElementById('desk-widget-css-insert');
+if (opts.picker && targetSel && insertBtn && ta) {
+insertBtn.addEventListener('click', function () {
+insertDeskWidgetSelector(ta, targetSel.value);
+});
 }
 const clearBtn = document.getElementById(opts.clearId);
 if (clearBtn) clearBtn.addEventListener('click', function () {
@@ -3099,7 +3211,7 @@ try { toast(opts.clearToast); } catch (e) {}
 });
 const okBtn = document.getElementById(opts.okId);
 if (okBtn) okBtn.addEventListener('click', function () {
-const v = ta ? String(ta.value || '').trim() : '';
+const v = String(deskCssReadVal(ta) || '').trim();
 try { if (v) store.set(opts.key, v); else store.remove(opts.key); } catch (e) {}
 const mask = document.getElementById('tc-mask');
 if (mask) mask.hidden = true;
@@ -3117,6 +3229,7 @@ okId: 'desk-widget-css-ok',
 title: '小组件 CSS',
 hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.12)</code>（自动应用到所有带背景的桌面小组件卡片）<br>· 或写选择器，如 <code>.music-widget{...}</code>、<code>[data-card-bg=&quot;week&quot;]{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。',
 placeholder: 'border-radius: 24px;&#10;box-shadow: 0 8px 24px rgba(0,0,0,.12);',
+picker: true,
 apply: applyDeskWidgetCss,
 applyToast: '小组件样式已应用',
 clearToast: '已清空小组件样式',
