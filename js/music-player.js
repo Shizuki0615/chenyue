@@ -4830,6 +4830,18 @@ return;
 }
 prewarmLocalAudio(trackId);
 }
+window.taMusicInviteNow = function () {
+try {
+if (document.hidden || !library.length) return false;
+if (pendingInviteOnScreen()) return false;
+if (reqData) return false;
+const track = library[Math.floor(Math.random() * library.length)];
+if (!openMusicInvitePanel(track.id, !!currentId)) return false;
+cooldownAt = Date.now(); // 与概率路径共用冷却，避免紧接着再弹第二条把你这条盖掉
+prewarmLocalAudio(track.id);
+return true;
+} catch (e) { return false; }
+};
 window.maybeMusicRequest = function () {
 try {
 if (document.hidden) { console.log('[music-req] return: page hidden'); return; }

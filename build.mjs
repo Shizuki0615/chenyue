@@ -6819,6 +6819,20 @@ const FIX_SENTINELS = [
   // ==== 2026-10-28 #1591 互动面板移除读书入口（桌面读书图标与读书模块保留） ====
   { name: '#1591a 互动里不再有读书入口（回流＝聊天更多又长出一颗读书）', file: 'template.html', needle: 'id="more-reading"', absent: true },
   { name: '#1591b reading.js 不再接 more-reading（回流＝已删入口又接上开页）', file: 'js/reading.js', needle: 'el.closest(\'#more-reading\')', absent: true },
+  // ==== 2026-10-28 #1592 主动邀请概率 / 我发出的邀请概率 ====
+  { name: '#1592a 主动邀请总概率设置行（删＝五类邀请没有共用总闸）', file: 'template.html', needle: 'data-k="ai-invite-prob"' },
+  { name: '#1592b 主动邀请总闸消费（删＝设置显示但骰子不读）', file: 'js/chat.js', needle: 'if (!hit(cfgn(c, \'ai-invite-prob\', 100))) return false;' },
+  { name: '#1592c 他主动邀请听歌门（删＝听歌邀请概率设了也不触发）', file: 'js/chat.js', needle: 'cfgn(c, \'ai-music-en\', 1) === 1 && hit(cfgn(c, \'ai-music-prob\', 5))' },
+  { name: '#1592d 他主动邀请读书门（删＝读书邀请概率设了也不触发）', file: 'js/chat.js', needle: 'cfgn(c, \'ai-reading-en\', 1) === 1 && hit(cfgn(c, \'ai-reading-prob\', 5))' },
+  { name: '#1592e 听歌主动邀请导出（删＝听歌门找不到弹面板的入口）', file: 'js/music-player.js', needle: 'window.taMusicInviteNow = function () {' },
+  { name: '#1592f 读书正式开页导出（删＝读书邀请同意后打不开书架）', file: 'js/reading.js', needle: 'window.readingOpen = rdOpen;' },
+  { name: '#1592g 读书邀请类型与同意后开书架（删＝读书邀请没有弹窗/直达）', file: 'js/chat.js', needle: 'reading: { title: \'读书邀请\' }' },
+  { name: '#1592h 读书同意直达书架（删＝同意后停在聊天）', file: 'js/chat.js', needle: 'if (kind === \'reading\') { try { if (window.readingOpen) window.readingOpen(); } catch (e) {} return; }' },
+  { name: '#1592i 读书邀请不冒充小游戏（删＝读书邀请被「小游戏记录」误收）', file: 'js/chat.js', needle: 'if (inv.kind && !_readingInv) _pokeOpts.gInv = inv.kind;' },
+  { name: '#1592j 我发出的邀请·接受概率设置行（删＝接受率不能调）', file: 'template.html', needle: 'data-k="invite-accept-prob"' },
+  { name: '#1592k 我发出的邀请·拒绝概率设置行（删＝拒绝率不能调）', file: 'template.html', needle: 'data-k="invite-reject-prob"' },
+  { name: '#1592l 接受/拒绝概率消费（删＝两条设置不参与掷骰）', file: 'js/chat.js', needle: 'const invAcc = Math.max(0, Math.min(100, Number(cfgn(_invCfg, \'invite-accept-prob\', 60)) || 0));' },
+  { name: '#1592m 新增概率默认值注册（删＝getCfg 读不到新键，设置页恒显默认且不生效）', file: 'js/reply-settings.js', needle: '\'ai-invite-prob\': 100,' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

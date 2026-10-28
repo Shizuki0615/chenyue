@@ -5937,6 +5937,9 @@
     if (el && el.id === 'rd-toc-search') rdRenderToc(false);
   });
 
+  // 2026-10-28：正式开页出口——聊天里的读书邀请（他主动发起）同意后要直接打开书架。
+  // 与桌面图标同一条 rdOpen（隐藏其它页、渲染书架、收 tabbar），不是另一套开页。
+  window.readingOpen = rdOpen;
   window.__readingProbe = {
     version: 2,
     readIndex: readIndex,
