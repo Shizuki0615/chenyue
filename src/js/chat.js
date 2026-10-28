@@ -12140,6 +12140,9 @@ const isInvite = chatAskMode === 'invite';
 	// v3.26.x：批量设置问卷按钮只在「问问TA」模式显示（邀请TA 模式隐藏）
 	const bulkBtn = document.getElementById('chat-ask-bulk');
 	if (bulkBtn) bulkBtn.hidden = isInvite;
+	// 2026-10-28：听歌 / 读书邀请直达说明随「邀请他」模式一起显示
+	const modHint = document.getElementById('chat-ask-mod-hint');
+	if (modHint) modHint.hidden = !isInvite;
 	// #1188：邀请记录块只在「邀请TA」模式显示（问问TA 模式与批量问卷按钮同款收法）；
 	// 每次打开都复位成「列表收起 + 只准备露最近 5 个历史日期组 + 历史日期全部收起」
 	const invHist = document.getElementById('chat-ask-hist');
@@ -12295,9 +12298,30 @@ applyAskAnswer();
 }, askThinkSecsLoad() * 1000); // #809：思考时间用户可调（1~10 秒），默认 3 秒；原 1500+rand*2500
 }
 }
+// 2026-10-28：邀请里点名「听歌 / 读书」→ 他 同意后直接把用户带到对应模块页。
+// 判据只看邀请内容里的模块词（字卡点卡与手输同一条发送链），不新增第二套邀请数据类型；
+// 两类都提到时按先出现的那一类算。
+function inviteModuleOf(content) {
+  const s = String(content || '');
+  const m = s.search(/听歌|听音乐|一起听|听一首|听听歌|放首歌|放首音乐/);
+  const r = s.search(/读书|看书|共读|读会儿书|读一会书|看会儿书|看一会书|读一本书|读本书/);
+  if (m < 0 && r < 0) return '';
+  if (m < 0) return 'reading';
+  if (r < 0) return 'music';
+  return r < m ? 'reading' : 'music';
+}
+// 走桌面图标同一条打开链（音乐页的 renderPage / 读书的书架渲染都在各自模块里）：
+// 图标即便被收进装修库的隐藏池也仍在 DOM，.click() 照常触发它自己的开页逻辑。
+function inviteOpenModule(kind) {
+  if (kind !== 'music' && kind !== 'reading') return false;
+  const app = document.querySelector('.app[data-app="' + kind + '"]');
+  if (!app) return false;
+  try { app.click(); return true; } catch (e) { return false; }
+}
 // v3.26.x：邀请发送逻辑从 submitChatAsk 抽出，供「我的邀请」字卡点卡直接复用（可重复发送，
 // 行为与手动输入一致：TA 接受/拒绝/未回应，随消息持久化）
 function sendInviteContent(content) {
+const inviteKind = inviteModuleOf(content);
 closeChatAskPanel();
 addRec({ side: 'out', text: '邀请：' + content, special: 'invite', inviteContent: content, inviteStatus: 'pending' });
 const inviteIdx = msgs.length - 1;
@@ -12362,6 +12386,21 @@ askBubbleAfterRender(el, rec, i);
 }
 }
 if (reply) addInTyped(reply, null, randInt(800, 1400));
+// 2026-10-28：他 接受听歌 / 读书邀请 → 稍后带到对应模块页（先用 toast 说明要去哪）。
+// 只在发起邀请的那张桌面、且仍停在聊天页时跳：这 1 秒里你自己切走了就不抢页。
+if (status === '接受' && inviteKind && sameCid()) {
+  const chatPg = document.getElementById('page-chat');
+  if (chatPg && !chatPg.hidden) {
+    const modName = inviteKind === 'music' ? '音乐' : '读书';
+    toast(myName + ' 答应了，正在打开' + modName + '…');
+    setTimeout(function () {
+      if (!sameCid()) return;
+      const pg = document.getElementById('page-chat');
+      if (!pg || pg.hidden) return;
+      inviteOpenModule(inviteKind);
+    }, 1200);
+  }
+}
 try {
 const list = JSON.parse(store.get(histKey) || '[]');
 // v3.26.x #489：按 ts 去重——跨桌面补投递路径可能已记过同一条
