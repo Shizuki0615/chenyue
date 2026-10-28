@@ -3487,7 +3487,7 @@
     // v3.9.x：二级子 tab——「我的听歌」/「TA 邀请听歌」分开记，避免自己点歌和 TA 邀请混在一起
     const subBar = '<div class="sm-his-subtabs">' +
       '<button class="sm-his-subtab' + (hisSubTab === 'mine' ? ' sel' : '') + '" data-hissub="mine">我的听歌</button>' +
-      '<button class="sm-his-subtab' + (hisSubTab === 'ta' ? ' sel' : '') + '" data-hissub="ta">' + (window.taFit ? window.taFit('他 邀请听歌') : '他 邀请听歌') + '</button>' +
+      '<button class="sm-his-subtab' + (hisSubTab === 'ta' ? ' sel' : '') + '" data-hissub="ta">' + (window.taFit ? window.taFit('他邀请听歌') : '他邀请听歌') + '</button>' +
       '</div>';
     if (hisSubTab === 'mine') {
       const h = myHistory.slice().reverse();
@@ -3498,7 +3498,7 @@
       const h = history.slice().reverse();
       el.innerHTML = subBar + (h.length
         ? h.map(renderHistoryItem).join('')
-        : '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有梦角邀请听歌记录，他 邀请你一起听歌的记录会出现在这里') : '还没有梦角邀请听歌记录，他 邀请你一起听歌的记录会出现在这里') + '</div>');
+        : '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有梦角邀请听歌记录，他邀请你一起听歌的记录会出现在这里') : '还没有梦角邀请听歌记录，他邀请你一起听歌的记录会出现在这里') + '</div>');
     }
     // 子 tab 点击：切换并重渲染
     el.querySelectorAll('.sm-his-subtab').forEach(btn => {
@@ -5475,7 +5475,7 @@
   }
   // TA 换播放模式记录
   function addModeRecord(modeLabel) {
-    history.push({ id: 'smh_' + Date.now(), trackId: '', trackName: '', triggerType: '他 把播放模式换成' + modeLabel, mode: true, ts: Date.now() });
+    history.push({ id: 'smh_' + Date.now(), trackId: '', trackName: '', triggerType: '他把播放模式换成' + modeLabel, mode: true, ts: Date.now() });
     if (history.length > 500) history = history.slice(-500);
     saveHistory();
     renderHistory();
@@ -5501,8 +5501,8 @@
       '<div class="sm-fld"><label>快捷操作</label><div class="sm-quick-actions">' +
       '<button class="cc-tool" id="sm-e-qnext">下一首播放</button>' +
       '<button class="cc-tool" id="sm-e-qpl">加入播放列表</button>' +
-      '<button class="cc-tool" id="sm-e-ta-ask">邀请 他 一起听</button>' +
-      '<button class="cc-tool" id="sm-e-ta-inv">让 他 邀我听这首</button>' +
+      '<button class="cc-tool" id="sm-e-ta-ask">邀请他一起听</button>' +
+      '<button class="cc-tool" id="sm-e-ta-inv">让他邀我听这首</button>' +
       '</div></div>' +
       '<div class="sm-fld"><label>歌词</label><div class="sm-quick-actions">' +
       '<button class="cc-tool" id="sm-e-lyric">看歌词</button>' +
@@ -5751,7 +5751,7 @@
       if ((window.__activeCid || 'default') !== myCid) { inviteStaleToast(name); return; }
       reqData = null;
       // 记录：TA 邀请听歌（拒绝）
-      history.push({ id: 'smh_' + Date.now(), trackId: '', trackName: '', triggerType: '拒绝了 他 的听歌邀请《' + esc(trackName) + '》', rejected: true, ts: Date.now() });
+      history.push({ id: 'smh_' + Date.now(), trackId: '', trackName: '', triggerType: '拒绝了他的听歌邀请《' + esc(trackName) + '》', rejected: true, ts: Date.now() });
       if (history.length > 500) history = history.slice(-500);
       saveHistory(); renderHistory();
       taMusicSys('你拒绝了 ' + name + ' 的听歌邀请', true);
@@ -5773,7 +5773,7 @@
       // 这是用户亲手点下的新播放意图，任何 stale hold 都不得吞掉——先清场再起播。
       callHoldPlaying = false; callHoldPending = false; // #904a
       playTrack(trackId);
-      addRecord(trackId, '接受了 他 的听歌邀请');
+      addRecord(trackId, '接受了他的听歌邀请');
       taMusicSys(switchNow
         ? '你接受了邀请，已切换到《' + trackName + '》'
         : '你接受了 ' + name + ' 的听歌邀请，一起听《' + trackName + '》', true);
@@ -5802,14 +5802,14 @@
     if (!track) { toast('这首已不在音乐库里'); return; }
     if (reqData && !pendingInviteOnScreen()) reqData = null; // 被别的面板顶掉的旧邀请：交还，不拿它锁门
     if (pendingInviteOnScreen()) { toast('已经有一条听歌邀请等你确认了'); return; }
-    if (myInvitePending) { toast('刚才那条还在等 他 回，先看这一条'); return; }
+    if (myInvitePending) { toast('刚才那条还在等他回，先看这一条'); return; }
     myInvitePending = true;
     const myCid = window.__activeCid || 'default'; // 多桌面：回应落地时不得写到新桌面（同 #994 面板口径）
     const name = partnerName();
     const trackName = track.name || '未知歌曲';
     const artist = track.artist ? ' - ' + track.artist : '';
     taMusicSys('你邀请 ' + name + ' 一起听《' + trackName + '》' + artist);
-    toast('已邀请 他，回应会落在聊天里');
+    toast('已邀请他，回应会落在聊天里');
     setTimeout(function () {
       myInvitePending = false; // 四条出口共用这一行先交还：在飞标志不许有第二种持久的伪状态
       if ((window.__activeCid || 'default') !== myCid) return;
@@ -5825,7 +5825,7 @@
         taActive = true;
         callHoldPlaying = false; callHoldPending = false;
         playTrack(trackId);
-        taMusicSys('你邀请 ' + name + ' 一起听《' + trackName + '》' + artist + '，他 同意了一起听', true);
+        taMusicSys('你邀请 ' + name + ' 一起听《' + trackName + '》' + artist + '，他同意了一起听', true);
         armInvitePlayCheck();
         renderFloat();
       };
@@ -5844,7 +5844,7 @@
       cooldownAt = Date.now(); // 与概率路径共用冷却＝同一发不再紧接着自然弹出第二条把你这条盖掉
       if (!openMusicInvitePanel(pick.id, !!currentId)) {
         reqData = null; // 面板没画出来就别把 reqData 留成「有待确认邀请」，否则之后每次都撞上面那道闸
-        toast('他 想换的那首没能弹出邀请（曲库或弹层不可用）');
+        toast('他想换的那首没能弹出邀请（曲库或弹层不可用）');
         return;
       }
       prewarmLocalAudio(pick.id);
@@ -5933,7 +5933,7 @@
         const trackName = candidate.name || '未知歌曲';
         const artist = candidate.artist ? ' - ' + candidate.artist : '';
         taMusicSys(name + ' 预订了下一首要听的歌：《' + trackName + '》' + artist);
-        addRecord(candidate.id, '他 预订了下一首');
+        addRecord(candidate.id, '他预订了下一首');
       }
     }
     } catch (e) {}
@@ -5958,7 +5958,7 @@
         const others = list.filter(x => x.id !== currentId);
         const t = others[Math.floor(Math.random() * others.length)];
         taMusicSys(name + ' 切到了下一首《' + (t.name || '未知歌曲') + '》');
-        addRecord(t.id, '他 切到了下一首');
+        addRecord(t.id, '他切到了下一首');
         // v3.5.129：延迟回调校验 currentId——期间用户手动切了歌就不再抢播
         setTimeout(() => { if (currentId === endedId) playTrack(t.id); }, 300);
         return true;
@@ -5970,7 +5970,7 @@
       if (list.length > 1) {
         const t = list[Math.floor(Math.random() * list.length)];
         taMusicSys(name + ' 随机挑了一首《' + (t.name || '未知歌曲') + '》');
-        addRecord(t.id, '他 随机挑了一首');
+        addRecord(t.id, '他随机挑了一首');
         setTimeout(() => { if (currentId === endedId) playTrack(t.id); }, 300);
         return true;
       }
@@ -5994,8 +5994,8 @@
   //   ② 互动后进入冷却（cooldownMs，默认 10 分钟）——连续切歌/下一首也不会每首都触发；
   //   ③ 互动进行中全局 taPauseActive 重入保护；
   //   ④ 音乐设置「联系人可暂停你的播放」总开关（taPauseEn，关闭=彻底不触发）。
-  const DEF_TA_PAUSE_CARDS = ['先暂停一下，听我说句话', '嘘——让音乐停一会儿', '（他 按下了暂停键）'];
-  const DEF_TA_RESUME_CARDS = ['好啦，继续听吧', '又帮你按了播放，接着听', '（他 又按下了播放键）'];
+  const DEF_TA_PAUSE_CARDS = ['先暂停一下，听我说句话', '嘘——让音乐停一会儿', '（他按下了暂停键）'];
+  const DEF_TA_RESUME_CARDS = ['好啦，继续听吧', '又帮你按了播放，接着听', '（他又按下了播放键）'];
   let taPauseActive = false;      // TA 暂停进行中（禁止后台补播/手势补播打扰）
   let taPauseFiredId = null;      // 本次互动「已真的暂停过」的歌曲 id（#673：用户介入打断时据它记账）
   let taPauseTimer = null;        // 掷骰子命中后的延迟触发定时器
@@ -6057,7 +6057,7 @@
       wantPlay = true; // 保留播放意图（TA 稍后会恢复，不按「用户主动暂停」处理）
       try { audio.pause(); } catch (e) {}
       try { const nm = partnerName(); taMusicSys(nm + ' 暂停了音乐'); } catch (e) {}
-      taPauseSendCard('他 暂停播放', DEF_TA_PAUSE_CARDS);
+      taPauseSendCard('他暂停播放', DEF_TA_PAUSE_CARDS);
       // 3.5s 后 TA 点播放恢复（校验仍是同一首歌；非手势播放被拒走 muted 解锁兜底）
       taPauseResumeTimer = setTimeout(function () {
         taPauseResumeTimer = null;
@@ -6081,7 +6081,7 @@
           });
         });
         try { const nm = partnerName(); taMusicSys(nm + ' 又播放了音乐'); } catch (e) {}
-        taPauseSendCard('他 恢复播放', DEF_TA_RESUME_CARDS);
+        taPauseSendCard('他恢复播放', DEF_TA_RESUME_CARDS);
       }, 3500);
     }, 10000 + Math.floor(Math.random() * 15000));
   }
@@ -6177,20 +6177,20 @@
       '<div class="gs-row"><span>音乐请求触发概率</span><div class="stepper" id="sm-set-prob" data-min="0" data-max="30" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-prob-val" readonly><button class="stp-max">+</button></div></div>' +
       '<div class="gs-row"><span>请求冷却时间</span><select class="tc-input" id="sm-set-cool" style="width:110px">' + cooldownOpts + '</select></div>' +
       '<div class="gs-row"><span>桌面小组件封面</span><select class="tc-input" id="sm-set-wcov" style="width:120px"><option value="song"' + (settings.widgetCoverMode !== 'playlist' ? ' selected' : '') + '>歌曲封面</option><option value="playlist"' + (settings.widgetCoverMode === 'playlist' ? ' selected' : '') + '>歌单封面</option></select></div>' +
-      '<div class="sm-set-hint">聊天过程中 他 会按概率请求和你一起听歌；播放时右上角出现可拖动的悬浮小框。想现在就要（或换你主动邀 他）：在音乐页那首歌按「⋯」，快捷操作里有「邀请 他 一起听」和「让 他 邀我听这首」——后者不走概率、不等冷却</div>' +
+      '<div class="sm-set-hint">聊天过程中他会按概率请求和你一起听歌；播放时右上角出现可拖动的悬浮小框。想现在就要（或换你主动邀他）：在音乐页那首歌按「⋯」，快捷操作里有「邀请他一起听」和「让他邀我听这首」——后者不走概率、不等冷却</div>' +
       '<div class="gs-row"><span>预订下一首概率</span><div class="stepper" id="sm-set-reserve" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-reserve-val" readonly><button class="stp-max">+</button></div></div>' +
-      '<div class="sm-set-hint">聊天过程中 他 有概率「预订」下一首要播的音乐：把这首歌排进播放队列（底部播放条的「播放队列」里可见），并在聊天里发送系统消息；被预订的歌会按你排的顺序先播（设 0 = 他 从不预订下一首）</div>' +
+      '<div class="sm-set-hint">聊天过程中他有概率「预订」下一首要播的音乐：把这首歌排进播放队列（底部播放条的「播放队列」里可见），并在聊天里发送系统消息；被预订的歌会按你排的顺序先播（设 0 = 他从不预订下一首）</div>' +
       '<div class="gs-row"><span>歌曲播完·切下一首概率</span><div class="stepper" id="sm-set-next" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-next-val" readonly><button class="stp-max">+</button></div></div>' +
       '<div class="gs-row"><span>歌曲播完·随机挑歌概率</span><div class="stepper" id="sm-set-rand" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-rand-val" readonly><button class="stp-max">+</button></div></div>' +
       '<div class="gs-row"><span>歌曲播完·换播放模式概率</span><div class="stepper" id="sm-set-modep" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-modep-val" readonly><button class="stp-max">+</button></div></div>' +
-      '<div class="sm-set-hint">一起听完一首歌时，他 按上面三个概率主动控制播放：切到下一首 / 随机挑一首 / 把播放模式换成顺序播放·列表循环·随机播放·单曲循环；三个都不中就正常自动切下一首（全设 0 = 他 从不主动控制）</div>' +
+      '<div class="sm-set-hint">一起听完一首歌时，他按上面三个概率主动控制播放：切到下一首 / 随机挑一首 / 把播放模式换成顺序播放·列表循环·随机播放·单曲循环；三个都不中就正常自动切下一首（全设 0 = 他从不主动控制）</div>' +
       '<div class="sm-set-row"><span>联系人可暂停你的播放</span><label class="toggle"><input type="checkbox" id="sm-set-pause-en"' + (settings.taPauseEn ? ' checked' : '') + '><span class="tk"></span></label></div>' +
-      '<div class="gs-row"><span>播放中·他 暂停再播放概率</span><div class="stepper" id="sm-set-pauseprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-pauseprob-val" readonly><button class="stp-max">+</button></div></div>' +
-      '<div class="sm-set-hint">播放歌曲时 他 有小概率突然暂停播放（聊天里发一张字卡），几秒后再帮你点播放恢复（再发一张字卡）；字卡文案在【字卡库 → 其他互动功能字卡 → 音乐】可逐张开关。上方开关关闭或概率设 0 = 关闭 他 暂停权限；同一首歌只触发一次、触发后 10 分钟内不重复（不会一直暂停又继续）</div>' +
-      '<div class="gs-row"><span>他 收藏歌曲概率</span><div class="stepper" id="sm-set-favprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-favprob-val" readonly><button class="stp-max">+</button></div></div>' +
-      '<div class="sm-set-hint">你播放歌曲听一会儿后，他 有概率把这首歌收进「他的收藏」（音乐页收藏 tab 右边可查看；已收藏过的歌不重复判定，两次收藏间隔至少 90 秒）</div>' +
-      '<div class="gs-row"><span>他 从歌词挑句发给你概率</span><div class="stepper" id="sm-set-lyricprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricprob-val" readonly><button class="stp-max">+</button></div></div>' +
-      '<div class="sm-set-hint">播放歌曲时 他 有概率从这首歌的歌词里随机挑连续 2~3 句发到聊天（左气泡歌词卡，带封面/歌名/歌手，正常消息提醒）；会跳过作词/作曲/编曲等制作信息行。同一遍播放只判定一次，临近结尾不补发，设 0 = 关闭</div>' +
+      '<div class="gs-row"><span>播放中·他暂停再播放概率</span><div class="stepper" id="sm-set-pauseprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-pauseprob-val" readonly><button class="stp-max">+</button></div></div>' +
+      '<div class="sm-set-hint">播放歌曲时他有小概率突然暂停播放（聊天里发一张字卡），几秒后再帮你点播放恢复（再发一张字卡）；字卡文案在【字卡库 → 其他互动功能字卡 → 音乐】可逐张开关。上方开关关闭或概率设 0 = 关闭他暂停权限；同一首歌只触发一次、触发后 10 分钟内不重复（不会一直暂停又继续）</div>' +
+      '<div class="gs-row"><span>他收藏歌曲概率</span><div class="stepper" id="sm-set-favprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-favprob-val" readonly><button class="stp-max">+</button></div></div>' +
+      '<div class="sm-set-hint">你播放歌曲听一会儿后，他有概率把这首歌收进「他的收藏」（音乐页收藏 tab 右边可查看；已收藏过的歌不重复判定，两次收藏间隔至少 90 秒）</div>' +
+      '<div class="gs-row"><span>他从歌词挑句发给你概率</span><div class="stepper" id="sm-set-lyricprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricprob-val" readonly><button class="stp-max">+</button></div></div>' +
+      '<div class="sm-set-hint">播放歌曲时他有概率从这首歌的歌词里随机挑连续 2~3 句发到聊天（左气泡歌词卡，带封面/歌名/歌手，正常消息提醒）；会跳过作词/作曲/编曲等制作信息行。同一遍播放只判定一次，临近结尾不补发，设 0 = 关闭</div>' +
       '<div class="sm-set-row"><span>本地音频缓存</span><span id="sm-storage-use" style="color:var(--muted);font-size:12px">计算中…</span></div>' +
       '<div class="mail-actions"><button class="cc-tool" id="sm-diag-req">诊断邀请</button><button class="cc-tool" id="sm-clear-cache">清理本地音频缓存</button><button class="cc-tool" id="sm-set-close">关闭</button></div>');
     document.getElementById('sm-set-close').addEventListener('click', () => { document.getElementById('tc-mask').hidden = true; });

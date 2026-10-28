@@ -113,7 +113,7 @@
   enabledEl.checked = enabled();
   enabledEl.addEventListener('change', () => {
     ls.set('tm-enabled', enabledEl.checked ? '1' : '0');
-    toast(enabledEl.checked ? '已开启：他 会偶尔分享自己的心情' : '已关闭：他 不再主动分享心情');
+    toast(enabledEl.checked ? '已开启：他会偶尔分享自己的心情' : '已关闭：他不再主动分享心情');
   });
   // 分享概率 stepper（与全站 stepper 交互一致）
   const probRow = document.getElementById('tm-prob-val');
@@ -128,13 +128,13 @@
         const v = Math.max(min, getProb() - stp);
         ls.set('tm-prob', String(v));
         probRow.value = String(v);
-        toast('他 的心情分享概率：' + v + '%');
+        toast('他的心情分享概率：' + v + '%');
       });
       stepEl.querySelector('.stp-max').addEventListener('click', () => {
         const v = Math.min(max, getProb() + stp);
         ls.set('tm-prob', String(v));
         probRow.value = String(v);
-        toast('他 的心情分享概率：' + v + '%');
+        toast('他的心情分享概率：' + v + '%');
       });
     }
   }

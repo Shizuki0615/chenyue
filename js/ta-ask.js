@@ -25,7 +25,7 @@ return escG(window.taFit ? window.taFit(t) : t);
 function interactPoolInlineHtml(poolName) {
 const arr = window.getInteractPool ? window.getInteractPool(poolName, []) : [];
 if (!arr.length) return '';
-return '<div class="tc-qopts">他 回应：<span class="tc-known">系统</span> ' + arr.map(escG).join(' / ') + '</div>';
+return '<div class="tc-qopts">他回应：<span class="tc-known">系统</span> ' + arr.map(escG).join(' / ') + '</div>';
 }
 function pgCatOff(ns, cat) { return !!(window.presetGroup && window.presetGroup.isOff(ns, cat || 'daily')); }
 function presetCatOpen(ns, q) { return !(q && q.isPreset === true && pgCatOff(ns, q.cat)); }
@@ -554,7 +554,7 @@ if (!Array.isArray(d.groups)) d.groups = [];
 return d;
 }
 function taAskSave(d) {
-if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '他 的提问题库')) return false;
+if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '他的提问题库')) return false;
 try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
 return true;
 }
@@ -789,7 +789,7 @@ window.chatAskReply(msgIdx, answer, pool[Math.floor(Math.random() * pool.length)
 }
 toast('已回复他的提问');
 }
-}, { staticText: '他 问你：' + question, textareaPlaceholder: '输入你的回答…' });
+}, { staticText: '他问你：' + question, textareaPlaceholder: '输入你的回答…' });
 };
 if (window.chatAskReply && !window.__taAskReplyWrapped) {
 const _origChatAskReply = window.chatAskReply;
@@ -834,7 +834,7 @@ const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
 d.lastAskAt = Date.now();
 taAskSave(d);
 pushAsk(q, { popupProb: askPopupProb(s) });
-toast('他 在聊天里向你提问了');
+toast('他在聊天里向你提问了');
 };
 const nowBtn = document.getElementById('ta-ask-now');
 if (nowBtn) nowBtn.addEventListener('click', () => window.triggerTaAskNow());
@@ -1576,7 +1576,7 @@ if (!Array.isArray(d.groups)) d.groups = [];
 return d;
 }
 function tcSave(d) {
-if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, '他 的小问题库')) return false;
+if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, '他的小问题库')) return false;
 try { store.set(KEY2, JSON.stringify(d)); } catch (e) {}
 return true;
 }
@@ -2194,7 +2194,7 @@ const q = tcPick(d);
 if (!q) { toast('题库没有可用的问题'); return; }
 const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
 tcPush(q, { popupProb: askPopupProb(s) });
-toast('他 在聊天里向你提问了');
+toast('他在聊天里向你提问了');
 };
 const tcNow = document.getElementById('tc-now');
 if (tcNow) tcNow.addEventListener('click', () => window.triggerTaChooseNow());
@@ -2425,7 +2425,7 @@ if (!Array.isArray(d.groups)) d.groups = [];
 return d;
 }
 function tcuSave(d) {
-if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, '他 的好奇题库')) return false;
+if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, '他的好奇题库')) return false;
 try { store.set(KEY3, JSON.stringify(d)); } catch (e) {}
 return true;
 }
@@ -2618,7 +2618,7 @@ html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '
 '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
 '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known">系统</span></div>' +
 (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
-(q.replies && q.replies.length ? '<div class="tc-qopts">他 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
+(q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
 '</div></div>';
 });
 container.innerHTML = html;
@@ -2650,7 +2650,7 @@ html += '<div class="tc-qrow' + (q.enabled === false || (preset && !useDefault) 
 '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
 '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + (preset ? ' <span class="tc-known">系统</span>' : '') + '</div>' +
 (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
-(q.replies && q.replies.length ? '<div class="tc-qopts">他 回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
+(q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
 '</div>' + delBtn + '</div>';
 });
 });
@@ -2757,7 +2757,7 @@ const v = document.getElementById('tcu-popup-val'); if (v) v.textContent = tcuPo
 toast('弹窗概率已设为 ' + tcuPopup.value + '%');
 });
 const tcuFu = document.getElementById('tcu-followup');
-if (tcuFu) tcuFu.addEventListener('change', () => { const d = tcuLoad(); d.settings.followup = tcuFu.checked; tcuSave(d); toast(tcuFu.checked ? '他 偶尔会自然追问' : '他 不再追问'); });
+if (tcuFu) tcuFu.addEventListener('change', () => { const d = tcuLoad(); d.settings.followup = tcuFu.checked; tcuSave(d); toast(tcuFu.checked ? '他偶尔会自然追问' : '他不再追问'); });
 const tcuAdd = document.getElementById('tcu-new-add');
 if (tcuAdd) {
 (function rebuildTCUSelect() {
@@ -2816,7 +2816,7 @@ const q = tcuPick(d);
 if (!q) { toast('题库没有可用的问题'); return; }
 const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
 tcuPush(q, { popupProb: askPopupProb(s) });
-toast('他 在聊天里向你好奇了');
+toast('他在聊天里向你好奇了');
 };
 const tcuNow = document.getElementById('tcu-now');
 if (tcuNow) tcuNow.addEventListener('click', () => window.triggerTaCuriousNow());
@@ -2978,7 +2978,7 @@ if (!Array.isArray(d.groups)) d.groups = [];
 return d;
 }
 function trSave(d) {
-if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他 的调侃题库')) return false;
+if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他的调侃题库')) return false;
 try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
 return true;
 }
@@ -3108,8 +3108,8 @@ const body = document.getElementById('qa-body');
 const title = document.getElementById('qa-title');
 if (!mask || !body) return;
 if (title) title.textContent = window.taFit ? window.taFit('他的调侃') : '他的调侃';
-body.innerHTML = '<div class="qa-hint">他 调侃你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
-'<input id="qa-input" class="qa-input" type="text" placeholder="回 他 一句…">' +
+body.innerHTML = '<div class="qa-hint">他调侃你</div><div class="qa-q">“' + String(rec.roastText || rec.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '”</div>' +
+'<input id="qa-input" class="qa-input" type="text" placeholder="回他一句…">' +
 '<button class="qa-send" id="qa-send">回他一句</button>';
 mask.hidden = false;
 const send = () => {
@@ -3395,7 +3395,7 @@ const q = trPick(d, '');
 if (!q) { toast('题库没有可用调侃'); return; }
 const s = d.settings || { enabled: true, prob: 5, popupProb: 70 };
 trPush(q, { popupProb: askPopupProb(s) });
-toast('他 在聊天里调侃你了');
+toast('他在聊天里调侃你了');
 };
 const trNow = document.getElementById('tr-now');
 if (trNow) trNow.addEventListener('click', () => window.triggerTaRoastNow());
@@ -3808,7 +3808,7 @@ if (notify) d2.doneMsgAt = d2.sentAt;
 surveySave(d2);
 surveySyncCard(d2); // v3.33.x #521：交卷态回写聊天问卷卡片
 if (notify) {
-try { window.chatAddSystem(early ? '他 提前交卷了（共 ' + d2.qs.length + ' 题）。' : '他 交卷了（共 ' + d2.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
+try { window.chatAddSystem(early ? '他提前交卷了（共 ' + d2.qs.length + ' 题）。' : '他交卷了（共 ' + d2.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
 }
 surveyRender();
 };
@@ -3830,7 +3830,7 @@ surveySeqAnswers([q], () => {}, 0);
 setInterval(surveyTick, 30000);
 function surveySend() {
 const d = surveyLoad();
-if (d.status === 'sent') { toast('问卷已发出，他 正在作答'); return; }
+if (d.status === 'sent') { toast('问卷已发出，他正在作答'); return; }
 const tEl = document.getElementById('ta-survey-text');
 if (tEl) { d.text = tEl.value; d.qs = surveyParse(tEl.value); surveySave(d); }
 if (!d.qs.length) { toast('请先填写问卷题目（【问题】+ 选项行 / 「一」行）'); return; }
@@ -3848,7 +3848,7 @@ surveyAnswers: []
 });
 } catch (e) {}
 surveyRender();
-toast('问卷已发出，他 开始作答');
+toast('问卷已发出，他开始作答');
 surveyGoChat();
 }
 function surveyRender() {
@@ -3875,7 +3875,7 @@ const cap = (typeof window.askMultiMaxLoad === 'function' ? window.askMultiMaxLo
 const nCap = d.qs.filter(q => q.type === 'multi' && q.multiMax >= 2).length;
 st.innerHTML = '当前状态：草稿 —— 已解析 <b>' + d.qs.length + '</b> 题' + brk + (nM ? '；多选题' + (nCap ? nCap + ' 题单独限选、其余' : '') + '每次最多选 ' + cap + ' 个。' : '。') + '填好后点「发出问卷给他」。';
 } else if (d.status === 'sent') {
-st.innerHTML = '当前状态：他 作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
+st.innerHTML = '当前状态：他作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
 } else {
 st.innerHTML = '当前状态：已交卷 —— 共 ' + d.qs.length + ' 题。可直接再点「发出问卷给他」重新提交一轮（清空上一轮作答、在聊天里插入新的问卷卡片）。';
 }
@@ -3906,7 +3906,7 @@ let bankSet = bankTexts();
 const favStates = qs.map(q => !!bankSet[String((q && q.text) || '').trim()]);
 const actBtnCss = 'border:1px solid rgba(127,127,127,.3);background:rgba(127,127,127,.12);color:var(--ink);border-radius:99px;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer';
 let html = '';
-html += '<div class="tc-hint">' + escT('你发出的问卷 · 共 ' + qs.length + ' 题 · ' + (done ? '已交卷' : '他 作答中（已答 ' + nDone + '/' + qs.length + '）')) + (rec && rec.surveyTs ? '<br>' + escT('发出时间：' + fmtDeadlineText(rec.surveyTs)) : '') + '</div>';
+html += '<div class="tc-hint">' + escT('你发出的问卷 · 共 ' + qs.length + ' 题 · ' + (done ? '已交卷' : '他作答中（已答 ' + nDone + '/' + qs.length + '）')) + (rec && rec.surveyTs ? '<br>' + escT('发出时间：' + fmtDeadlineText(rec.surveyTs)) : '') + '</div>';
 html += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 2px">' +
 '<button id="sv-fav-card" style="' + actBtnCss + '">♡ 收藏整份问卷</button>' +
 '<button id="sv-fav-allbtn" style="' + actBtnCss + '">★ 全部收藏题目</button>' +
@@ -4054,7 +4054,7 @@ if (schat) schat.addEventListener('change', () => {
 const d = surveyLoad();
 d.settings.sendToChat = schat.checked;
 surveySave(d);
-toast(schat.checked ? '他 的每条作答都会发送到聊天消息' : '他 的作答只写入问卷卡片，不再逐条发到聊天消息');
+toast(schat.checked ? '他的每条作答都会发送到聊天消息' : '他的作答只写入问卷卡片，不再逐条发到聊天消息');
 });
 const mmaxRow = document.getElementById('ta-survey-mmax');
 if (mmaxRow) {

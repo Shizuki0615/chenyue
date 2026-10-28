@@ -1088,7 +1088,7 @@ listEl.innerHTML = memHtml + (feedMainPosts.length
 ? '<div class="ta-empty">' + esc(bucket.label) + '还没有动态<br><span style="font-size:12px">点上面那条胶囊翻更早的月份</span></div>'
 : ((feedSyncCold || (window.mochiDataPending && window.mochiDataPending()))
 ? window.mochiLoadingHtml('朋友圈内容')
-: '<div class="ta-empty">还没有动态，他 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
+: '<div class="ta-empty">还没有动态，他会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
 feedRenderRangeBar(buckets);
 feedRenderSig = sig;
 const clearBtn = document.getElementById('feed-head-clear');
@@ -2459,7 +2459,7 @@ if (fav.some(x => (x.by || 'me') === 'ta' && (x.kind || 'msg') === 'feed' && x.t
 fav.push(Object.assign({ by: 'ta' }, f));
 s.set('fav-msgs', JSON.stringify(fav));
 if (cid === (window.__activeCid || 'default')) {
-toast(window.taFit ? window.taFit('他 收藏了你的朋友圈动态') : '他 收藏了你的朋友圈动态');
+toast(window.taFit ? window.taFit('他收藏了你的朋友圈动态') : '他收藏了你的朋友圈动态');
 }
 }, (ccfg.likeSpeedMin + Math.random() * Math.max(1, ccfg.likeSpeedMax - ccfg.likeSpeedMin)) * 1000);
 }
@@ -2952,7 +2952,7 @@ render();
 const np = document.getElementById('feed-notice-panel');
 if (np && !np.hidden) renderNotices();
 toast('朋友圈数据已全部清除');
-}, { noInput: true, staticText: '将删除全部动态（我的与 他 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
+}, { noInput: true, staticText: '将删除全部动态（我的与他的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
 });
 }
 const feedHeadClear = document.getElementById('feed-head-clear');

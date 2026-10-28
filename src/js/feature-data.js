@@ -99,13 +99,13 @@
     // ⚠️ 翻 both 后从任何桌面导出都会见到 `cc-groups-public`（用户机上实测 424.59 MB）——它由 planKeys 的
     // ONE_KEY_MAX 挡在文件外并当场说明「请用整包备份」，清空仍会真删它（弹窗按 both 口径写明影响所有桌面）。
     { id: 'cards', name: '字卡库与回复设置', group: '聊天与社交', scope: 'both', page: 'page-custom-cards', btns: 'cc-export,cc-import-data,cc-clear-all',
-      desc: '自定义/公用/默认字卡、词典、他 回复字卡、各类概率与开关（回复设置）',
+      desc: '自定义/公用/默认字卡、词典、他回复字卡、各类概率与开关（回复设置）',
       // #1325b 审计：mood-reply-cards.js:55/99/102/403/419 这套「心情回应卡」开关与概率＝mc-enabled / mc-prob-<type> /
       // mc-off-<类别> / mh-<类别> / rc-enabled（回应字卡总开关，与撤回补发的 rc-en 是两个键，card-audit.js:440 注明），
       // 旧表一条都不认 ⇒ 关掉的类别换机后全部悄悄 reopen。
       res: [/^cc-/, /^quote-cards/, /^reply-/, /^dc-/, /^dcf-/, /^dict-/, /^rcard-/, /^tm-/, /^rps-/, /^mc-/, /^mh-/, /^rc-/] },
     { id: 'fav', name: '收藏', group: '聊天与社交', scope: 'desk', page: 'page-fav',
-      desc: '我收藏的消息/字卡/图片与 他 的收藏',
+      desc: '我收藏的消息/字卡/图片与他的收藏',
       // #1325 审计：fav-settings.js:17/32 写的四把概率键是 fav-ta-msg / fav-ta-card / fav-ta-mail /
       // fav-ta-feed，旧正则一条都不认（/^fav-settings/ 是另一种拼法）⇒「收藏」页里 TA 收藏概率
       // 整段导不出也清不掉（导出去的文件里没有它，清空后这四个设置照旧生效）。
@@ -127,8 +127,8 @@
     { id: 'feed', name: '朋友圈', group: '聊天与社交', scope: 'both', page: 'page-feed', btns: 'feed-clear-all',
       desc: '全部动态、评论点赞、通知提醒、封面与昵称头像',
       res: [/^feed-/] },
-    { id: 'ask', name: '他 的提问与问卷', group: '聊天与社交', scope: 'desk', page: 'page-ta-ask',
-      desc: '他 的提问/选择题/好奇/调侃、问卷作答记录、询问提醒时间',
+    { id: 'ask', name: '他的提问与问卷', group: '聊天与社交', scope: 'desk', page: 'page-ta-ask',
+      desc: '他的提问/选择题/好奇/调侃、问卷作答记录、询问提醒时间',
       // #1325b 审计：ta-invite.js:115/116 的 ti-last-id（上一条邀请到哪一首）无人认领 ⇒ 换机后从第一条重头邀请。
       res: [/^ta-ask$/, /^ta-survey$/, /^ta-choose$/, /^ta-curious$/, /^ta-roast$/, /^ta-cc-state$/, /^ta-checkin$/, /^interact-card-last$/, /^ta-chime:/, /^ti-last-id$/] },
     // #1325 审计：desk-msg-en 由 chat.js:6221 走 activeStore 写在**各桌面**命名空间，其余四把开关
@@ -200,7 +200,7 @@
     // 与当前档案指针 `myarc-cur`（:234/:848 同一个 gStore）都在根命名空间，档案本体 `myarc` 才随桌面 ⇒ 旧 desk
     // 在联系人桌面上只导得出一份空壳档案，共享内容与「现在看的是哪一份」都丢。
     { id: 'myarc', name: '我的档案', group: '桌面功能', scope: 'both', page: 'page-my-arc',
-      desc: '我的档案资料与共享给 他 的部分',
+      desc: '我的档案资料与共享给他的部分',
       res: [/^myarc/] },
     // 房间（双人小屋）入口已移除，数据管理条目同步撤下；room.js/room.css 保留但不可达
     { id: 'drift', name: '漂流瓶', group: '桌面功能', scope: 'desk', page: 'page-drift',

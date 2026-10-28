@@ -2,7 +2,7 @@
 // 把 chat.js 里硬编码的「联系人主动邀请」话术升级为字卡库「TA的邀请」：
 // 预设邀请卡入库（猜拳/Pong/贪吃蛇/贴贴 四类，逐条开关、不可删、「使用系统预设」总开关），
 // 支持自定义新增、分组管理、批量导入、跨分类搜索、字卡库双入口、IndexedDB 权威恢复。
-// 触发链路不变：tryAutoSend → tryActiveInvite（chat.js）按 联系人回复设置→其他 的
+// 触发链路不变：tryAutoSend → tryActiveInvite（chat.js）按 联系人回复设置→其他的
 // ai-rps-en/prob、ai-game-en/prob 判定后从本库抽一张；本文件只负责题库存储与抽取。
 // 手动触发入口：聊天「更多功能 → TA的提问 → 邀请 / 贴贴」（triggerTaInviteNow / triggerTaCuddleNow
 // 定义在 chat.js，因为发送/弹确认/开半框依赖聊天页内部函数）；本库提供 taInvitePickAny（全类型）
@@ -636,7 +636,7 @@
   }
   const nowBtn = document.getElementById('ti-now');
   if (nowBtn) nowBtn.addEventListener('click', () => {
-    if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('他 在聊天里向你发起了邀请');
+    if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('他在聊天里向你发起了邀请');
   });
 
   // ---- 入口：字卡库双入口（主入口看系统预设，「·我的添加」只看自定义） ----

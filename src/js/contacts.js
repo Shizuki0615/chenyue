@@ -1083,7 +1083,7 @@
       pills: [
         { label: '他（男生）', value: 'he' },
         { label: '她（女生）', value: 'she' },
-        { label: '不设置（默认 他）', value: '' }
+        { label: '不设置（默认他）', value: '' }
       ]
     });
   }
@@ -1213,7 +1213,7 @@
     removeCjianHint();
     const page = document.getElementById('page-cjian');
     if (!page) return;
-    const hint = el('div', '', '点每位梦角的【去找他】直接进入 他 的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看 他 此刻在哪、在做什么。');
+    const hint = el('div', '', '点每位梦角的【去找他】直接进入他的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看他此刻在哪、在做什么。');
     hint.id = 'entry-cjian-hint';
     hint.style.cssText = 'margin:8px 12px 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.6;color:var(--muted,#666);background:rgba(127,106,216,.08);border:1px solid rgba(127,106,216,.2)';
     const head = page.querySelector('.chat-head');

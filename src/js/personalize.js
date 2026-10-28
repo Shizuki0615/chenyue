@@ -963,7 +963,7 @@ try {
   //   没进清单（无头实测：库里那份回到内存后 store='宝贝'、摸鱼卡小字='宝贝 摸鱼值'，而
   //   #lbl-partner 仍是 'TA'，切一次桌面才归位）。
   // FIX 2026-09-28 #1358b：TA 侧的回退值改问 window.taWord()——称呼存在 partner-gender（他/她/TA），
-  //   而这两格拿写死的 'TA' 当回退，主页永远看不到用户设的「他/她」＝实报「昵称小字 TA 他 她
+  //   而这两格拿写死的 'TA' 当回退，主页永远看不到用户设的「他/她」＝实报「昵称小字 TA 他她
   //   设置了但是没用，每次都是TA」。判据只取「这一格当前读数有没有值」，零机型／零 UA 分支。
   function deskNameText(key) {
     const v = store.get(key);
@@ -5145,7 +5145,7 @@ try {
     } catch (e) {
       // #602：解不出来不再静默——最常见是链接被聊天软件/复制截断。明确告知并给出「导出文件」正路。
       cleanHash();
-      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让他用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
       if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
       else toast(msg);
       return;

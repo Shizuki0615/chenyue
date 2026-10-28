@@ -1901,7 +1901,7 @@
       cell.className = 'avlib-cell';
       const img = document.createElement('img');
       img.src = src;
-      img.alt = '他 的画面';
+      img.alt = '他的画面';
       const del = document.createElement('button');
       del.className = 'avlib-del';
       del.type = 'button';

@@ -38,7 +38,7 @@
       name: '字卡库（公用 / 专属）',
       open: ['.tab[data-page="page-chatcard"]'],
       skipText: '你已经有字卡，这页不再提示',
-      tip: '先选「公用字卡」，右上「+」添加或用「批量导入」导入；一张卡都没有时，他 就没有话可说。',
+      tip: '先选「公用字卡」，右上「+」添加或用「批量导入」导入；一张卡都没有时，他就没有话可说。',
       act: { label: '去添加字卡', go: ['#li-custom-cards-public'] },
       hubs: ['.tab[data-page="page-chatcard"]'],
       // 已经有字卡就不打扰：直接读原始库键判定，不依赖字卡池 hydration 时序

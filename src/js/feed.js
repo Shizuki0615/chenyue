@@ -1537,7 +1537,7 @@
         ? '<div class="ta-empty">' + esc(bucket.label) + '还没有动态<br><span style="font-size:12px">点上面那条胶囊翻更早的月份</span></div>'
         : ((feedSyncCold || (window.mochiDataPending && window.mochiDataPending()))
           ? window.mochiLoadingHtml('朋友圈内容')
-          : '<div class="ta-empty">还没有动态，他 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
+          : '<div class="ta-empty">还没有动态，他会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
     feedRenderRangeBar(buckets);
     feedRenderSig = sig;
     const clearBtn = document.getElementById('feed-head-clear');
@@ -2731,7 +2731,7 @@ function submitComment() {
       if (!p2b) return;
       p2b.comments = p2b.comments || [];
       const taText = pickReplyContent(cfg, p2b.owner || 'default');
-      // 2026-10-28：他回应我的评论＝挂进该评论的楼中楼（缩进 + 「他 回复 我」），
+      // 2026-10-28：他回应我的评论＝挂进该评论的楼中楼（缩进 + 「他回复 我」），
       // 不再 push 成一条新的顶级评论——旧写法两条平铺、看不出是我俩在对话。
       // 按提交时记下的 ts 定点定位（期间可能已有别的评论插进来，不能认「最后一条」）。
       let myCi = -1;
@@ -3240,7 +3240,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
           fav.push(Object.assign({ by: 'ta' }, f));
           s.set('fav-msgs', JSON.stringify(fav));
           if (cid === (window.__activeCid || 'default')) {
-            toast(window.taFit ? window.taFit('他 收藏了你的朋友圈动态') : '他 收藏了你的朋友圈动态');
+            toast(window.taFit ? window.taFit('他收藏了你的朋友圈动态') : '他收藏了你的朋友圈动态');
           }
         }, (ccfg.likeSpeedMin + Math.random() * Math.max(1, ccfg.likeSpeedMax - ccfg.likeSpeedMin)) * 1000);
       }
@@ -3832,7 +3832,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
         const np = document.getElementById('feed-notice-panel');
         if (np && !np.hidden) renderNotices();
         toast('朋友圈数据已全部清除');
-      }, { noInput: true, staticText: '将删除全部动态（我的与 他 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
+      }, { noInput: true, staticText: '将删除全部动态（我的与他的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
     });
   }
   // v3.6.x：朋友圈页顶部「删除全部动态」——可只删我的动态 / 只删联系人的动态 / 全部删除

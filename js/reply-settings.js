@@ -244,7 +244,7 @@ const fishGroup = workRow ? workRow.closest('.set-group') : null;
 if (fishGroup) {
 fishGroup.insertAdjacentHTML('beforeend',
 '<div class="gs-row"><span>摸鱼抓包浮字</span><label class="toggle"><input type="checkbox" id="fish-grab-en"><span class="tk"></span></label></div>' +
-'<div class="gs-sub">开启后 他 摸鱼值上涨时桌面会飘「摸鱼浮字」，6 秒内点「点我抓包」会结算 他 自上次被抓以来涨的全部摸鱼值（他 补一份总账、你得同额）＋他 害羞回应；关闭后不再飘字、也没有抓包（摸鱼值本身照常累计），冷却与每日次数照旧不消耗</div>');
+'<div class="gs-sub">开启后他摸鱼值上涨时桌面会飘「摸鱼浮字」，6 秒内点「点我抓包」会结算他自上次被抓以来涨的全部摸鱼值（他补一份总账、你得同额）＋他害羞回应；关闭后不再飘字、也没有抓包（摸鱼值本身照常累计），冷却与每日次数照旧不消耗</div>');
 }
 }
 const RP_THX_MODES = [{ label: '系统预设话术', value: 0 }, { label: '像正常聊天一样回复', value: 1 }, { label: '混合', value: 2 }];
@@ -274,7 +274,7 @@ rpThxSec.innerHTML = '<div class="gs-title" style="margin-top:10px">红包互动
 '<div class="gs-row"><span>捎话概率</span><div class="stepper" data-k="rp-thx-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="rp-thx-prob-val" readonly><button class="stp-max">+</button></div></div>' +
 '<div class="gs-row"><span>捎话内容</span><div class="gs-pick" id="rp-thx-mode-btn" data-v="2">混合</div></div>' +
 '</div>' +
-'<div class="gs-sub" style="padding:0 14px 14px">我领取 他 发的红包、或 他 领取我发的红包后，他 有概率主动捎来一句话（默认开，概率 60%）。这句话固定只发一条、不受「回复条数最多」限制，也不占正常回复的名额；「捎话内容」三档＝只用系统预设话术 / 和正常聊天一样回复（走字卡与词典管线）/ 混合（约六成预设、四成聊天式）；各联系人独立保存，总开关关闭后两个方向都不再触发</div>';
+'<div class="gs-sub" style="padding:0 14px 14px">我领取他发的红包、或他领取我发的红包后，他有概率主动捎来一句话（默认开，概率 60%）。这句话固定只发一条、不受「回复条数最多」限制，也不占正常回复的名额；「捎话内容」三档＝只用系统预设话术 / 和正常聊天一样回复（走字卡与词典管线）/ 混合（约六成预设、四成聊天式）；各联系人独立保存，总开关关闭后两个方向都不再触发</div>';
 rpThxPanel.appendChild(rpThxSec);
 const rpThxModeBtn = document.getElementById('rp-thx-mode-btn');
 if (rpThxModeBtn && window.openModal) {
@@ -411,7 +411,7 @@ const TOGGLE_NAMES = {
 'mjf-mix': '造句混合模式',
 'mjf-punct': '造句句尾标点',
 'rc-en': '撤回后补发消息',
-'rl-en': '他 消息限流',
+'rl-en': '他消息限流',
 'turn-en': '连发的算一轮',
 'gc-turn-en': '连发的算一轮（群聊）',
 'fish-en': '摸鱼值累计', 'work-en': '工作值累计', 'fish-grab-en': '摸鱼抓包浮字',
@@ -841,7 +841,7 @@ if (asEnEl) {
 asEnEl.addEventListener('change', () => {
 if (!asEnEl.checked) {
 const d = ccToastEnsure();
-if (d) { d.textContent = '主动发送已关闭，他 将不再主动发消息'; d.className = 'cc-toast'; void d.offsetWidth; d.className = 'cc-toast show'; clearTimeout(d._timer); d._timer = setTimeout(() => { d.className = 'cc-toast'; }, 2600); }
+if (d) { d.textContent = '主动发送已关闭，他将不再主动发消息'; d.className = 'cc-toast'; void d.offsetWidth; d.className = 'cc-toast show'; clearTimeout(d._timer); d._timer = setTimeout(() => { d.className = 'cc-toast'; }, 2600); }
 }
 });
 }
@@ -850,7 +850,7 @@ if (dndEl) {
 dndEl.addEventListener('change', () => {
 if (dndEl.checked) {
 const d = ccToastEnsure();
-if (d) { d.textContent = '免打扰已开启，他 主动发送会大幅减弱（最长 3 小时一次）'; d.className = 'cc-toast'; void d.offsetWidth; d.className = 'cc-toast show'; clearTimeout(d._timer); d._timer = setTimeout(() => { d.className = 'cc-toast'; }, 3200); }
+if (d) { d.textContent = '免打扰已开启，他主动发送会大幅减弱（最长 3 小时一次）'; d.className = 'cc-toast'; void d.offsetWidth; d.className = 'cc-toast show'; clearTimeout(d._timer); d._timer = setTimeout(() => { d.className = 'cc-toast'; }, 3200); }
 }
 });
 }
@@ -870,7 +870,7 @@ try { st.set('reply-mjf-probe', ''); } catch (e) {}
 const d = ccToastEnsure();
 if (!d) return;
 const show = (msg) => { d.textContent = msg; d.className = 'cc-toast'; void d.offsetWidth; d.className = 'cc-toast show'; clearTimeout(d._timer); d._timer = setTimeout(() => { d.className = 'cc-toast'; }, 3200); };
-if (mjfEl.checked && okStore) show('梦角自由造句已开启：他 说话将按概率截字重造句（造出的句子进字卡库「梦角自由造句」分类）');
+if (mjfEl.checked && okStore) show('梦角自由造句已开启：他说话将按概率截字重造句（造出的句子进字卡库「梦角自由造句」分类）');
 else if (mjfEl.checked) show('梦角自由造句开启失败：本地存储不可用，请检查浏览器隐私设置后重试');
 else show('梦角自由造句已关闭');
 });
@@ -1136,7 +1136,7 @@ const IC_PILLS = [
 { label: '原频率', value: '0' }, { label: '稍安静', value: '1' },
 { label: '安静', value: '2' }, { label: '很安静', value: '3' }
 ];
-const IC_DETAIL = '聊天里 他 主动发的卡与邀请多久来一次，按这一档整体往下调（没有比「原频率」更高的档）。'
+const IC_DETAIL = '聊天里他主动发的卡与邀请多久来一次，按这一档整体往下调（没有比「原频率」更高的档）。'
 + '覆盖：五类提问卡（询问 / 小问题 / 好奇 / 调侃 / 分享你的字卡）、邀请三类（猜拳 / 游戏 / 贴贴）、音乐「一起去听」邀请。'
 + '不影响查岗自己的开关 / 概率 / 冷却，也不影响你自己发的卡。'
 + '\n\n· 原频率：全部 ×1，完全保持现在的节奏（默认）；'
@@ -1196,7 +1196,7 @@ group.appendChild(row);
 const sub = document.createElement('div');
 sub.className = 'gs-sub';
 sub.id = 'ic-freq-sub';
-sub.textContent = '他 在聊天里主动发的卡与邀请（提问卡五类：询问/小问题/好奇/调侃/分享你的字卡；邀请三类：猜拳/游戏/贴贴；音乐「一起去听」）整体频率；「原频率」＝完全保持现在的节奏，往右都是调低。各类互动卡的单项概率在【字卡与概率】里逐项调。点右侧档位切换。';
+sub.textContent = '他在聊天里主动发的卡与邀请（提问卡五类：询问/小问题/好奇/调侃/分享你的字卡；邀请三类：猜拳/游戏/贴贴；音乐「一起去听」）整体频率；「原频率」＝完全保持现在的节奏，往右都是调低。各类互动卡的单项概率在【字卡与概率】里逐项调。点右侧档位切换。';
 group.appendChild(sub);
 panel.appendChild(group);
 rpsHost.insertBefore(panel, rpsTabs.nextSibling);
@@ -1545,9 +1545,9 @@ document.body.appendChild(bar);
 }
 const txt = bar.querySelector('.rgh-txt');
 if (txt) {
-txt.textContent = kind === 'py' ? '他 一次连发多条是随机概率触发的，嫌频繁可在「设置 → 回复设置」调低或关闭'
-: kind === 'inv' ? '他 的互动邀请是随机概率触发的，可在「设置 → 回复设置」调低或关闭'
-: '他 的主动消息是随机概率触发的，嫌频繁可在「设置 → 回复设置」调低或关闭';
+txt.textContent = kind === 'py' ? '他一次连发多条是随机概率触发的，嫌频繁可在「设置 → 回复设置」调低或关闭'
+: kind === 'inv' ? '他的互动邀请是随机概率触发的，可在「设置 → 回复设置」调低或关闭'
+: '他的主动消息是随机概率触发的，嫌频繁可在「设置 → 回复设置」调低或关闭';
 }
 bar.classList.add('show');
 clearTimeout(bar._rgT);

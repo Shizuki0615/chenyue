@@ -4166,7 +4166,7 @@ const b64 = decodeURIComponent(location.hash.slice(8)).replace(/-/g, '+').replac
 data = JSON.parse(decodeURIComponent(escape(atob(b64))));
 } catch (e) {
 cleanHash();
-const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让他用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
 if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
 else toast(msg);
 return;

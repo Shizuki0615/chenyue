@@ -930,7 +930,7 @@
     if (!revived || wlReviveNotified) return;
     wlReviveNotified = true;
     // 把用户关着的开关主动打开属于「改用户设置」，必须说明来源，不能悄悄改。
-    setTimeout(function () { try { toast('「他 送我礼物」已重新开启（旧版设置遗留关闭），可在「心意集市设置」里调整'); } catch (e) {} }, 6000);
+    setTimeout(function () { try { toast('「他送我礼物」已重新开启（旧版设置遗留关闭），可在「心意集市设置」里调整'); } catch (e) {} }, 6000);
   }
   // 心愿项存快照（商品日后被改/删不影响已许的愿），giftId 关联市集商品
   function wishSnap(g) { return { giftId: g.id, name: g.name, emoji: g.emoji, img: g.img || '', price: g.price, cat: g.cat, wish: g.wish || '送给你', tm: Date.now() }; }
@@ -1383,7 +1383,7 @@
           const entrySelf = recordBox(gift0, 'self', wish0);
           if (entrySelf && entrySelf.id) chatRec.giftBoxId = entrySelf.id; // #985：卡片与心意柜互指（同 buyAndSend）
           if (st.selfChatOn && window.chatAddGift) window.chatAddGift(chatRec);
-          else toast(partnerName() + ' 给自己买了「' + gift0.name + '」，收进了 他 的心意柜');
+          else toast(partnerName() + ' 给自己买了「' + gift0.name + '」，收进了他的心意柜');
         } else {
           // 已切桌面：记录与聊天卡仍回原桌面（不弹 toast，避免串到别的联系人脸上）
           const entrySelfAt = recordBoxAt(myCid, gift0, 'self', wish0);
@@ -1412,7 +1412,7 @@
         const quotaLeft = dayCount(WISHCHAT_DAILY_PREFIX) < st.wishChatDayMax;
         const pushed = !!(quotaLeft && st.wishChatOn && Math.random() * 100 < st.wishChatPct && wishChatPush(giftW));
         if (pushed) dayIncr(WISHCHAT_DAILY_PREFIX);
-        else if (quotaLeft) toast(partnerName() + ' 把「' + giftW.name + '」加进了 他 的心愿单\n市集下方「☆ 心愿单」可查看');
+        else if (quotaLeft) toast(partnerName() + ' 把「' + giftW.name + '」加进了他的心愿单\n市集下方「☆ 心愿单」可查看');
         try { syncWishBadge(); } catch (e) {}
         return;
       }
@@ -1453,9 +1453,9 @@
       '</div>' +
       '<div class="gb-tiny">' + (
         opts.fromTaWish
-          ? '这是 ' + esc(partnerName()) + ' 心愿单里的礼物，送出后自动从 他 的心愿单移除，礼物进 他 的心意柜'
+          ? '这是 ' + esc(partnerName()) + ' 心愿单里的礼物，送出后自动从他的心愿单移除，礼物进他的心意柜'
           : (taWishIds().has(gift.id) // #588：同上，走记忆化集合
-            ? esc(partnerName()) + ' 正许愿想要这件——买下送出即心愿兑现，自动从 他 的心愿单移除'
+            ? esc(partnerName()) + ' 正许愿想要这件——买下送出即心愿兑现，自动从他的心愿单移除'
             : (wlSettings().giftInOn ? '加入心愿单只是许愿不花钱——' + esc(partnerName()) + ' 可能会买下它送你' : '加入心愿单只是许愿不花钱'))
       ) + '</div>';
     window.openTCPanel(esc(gift.emoji) + ' ' + esc(gift.name), html);
@@ -1492,7 +1492,7 @@
     const col = CAT_COLOR[it.cat] || '#f5f3fa';
     const act = mode === 'my'
       ? '<button class="wish-act del" data-wdel="' + esc(it.giftId) + '" type="button">移除</button>'
-      : '<button class="wish-act" data-wbuy="' + esc(it.giftId) + '" type="button">送 他</button>';
+      : '<button class="wish-act" data-wbuy="' + esc(it.giftId) + '" type="button">送他</button>';
     return '<div class="wish-item">' +
       '<div class="wish-emoji" style="background:' + col + ';">' + giftMedia(it, 'wish-img') + '</div>' +
       '<div class="wish-info">' +
@@ -1513,11 +1513,11 @@
       ? (taNew ? '有 ' + taNew + ' 条是 ' + esc(partnerName()) + ' 新许的愿——点上方「' + esc(partnerName()) + ' 的心愿单」这一栏看。\n' : '')
         + (stG.giftInOn
         ? '在市集点开商品选「加入心愿单」即可许愿（不花钱）。' + esc(partnerName()) + ' 会按概率买下送你，礼物进「心意柜-收到的」并从心愿单移除；概率在「心意集市和心意柜设置」里可调。'
-        : '在市集点开商品选「加入心愿单」即可许愿（不花钱）。「他 送我礼物」总开关当前关闭，他 不会买下心愿；想恢复去「心意集市和心意柜设置」打开。')
-      : '这里是 ' + esc(partnerName()) + ' 许的愿望（他 逛市集时也会按概率把想要的加进来，并有概率把这份心愿发一张卡片到聊天提醒你）。点「送 他」买下送出：礼物进聊天和 他 的心意柜-收到的，并自动从心愿单移除；市集里 他 正许愿的商品也会标出来。';
+        : '在市集点开商品选「加入心愿单」即可许愿（不花钱）。「他送我礼物」总开关当前关闭，他不会买下心愿；想恢复去「心意集市和心意柜设置」打开。')
+      : '这里是 ' + esc(partnerName()) + ' 许的愿望（他逛市集时也会按概率把想要的加进来，并有概率把这份心愿发一张卡片到聊天提醒你）。点「送他」买下送出：礼物进聊天和他的心意柜-收到的，并自动从心愿单移除；市集里他正许愿的商品也会标出来。';
     const emptyTxt = wishTab === 'my'
       ? '心愿单还是空的<br>去心意市集挑一件，点「加入心愿单」'
-      : (esc(partnerName()) + ' 还没许愿<br>他 逛市集时会自己加进来');
+      : (esc(partnerName()) + ' 还没许愿<br>他逛市集时会自己加进来');
     const html =
       '<div class="wish-tabs">' +
         '<button class="wish-tab' + (wishTab === 'my' ? ' sel' : '') + '" data-wtab="my" type="button">我的心愿单 (' + my.length + ')</button>' +
@@ -1525,7 +1525,7 @@
       '</div>' +
       '<div class="wish-hint">' + hint + '</div>' +
       (list.map(function (it) { return wishRowHtml(it, wishTab); }).join('') || '<div class="gift-empty">' + emptyTxt + '</div>') +
-      '<div class="gs-help">【使用说明】<br>· 心愿单只是许愿，不花钱；他 按概率买下送你后自动移除。<br>· 「他 的心愿单」里的礼物可点「送 他」买下送出（正常聊天送礼 + 心意柜记录）。<br>· 他 的相关行为可在「心意集市和心意柜设置」里开关与自定义概率。</div>';
+      '<div class="gs-help">【使用说明】<br>· 心愿单只是许愿，不花钱；他按概率买下送你后自动移除。<br>· 「他的心愿单」里的礼物可点「送他」买下送出（正常聊天送礼 + 心意柜记录）。<br>· 他的相关行为可在「心意集市和心意柜设置」里开关与自定义概率。</div>';
     window.openTCPanel('心愿单', html);
     if (wishTab === 'ta') { taWishMarkSeen(); try { syncWishBadge(); } catch (e) {} }
     document.querySelectorAll('#tc-body [data-wtab]').forEach(function (b) {
@@ -1553,24 +1553,24 @@
     if (!window.openTCPanel) { toast('稍后再试'); return; }
     const st = wlSettings();
     const html =
-      '<div class="gs-row"><div class="gs-lab">他 送我礼物<span class="gs-sub">总开关，关闭后 他 不会买礼物送你（心愿单兑现、随机送礼都停）；默认开启</span></div><div class="gs-switch' + (st.giftInOn ? ' on' : '') + '" data-gsw="giftInOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 送我礼物概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="giftInPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.giftInPct + '"><span class="gs-pct">%</span></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">心愿单功能<span class="gs-sub">他 买我的心愿单礼物送我 / 他 把想要的加进自己的心愿单</span></div><div class="gs-switch' + (st.wlOn ? ' on' : '') + '" data-gsw="wlOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 买下我的心愿单概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wlBuyPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wlBuyPct + '"><span class="gs-pct">%</span></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 加进自己心愿单概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wlAddPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wlAddPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他送我礼物<span class="gs-sub">总开关，关闭后他不会买礼物送你（心愿单兑现、随机送礼都停）；默认开启</span></div><div class="gs-switch' + (st.giftInOn ? ' on' : '') + '" data-gsw="giftInOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他送我礼物概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="giftInPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.giftInPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">心愿单功能<span class="gs-sub">他买我的心愿单礼物送我 / 他把想要的加进自己的心愿单</span></div><div class="gs-switch' + (st.wlOn ? ' on' : '') + '" data-gsw="wlOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他买下我的心愿单概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wlBuyPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wlBuyPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他加进自己心愿单概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wlAddPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wlAddPct + '"><span class="gs-pct">%</span></div></div>' +
       // #660：TA 把商品放进自己清单那一刻，有概率把这份心愿发到聊天（我点卡片上的【送 TA】一键买下）
-      '<div class="gs-row"><div class="gs-lab">他 的心愿发到聊天<span class="gs-sub">他 把商品加进自己心愿单时，按概率把这份心愿发一张卡片到聊天，你点【送 他】即可买下送出；默认开启</span></div><div class="gs-switch' + (st.wishChatOn ? ' on' : '') + '" data-gsw="wishChatOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 心愿发到聊天概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wishChatPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wishChatPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他的心愿发到聊天<span class="gs-sub">他把商品加进自己心愿单时，按概率把这份心愿发一张卡片到聊天，你点【送他】即可买下送出；默认开启</span></div><div class="gs-switch' + (st.wishChatOn ? ' on' : '') + '" data-gsw="wishChatOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他心愿发到聊天概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="wishChatPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.wishChatPct + '"><span class="gs-pct">%</span></div></div>' +
       // #1437：发卡这一环的每日上限（作者 2026-09-29 点口径「这个也要有上限，并且可以在心意柜设置里调整」）
-      '<div class="gs-row"><div class="gs-lab">他 心愿卡每天最多<span class="gs-sub">只数发进聊天的张数，0~20、默认 3；他 往自己心愿单里攒多少不受限。用完当天不再发卡、也不弹提示</span></div><div class="gs-numwrap"><input class="gs-num" data-gsn="wishChatDayMax" type="number" min="0" max="20" inputmode="numeric" value="' + st.wishChatDayMax + '"><span class="gs-pct">张</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他心愿卡每天最多<span class="gs-sub">只数发进聊天的张数，0~20、默认 3；他往自己心愿单里攒多少不受限。用完当天不再发卡、也不弹提示</span></div><div class="gs-numwrap"><input class="gs-num" data-gsn="wishChatDayMax" type="number" min="0" max="20" inputmode="numeric" value="' + st.wishChatDayMax + '"><span class="gs-pct">张</span></div></div>' +
       // #848：我送礼给 TA 之后 TA 的回应对（心愿兑现与普通送礼同一入口，走聊天）
-      '<div class="gs-row"><div class="gs-lab">我送礼后 他 回一句<span class="gs-sub">总开关：我送出的每一份礼物（市集、心意柜、他 心愿卡上点【送 他】都算）都有概率换 他 回一句；默认开启</span></div><div class="gs-switch' + (st.giftReplyOn ? ' on' : '') + '" data-gsw="giftReplyOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 回一句概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="giftReplyPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.giftReplyPct + '"><span class="gs-pct">%</span></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 回什么<span class="gs-sub">点一下切换</span></div><div class="gs-pick" id="gs-gift-reply-mode" data-v="' + st.giftReplyMode + '">' + giftReplyModeLabel(st.giftReplyMode) + '</div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 自己买礼物<span class="gs-sub">买给自己的礼物收进「心意柜-他 自己买的」</span></div><div class="gs-switch' + (st.selfOn ? ' on' : '') + '" data-gsw="selfOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 自买礼物发到聊天<span class="gs-sub">他 给自己买的礼物同时发一张礼物卡到聊天，方便你查看；默认开启</span></div><div class="gs-switch' + (st.selfChatOn ? ' on' : '') + '" data-gsw="selfChatOn"></div></div>' +
-      '<div class="gs-row"><div class="gs-lab">他 自己买概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="selfPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.selfPct + '"><span class="gs-pct">%</span></div></div>' +
-      '<div class="gs-help">【使用说明】<br>· 他 送我礼物：总开关，默认开启；关闭后 他 不会买礼物送你（心愿单兑现与随机送礼都不触发）；他 给自己买礼物、加自己的心愿单不受影响，我送礼给 他 也不受影响。<br>· 他 送我礼物概率：他 每次心动时主动从市集挑一份送你的概率（进聊天 +「心意柜-收到的」），0~100 自定义。<br>· 我的心愿单：市集点开商品选「加入心愿单」许愿（不花钱）；他 按概率直接买下送你，礼物进「心意柜-收到的」，心愿单自动移除。<br>· 他 的心愿单：他 会把想要的加进来；点「送 他」买下送出，礼物进 他 的心意柜-收到的并自动移除该心愿。市集里 他 正许愿的商品会标出「☆ 他许愿的」，从这里进也行。<br>· 他 的心愿发到聊天：他 把商品加进自己心愿单的那一刻，按概率把这份心愿发一张卡片到聊天（默认开启、默认 60%，另外每天最多 3 张——上面「他 心愿卡每天最多」可调）。卡片上点【送 他】就能买下送出，送完卡片自动变「已送出」；关掉开关、概率调 0，或当天张数用完，他 就只默默加进心愿单、不再发卡片也不弹提示（心愿仍可在心意柜「看看 他 的心愿单」里看到）。<br>· 我送礼后 他 回一句：我送出的每一份礼物都有概率让 他 回一句（默认开启、默认 60%），市集、心意柜、他 心愿卡上点【送 他】都算；这份礼物正好是 他 心愿单里许着的，话术走「心愿兑现」那一套。「他 回什么」三档＝只用系统预设话术 / 和正常聊天一样回复（走字卡与词典管线，带「正在输入…」）/ 混合（约六成预设、四成聊天式）；关掉开关或概率调 0，他 就只默默收下礼物、不再回话（礼物照常进 他 的心意柜）。<br>· 他 自己买：他 按概率给自己买礼物，收进「心意柜-他 自己买的」；「他 自买礼物发到聊天」默认开着，买完会同时发一张礼物卡到聊天（关掉那枚开关就只进柜子、聊天里看不到）。<br>· 概率=每次触发（我发消息后）他 采取该行动的概率，0~100 自定义；每日三本账各记各的、互不挤占＝「他 送我礼物」（心愿单兑现＋随机送礼）最多 3 次、「他 自己买礼物」最多 3 次、「他 心愿卡发到聊天」最多 3 张（这枚在上面可调）；关掉开关即完全关闭对应行为。</div>';
+      '<div class="gs-row"><div class="gs-lab">我送礼后他回一句<span class="gs-sub">总开关：我送出的每一份礼物（市集、心意柜、他心愿卡上点【送他】都算）都有概率换他回一句；默认开启</span></div><div class="gs-switch' + (st.giftReplyOn ? ' on' : '') + '" data-gsw="giftReplyOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他回一句概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="giftReplyPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.giftReplyPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他回什么<span class="gs-sub">点一下切换</span></div><div class="gs-pick" id="gs-gift-reply-mode" data-v="' + st.giftReplyMode + '">' + giftReplyModeLabel(st.giftReplyMode) + '</div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他自己买礼物<span class="gs-sub">买给自己的礼物收进「心意柜-他自己买的」</span></div><div class="gs-switch' + (st.selfOn ? ' on' : '') + '" data-gsw="selfOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他自买礼物发到聊天<span class="gs-sub">他给自己买的礼物同时发一张礼物卡到聊天，方便你查看；默认开启</span></div><div class="gs-switch' + (st.selfChatOn ? ' on' : '') + '" data-gsw="selfChatOn"></div></div>' +
+      '<div class="gs-row"><div class="gs-lab">他自己买概率</div><div class="gs-numwrap"><input class="gs-num" data-gsn="selfPct" type="number" min="0" max="100" inputmode="numeric" value="' + st.selfPct + '"><span class="gs-pct">%</span></div></div>' +
+      '<div class="gs-help">【使用说明】<br>· 他送我礼物：总开关，默认开启；关闭后他不会买礼物送你（心愿单兑现与随机送礼都不触发）；他给自己买礼物、加自己的心愿单不受影响，我送礼给他也不受影响。<br>· 他送我礼物概率：他每次心动时主动从市集挑一份送你的概率（进聊天 +「心意柜-收到的」），0~100 自定义。<br>· 我的心愿单：市集点开商品选「加入心愿单」许愿（不花钱）；他按概率直接买下送你，礼物进「心意柜-收到的」，心愿单自动移除。<br>· 他的心愿单：他会把想要的加进来；点「送他」买下送出，礼物进他的心意柜-收到的并自动移除该心愿。市集里他正许愿的商品会标出「☆ 他许愿的」，从这里进也行。<br>· 他的心愿发到聊天：他把商品加进自己心愿单的那一刻，按概率把这份心愿发一张卡片到聊天（默认开启、默认 60%，另外每天最多 3 张——上面「他心愿卡每天最多」可调）。卡片上点【送他】就能买下送出，送完卡片自动变「已送出」；关掉开关、概率调 0，或当天张数用完，他就只默默加进心愿单、不再发卡片也不弹提示（心愿仍可在心意柜「看看他的心愿单」里看到）。<br>· 我送礼后他回一句：我送出的每一份礼物都有概率让他回一句（默认开启、默认 60%），市集、心意柜、他心愿卡上点【送他】都算；这份礼物正好是他心愿单里许着的，话术走「心愿兑现」那一套。「他回什么」三档＝只用系统预设话术 / 和正常聊天一样回复（走字卡与词典管线，带「正在输入…」）/ 混合（约六成预设、四成聊天式）；关掉开关或概率调 0，他就只默默收下礼物、不再回话（礼物照常进他的心意柜）。<br>· 他自己买：他按概率给自己买礼物，收进「心意柜-他自己买的」；「他自买礼物发到聊天」默认开着，买完会同时发一张礼物卡到聊天（关掉那枚开关就只进柜子、聊天里看不到）。<br>· 概率=每次触发（我发消息后）他采取该行动的概率，0~100 自定义；每日三本账各记各的、互不挤占＝「他送我礼物」（心愿单兑现＋随机送礼）最多 3 次、「他自己买礼物」最多 3 次、「他心愿卡发到聊天」最多 3 张（这枚在上面可调）；关掉开关即完全关闭对应行为。</div>';
     window.openTCPanel('心意集市和心意柜设置', html);
     document.querySelectorAll('#tc-body [data-gsw]').forEach(function (sw) {
       sw.addEventListener('click', function () {
@@ -1607,7 +1607,7 @@
     if (modeEl && window.openModal) {
       modeEl.addEventListener('click', function () {
         const cur = wlSettings();
-        window.openModal('我送礼后 他 回什么', '', function (v) {
+        window.openModal('我送礼后他回什么', '', function (v) {
           const n = Math.round(Number(v));
           if (n !== 0 && n !== 1 && n !== 2) return;
           const next = wlSettings();
@@ -2086,7 +2086,7 @@
     })() }; });
     el.innerHTML = window.mochiHistFold(rows, {
       key: 'gift-' + boxTab,
-      empty: '<div class="gift-empty">' + (boxTab === 'in' ? (esc(partnerName()) + ' 还没送你礼物<br>' + (window.taFit ? window.taFit('他偶尔会主动从市集挑一份给你，耐心等等') : '他偶尔会主动从市集挑一份给你，耐心等等')) : boxTab === 'self' ? (esc(partnerName()) + ' 还没给自己买过礼物<br>他 偶尔会按概率给自己挑一件，收进自己的心意柜') : ('你还没送出礼物<br>去心意市集挑一份送给 ' + esc(partnerName()) + ' 吧')) + '</div>',
+      empty: '<div class="gift-empty">' + (boxTab === 'in' ? (esc(partnerName()) + ' 还没送你礼物<br>' + (window.taFit ? window.taFit('他偶尔会主动从市集挑一份给你，耐心等等') : '他偶尔会主动从市集挑一份给你，耐心等等')) : boxTab === 'self' ? (esc(partnerName()) + ' 还没给自己买过礼物<br>他偶尔会按概率给自己挑一件，收进自己的心意柜') : ('你还没送出礼物<br>去心意市集挑一份送给 ' + esc(partnerName()) + ' 吧')) + '</div>',
       todayEmpty: '<div class="dc-h-day-empty">今天没有新的心意</div>'
     });
     el.querySelectorAll('.giftbox-card').forEach(function (c) {
@@ -2186,7 +2186,7 @@
         '<div class="market-hero">' +
 
           '<div class="market-hero-title">心意市集</div>' +
-          '<div class="market-hero-sub">挑一份心意，跨越两个世界送给 他</div>' +
+          '<div class="market-hero-sub">挑一份心意，跨越两个世界送给他</div>' +
           '<div class="market-balance" id="market-balance"></div>' +
         '</div>' +
         '<div class="market-mine" id="market-mine"></div>' +

@@ -73,27 +73,27 @@ const DEFAULT_QUESTIONS = [
 { id: 'k_t6', cat: 'text', text: '今天有什么开心的小事吗？', enabled: true },
 { id: 'k_t7', cat: 'text', text: '如果我现在就在你身边，你想做什么？', enabled: true },
 { id: 'k_a1', cat: 'action', type: 'action', text: '摸摸头', enabled: true,
-taToMe: '他 想摸摸你的头', meToTa: '他 想让你摸摸 他 的头',
+taToMe: '他想摸摸你的头', meToTa: '他想让你摸摸他的头',
 accept: ['乖，过来', '嗯，轻轻的', '闭上眼，我轻一点'],
 reject: ['哼，不要', '下次吧', '现在不行，等下'] },
 { id: 'k_a2', cat: 'action', type: 'action', text: '拍拍肩', enabled: true,
-taToMe: '他 想拍拍你的肩', meToTa: '他 想让你拍拍 他 的肩',
+taToMe: '他想拍拍你的肩', meToTa: '他想让你拍拍他的肩',
 accept: ['嗯，辛苦了', '正好有点累', '被你拍到了'],
 reject: ['别拍，痒', '不要，自己来', '肩膀没空'] },
 { id: 'k_a3', cat: 'action', type: 'action', text: '揉揉头', enabled: true,
-taToMe: '他 想揉揉你的头发', meToTa: '他 想让你揉揉 他 的头发',
+taToMe: '他想揉揉你的头发', meToTa: '他想让你揉揉他的头发',
 accept: ['嗯，舒服', '再来一下', '头发都被你揉乱了'],
 reject: ['发型会乱', '不要揉', '刚整理好的'] },
 { id: 'k_a4', cat: 'action', type: 'action', text: '抱抱', enabled: true,
-taToMe: '他 想抱抱你', meToTa: '他 想让你抱抱 他',
+taToMe: '他想抱抱你', meToTa: '他想让你抱抱他',
 accept: ['过来，抱紧', '嗯，再久一点', '被你抱住了'],
 reject: ['现在不方便', '等下再抱', '人多，不要'] },
 { id: 'k_a5', cat: 'action', type: 'action', text: '牵手', enabled: true,
-taToMe: '他 想牵你的手', meToTa: '他 想让你牵 他 的手',
+taToMe: '他想牵你的手', meToTa: '他想让你牵他的手',
 accept: ['嗯，牵着', '手伸过来', '一直牵着好不好'],
 reject: ['手心出汗了', '不要，痒', '现在没空'] },
 { id: 'k_a6', cat: 'action', type: 'action', text: '贴贴', enabled: true,
-taToMe: '他 想跟你贴贴', meToTa: '他 想让你跟 他 贴贴',
+taToMe: '他想跟你贴贴', meToTa: '他想让你跟他贴贴',
 accept: ['嗯，贴着', '脸凑过来', '贴着好暖'],
 reject: ['脸会红', '不要贴', '太近了'] }
 ];
@@ -237,7 +237,7 @@ preset = pool[Math.floor(Math.random() * pool.length)];
 }
 if (window.chatAskReply) window.chatAskReply(msgIdx, answer, preset);
 }, {
-staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('他 想跟你互动：' + qText) : ('他 问你：' + qText)),
+staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('他想跟你互动：' + qText) : ('他问你：' + qText)),
 pills: isSingle ? optList.map(function (o) { return { label: o.t, value: o.t }; }) : null,
 pill: isSingle ? affirmOptValue(optList) : undefined,
 noInput: isSingle,
@@ -247,10 +247,10 @@ pillSubmit: true
 window.buildDeskCkCard = function (q) {
 const dir = Math.random() < 0.5 ? 'toMe' : 'meToTa';
 if (dir === 'meToTa') {
-return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗 他。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
+return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗他。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
 }
 const isSingle = q && q.type === 'single' && Array.isArray(q.options) && q.options.length;
-return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: '他 来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
+return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: '他来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
 };
 function pushCkQuestion(cfg, forceQ, opts) {
 if (!window.chatAddSystem) return false;
@@ -263,7 +263,7 @@ const isDeskCk = !!(opts && opts.deskCk);
 const deskCkCard = isDeskCk ? window.buildDeskCkCard(q) : null;
 const deskCkDir = deskCkCard ? deskCkCard.deskCkDir : null;
 const isAction = !isDeskCk && q.type === 'action';
-let actionOpts = null, actionText = q.text, actionHint = '他 来查岗了。', askOpts = null, askType;
+let actionOpts = null, actionText = q.text, actionHint = '他来查岗了。', askOpts = null, askType;
 if (isDeskCk) {
 actionText = deskCkCard.text;
 actionHint = deskCkCard.hint;
@@ -272,7 +272,7 @@ askType = deskCkCard.askType;
 } else if (isAction) {
 const dir = Math.random() < 0.5 ? 'ta-to-me' : 'me-to-ta';
 actionText = (dir === 'me-to-ta' ? (q.meToTa || q.text) : (q.taToMe || q.text));
-actionHint = '他 想跟你互动。';
+actionHint = '他想跟你互动。';
 const acc = Array.isArray(q.accept) && q.accept.length ? q.accept : ['乖，过来。'];
 const rej = Array.isArray(q.reject) && q.reject.length ? q.reject : ['下次吧。'];
 actionOpts = [{ t: '好呀', reply: acc }, { t: '不要', reply: rej }];
@@ -431,7 +431,7 @@ return '<div class="ta-add">' +
 '<input id="ckq-new-' + blockKey + '" type="text" placeholder="' + (isActionCat ? '动作名，如 摸摸头' : '添加问题…') + '">' +
 '<button class="ta-add-btn" data-key="' + blockKey + '" data-cat="' + (cat || 'text') + '" data-grp="' + (grp || '') + '">添加</button>' +
 (isActionCat
-? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（他对我 / 我对他），如&#10;他 想摸摸你的头&#10;他 想让你摸摸 他 的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
+? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（他对我 / 我对他），如&#10;他想摸摸你的头&#10;他想让你摸摸他的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
 : '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~他回应；多条回应用 ; 分隔，如 在想你~就知道。;嗯，这次信你。" hidden></textarea>') +
 '</div>';
 }
@@ -527,8 +527,8 @@ q.options = opts;
 } else if (type === 'action') {
 const optsEl = document.getElementById('ckq-opts-' + key);
 const lines = (optsEl ? optsEl.value : '').split(/\r?\n/).map(s => s.trim());
-q.taToMe = lines[0] || ('他 想' + v + '你');
-q.meToTa = lines[1] || ('他 想让你' + v + ' 他');
+q.taToMe = lines[0] || ('他想' + v + '你');
+q.meToTa = lines[1] || ('他想让你' + v + ' 他');
 const acc = [], rej = [];
 for (let i = 2; i < lines.length; i++) {
 const ln = lines[i]; if (!ln) continue;
@@ -657,7 +657,7 @@ toast('已导入 ' + lines.length + ' 个文字查岗问题');
 }
 const nowBtn = document.getElementById('ckq-now');
 if (nowBtn) nowBtn.addEventListener('click', () => {
-if (window.triggerCkQuestion()) toast('他 在聊天里来查岗了');
+if (window.triggerCkQuestion()) toast('他在聊天里来查岗了');
 });
 if (page) {
 const showPage = (tab) => {

@@ -308,7 +308,7 @@ if (undone.length >= 2 && Math.random() < 0.12) {
 const target = undone.slice().sort((x, y) => (x.ts || 0) - (y.ts || 0))[0];
 target.done = true; memoSave(a); vibrate([40, 30, 40]); memoRender();
 memoShowMsg('帮你把「' + memoClip(target.t, 12) + '」打勾啦，剩下的加油');
-if (memoSendOn() && window.chatAddIn) { try { window.chatAddIn('✓ 他 帮你完成：「' + target.t + '」'); } catch (e) {} }
+if (memoSendOn() && window.chatAddIn) { try { window.chatAddIn('✓ 他帮你完成：「' + target.t + '」'); } catch (e) {} }
 return;
 }
 const urgent = undone.filter(x => memoUrgent(x));
@@ -437,7 +437,7 @@ if (memoRemindBtn) memoRemindBtn.addEventListener('click', () => {
 if (editingNow()) return;
 const on = !memoRemindCfg().en;
 memoRemindSetCfg({ en: on ? 1 : 0 }); memoRenderRemind();
-toast(on ? '已开启：他 会偶尔在聊天里提醒你的备忘' : '已关闭：他 不再提醒备忘');
+toast(on ? '已开启：他会偶尔在聊天里提醒你的备忘' : '已关闭：他不再提醒备忘');
 });
 if (memoRemindProbBtn) memoRemindProbBtn.addEventListener('click', () => {
 if (editingNow()) return;
