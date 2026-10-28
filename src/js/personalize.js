@@ -3027,6 +3027,16 @@ try {
           txBtn.style.cssText = 'padding:7px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);font-size:11.5px;cursor:pointer';
           txBtn.addEventListener('click', () => { d.style.display = 'none'; try { enterDecor(); } catch (e) {} });
           wrap.appendChild(txBtn);
+          // 2026-10-28：抽屉里也留一个小组件 CSS 入口（与设置页 #row-widget-css 同一条链路）
+          const wCssBtn = document.createElement('button');
+          wCssBtn.textContent = '小组件 CSS（自定义样式）';
+          wCssBtn.style.cssText = 'padding:7px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);font-size:11.5px;cursor:pointer';
+          wCssBtn.addEventListener('click', () => {
+            d.style.display = 'none';
+            const row = document.getElementById('row-widget-css');
+            if (row) row.click(); else toast('入口暂不可达，请到设置 → 手机桌面美化 → 小组件 CSS');
+          });
+          wrap.appendChild(wCssBtn);
           wrap.appendChild(mkSlider('透明度', 'widget-opacity', '--widget-opacity', 40, 100, 5, '%', 100, (v) => {
             applyWidgetOpacity(parseInt(v, 10)); // 复用设置页 applier：写 --widget-opacity + 同步标签
           }));
@@ -3131,6 +3141,12 @@ try {
           });
           fitBtn.style.fontWeight = '600';
           wrap.appendChild(fitBtn);
+          // 2026-10-28：抽屉里也留一个图标 CSS 入口（与设置页 #row-icon-css 同一条链路）
+          wrap.appendChild(mkAct('图标 CSS（自定义样式）', () => {
+            d.style.display = 'none';
+            const row = document.getElementById('row-icon-css');
+            if (row) row.click(); else toast('入口暂不可达，请到设置 → 手机桌面美化 → 图标 CSS');
+          }));
           const note = document.createElement('div');
           note.style.cssText = 'font-size:10.5px;color:var(--muted,#999);line-height:1.5';
           note.textContent = '换单个图标＝点「上传单个图标图片」后点桌面图标选「上传图片」；换一批用批量上传。上传过的图片可单独调「缩放 / 水平位置 / 垂直位置」，即时生效、不用重新上传。';
@@ -3770,6 +3786,170 @@ try {
   }
   document.addEventListener('contact-switched', applyAppNameColor);
 
+  // ===== 2026-10-28 桌面小组件 / 图标 自定义 CSS =====
+  // 与聊天气泡 CSS 同一套用法：直接写声明时自动包到默认目标；写选择器时统一补
+  // #page-phone 前缀，只作用手机桌面页（聊天/群聊/设置页不会被误伤）。per-cid store，
+  // 随「美化方案」导出/导入与「恢复全部默认」走（键已登记进 BEAUTY_KEYS）。
+  const DESK_WIDGET_CSS_KEY = 'desk-widget-css';
+  const DESK_ICON_CSS_KEY = 'desk-icon-css';
+  const DESK_CSS_ROOT = '#page-phone';
+  const DESK_WIDGET_CSS_TARGET = '[data-card-bg]';
+  const DESK_ICON_CSS_TARGET = '.app .app-ico';
+
+  // 纯声明模式：逐条补 !important，压过现有主题/滑块样式（与气泡 CSS 的声明模式同口径）。
+  // 用分号切分；值里带分号的 dataURL 极少见，真遇到时用户可改用选择器写法。
+  const deskDeclsImportant = (decl) => String(decl || '').split(';').map(function (part) {
+    const s = part.trim();
+    if (!s) return '';
+    return /!\s*important$/i.test(s) ? s : s + '!important';
+  }).filter(Boolean).join(';');
+
+  function scopeDeskCss(css, fallbackSel) {
+    css = String(css || '').replace(/<\/style/gi, '<\\/style').trim();
+    if (!css) return '';
+    if (css.indexOf('{') < 0) {
+      const decl = deskDeclsImportant(css);
+      return decl ? DESK_CSS_ROOT + ' ' + fallbackSel + '{' + decl + '}' : '';
+    }
+    // 选择器模式：借 CSSOM 逐条补 #page-phone 前缀（和聊天「卡片 CSS」同一做法），
+    // @media / @supports / @layer / @container 递归处理，@keyframes 原样保留，@import 丢弃。
+    const host = document.createElement('style');
+    host.media = 'not all';
+    host.textContent = css;
+    document.head.appendChild(host);
+    try {
+      const sheet = host.sheet;
+      if (!sheet) return '';
+      const scopeSelector = (sel) => String(sel || '').split(',').map(function (part) {
+        part = part.trim();
+        if (!part) return part;
+        if (part.indexOf(DESK_CSS_ROOT) === 0) return part;
+        return DESK_CSS_ROOT + ' ' + part;
+      }).join(', ');
+      const walk = function (rules) {
+        for (let i = 0; i < rules.length; i++) {
+          const r = rules[i];
+          if (!r) continue;
+          if (r.type === 1) {
+            try {
+              r.selectorText = scopeSelector(r.selectorText);
+              const ss = r.style;
+              for (let j = ss.length - 1; j >= 0; j--) {
+                const p = ss[j];
+                const v = ss.getPropertyValue(p);
+                if (v && ss.getPropertyPriority(p) !== 'important') ss.setProperty(p, v, 'important');
+              }
+            } catch (e) {}
+          } else if (r.type === 4 || r.type === 12 || (r.cssRules && r.type !== 7)) {
+            try { walk(r.cssRules); } catch (e) {}
+          }
+        }
+      };
+      walk(sheet.cssRules);
+      const out = [];
+      for (let i = 0; i < sheet.cssRules.length; i++) {
+        const r = sheet.cssRules[i];
+        if (r && r.type === 3) continue; // @import 不执行
+        out.push(r.cssText);
+      }
+      return out.join('\n');
+    } catch (e) {
+      return '';
+    } finally {
+      host.remove();
+    }
+  }
+
+  function applyDeskCss(key, styleId, valId, fallbackSel) {
+    const old = document.getElementById(styleId);
+    if (old) old.remove();
+    let css = '';
+    try { css = String(store.get(key) || '').trim(); } catch (e) {}
+    const val = document.getElementById(valId);
+    if (val) val.textContent = css ? '已设置' : '默认';
+    if (!css) return;
+    const out = scopeDeskCss(css, fallbackSel);
+    if (!out) {
+      if (val) val.textContent = '格式有误';
+      return;
+    }
+    const st = document.createElement('style');
+    st.id = styleId;
+    st.textContent = out;
+    document.head.appendChild(st);
+  }
+  function applyDeskWidgetCss() {
+    applyDeskCss(DESK_WIDGET_CSS_KEY, 'desk-widget-css-style', 'widget-css-val', DESK_WIDGET_CSS_TARGET);
+  }
+  function applyDeskIconCss() {
+    applyDeskCss(DESK_ICON_CSS_KEY, 'desk-icon-css-style', 'icon-css-val', DESK_ICON_CSS_TARGET);
+  }
+
+  function bindDeskCssRow(opts) {
+    const row = document.getElementById(opts.rowId);
+    if (!row) return;
+    row.addEventListener('click', function () {
+      if (!window.openTCPanel) {
+        try { toast('样式编辑器还没加载上，请刷新页面再试'); } catch (e) {}
+        return;
+      }
+      window.openTCPanel(opts.title, '' +
+        '<div class="sm-fld-hint" style="margin-bottom:8px">' + opts.hint + '</div>' +
+        '<textarea id="' + opts.inputId + '" class="tc-input" rows="6" placeholder="' + opts.placeholder + '"></textarea>' +
+        '<div class="mail-actions"><button class="cc-tool" id="' + opts.clearId + '">清空</button><button class="cc-tool" id="' + opts.okId + '">应用</button></div>');
+      const ta = document.getElementById(opts.inputId);
+      if (ta) {
+        try { ta.value = store.get(opts.key) || ''; } catch (e) { ta.value = ''; }
+      }
+      const clearBtn = document.getElementById(opts.clearId);
+      if (clearBtn) clearBtn.addEventListener('click', function () {
+        try { store.remove(opts.key); } catch (e) {}
+        const mask = document.getElementById('tc-mask');
+        if (mask) mask.hidden = true;
+        opts.apply();
+        try { toast(opts.clearToast); } catch (e) {}
+      });
+      const okBtn = document.getElementById(opts.okId);
+      if (okBtn) okBtn.addEventListener('click', function () {
+        const v = ta ? String(ta.value || '').trim() : '';
+        try { if (v) store.set(opts.key, v); else store.remove(opts.key); } catch (e) {}
+        const mask = document.getElementById('tc-mask');
+        if (mask) mask.hidden = true;
+        opts.apply();
+        try { toast(v ? opts.applyToast : opts.clearToast); } catch (e) {}
+      });
+    });
+  }
+
+  bindDeskCssRow({
+    rowId: 'row-widget-css',
+    key: DESK_WIDGET_CSS_KEY,
+    inputId: 'desk-widget-css-input',
+    clearId: 'desk-widget-css-clear',
+    okId: 'desk-widget-css-ok',
+    title: '小组件 CSS',
+    hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.12)</code>（自动应用到所有带背景的桌面小组件卡片）<br>· 或写选择器，如 <code>.music-widget{...}</code>、<code>[data-card-bg=&quot;week&quot;]{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。',
+    placeholder: 'border-radius: 24px;&#10;box-shadow: 0 8px 24px rgba(0,0,0,.12);',
+    apply: applyDeskWidgetCss,
+    applyToast: '小组件样式已应用',
+    clearToast: '已清空小组件样式',
+  });
+  bindDeskCssRow({
+    rowId: 'row-icon-css',
+    key: DESK_ICON_CSS_KEY,
+    inputId: 'desk-icon-css-input',
+    clearId: 'desk-icon-css-clear',
+    okId: 'desk-icon-css-ok',
+    title: '图标 CSS',
+    hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.18)</code>（自动应用到所有桌面图标外框）<br>· 或写选择器，如 <code>.app[data-app=&quot;chat&quot;] .app-ico{...}</code>、<code>.app-ico img{...}</code>、<code>.app-name{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。',
+    placeholder: 'border-radius: 16px;&#10;box-shadow: 0 4px 12px rgba(0,0,0,.18);',
+    apply: applyDeskIconCss,
+    applyToast: '图标样式已应用',
+    clearToast: '已清空图标样式',
+  });
+  applyDeskWidgetCss();
+  applyDeskIconCss();
+
   // 颜色分区预览面板样式（一次性注入；各部位用 CSS 变量着色，用户改色时变量实时变 → 预览自动更新，零额外 JS 开销）
   if (!document.getElementById('desk-cp-style')) {
     const cpStyle = document.createElement('style');
@@ -4057,6 +4237,8 @@ try {
     'bg-blur', 'bg-mask-op',
     'desk-font-size', 'desk-card-scale', 'desk-card-radius',
     'widget-opacity', 'ico-radius', 'ico-shape',
+    // 2026-10-28：小组件 / 图标自定义 CSS 随方案导出/导入、撤销快照与「恢复全部默认」走
+    'desk-widget-css', 'desk-icon-css',
     'widget-bg-color', 'widget-border-color', 'widget-btn-color', 'widget-btn-text-color', 'widget-heart-color',
     'app-name-color',
     // #769：底部导航栏样式键（图片本体 tab-icon-<page> 为动态键，在 collectBeauty 单独收集）
@@ -11534,6 +11716,9 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
     try { rescueDeskVisuals(); } catch (e) {}
     // v3.6.x：小组件三色（背景/边框/按钮）按桌面独立——切换后重新应用新桌面的值
     try { applyWidgetColor(store.get('widget-bg-color') || '#ffffff'); } catch (e) {}
+    // 2026-10-28：小组件 / 图标自定义 CSS 同为 per-cid 键——切桌面按新命名空间重注入/移除
+    try { applyDeskWidgetCss(); } catch (e) {}
+    try { applyDeskIconCss(); } catch (e) {}
     try { applyWidgetBorder(store.get('widget-border-color') || 'rgba(0,0,0,.1)'); } catch (e) {}
     try { applyWidgetBtn(store.get('widget-btn-color') || '#111111'); } catch (e) {}
     try { applyWidgetBtnText(store.get('widget-btn-text-color') || '#ffffff'); } catch (e) {}
