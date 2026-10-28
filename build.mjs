@@ -6794,6 +6794,12 @@ const FIX_SENTINELS = [
   // ==== 2026-10-28 #1588 底栏当前分区阴影块 ====
   { name: '#1588a 底栏当前分区阴影块（删＝选中 tab 退回透明背景，分区不可见）', file: 'css/tabbar.css', needle: 'background:var(--tabbar-active-bg, rgba(0,0,0,.05));' },
   { name: '#1588b 深色底栏选中块阴影（删＝深色下只剩纯色块，没有阴影层次）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); box-shadow:0 2px 10px rgba(0,0,0,.35); }' },
+  // ==== 2026-10-28 #1589 桌面小组件 / 图标自定义 CSS ====
+  { name: '#1589a 小组件 CSS 入口（删＝桌面小组件没有自定义样式入口）', file: 'template.html', needle: 'id="row-widget-css"' },
+  { name: '#1589b 图标 CSS 入口（删＝桌面图标没有自定义样式入口）', file: 'template.html', needle: 'id="row-icon-css"' },
+  { name: '#1589c 桌面 CSS 作用域（删＝用户选择器逃出桌面页，污染聊天/全局）', file: 'js/personalize.js', needle: 'function scopeDeskCss(css, fallbackSel) {' },
+  { name: '#1589d 桌面 CSS 随联系人切换重应用（删＝切桌面后仍套上一个桌面的 CSS）', file: 'js/personalize.js', needle: 'try { applyDeskWidgetCss(); } catch (e) {}' },
+  { name: '#1589e 桌面 CSS 随美化方案/恢复默认（删＝方案导入导出、恢复全部默认漏掉 CSS）', file: 'js/personalize.js', needle: '\'desk-widget-css\', \'desk-icon-css\',' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
