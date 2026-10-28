@@ -24,12 +24,17 @@
 .tabbar.tabbar-blur-on { -webkit-backdrop-filter:blur(var(--tabbar-blur, 10px)); backdrop-filter:blur(var(--tabbar-blur, 10px)); }
 .tabbar .tab {
   display:flex; align-items:center; justify-content:center; flex:1;
-  color:var(--muted); cursor:pointer; padding:12px 6px; border-radius:14px;
-  transition:color .18s ease, background .18s ease, opacity .18s ease;
+  color:var(--muted); cursor:pointer; padding:12px 6px; border-radius:16px;
+  transition:color .18s ease, background .18s ease, box-shadow .18s ease, opacity .18s ease;
   /* #769 整栏透明度的图标层（personalize.js 已算好 12% 下限，见 applyTabbarStyle） */
   opacity:var(--tabbar-ico-a, 1);
 }
-.tabbar .tab.active { color:var(--ink); background:transparent; }
+/* 当前分区：浅色块 + 软阴影，切 tab 时随 background/box-shadow 过渡（深色模式见 dark.css） */
+.tabbar .tab.active {
+  color:var(--ink);
+  background:var(--tabbar-active-bg, rgba(0,0,0,.05));
+  box-shadow:var(--tabbar-active-shadow, 0 2px 7px rgba(0,0,0,.055));
+}
 .tabbar .tab svg { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); }
 /* #769 上传的按钮图片：与默认 SVG 同尺寸同槽位（svg 隐藏、img 顶上，见 paintTabIcon），
    圆角随尺寸等比缩放（23px 档 ≈ 7px，与桌面图标观感一致） */
