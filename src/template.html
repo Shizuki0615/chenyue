@@ -6109,8 +6109,12 @@
             </div>
             <div class="chat-ask-hist-list" id="chat-ask-hist-list" hidden></div>
           </div>
-          <!-- 2026-10-28：听歌 / 读书邀请直达——邀请字卡或手输里提到这两类，他 同意后直接打开对应模块页 -->
-          <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>邀请里提到「听歌」或「读书」，他 同意后会直接打开对应页面</div>
+          <!-- 2026-10-28：听歌 / 读书邀请直达——快捷按钮发送时自带类型，他 同意后直接打开对应模块页 -->
+          <div class="chat-ask-quick" id="chat-ask-quick" hidden>
+            <button type="button" class="cc-tool" id="chat-ask-quick-music">🎵 一起听歌</button>
+            <button type="button" class="cc-tool" id="chat-ask-quick-reading">📖 一起读书</button>
+          </div>
+          <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>「一起听歌 / 一起读书」邀请，他 同意后会直接打开对应页面；自定义邀请里提到「听歌 / 读书」也算</div>
           <div class="invite-list" id="invite-list" hidden></div>
           <div class="dec-inp-wrap chat-ask-inp-wrap"><input type="text" class="chat-ask-input" id="chat-ask-input" placeholder="想邀请他做什么？" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><button type="button" class="dec-inp-clear" data-clear="chat-ask-input" aria-label="清空" title="清空">✕</button></div>
           <button type="button" class="chat-ask-bulk" id="chat-ask-bulk" hidden>批量设置问卷</button>

@@ -1028,6 +1028,10 @@ body.cs-sys-plain .msg-poke {
 .invite-list .cc-item { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1); }
 .invite-list .cc-item:active { background:rgba(0,0,0,.04); }
 .invite-list .cc-empty { padding:18px 0; }
+/* 2026-10-28：听歌 / 读书快捷邀请（仅「邀请他」模式显示；发送时自带类型，不靠内容猜） */
+.chat-ask-quick { display:flex; gap:8px; margin-bottom:8px; }
+.chat-ask-quick .cc-tool { flex:1; }
+.chat-ask-quick[hidden] { display:none; }
 /* 2026-10-28：听歌 / 读书邀请直达说明（仅「邀请他」模式显示；问问TA 模式下与字卡区一起收） */
 .chat-ask-mod-hint { font-size:11px; line-height:1.55; color:var(--muted); padding:2px 2px 8px; }
 .chat-ask-mod-hint[hidden] { display:none; }

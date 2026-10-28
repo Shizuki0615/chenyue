@@ -12140,7 +12140,9 @@ const isInvite = chatAskMode === 'invite';
 	// v3.26.x：批量设置问卷按钮只在「问问TA」模式显示（邀请TA 模式隐藏）
 	const bulkBtn = document.getElementById('chat-ask-bulk');
 	if (bulkBtn) bulkBtn.hidden = isInvite;
-	// 2026-10-28：听歌 / 读书邀请直达说明随「邀请他」模式一起显示
+	// 2026-10-28：听歌 / 读书快捷邀请与直达说明随「邀请他」模式一起显示
+	const quickInv = document.getElementById('chat-ask-quick');
+	if (quickInv) quickInv.hidden = !isInvite;
 	const modHint = document.getElementById('chat-ask-mod-hint');
 	if (modHint) modHint.hidden = !isInvite;
 	// #1188：邀请记录块只在「邀请TA」模式显示（问问TA 模式与批量问卷按钮同款收法）；
@@ -12320,8 +12322,9 @@ function inviteOpenModule(kind) {
 }
 // v3.26.x：邀请发送逻辑从 submitChatAsk 抽出，供「我的邀请」字卡点卡直接复用（可重复发送，
 // 行为与手动输入一致：TA 接受/拒绝/未回应，随消息持久化）
-function sendInviteContent(content) {
-const inviteKind = inviteModuleOf(content);
+function sendInviteContent(content, kind) {
+// 2026-10-28：快捷按钮传死类型（话术以后被人改掉也不会认错）；字卡/手输仍走关键词兜底
+const inviteKind = (kind === 'music' || kind === 'reading') ? kind : inviteModuleOf(content);
 closeChatAskPanel();
 addRec({ side: 'out', text: '邀请：' + content, special: 'invite', inviteContent: content, inviteStatus: 'pending' });
 const inviteIdx = msgs.length - 1;
@@ -12416,6 +12419,14 @@ setTimeout(() => { if (!sameCid()) return; maybeFollowupAskCard(); }, 1200);
 applyInviteResult();
 }, 1500 + Math.random() * 2500);
 }
+// 2026-10-28：快捷邀请按钮——点卡片就走同一条发送链，并把类型钉死给 sendInviteContent
+function bindInviteQuickBtn(id, content, kind) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.addEventListener('click', function () { sendInviteContent(content, kind); });
+}
+bindInviteQuickBtn('chat-ask-quick-music', '想和你一起听歌', 'music');
+bindInviteQuickBtn('chat-ask-quick-reading', '想和你一起读书', 'reading');
 // ===================== #1188 邀请记录（「邀请TA」半框顶部） =====================
 // 需求（用户直派）：「邀请卡片功能缺少邀请历史记录」＋「当天的历史记录只显示当天的，其他时间的
 // 记录默认折叠，分页加载」。
