@@ -6801,6 +6801,13 @@ const FIX_SENTINELS = [
   { name: '#1589d 桌面 CSS 随联系人切换重应用（删＝切桌面后仍套上一个桌面的 CSS）', file: 'js/personalize.js', needle: 'try { applyDeskWidgetCss(); } catch (e) {}' },
   { name: '#1589e 桌面 CSS 随美化方案/恢复默认（删＝方案导入导出、恢复全部默认漏掉 CSS）', file: 'js/personalize.js', needle: '\'desk-widget-css\', \'desk-icon-css\',' },
   { name: '#1589f 小组件选择器插入（删＝组件下拉/插入按钮消失，又回到手写选择器）', file: 'js/personalize.js', needle: 'function insertDeskWidgetSelector(ta, type) {' },
+  // ==== 2026-10-28 #1590 听歌 / 读书邀请（TA 同意后直达模块页） ====
+  { name: '#1590a 邀请内容识别听歌/读书（删＝同意后停在聊天，不打开对应模块）', file: 'js/chat.js', needle: 'function inviteModuleOf(content) {' },
+  { name: '#1590b 邀请同意后直达模块页（删＝识别了也不再跳转）', file: 'js/chat.js', needle: 'if (status === \'接受\' && inviteKind && sameCid()) {' },
+  { name: '#1590c 邀请直达走桌面图标同一条打开链（删＝跳转绕过模块自身的开页/渲染）', file: 'js/chat.js', needle: 'function inviteOpenModule(kind) {' },
+  { name: '#1590d 邀请面板直达说明（删＝用户不知道邀请听歌/读书会直接开页）', file: 'template.html', needle: 'id="chat-ask-mod-hint"' },
+  { name: '#1590e 说明只在邀请他模式显示（删＝问问TA 面板也挂着听歌/读书提示）', file: 'js/chat.js', needle: 'if (modHint) modHint.hidden = !isInvite;' },
+  { name: '#1590f 直达说明样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出提示）', file: 'css/chat-main.css', needle: '.chat-ask-mod-hint[hidden] { display:none; }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

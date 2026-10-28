@@ -9430,6 +9430,8 @@ if (invList) invList.hidden = !isInvite;
 if (invSave) invSave.hidden = !isInvite;
 const bulkBtn = document.getElementById('chat-ask-bulk');
 if (bulkBtn) bulkBtn.hidden = isInvite;
+const modHint = document.getElementById('chat-ask-mod-hint');
+if (modHint) modHint.hidden = !isInvite;
 const invHist = document.getElementById('chat-ask-hist');
 if (invHist) invHist.hidden = !isInvite;
 if (isInvite) {
@@ -9550,7 +9552,23 @@ applyAskAnswer();
 }, askThinkSecsLoad() * 1000); // #809：思考时间用户可调（1~10 秒），默认 3 秒；原 1500+rand*2500
 }
 }
+function inviteModuleOf(content) {
+const s = String(content || '');
+const m = s.search(/听歌|听音乐|一起听|听一首|听听歌|放首歌|放首音乐/);
+const r = s.search(/读书|看书|共读|读会儿书|读一会书|看会儿书|看一会书|读一本书|读本书/);
+if (m < 0 && r < 0) return '';
+if (m < 0) return 'reading';
+if (r < 0) return 'music';
+return r < m ? 'reading' : 'music';
+}
+function inviteOpenModule(kind) {
+if (kind !== 'music' && kind !== 'reading') return false;
+const app = document.querySelector('.app[data-app="' + kind + '"]');
+if (!app) return false;
+try { app.click(); return true; } catch (e) { return false; }
+}
 function sendInviteContent(content) {
+const inviteKind = inviteModuleOf(content);
 closeChatAskPanel();
 addRec({ side: 'out', text: '邀请：' + content, special: 'invite', inviteContent: content, inviteStatus: 'pending' });
 const inviteIdx = msgs.length - 1;
@@ -9610,6 +9628,19 @@ askBubbleAfterRender(el, rec, i);
 }
 }
 if (reply) addInTyped(reply, null, randInt(800, 1400));
+if (status === '接受' && inviteKind && sameCid()) {
+const chatPg = document.getElementById('page-chat');
+if (chatPg && !chatPg.hidden) {
+const modName = inviteKind === 'music' ? '音乐' : '读书';
+toast(myName + ' 答应了，正在打开' + modName + '…');
+setTimeout(function () {
+if (!sameCid()) return;
+const pg = document.getElementById('page-chat');
+if (!pg || pg.hidden) return;
+inviteOpenModule(inviteKind);
+}, 1200);
+}
+}
 try {
 const list = JSON.parse(store.get(histKey) || '[]');
 if (!list.some(x => x && x.ts === recTs)) {
