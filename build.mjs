@@ -6808,6 +6808,10 @@ const FIX_SENTINELS = [
   { name: '#1590d 邀请面板直达说明（删＝用户不知道邀请听歌/读书会直接开页）', file: 'template.html', needle: 'id="chat-ask-mod-hint"' },
   { name: '#1590e 说明只在邀请他模式显示（删＝问问TA 面板也挂着听歌/读书提示）', file: 'js/chat.js', needle: 'if (modHint) modHint.hidden = !isInvite;' },
   { name: '#1590f 直达说明样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出提示）', file: 'css/chat-main.css', needle: '.chat-ask-mod-hint[hidden] { display:none; }' },
+  { name: '#1590g 听歌/读书快捷邀请入口（删＝邀请面板只剩关键词猜测一条路）', file: 'template.html', needle: 'id="chat-ask-quick"' },
+  { name: '#1590h 快捷邀请只随邀请他模式显示（删＝问问TA 面板也挂着一起听歌/读书）', file: 'js/chat.js', needle: 'if (quickInv) quickInv.hidden = !isInvite;' },
+  { name: '#1590i 快捷邀请发送时钉死类型（删＝类型又回到靠话术关键词猜）', file: 'js/chat.js', needle: 'sendInviteContent(content, kind);' },
+  { name: '#1590j 快捷邀请样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出按钮）', file: 'css/chat-main.css', needle: '.chat-ask-quick[hidden] { display:none; }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

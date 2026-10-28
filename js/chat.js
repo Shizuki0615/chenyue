@@ -9430,6 +9430,8 @@ if (invList) invList.hidden = !isInvite;
 if (invSave) invSave.hidden = !isInvite;
 const bulkBtn = document.getElementById('chat-ask-bulk');
 if (bulkBtn) bulkBtn.hidden = isInvite;
+const quickInv = document.getElementById('chat-ask-quick');
+if (quickInv) quickInv.hidden = !isInvite;
 const modHint = document.getElementById('chat-ask-mod-hint');
 if (modHint) modHint.hidden = !isInvite;
 const invHist = document.getElementById('chat-ask-hist');
@@ -9567,8 +9569,8 @@ const app = document.querySelector('.app[data-app="' + kind + '"]');
 if (!app) return false;
 try { app.click(); return true; } catch (e) { return false; }
 }
-function sendInviteContent(content) {
-const inviteKind = inviteModuleOf(content);
+function sendInviteContent(content, kind) {
+const inviteKind = (kind === 'music' || kind === 'reading') ? kind : inviteModuleOf(content);
 closeChatAskPanel();
 addRec({ side: 'out', text: '邀请：' + content, special: 'invite', inviteContent: content, inviteStatus: 'pending' });
 const inviteIdx = msgs.length - 1;
@@ -9655,6 +9657,13 @@ setTimeout(() => { if (!sameCid()) return; maybeFollowupAskCard(); }, 1200);
 applyInviteResult();
 }, 1500 + Math.random() * 2500);
 }
+function bindInviteQuickBtn(id, content, kind) {
+const b = document.getElementById(id);
+if (!b) return;
+b.addEventListener('click', function () { sendInviteContent(content, kind); });
+}
+bindInviteQuickBtn('chat-ask-quick-music', '想和你一起听歌', 'music');
+bindInviteQuickBtn('chat-ask-quick-reading', '想和你一起读书', 'reading');
 const IH_PAGE_DAYS = 5;
 let ihPastShown = IH_PAGE_DAYS; // 已露出的「更早」日期组数（不含今天）
 const ihOpenDays = {};          // 手动展开的更早日期组（key = 年-月-日）
