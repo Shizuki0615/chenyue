@@ -1028,6 +1028,8 @@ body.cs-sys-plain .msg-poke {
 .invite-list .cc-item { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1); }
 .invite-list .cc-item:active { background:rgba(0,0,0,.04); }
 .invite-list .cc-empty { padding:18px 0; }
+/* 2026-10-28：编辑开关打开时字卡只用于改/删，不再显示「可点发送」的手型 */
+.invite-list .cc-item.inv-editing { cursor:default; }
 /* 2026-10-28：听歌 / 读书快捷邀请（仅「邀请他」模式显示；发送时自带类型，不靠内容猜） */
 .chat-ask-quick { display:flex; gap:8px; margin-bottom:8px; }
 .chat-ask-quick .cc-tool { flex:1; }
@@ -1042,6 +1044,9 @@ body.cs-sys-plain .msg-poke {
 /* v3.x：邀请TA ——顶部分组栏批量管理 chip 选中态 */
 .inv-g-batch { border-style:dashed; }
 .inv-g-batch.on { background:#111; color:#fff; border-color:#111; }
+/* 2026-10-28：编辑开关 chip（与批量管理同款外观；关闭时字卡只可点卡发送） */
+.inv-g-edit { border-style:dashed; }
+.inv-g-edit.on { background:#111; color:#fff; border-color:#111; }
 /* v3.x：邀请TA ——批量模式下自建分组 chip 上的 ✎/✕ 迷你操作符（预设分组不显示） */
 .inv-g-op {
   display:inline-flex; align-items:center; justify-content:center;

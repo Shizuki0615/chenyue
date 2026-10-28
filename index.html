@@ -2322,6 +2322,7 @@ font-family:inherit; -webkit-tap-highlight-color:transparent;
 .invite-list .cc-item { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1); }
 .invite-list .cc-item:active { background:rgba(0,0,0,.04); }
 .invite-list .cc-empty { padding:18px 0; }
+.invite-list .cc-item.inv-editing { cursor:default; }
 .chat-ask-quick { display:flex; gap:8px; margin-bottom:8px; }
 .chat-ask-quick .cc-tool { flex:1; }
 .chat-ask-quick[hidden] { display:none; }
@@ -2332,6 +2333,8 @@ font-family:inherit; -webkit-tap-highlight-color:transparent;
 #chat-ask-save[hidden] { display:none; }
 .inv-g-batch { border-style:dashed; }
 .inv-g-batch.on { background:#111; color:#fff; border-color:#111; }
+.inv-g-edit { border-style:dashed; }
+.inv-g-edit.on { background:#111; color:#fff; border-color:#111; }
 .inv-g-op {
 display:inline-flex; align-items:center; justify-content:center;
 width:17px; height:17px; margin-left:3px; border-radius:50%;
@@ -11574,7 +11577,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793168842354" data-version="v8.61.9">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793174508001" data-version="v8.62.0">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13157,7 +13160,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.61.9</div>
+          <div class="val" id="about-ver-val">v8.62.0</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13276,7 +13279,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.61.9</div>
+      <div class="ver">Mochi 字卡传讯 v8.62.0</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13685,7 +13688,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.61.9</span>
+              <span class="lic-ver">v8.62.0</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -17868,10 +17871,6 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <button class="more-item" id="more-ask" data-mcat="chat" title="问问他（我向他提问，他 来回答）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 114.8.4c0 1.7-2.4 2.1-2.4 3.3"/><path d="M12 16.7h.01"/></svg></span>
             <span>问问他</span>
-          </button>
-          <button class="more-item" id="more-reading" data-mcat="chat" title="读书（书架与共读）">
-            <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></span>
-            <span>读书</span>
           </button>
           <button class="more-item" id="more-search" data-mcat="tool" title="搜索聊天记录">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
@@ -23486,4 +23485,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvrqfhwy -->
+<!-- __MOCHI_EOF__ mvrtsxk1 -->

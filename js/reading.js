@@ -5305,13 +5305,6 @@ e.preventDefault();
 rdOpen();
 return;
 }
-if (el.closest('#more-reading')) {
-e.preventDefault();
-const mp = document.getElementById('chat-more-panel');
-if (mp) mp.hidden = true;
-rdOpen();
-return;
-}
 if (el.closest('#rd-hero-go')) {
 e.preventDefault();
 const btn = document.getElementById('rd-hero-go');
