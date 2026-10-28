@@ -2062,7 +2062,8 @@ return;
 p.comments = p.comments || [];
 const pcfg = feedCfgFor(p.owner || 'default');
 const commentText = pickReplyContent(pcfg, p.owner || 'default');
-p.comments.push(stampAuthor({ content: content, ts: Date.now(), replies: [] }, activeMe()));
+const myCommentTs = Date.now();
+p.comments.push(stampAuthor({ content: content, ts: myCommentTs, replies: [] }, activeMe()));
 save(list);
 hideCommentBar();
 refreshPostCard(pid);
@@ -2075,11 +2076,19 @@ const p2b = list2.find(x => x.id === pid);
 if (!p2b) return;
 p2b.comments = p2b.comments || [];
 const taText = pickReplyContent(cfg, p2b.owner || 'default');
-p2b.comments.push(stampAuthor({ content: taText, ts: Date.now(), replies: [] }, taAuthorOf(p2b)));
+let myCi = -1;
+for (let i = p2b.comments.length - 1; i >= 0; i--) {
+const c0 = p2b.comments[i];
+if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === 'me') { myCi = i; break; }
+}
+if (myCi < 0) return; // 评论已被删/数据被清：宁可静默，也不把回复写成一条无主的顶级评论
+const myC = p2b.comments[myCi];
+myC.replies = myC.replies || [];
+myC.replies.push(stampAuthor({ content: taText, ts: Date.now(), to: myC.authorName || feedUserName() }, taAuthorOf(p2b)));
 save(list2);
 refreshPostCard(pid);
 const taName2 = p2b.taName || taFeedNameFor(p2b.owner || 'default');
-const loc = { ci: p2b.comments.length - 1 };
+const loc = { ci: myCi, ri: myC.replies.length - 1 };
 if ((p2b.role || p2.by) === 'me') addNotice('comment', p2b.id, taName2 + ' 评论了你的动态：' + noticeTextClean(taText), p2b.owner || 'default', loc);
 else addNotice('comment', p2b.id, taName2 + ' 回复了你的评论：' + noticeTextClean(taText), p2b.owner || 'default', loc);
 } catch (eC) {} });
