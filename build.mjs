@@ -6791,6 +6791,9 @@ const FIX_SENTINELS = [
   { name: '#1587d 临时失败文案（删＝用户看到「没找到歌词」而不是「服务暂时没响应」）', file: 'js/music-player.js', needle: '歌词服务暂时没响应' },
   { name: '#1587e 后端歌词短超时（删＝歌词要等 15 秒后端超时才回落 LRCLIB）', file: 'js/music-player.js', needle: 'try { xhr.timeout = lim; } catch (e) {}' },
   { name: '#1587f 漫游曲目清退时连带清歌词缓存（删＝换一批 FM 歌就留下无主歌词键）', file: 'js/music-player.js', needle: 'removed.forEach(id => {' },
+  // ==== 2026-10-28 #1588 底栏当前分区阴影块 ====
+  { name: '#1588a 底栏当前分区阴影块（删＝选中 tab 退回透明背景，分区不可见）', file: 'css/tabbar.css', needle: 'background:var(--tabbar-active-bg, rgba(0,0,0,.05));' },
+  { name: '#1588b 深色底栏选中块阴影（删＝深色下只剩纯色块，没有阴影层次）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); box-shadow:0 2px 10px rgba(0,0,0,.35); }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

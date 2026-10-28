@@ -390,7 +390,7 @@
    tabbar.css 的 color-mix 透明度链在深色模式下同样生效（旧写法盖死 background，
    背景透明度滑杆在深色下会整条失效） */
 [data-theme="dark"] .tabbar { --tabbar-base-bg:var(--dark-card-92); border-color:var(--dark-border-12); }
-[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); }
+[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); box-shadow:0 2px 10px rgba(0,0,0,.35); }
 /* SVG stroke 兜底 */
 [data-theme="dark"] .ch-back svg,
 [data-theme="dark"] .set-row .ico svg,
