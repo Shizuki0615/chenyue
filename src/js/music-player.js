@@ -5850,6 +5850,20 @@
     prewarmLocalAudio(trackId);
   }
   // ================= TA 互动：请求一起听歌 =================
+  // 2026-10-28：回复设置「联系人主动邀请 → 主动邀请听歌」的入口——命中后直接挑一首，
+  // 弹与 TA 概率路径同一个听歌邀请面板（渲染+接线成对，见 #994）；无歌/已有邀请在屏就让路。
+  window.taMusicInviteNow = function () {
+    try {
+      if (document.hidden || !library.length) return false;
+      if (pendingInviteOnScreen()) return false;
+      if (reqData) return false;
+      const track = library[Math.floor(Math.random() * library.length)];
+      if (!openMusicInvitePanel(track.id, !!currentId)) return false;
+      cooldownAt = Date.now(); // 与概率路径共用冷却，避免紧接着再弹第二条把你这条盖掉
+      prewarmLocalAudio(track.id);
+      return true;
+    } catch (e) { return false; }
+  };
   // 聊天回复完成后由 chat.js 调用（延后 2 秒，仿星言）
   window.maybeMusicRequest = function () {
     try {

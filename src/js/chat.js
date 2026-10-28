@@ -9527,6 +9527,8 @@ if (!_cpAny()) _cpStop();
 });
 try { if (window.mochiOnDataReady) window.mochiOnDataReady(function () { _cpPump(window.__activeCid || 'default'); if (_cpAny()) _cpStart(); }); } catch (e) {}
 function openInvitePanelFor(kind, name) {
+// 2026-10-28：读书邀请同意后直接打开书架（与桌面读书图标同一条 rdOpen）
+if (kind === 'reading') { try { if (window.readingOpen) window.readingOpen(); } catch (e) {} return; }
 if (kind === 'cuddle') {
 try { if (navigator.vibrate) navigator.vibrate([30, 60, 90]); } catch (e) {}
 try { const _cr = presetReplyPick('贴贴·回应', CUDDLE_REPLIES); if (_cr) addInTyped(name + ' ' + _cr); } catch (e) {}
@@ -9555,12 +9557,20 @@ gomoku: { title: '游戏邀请' },
 linkup: { title: '游戏邀请' },
 match3: { title: '游戏邀请' },
 auction: { title: '游戏邀请' },
-cuddle: { title: '贴贴邀请' }
+cuddle: { title: '贴贴邀请' },
+reading: { title: '读书邀请' }
 };
+// 2026-10-28：他主动邀你读书（回复设置「主动邀请读书」门）——话术内置，不占用字卡库题库
+const READING_INVITE_LINES = ['一起读会儿书吗？', '想和你共读一章，来嘛', '陪我读一会儿书好不好？', '书架里那本还没看完，一起读？'];
+const READING_DECLINE = ['现在不太想读呢。', '等会儿再一起读好不好。', '眼睛有点累，晚点陪你读。', '下次再一起读嘛。'];
 function sendTaInvite(inv, name) {
 const meta = INVITE_KIND_META[inv && inv.kind] || INVITE_KIND_META.rps;
+const _readingInv = inv.kind === 'reading';
 // v3.16.x：邀请消息带 gInv 游戏类型字段（渲染仍走 poke），供聊天统计「小游戏记录」识别 TA 主动邀请
-addIn(name + ' ' + (inv.text || ''), { special: 'poke', initiative: true, gInv: inv.kind });
+// 2026-10-28：读书不是小游戏，不带 gInv（否则会被「小游戏记录」误收）
+const _pokeOpts = { special: 'poke', initiative: true };
+if (inv.kind && !_readingInv) _pokeOpts.gInv = inv.kind;
+addIn(name + ' ' + (inv.text || ''), _pokeOpts);
 showTyping();
 setTimeout(() => {
 hideTyping();
@@ -9581,16 +9591,23 @@ return;
 }
 openInviteConfirm(name + ' 的' + meta.title, name + ' ' + (inv.text || ''), () => {
 if (_cuddleInv && window.chatAddSystem) window.chatAddSystem('你接受了 ' + name + ' 的贴贴邀请');
+// 2026-10-28：读书同意同样留痕（对齐贴贴/听歌/换头像邀请口径）
+if (_readingInv && window.chatAddSystem) window.chatAddSystem('你接受了 ' + name + ' 的读书邀请');
 openInvitePanelFor(inv.kind, name);
-}, _cuddleInv ? CUDDLE_DECLINE : null, _cuddleInv ? '贴贴·婉拒' : '游戏邀请·婉拒', _cuddleInv ? () => {
+}, _cuddleInv ? CUDDLE_DECLINE : (_readingInv ? READING_DECLINE : null), _cuddleInv ? '贴贴·婉拒' : (_readingInv ? '读书·婉拒' : '游戏邀请·婉拒'), _cuddleInv ? () => {
 if (window.chatAddSystem) window.chatAddSystem('你拒绝了 ' + name + ' 的贴贴邀请');
 const _cl = presetReplyPick('贴贴·婉拒', CUDDLE_DECLINE); if (_cl) addOut(_cl);
-} : null);
+} : (_readingInv ? () => {
+if (window.chatAddSystem) window.chatAddSystem('你拒绝了 ' + name + ' 的读书邀请');
+const _rl = presetReplyPick('读书·婉拒', READING_DECLINE); if (_rl) addOut(_rl);
+} : null));
 }, randInt(700, 1400));
 }
 window.sendTaInvite = sendTaInvite;
 function tryActiveInvite(c) {
 if (!chatVisible()) return false;
+// 2026-10-28：五类主动邀请共用的总闸（100＝不打折）；未命中就走普通主动消息，不叠任何邀请门
+if (!hit(cfgn(c, 'ai-invite-prob', 100))) return false;
 const name = chatPartnerName();
 let inv = null;
 if (window.taInviteDraw) {
@@ -9607,6 +9624,14 @@ const GINV_POOL = [
 { kind: 'auction', text: '拍卖会上新啦，来跟我抢拍品呀' }
 ];
 inv = GINV_POOL[Math.floor(Math.random() * GINV_POOL.length)]; }
+}
+// 2026-10-28：taInviteDraw 未命中时的两个独立门——他邀你读书 / 他邀你听歌。
+// 读书发一条内置话术的邀请（同意后开书架）；听歌直接弹他现有的听歌邀请面板（无歌/已有邀请在屏就让路）。
+if (!inv && cfgn(c, 'ai-reading-en', 1) === 1 && hit(cfgn(c, 'ai-reading-prob', 5))) {
+inv = { kind: 'reading', text: READING_INVITE_LINES[Math.floor(Math.random() * READING_INVITE_LINES.length)] };
+}
+if (!inv && cfgn(c, 'ai-music-en', 1) === 1 && hit(cfgn(c, 'ai-music-prob', 5))) {
+if (window.taMusicInviteNow && window.taMusicInviteNow()) return true;
 }
 if (!inv || !inv.text) return false;
 sendTaInvite(inv, name);
@@ -12348,16 +12373,21 @@ const sameCid = () => (window.__activeCid || 'default') === myCid;
 // v3.26.x #489：接受/拒绝与话术在发送时当场掷定（延迟落地时可能已在别的桌面，
 // pickAskCardReply/chatPartnerName 取的是别的联系人的池子/名字）
 const myName = chatPartnerName();
-const roll = Math.random();
+// 2026-10-28：接受/拒绝概率改由「回复设置 → 其他 → 我发出的邀请」控制（默认 60/25，剩余＝未回应）。
+// 拒绝先按剩余额度收窄，保证两项之和不超过 100；只覆盖字卡与快捷听歌/读书，音乐页邀请不受影响。
+const _invCfg = cfg();
+const invAcc = Math.max(0, Math.min(100, Number(cfgn(_invCfg, 'invite-accept-prob', 60)) || 0));
+const invRej = Math.max(0, Math.min(100 - invAcc, Number(cfgn(_invCfg, 'invite-reject-prob', 25)) || 0));
+const roll = Math.random() * 100;
 let status, answer, reply = null;
-if (roll < 0.6) {
+if (roll < invAcc) {
 status = '接受';
 answer = myName + ' 接受了你的邀请';
 const pool = window.getInteractPool
 ? window.getInteractPool('邀请他·接受', ['好，我答应你。', '可以呀。', '我陪你。', '走吧。', '嗯，陪你。'])
 : ['好，我答应你。', '可以呀。', '我陪你。', '走吧。', '嗯，陪你。'];
 reply = (window.pickAskCardReply ? window.pickAskCardReply(pool) : pool[Math.floor(Math.random() * pool.length)]);
-} else if (roll < 0.85) {
+} else if (roll < invAcc + invRej) {
 status = '拒绝';
 answer = myName + ' 拒绝了你的邀请';
 const pool = window.getInteractPool

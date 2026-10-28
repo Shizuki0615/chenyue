@@ -5469,6 +5469,7 @@ const el = e.target;
 if (el && el.id === 'rd-anno-search') rdRenderCards(el.value || '');
 if (el && el.id === 'rd-toc-search') rdRenderToc(false);
 });
+window.readingOpen = rdOpen;
 window.__readingProbe = {
 version: 2,
 readIndex: readIndex,

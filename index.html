@@ -11577,7 +11577,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793174508001" data-version="v8.62.0">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793177161814" data-version="v8.62.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13160,7 +13160,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.62.0</div>
+          <div class="val" id="about-ver-val">v8.62.1</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13279,7 +13279,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.62.0</div>
+      <div class="ver">Mochi 字卡传讯 v8.62.1</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13688,7 +13688,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.62.0</span>
+              <span class="lic-ver">v8.62.1</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -14871,6 +14871,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="gs-panel" data-rpanel="other" hidden>
           <div class="gs-title">联系人主动邀请</div>
           <div class="set-group glass">
+            <!-- 2026-10-28：主动邀请总闸——100＝不打折；只作用于邀请系列，不影响普通主动消息/分享字卡 -->
+            <div class="gs-row"><span>主动邀请总概率</span><div class="stepper" data-k="ai-invite-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-invite-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>主动邀请猜拳</span><label class="toggle"><input type="checkbox" id="ai-rps-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>猜拳邀请概率</span><div class="stepper" data-k="ai-rps-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-rps-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>主动邀请玩游戏</span><label class="toggle"><input type="checkbox" id="ai-game-en"><span class="tk"></span></label></div>
@@ -14880,8 +14882,20 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <!-- v3.15.x：他 主动分享你自建的字卡——从字卡库（含公用）抽一张纯文本卡当 他 的话发出来 -->
             <div class="gs-row"><span>主动分享你的字卡</span><label class="toggle"><input type="checkbox" id="ai-cc-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>分享字卡概率</span><div class="stepper" data-k="ai-cc-prob" data-min="0" data-max="100" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="ai-cc-prob-val" readonly><button class="stp-max">+</button></div></div>
+            <!-- 2026-10-28：他主动邀你一起听歌 / 一起读书——与猜拳/游戏/贴贴并列的独立门 -->
+            <div class="gs-row"><span>主动邀请听歌</span><label class="toggle"><input type="checkbox" id="ai-music-en"><span class="tk"></span></label></div>
+            <div class="gs-row"><span>听歌邀请概率</span><div class="stepper" data-k="ai-music-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-music-prob-val" readonly><button class="stp-max">+</button></div></div>
+            <div class="gs-row"><span>主动邀请读书</span><label class="toggle"><input type="checkbox" id="ai-reading-en"><span class="tk"></span></label></div>
+            <div class="gs-row"><span>读书邀请概率</span><div class="stepper" data-k="ai-reading-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-reading-prob-val" readonly><button class="stp-max">+</button></div></div>
           </div>
-          <div class="gs-sub" style="padding:0 14px 14px">他 主动找你的消息会按概率变成猜拳/游戏/贴贴邀请（游戏在 Pong、贪吃蛇中随机；贴贴同意后 他 会回应一句），自动打开对应半框或回应，不想玩直接关掉即可；仅在你在聊天页时触发，需开启「主动发送」。邀请话术可在 字卡库 →「他的邀请」里逐句开关或自定义添加；「分享你的字卡」从你在 字卡库 自建的纯文本卡（含公用）里随机抽一张当 他 的悄悄话，冷却 90 分钟。想立刻要一次：聊天 →「更多功能 → 他的提问 → 邀请（猜拳等随机一种）/ 贴贴（一定是贴贴）」</div>
+          <div class="gs-sub" style="padding:0 14px 14px">他 主动找你的消息会按概率变成猜拳/游戏/贴贴/听歌/读书邀请（游戏在 Pong、贪吃蛇等六款中随机；贴贴同意后 他 会回应一句；听歌会弹出他的听歌邀请面板，读书同意后打开书架），自动打开对应半框或回应，不想玩直接关掉即可；仅在你在聊天页时触发，需开启「主动发送」。顶部「主动邀请总概率」是这五类共用的总闸，100 = 不打折。邀请话术可在 字卡库 →「他的邀请」里逐句开关或自定义添加；「分享你的字卡」从你在 字卡库 自建的纯文本卡（含公用）里随机抽一张当 他 的悄悄话，冷却 90 分钟。想立刻要一次：聊天 →「更多功能 → 他的提问 → 邀请（猜拳等随机一种）/ 贴贴（一定是贴贴）」</div>
+          <!-- 2026-10-28：我发出的邀请——TA 的接受/拒绝概率可调（字卡与快捷听歌/读书共用；音乐页邀请不受影响） -->
+          <div class="gs-title" style="margin-top:10px">我发出的邀请</div>
+          <div class="set-group glass">
+            <div class="gs-row"><span>他接受的概率</span><div class="stepper" data-k="invite-accept-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="invite-accept-prob-val" readonly><button class="stp-max">+</button></div></div>
+            <div class="gs-row"><span>他拒绝的概率</span><div class="stepper" data-k="invite-reject-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="invite-reject-prob-val" readonly><button class="stp-max">+</button></div></div>
+          </div>
+          <div class="gs-sub" style="padding:0 14px 2px">两项之和不足 100 的部分＝他不回应；两项之和超过 100 时，未回应按 0 算（拒绝的先按剩余额度收窄）。覆盖「邀请他」字卡与快捷听歌/读书邀请；音乐页的「邀请 他 一起听」有自己的概率，不受这里影响。</div>
           <!-- v3.20.x：联系人跨桌面查岗 / 跨桌面来电——其他桌面的联系人按各自概率/冷却主动来查岗、来电 -->
           <div class="gs-title" style="margin-top:6px">联系人跨桌面查岗</div>
           <div class="set-group glass">
@@ -23485,4 +23499,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvrtsxk1 -->
+<!-- __MOCHI_EOF__ mvrvdt92 -->
