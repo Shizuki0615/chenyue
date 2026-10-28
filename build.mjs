@@ -6833,6 +6833,14 @@ const FIX_SENTINELS = [
   { name: '#1592k 我发出的邀请·拒绝概率设置行（删＝拒绝率不能调）', file: 'template.html', needle: 'data-k="invite-reject-prob"' },
   { name: '#1592l 接受/拒绝概率消费（删＝两条设置不参与掷骰）', file: 'js/chat.js', needle: 'const invAcc = Math.max(0, Math.min(100, Number(cfgn(_invCfg, \'invite-accept-prob\', 60)) || 0));' },
   { name: '#1592m 新增概率默认值注册（删＝getCfg 读不到新键，设置页恒显默认且不生效）', file: 'js/reply-settings.js', needle: '\'ai-invite-prob\': 100,' },
+  // ==== 2026-10-28 #1593 漫游曲目歌手/封面/时长（/personal_fm 旧字段兼容） ====
+  { name: '#1593a 歌手双结构兼容（删＝漫游曲目歌手恒空，显示「未知歌手」）', file: 'js/music-player.js', needle: 'function neaArtistText(s) {' },
+  { name: '#1593b 入库改用兼容歌手解析（删＝保留了函数但曲目仍读 s.ar）', file: 'js/music-player.js', needle: 'artist: neaArtistText(s),' },
+  { name: '#1593c 封面双结构兼容（删＝漫游曲目没有专辑封面）', file: 'js/music-player.js', needle: 'function neaCoverText(s) {' },
+  { name: '#1593d 时长双结构兼容（删＝漫游曲目时长停在 00:00）', file: 'js/music-player.js', needle: 'function neaDurationSec(s) {' },
+  // ==== 2026-10-28 #1594 聊天互动按钮改名「头像昵称」 ====
+  { name: '#1594a 互动入口按钮显示「头像昵称」（删＝又回到长名「头像和昵称互动」）', file: 'template.html', needle: '<span>头像昵称</span>' },
+  { name: '#1594b 旧长名不再出现在该按钮（回流＝改回「头像和昵称互动」）', file: 'template.html', needle: '<span>头像和昵称互动</span>', absent: true },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

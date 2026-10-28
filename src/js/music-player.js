@@ -1555,6 +1555,22 @@
       .then(j => { clearTimeout(timer); cb && cb(j, null); })
       .catch(e => { clearTimeout(timer); cb && cb(null, String(e && e.message || e)); });
   }
+  // 2026-10-28：歌手文本兼容两套结构——漫游 /personal_fm 返回旧字段 artists（数组或字符串），
+  // 歌单/喜欢走 /song/detail 返回新字段 ar；只认 ar 时漫游曲目歌手恒空（显示「未知歌手」）。
+  function neaArtistText(s) {
+    const v = s.ar !== undefined ? s.ar : (s.artists !== undefined ? s.artists : s.artist);
+    if (Array.isArray(v)) return v.map(a => (a && (a.name || a.nickname)) || '').filter(Boolean).join('/');
+    return typeof v === 'string' ? v : '';
+  }
+  // 封面同样两套：新 al.picUrl / 旧 album.picUrl（外来 http 统一升 https，防混合内容拦截）
+  function neaCoverText(s) {
+    return String((s.al && s.al.picUrl) || (s.album && s.album.picUrl) || s.picUrl || '').replace(/^http:\/\//i, 'https://');
+  }
+  // 时长：新 dt / 旧 duration，单位都是毫秒；没有就留 0（由既有探针补）
+  function neaDurationSec(s) {
+    const ms = Number(s.dt || s.duration || 0);
+    return ms > 0 ? Math.round(ms / 1000) : 0;
+  }
   // 把后端返回的歌曲数组统一成导入用的 track 列表
   function neaTracksFromSongs(songs) {
     const list = [];
@@ -1563,10 +1579,10 @@
       list.push({
         neteaseId: String(s.id),
         name: s.name || '',
-        artist: ((s.ar || []).map(a => a && a.name).filter(Boolean).join('/')),
-        cover: String((s.al && s.al.picUrl) || '').replace(/^http:\/\//i, 'https://'),
+        artist: neaArtistText(s),
+        cover: neaCoverText(s),
         url: neteaseMetingUrl(s.id),
-        duration: s.dt ? Math.round(s.dt / 1000) : 0,
+        duration: neaDurationSec(s),
         fee: s.fee
       });
     });

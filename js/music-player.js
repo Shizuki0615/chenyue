@@ -1316,6 +1316,18 @@ fetch(url, controller ? { signal: controller.signal } : undefined)
 .then(j => { clearTimeout(timer); cb && cb(j, null); })
 .catch(e => { clearTimeout(timer); cb && cb(null, String(e && e.message || e)); });
 }
+function neaArtistText(s) {
+const v = s.ar !== undefined ? s.ar : (s.artists !== undefined ? s.artists : s.artist);
+if (Array.isArray(v)) return v.map(a => (a && (a.name || a.nickname)) || '').filter(Boolean).join('/');
+return typeof v === 'string' ? v : '';
+}
+function neaCoverText(s) {
+return String((s.al && s.al.picUrl) || (s.album && s.album.picUrl) || s.picUrl || '').replace(/^http:\/\//i, 'https://');
+}
+function neaDurationSec(s) {
+const ms = Number(s.dt || s.duration || 0);
+return ms > 0 ? Math.round(ms / 1000) : 0;
+}
 function neaTracksFromSongs(songs) {
 const list = [];
 (songs || []).forEach(s => {
@@ -1323,10 +1335,10 @@ if (!s || !s.id) return;
 list.push({
 neteaseId: String(s.id),
 name: s.name || '',
-artist: ((s.ar || []).map(a => a && a.name).filter(Boolean).join('/')),
-cover: String((s.al && s.al.picUrl) || '').replace(/^http:\/\//i, 'https://'),
+artist: neaArtistText(s),
+cover: neaCoverText(s),
 url: neteaseMetingUrl(s.id),
-duration: s.dt ? Math.round(s.dt / 1000) : 0,
+duration: neaDurationSec(s),
 fee: s.fee
 });
 });
