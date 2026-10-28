@@ -2714,7 +2714,9 @@ function submitComment() {
   // v3.7.x：评论回应用「动态所属桌面」TA 的设置/字卡库（不再混当前桌面）
   const pcfg = feedCfgFor(p.owner || 'default');
   const commentText = pickReplyContent(pcfg, p.owner || 'default');
-  p.comments.push(stampAuthor({ content: content, ts: Date.now(), replies: [] }, activeMe()));
+  // 2026-10-28：记下我这条评论的 ts——TA 稍后回应时按它定位，把回复挂进这一条的楼中楼
+  const myCommentTs = Date.now();
+  p.comments.push(stampAuthor({ content: content, ts: myCommentTs, replies: [] }, activeMe()));
   save(list);
   hideCommentBar();
   refreshPostCard(pid);
@@ -2729,7 +2731,18 @@ function submitComment() {
       if (!p2b) return;
       p2b.comments = p2b.comments || [];
       const taText = pickReplyContent(cfg, p2b.owner || 'default');
-      p2b.comments.push(stampAuthor({ content: taText, ts: Date.now(), replies: [] }, taAuthorOf(p2b)));
+      // 2026-10-28：他回应我的评论＝挂进该评论的楼中楼（缩进 + 「他 回复 我」），
+      // 不再 push 成一条新的顶级评论——旧写法两条平铺、看不出是我俩在对话。
+      // 按提交时记下的 ts 定点定位（期间可能已有别的评论插进来，不能认「最后一条」）。
+      let myCi = -1;
+      for (let i = p2b.comments.length - 1; i >= 0; i--) {
+        const c0 = p2b.comments[i];
+        if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === 'me') { myCi = i; break; }
+      }
+      if (myCi < 0) return; // 评论已被删/数据被清：宁可静默，也不把回复写成一条无主的顶级评论
+      const myC = p2b.comments[myCi];
+      myC.replies = myC.replies || [];
+      myC.replies.push(stampAuthor({ content: taText, ts: Date.now(), to: myC.authorName || feedUserName() }, taAuthorOf(p2b)));
       save(list2);
       refreshPostCard(pid);
       // v3.11.x：修复「评论联系人的朋友圈，联系人回复没有提醒」——原实现只在
@@ -2737,7 +2750,8 @@ function submitComment() {
       // 改为两种情况都通知：我的动态→「评论了你的动态」；TA 的动态→「回复了你的评论」，
       // 并带上内容预览与定位（点击通知直接闪到那条评论）。
       const taName2 = p2b.taName || taFeedNameFor(p2b.owner || 'default');
-      const loc = { ci: p2b.comments.length - 1 };
+      // 2026-10-28：定位到楼内那条回复（ri），点通知直接闪到具体回复而不是整条评论
+      const loc = { ci: myCi, ri: myC.replies.length - 1 };
       if ((p2b.role || p2.by) === 'me') addNotice('comment', p2b.id, taName2 + ' 评论了你的动态：' + noticeTextClean(taText), p2b.owner || 'default', loc);
       else addNotice('comment', p2b.id, taName2 + ' 回复了你的评论：' + noticeTextClean(taText), p2b.owner || 'default', loc);
       } catch (eC) {} });

@@ -6847,6 +6847,10 @@ const FIX_SENTINELS = [
   { name: '#1595c 底栏未选中同色半透明（删＝未选中图标与选中同亮，分不清当前分区）', file: 'js/personalize.js', needle: '.tabbar .tab svg{stroke-opacity:.55;}' },
   { name: '#1595d 线条颜色键随美化方案（删＝导出/导入、撤销与恢复默认漏掉该颜色）', file: 'js/personalize.js', needle: '\'icon-ink-color\'' },
   { name: '#1595e 线条颜色随联系人切换重应用（删＝切桌面后仍套上一个桌面的线条颜色）', file: 'js/personalize.js', needle: 'document.addEventListener(\'contact-switched\', applyIconInkColor);' },
+  // ==== 2026-10-28 #1596 朋友圈 TA 回应我的评论进楼中楼 ====
+  { name: '#1596a 按 ts 定位我刚发的评论（删＝认最后一条，期间插入别的评论会挂错楼）', file: 'js/feed.js', needle: 'if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === \'me\')' },
+  { name: '#1596b TA 回应挂进我的评论楼中楼（删＝又 push 成平铺的新顶级评论）', file: 'js/feed.js', needle: 'myC.replies.push(stampAuthor({ content: taText' },
+  { name: '#1596c 通知定位到楼内回复（删＝点通知只闪到整条评论）', file: 'js/feed.js', needle: 'const loc = { ci: myCi, ri: myC.replies.length - 1 };' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
