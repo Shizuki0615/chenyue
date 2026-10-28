@@ -6838,6 +6838,9 @@ const FIX_SENTINELS = [
   { name: '#1593b 入库改用兼容歌手解析（删＝保留了函数但曲目仍读 s.ar）', file: 'js/music-player.js', needle: 'artist: neaArtistText(s),' },
   { name: '#1593c 封面双结构兼容（删＝漫游曲目没有专辑封面）', file: 'js/music-player.js', needle: 'function neaCoverText(s) {' },
   { name: '#1593d 时长双结构兼容（删＝漫游曲目时长停在 00:00）', file: 'js/music-player.js', needle: 'function neaDurationSec(s) {' },
+  // ==== 2026-10-28 #1594 聊天互动按钮改名「头像昵称」 ====
+  { name: '#1594a 互动入口按钮显示「头像昵称」（删＝又回到长名「头像和昵称互动」）', file: 'template.html', needle: '<span>头像昵称</span>' },
+  { name: '#1594b 旧长名不再出现在该按钮（回流＝改回「头像和昵称互动」）', file: 'template.html', needle: '<span>头像和昵称互动</span>', absent: true },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
