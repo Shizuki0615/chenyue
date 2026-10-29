@@ -6864,6 +6864,13 @@ const FIX_SENTINELS = [
   { name: '#1598d 旧纯 id 收藏自愈回补快照（删＝老用户的收藏升级后仍是裸 id，迟早丢）', file: 'js/music-player.js', needle: 'if (healed) saveFavList(list);' },
   { name: '#1598e 漫游换批不清收藏过的 FM 曲目（删＝收藏的漫游歌被 prune，重开就没了）', file: 'js/music-player.js', needle: "if (m.playlistId !== 'fm' || keep[m.id] || favKeep[m.id]) return true;" },
   { name: '#1598f 收藏仍写回原键 music-favs（删＝换新键后备份导出带不走收藏）', file: 'js/music-player.js', needle: "function saveFavList(list) { store.set('music-favs', JSON.stringify(list)); }" },
+  // ==== 2026-10-29 #1599 收藏的歌可归进歌单（收藏即入库 + 行内「加入歌单」）====
+  { name: '#1599a 收藏漫游曲目时改成我的音乐库（删＝歌仍是 FM 临时曲，换批被清、也归不进歌单）', file: 'js/music-player.js', needle: "if (m && m.playlistId === 'fm') {" },
+  { name: '#1599b 收藏行挂「加入歌单」入口（删＝只能躺在收藏里，没法归进歌单）', file: 'js/music-player.js', needle: 'class="sm-song-add" data-id="' },
+  { name: '#1599c 点加号不触发行播放（删＝点「加入歌单」顺手把歌播了）', file: 'js/music-player.js', needle: "if (e.target.closest('.sm-song-more, .sm-song-add')) return;" },
+  { name: '#1599d 加号走歌单选择弹窗（删＝只能进默认库，建不了也用不了已有歌单）', file: 'js/music-player.js', needle: 'addFavToPlaylist(b.dataset.id);' },
+  { name: '#1599e 弹窗回调兼容下标与值两种返回（删＝有的机型点了 pills 拿不到歌单 id）', file: 'js/music-player.js', needle: 'if (typeof v === \'number\' && opts[v]) val = opts[v].value;' },
+  { name: '#1599f 已删收藏先还原再归类（删＝文件不在的歌点了加号没反应）', file: 'js/music-player.js', needle: "if (!x || !favRestorable(x)) { toast('这首歌的文件已不在，无法加入歌单'); return; }" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

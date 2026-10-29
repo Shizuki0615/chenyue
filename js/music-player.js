@@ -4291,6 +4291,10 @@ const i = list.findIndex(x => x.id === id);
 if (i >= 0) list.splice(i, 1);
 else {
 const m = findTrack(id);
+if (m && m.playlistId === 'fm') {
+m.playlistId = 'default';
+saveLibrary();
+}
 list.unshift(m ? favSnapOf(m) : { id: id, favAt: Date.now() });
 }
 saveFavList(list);
@@ -4326,6 +4330,45 @@ renderFavList();
 playTrack(x.id);
 toast('已重新加入音乐库并播放');
 }
+function addFavToPlaylist(id) {
+const m = findTrack(id);
+if (!m) {
+const x = favList().find(t => t.id === id);
+if (!x || !favRestorable(x)) { toast('这首歌的文件已不在，无法加入歌单'); return; }
+restoreFavSong(x);
+return;
+}
+const opts = [{ label: '我的音乐库', value: 'default' }]
+.concat(playlists.map(p => ({ label: p.name, value: p.id })))
+.concat([{ label: '＋ 新建歌单', value: '__new__' }]);
+if (!window.openModal) return;
+window.openModal('把《' + (m.name || '这首歌') + '》加入歌单', '', (v) => {
+let val = v;
+if (typeof v === 'number' && opts[v]) val = opts[v].value;
+if (!val) return;
+if (val === '__new__') {
+window.openModal('新建歌单', '', (name) => {
+name = (name || '').trim();
+if (!name) { toast('请输入歌单名称'); return; }
+const nid = 'spl_' + Date.now();
+playlists.push({ id: nid, name: name, createdAt: Date.now() });
+savePlaylists();
+m.playlistId = nid;
+saveLibrary();
+renderPage();
+renderFavList();
+toast('已加入「' + name + '」');
+});
+return;
+}
+m.playlistId = val;
+saveLibrary();
+renderPage();
+renderFavList();
+const nm = val === 'default' ? '我的音乐库' : (((playlists.find(p => p.id === val)) || {}).name || '歌单');
+toast('已加入「' + nm + '」');
+}, { noInput: true, pills: opts, pillSubmit: true });
+}
 function syncHeartIcons() {
 const m = findTrack(currentId);
 const liked = m ? isFav(m.id) : false;
@@ -4360,18 +4403,25 @@ return '<div class="sm-song' + (active ? ' active' : '') + (gone ? ' ta-fav-gone
 songIcoHtml(m || x) +
 '<div class="sm-song-info"><div class="sm-song-name">' + esc(name) + (gone ? '<span class="sm-fav-gone-tag">已删除</span>' : '') + '</div>' +
 '<div class="sm-song-sub">' + esc(artist || '未知歌手') + (gone ? ' · ' + (favRestorable(x) ? '点击重新加入并播放' : '文件已不在，无法播放') : '') + '</div></div>' +
+'<button class="sm-song-add" data-id="' + x.id + '" title="加入歌单" style="flex:none;border:0;background:transparent;color:var(--muted,#888);font-size:18px;line-height:1;padding:2px 6px;cursor:pointer">＋</button>' +
 '<button class="sm-song-more" data-id="' + x.id + '" title="取消收藏"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0112 7.1a4.9 4.9 0 017.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/></svg></button>' +
 '</div>';
 }).join('');
 el.innerHTML = rows || '<div class="ta-empty">还没有收藏歌曲，播放时点击爱心收藏</div>';
 el.querySelectorAll('.sm-song').forEach(row => {
 row.addEventListener('click', (e) => {
-if (e.target.closest('.sm-song-more')) return;
+if (e.target.closest('.sm-song-more, .sm-song-add')) return;
 const id = row.dataset.id;
 if (findTrack(id)) { playTrack(id); return; }
 const x = favList().find(t => t.id === id);
 if (x && favRestorable(x)) { restoreFavSong(x); return; }
 toast('该歌曲已删除，无法播放');
+});
+});
+el.querySelectorAll('.sm-song-add').forEach(b => {
+b.addEventListener('click', (e) => {
+e.stopPropagation();
+addFavToPlaylist(b.dataset.id);
 });
 });
 el.querySelectorAll('.sm-song-more').forEach(b => {
