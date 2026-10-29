@@ -2464,7 +2464,14 @@
           // 旧版这里会幽灵停靠），防幽灵键盘会话。
           // #657：_aKbMute=已被几何反证判「键盘不在场」的残留读数，不得再据它收缩（读数真的
           // 变化/回基准即解除，见函数头）。
-          if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
+          // #1602：resizes-content 内核（uni-app/Html5Plus WebView 等）键盘会把【布局视口】一起缩
+          // （本机 888→533）。若此刻有文本聚焦，这是键盘而不是地址栏抖动：必须保住无键盘基线，
+          // 否则 #1531 把 _aH 钳成 533 → open 恒假 → 键盘会话永不开启 → 输入框「被盖」改走
+          // _aProv 盲猜停靠，并逐拍 8% 深收到 34% 地板（533×0.34=181px，与回信页实报壳高逐字吻合）。
+          // 地址栏显隐（<60px 或已无聚焦）照旧钳；resizes-visual 内核 innerHeight 不缩，本条零命中。
+          var _ihNowKb = window.innerHeight || 0;
+          var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;
+          if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
           // #1601：无会话稳态的「布局视口钉高」（#1537）也要过地板——本机是 uni-app/Html5Plus
           // WebView（fs-active 下 .phone 用 100vh，键盘弹起时 innerHeight 888→533 而壳仍 888，
           // 停靠全靠这条钉高）；这类内核在键盘/沉浸栏过渡帧会把 innerHeight 报成 0/极小值，

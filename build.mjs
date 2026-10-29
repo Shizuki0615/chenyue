@@ -6495,7 +6495,7 @@ const FIX_SENTINELS = [
   { name: '#1530c 柜内领取调回聊天侧同步钩子（删＝柜里领了屏上聊天卡还挂【领取】、聊天里也没了「你收下了…」留痕，两处口径分叉）', file: 'js/gift-shop.js', needle: 'try { if (window.chatGiftClaimSync) window.chatGiftClaimSync(it.id, it.name); } catch (eCS) {}' },
   { name: '#1530d 聊天侧同步＝按心意柜指针就地补卡＋留痕（不写状态＝单一事实源仍在柜；rateAllow 删＝额度满时这条用户当刻操作留痕被 #1341 闸吞掉）', file: 'js/chat.js', needle: "if (r && r.special === 'gift' && r.giftBoxId === boxId) { giftPatchCard(i); if (!rec) rec = r; }" },
   { name: '#1530e 详情领取钮容器（删＝居中面板里按钮退回 inline 默认宽度，与聊天卡【领取】的整行实底形态脱族）', file: 'css/market.css', needle: '.gb-detail-claim { display: flex; margin-top: 16px; }' },
-  { name: '#1531a 无键盘基线每拍钳进布局视口（删＝_aH 卡在地址栏隐时的高度 816 而 innerHeight 恒 690，地址栏显隐被当成键盘弹出/收起，页面在保底停靠 400px 与全高 690px 之间翻转＝弹跳闪屏＋输入栏与面板之间空隙；现场快照环实锤：[prov,0,816,400px]→[open,1,690,690px]）', file: 'js/mobile-adapt.js', needle: 'if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH;' },
+  { name: '#1531a 无键盘基线每拍钳进布局视口（删＝_aH 卡在地址栏隐时的高度 816 而 innerHeight 恒 690，地址栏显隐被当成键盘弹出/收起，页面在保底停靠 400px 与全高 690px 之间翻转＝弹跳闪屏＋输入栏与面板之间空隙；现场快照环实锤：[prov,0,816,400px]→[open,1,690,690px]）', file: 'js/mobile-adapt.js', needle: 'if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH;' },
   { name: '#1532a 聚焦期无条件采样环（删＝本机键盘链路从不启动、现有快照环永远空＝40 轮盲修的根源；聚焦期每拍记真实几何到 __mochiFocRing）', file: 'js/mobile-adapt.js', needle: '__mochiFocRing' },
   { name: '#1532b 诊断单输出聚焦期采样环（删＝采样了但诊断看不到）', file: 'js/device.js', needle: '聚焦期采样环=' },
   { name: '#1533a 残差账随会话清零（删＝上一轮的账带进下一轮；采样环实锤：钉高 328px vs 可视底边 411px、用户七轴全 0 ⇒ 短的 83px 是账＝输入栏抬得过高＝键盘上沿与输入栏的空隙）', file: 'js/mobile-adapt.js', needle: '_aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil' },
@@ -6881,6 +6881,8 @@ const FIX_SENTINELS = [
   { name: '#1601b 已有内联高比布局视口矮一大截＝毛刺残留，清掉复钉（删＝0px 内联高一直挂着，没人再按真实 innerHeight 停靠）', file: 'js/mobile-adapt.js', needle: 'if (_aPhone.style.height && (!(_phPin > 0) || _phPin < _ihPin - 120)) {' },
   { name: '#1601c 1s 看门狗清短残留不再等「inner 回基线」（删＝键盘开着时该条件恒不成立，整壳停在塌缩值到收键盘为止）', file: 'js/mobile-adapt.js', needle: 'var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));' },
   { name: '#1601d 清残留后按当前布局视口立即复钉（删＝清完回落到 100vh 脏高，寄出栏沉到键盘下面直到下一次 resize）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue && _ihW > 0) {' },
+  // ==== 2026-10-29 #1602 resizes-content WebView：键盘缩布局视口时基线不得被钳 ====
+  { name: '#1602a 键盘期不钳无键盘基线（删＝#1531 把 _aH 钳成 keyboard 高度 533 → open 恒假 → 键盘会话永不开启 → _aProv 盲猜并深收到 34% 地板 181px＝回信页整壳塌陷实报）', file: 'js/mobile-adapt.js', needle: 'var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

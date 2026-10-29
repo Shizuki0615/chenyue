@@ -1362,7 +1362,9 @@ if (_aKb && h > _aPrevH && _aPrevH > 0) {
 _aClosing = true;
 }
 _aPrevH = h;
-if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
+var _ihNowKb = window.innerHeight || 0;
+var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;
+if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
 if (!_aKb && !_aProv && !_aClosing && _aPhone) {
 var _ihPin = Math.round(window.innerHeight || 0);
 if (_ihPin >= _aKbFloorH()) {
