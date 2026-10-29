@@ -1330,6 +1330,19 @@ html.ios-cover-top .phone .statusbar {
 .modal-custom:hover { color:var(--ink); border-color:#bbb; }
 .modal-custom.on { color:var(--ink); border-color:var(--ink); }
 .modal-custom[hidden] { display:none; }
+/* #1603：通用取色弹窗的手输色值行（部分 WebView 打不开原生取色器时的常驻兜底） */
+.modal-hexrow { margin-top:9px; }
+.modal-hexrow[hidden] { display:none; }
+.modal-hex {
+  width:100%; border:1px solid var(--input-border); border-radius:12px;
+  padding:9px 12px; font-size:13px; font-family:inherit;
+  outline:none; background:var(--input-bg); color:var(--ink);
+  text-transform:uppercase;
+}
+.modal-hex:focus { border-color:var(--input-focus-border); }
+.modal-hex.bad { border-color:#d64545; }
+/* 安卓 ce-box 转换后外观与原生框保持一致（box 会继承本类） */
+.modal-hex.ce-box { padding:9px 12px; min-height:0; line-height:1.5; white-space:nowrap; overflow:hidden; }
 .modal-btns { display:flex; gap:10px; margin-top:16px; }
 .modal-btn {
   flex:1; border:none; border-radius:12px; padding:11px;

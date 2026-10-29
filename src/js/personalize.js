@@ -382,6 +382,8 @@ try {
     const sliderPreviewIco = document.getElementById('modal-slider-preview-ico');
     const colorInput = document.getElementById('modal-color');
     const customBtn = document.getElementById('modal-custom');
+    const hexRow = document.getElementById('modal-hexrow');
+    const hexInput = document.getElementById('modal-hex');
     const selectEl = document.getElementById('modal-select');
     const groupChipsEl = document.getElementById('modal-group-chips');
     const fileBtn = document.getElementById('modal-file');
@@ -590,6 +592,14 @@ try {
       swatches.innerHTML = '';
       picked = -1;
       customVal = null;
+      // #1603：手输色值行跟着取色弹窗出现；当前就是自定义色时回填，方便改一个字符
+      if (hexRow) hexRow.hidden = !opts.colorPicker;
+      if (hexInput) { hexInput.value = ''; setHexBad(false); }
+      if (opts.colorPicker && opts.pick === -2 && opts.color) {
+        customVal = opts.color;
+        picked = -2;
+        if (hexInput) hexInput.value = String(opts.color);
+      }
       if (opts.swatches && opts.swatches.length) {
         opts.swatches.forEach((label, i) => {
           const s = document.createElement('span');
@@ -601,6 +611,8 @@ try {
             s.classList.add('on');
             picked = i;
             customBtn.classList.remove('on');
+            // 点了色块＝放弃手输值，避免「色块亮着、确定却提交手输色」
+            if (hexInput) { hexInput.value = ''; setHexBad(false); }
           });
           swatches.appendChild(s);
         });
@@ -801,6 +813,43 @@ try {
       void colorInput.offsetWidth; // 强制回流，确保 iOS 判定该元素已渲染
       try { colorInput.click(); } catch (e) { try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e2) {} }
     });
+    // #1603：通用取色弹窗的手输色值——原生取色器在 APP 内嵌 WebView / 内置浏览器里
+    // 可能完全打不开（点「自定义颜色」没反应），手输 #RRGGBB 是常驻兜底。
+    // 合法值即时记成「自定义色」（与 colorInput 的 change 同一条状态：picked=-2 + customVal），
+    // 确定时走 fire() 的颜色分支；不合法只标红、不覆盖已选色。
+    const normHex = (v) => {
+      let c = String(v == null ? '' : v).trim().toLowerCase();
+      if (!c) return '';
+      if (c.charAt(0) !== '#') c = '#' + c;
+      return /^#[0-9a-f]{6}$/.test(c) ? c : null;
+    };
+    // 安卓 ce-box 接管后可见的是 div，红框要同时落到原生框与代理框上
+    const setHexBad = (bad) => {
+      try { hexInput.classList.toggle('bad', !!bad); } catch (e) {}
+      try { const b = ceBoxOf(hexInput); if (b) b.classList.toggle('bad', !!bad); } catch (e) {}
+    };
+    const applyHexField = () => {
+      if (!hexInput || hexRow.hidden) return false;
+      const raw = readModalVal(hexInput).trim();
+      if (!raw) { setHexBad(false); return false; }
+      const c = normHex(raw);
+      if (c === null) { setHexBad(true); return false; }
+      setHexBad(false);
+      customVal = c;
+      picked = -2;
+      customBtn.classList.add('on');
+      Array.prototype.forEach.call(swatches.children, (s) => s.classList.remove('on'));
+      return true;
+    };
+    if (hexInput) {
+      hexInput.addEventListener('input', applyHexField);
+      hexInput.addEventListener('change', applyHexField);
+      hexInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (applyHexField()) { try { hexInput.blur(); } catch (e2) {} }
+      });
+    }
     // v3.6.x：滑块拖动——实时更新值/预览块/onChange（图标圆角所见即所得）
     if (sliderRange) {
       sliderRange.addEventListener('input', () => {
@@ -816,6 +865,8 @@ try {
       Array.prototype.forEach.call(swatches.children, c => c.classList.remove('on'));
       customBtn.classList.add('on');
       picked = -2;
+      // #1603：原生取色器的结果同步回手输框——用户可在这里微调/复制同一个值
+      if (hexInput) { hexInput.value = customVal; setHexBad(false); }
       // 取完色后把离屏状态恢复隐藏（值已进 customVal，不影响后续）
       try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e) {}
     });
@@ -854,6 +905,15 @@ try {
         if (ae && ae.isContentEditable && mask.contains(ae)) ae.blur();
       } catch (e) {}
       if (!cb) return;
+      // #1603：用户明确点过胶囊（如「恢复默认」）时胶囊优先——否则手输色/色板会把复位吞掉；
+      // 未点过胶囊时仍是色板/手输色优先（v3.6.x 原口径：opts.pill 预设值不能抢色板）
+      if (pillsEl && !pillsEl.hidden && pillClicked) {
+        if (pillsOnOk) pillsOnOk(pillVal);
+        cb(pillVal);
+        return;
+      }
+      // #1603：手输色值优先（含只开 colorPicker、没有色板的弹窗）——与原生取色器同一状态位
+      if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }
       // 色板/自定义取色优先于 pills（v3.6.x：widget 颜色等弹窗同时带 pills 和色板时，
       // 点色板确定被 pills 分支拦截传 null → 设置不生效）
       if (swatches && !swatches.hidden && (picked === -2 || picked >= 0)) {
@@ -2998,6 +3058,29 @@ try {
         });
         tip.appendChild(tipTx); tip.appendChild(hexBtn);
         paletteHost.appendChild(tip);
+        // #1603：六个颜色行（主题色/边框/按钮文字/组件背景/按钮/爱心外框）都再给一格直接手输，
+        // 不用多开一层弹窗——色值合法即生效，非法只提示不覆盖当前色。
+        const hexLine = document.createElement('div');
+        hexLine.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap';
+        const hexIn = document.createElement('input');
+        hexIn.type = 'text';
+        hexIn.placeholder = '#RRGGBB';
+        hexIn.maxLength = 7;
+        hexIn.autocomplete = 'off'; hexIn.autocorrect = 'off'; hexIn.autocapitalize = 'off'; hexIn.spellcheck = false;
+        hexIn.style.cssText = 'width:104px;font-size:11px;padding:3px 7px;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--input-bg,#fff);color:var(--ink,#111);outline:none';
+        const applyInlineHex = () => {
+          let c = String(hexIn.value || '').trim().toLowerCase();
+          if (!c) return;
+          if (c.charAt(0) !== '#') c = '#' + c;
+          if (!/^#[0-9a-f]{6}$/.test(c)) { toast('格式不对：# + 6 位十六进制，如 #e05555'); return; }
+          item.curSet(c);
+          hexIn.value = c;
+          toast(item.label + ' 已设为 ' + c.toUpperCase());
+        };
+        hexIn.addEventListener('change', applyInlineHex);
+        hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyInlineHex(); } });
+        hexLine.appendChild(hexIn);
+        paletteHost.appendChild(hexLine);
       };
       const zoomWorks = !(window.matchMedia && window.matchMedia('(max-width: 900px)').matches) && !document.documentElement.classList.contains('force-mobile');
       const SECS = [

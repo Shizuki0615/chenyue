@@ -6885,6 +6885,11 @@ const FIX_SENTINELS = [
   { name: '#1602a 键盘期不钳无键盘基线（删＝#1531 把 _aH 钳成 keyboard 高度 533 → open 恒假 → 键盘会话永不开启 → _aProv 盲猜并深收到 34% 地板 181px＝回信页整壳塌陷实报）', file: 'js/mobile-adapt.js', needle: 'var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;' },
   { name: '#1602b 已钳小的基线按布局基线回补（删＝_aH 上一帧已被键盘高度污染，取它判定「正在缩小」永远为假＝会话仍开不起来）', file: 'js/mobile-adapt.js', needle: 'if (_kbShrink && _aIH > _aH + 60) _aH = _aIH;' },
   { name: '#1602c 诊断暴露最近一拍的文本持焦（删＝报障分不清「焦点丢了」还是「读数被钳」，只能再猜一轮）', file: 'js/mobile-adapt.js', needle: 'focNow: !!_aFocDbg,' },
+  // ==== 2026-10-29 #1603 取色入口统一手输色值（通用弹窗 + 边看边调六个颜色行）====
+  { name: '#1603a 通用取色弹窗的手输色值行（删＝APP 内嵌 WebView 打不开原生取色器时，点「自定义颜色」没反应＝完全没法设色）', file: 'template.html', needle: 'id="modal-hexrow"' },
+  { name: '#1603b 手输框非法值红框（删＝填错格式没反馈，用户以为没生效/已生效）', file: 'css/base.css', needle: '.modal-hex.bad { border-color:#d64545; }' },
+  { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
+  { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

@@ -4227,6 +4227,11 @@
         </div>
         <input type="color" id="modal-color" value="#111111" hidden>
         <button class="modal-custom" id="modal-custom" hidden>自定义颜色</button>
+        <!-- #1603：通用取色弹窗的手输色值入口——部分 WebView / 内置浏览器打不开原生取色器
+             （点「自定义颜色」没反应），手输 #RRGGBB 必须是常驻兜底，而不是探测失败才出现 -->
+        <div class="modal-hexrow" id="modal-hexrow" hidden>
+          <input type="text" class="modal-hex" id="modal-hex" placeholder="手输色值：#RRGGBB（如 #e05555）" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="7">
+        </div>
         <select class="modal-select" id="modal-select" hidden></select>
         <div class="modal-group-chips" id="modal-group-chips" hidden></div>
         <button class="modal-file" id="modal-file" hidden>从文件导入</button>
