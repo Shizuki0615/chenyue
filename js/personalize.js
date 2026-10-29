@@ -4688,6 +4688,65 @@ try { if (typeof toast === 'function') toast('已恢复默认'); } catch (err) {
 row.appendChild(btn);
 });
 })();
+(function bindBeautyColorHexInputs() {
+const rows = [
+['row-accent-color', '主题色', getAccentColor, (c) => {
+try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
+applyAccentColor(c);
+}],
+['row-widget-color', '小组件颜色', () => store.get('widget-bg-color') || '', (c) => {
+store.set('widget-bg-color', c);
+applyWidgetColor(c);
+}],
+['row-widget-border', '小组件边框', () => store.get('widget-border-color') || '', (c) => {
+store.set('widget-border-color', c);
+applyWidgetBorder(c);
+}],
+['row-widget-btn', '按钮', () => store.get('widget-btn-color') || '', (c) => {
+store.set('widget-btn-color', c);
+applyWidgetBtn(c);
+}],
+['row-widget-btn-text', '按钮文字', () => store.get('widget-btn-text-color') || '', (c) => {
+store.set('widget-btn-text-color', c);
+applyWidgetBtnText(c);
+}],
+['row-app-name-color', '图标文字', () => store.get(APP_NAME_COLOR_KEY) || '', (c) => {
+store.set(APP_NAME_COLOR_KEY, c);
+applyAppNameColor();
+}],
+['row-icon-ink', '图标与底栏线条', iconInkValOf, (c) => {
+store.set(ICON_INK_KEY, c);
+applyIconInkColor();
+}],
+['row-widget-heart', '爱心外框', () => store.get('widget-heart-color') || '', (c) => {
+store.set('widget-heart-color', c);
+applyWidgetHeart(c);
+}]
+];
+rows.forEach(function (it) {
+const row = document.getElementById(it[0]);
+if (!row || row.querySelector('.bfy-hex-btn')) return;
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'bfy-hex-btn';
+btn.textContent = '手输';
+btn.title = '手动输入 #RRGGBB 色值（取色器打不开的手机用）';
+btn.style.cssText = 'flex:none;margin-left:6px;padding:3px 9px;font-size:11px;line-height:1.4;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);cursor:pointer';
+btn.addEventListener('click', function (e) {
+e.stopPropagation(); // 别触发该行原来的选择器弹窗
+if (typeof openHexColorModal !== 'function') return;
+let cur = '';
+try { cur = it[2]() || ''; } catch (err) { cur = ''; }
+openHexColorModal('输入' + it[1] + '色值', /^#[0-9a-fA-F]{6}$/.test(cur) ? cur : '#111111', function (c) {
+try { it[3](c); } catch (err) {}
+try { if (typeof toast === 'function') toast(it[1] + '已设为 ' + String(c).toUpperCase()); } catch (err) {}
+});
+});
+const reset = row.querySelector('.bfy-reset-btn');
+if (reset) row.insertBefore(btn, reset);
+else row.appendChild(btn);
+});
+})();
 const deskCsFontRow = document.getElementById('row-desk-cs-font');
 const deskCsFontVal = document.getElementById('desk-cs-font-val');
 const CS_FONT_KEY = 'cs-font';

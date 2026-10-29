@@ -6851,6 +6851,12 @@ const FIX_SENTINELS = [
   { name: '#1596a 按 ts 定位我刚发的评论（删＝认最后一条，期间插入别的评论会挂错楼）', file: 'js/feed.js', needle: 'if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === \'me\')' },
   { name: '#1596b TA 回应挂进我的评论楼中楼（删＝又 push 成平铺的新顶级评论）', file: 'js/feed.js', needle: 'myC.replies.push(stampAuthor({ content: taText' },
   { name: '#1596c 通知定位到楼内回复（删＝点通知只闪到整条评论）', file: 'js/feed.js', needle: 'const loc = { ci: myCi, ri: myC.replies.length - 1 };' },
+  // ==== 2026-10-29 #1597 桌面美化·颜色项手输色值入口 ====
+  { name: '#1597a 八个颜色行都挂手输入口（删＝取色器打不开的手机又只剩色板一条路）', file: 'js/personalize.js', needle: "['row-accent-color', '主题色', getAccentColor, (c) => {" },
+  { name: '#1597b 手输走 #RRGGBB 弹窗而非系统取色器（删＝退回点了没反应的 colorPicker）', file: 'js/personalize.js', needle: "openHexColorModal('输入' + it[1] + '色值'" },
+  { name: '#1597c 点手输不触发该行原选择器（删＝一次点击弹两层窗）', file: 'js/personalize.js', needle: 'e.stopPropagation(); // 别触发该行原来的选择器弹窗' },
+  { name: '#1597d 手输按钮排在默认按钮之前（删＝常用入口被兜底按钮挤到最右）', file: 'js/personalize.js', needle: 'if (reset) row.insertBefore(btn, reset);' },
+  { name: '#1597e 图标文字项先写键再刷新（删＝applyAppNameColor 无参读旧值，颜色不生效）', file: 'js/personalize.js', needle: 'store.set(APP_NAME_COLOR_KEY, c);' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
