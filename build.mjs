@@ -1307,7 +1307,7 @@ const FIX_SENTINELS = [
   { name: '#208 聊天输入栏上移白边·键盘收起视口未还原自愈（iOS standalone 键盘收起 WebKit 偶发不还原视口，restoreKb 的 60px 还原门槛永不满足=kbActive 卡真 .phone 卡收缩高；失焦>4s 且视口仍<基线−60 强制复原）', file: 'js/mobile-adapt.js', needle: 'Date.now() - _focLostAt > 4000 && _vv && _vv.height < _fullVv - 60' },
   { name: '#208 聊天输入栏上移白边·tabbar 隐藏跳过采集（全屏页 tabs.js 给 tabbar 挂 hidden，矩形全 0 被判悬空 860px 每 5s 刷假错误环）', file: 'js/device.js', needle: 'if (!tb || tb.hidden) return null;' },
   { name: '#208 聊天输入栏上移白边·判定器布局视口未贴底（保留形态 diff 应≈envTop；键盘收起未还原时按 inner 判贴合全绿漏报，单列 ✗ 让白带状态可诊断）', file: 'js/device.js', needle: 'diff > envTop + 24 && !(inp.kb && inp.kb.kbActive)' },
-  { name: '#209 输入栏下方灰底断截面·焦点保留硬证据自愈（安卓返回键收键盘不派 blur/#197 族 focusout 丢失时 !foc 复原分支永不执行=停靠残留卡死；可视区双信号回满 ≤12px 即复原，焦点在不在都算键盘已收；推定停靠 _aProv/_iProv 与全屏态不碰；#916 换锚：原 needle 随稳态高度对账重构改为同语义守卫正形态，逻辑只强不弱）', file: 'js/mobile-adapt.js', needle: 'if (_hNow > 0 && _hNow >= _aH - 12 && (window.innerHeight || 0) >= _aIH - 12) {' },
+  { name: '#209 输入栏下方灰底断截面·焦点保留硬证据自愈（安卓返回键收键盘不派 blur/#197 族 focusout 丢失时 !foc 复原分支永不执行=停靠残留卡死；可视区双信号回满 ≤12px 即复原，焦点在不在都算键盘已收；推定停靠 _aProv/_iProv 与全屏态不碰；#916 换锚：原 needle 随稳态高度对账重构改为同语义守卫正形态，逻辑只强不弱）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue || (_hNow > 0 && _hNow >= _aH - 12 && _ihW >= _aIH - 12)) {' },
   { name: '#210 视口形态判定器同源（window.mochiViewportForm 单一事实源：执行器 syncVvFit 与诊断 screenDiagJudge 共用，新形态只改一处；删定义即回归两处手抄判式漂移——#186 期间 force 分支已实际漂移两处）', file: 'js/device.js', needle: 'window.mochiViewportForm = function (sig) {' },
   { name: '#210 判定器·force 声明期望底边=屏高（#186 缺陷修正：原误写 innerH 与「期望=屏高」注释矛盾，forced 设备自检必误报底部超出；env=0 的 18.3 白边期望按 safeTop+inner 补满。#276 起该分支同步加坏 screenH 门，needle 随代码演进）', file: 'js/device.js', needle: 'forceCover ? ((screenH >= innerH ? screenH : 0) || (safeTop + innerH))' },
   { name: '#210 采集器 force 传入判定器（#186 缺陷修正：漏传致「用户已声明覆盖形态」分支在真实采集路径永不命中=死分支）', file: 'js/device.js', needle: "inp.force = (function () { try { return localStorage.getItem('xy-home-v2:__safe-top-force') === '1'; } catch (e) { return false; } })();" },
@@ -6502,8 +6502,8 @@ const FIX_SENTINELS = [
   { name: '#1533b 动画期不许记账（删＝弹出/收起动画中每拍拿新视口底边减上一帧页面底边，差值是一帧动画距离却被当残差记账＝账被动画污染）', file: 'js/mobile-adapt.js', needle: 'if (Date.now() - _aVvChgAt < 400) return' },
   { name: '#1534a 微调面板拖动对齐边看边调（删＝把手 36×4px 细条手机上点不中＝用户感知「拖不动」；触控区扩到整行 20px＋标题行可拖＋守卫排除滑块）', file: 'js/personalize.js', needle: 'height:20px;margin:2px 0 0;flex:none;background:linear-gradient' },
   { name: '#1535a 残差账退出高度计算（删＝钉高继续叠加 _aDockFix；采样环实锤：键盘开着 vv=411 而页面钉 251＝账 -160＝输入栏悬在键盘上沿 160px 之上＝主诉空隙；该账系 a800682 9/29 #1463 引入，与用户「9/28 还正常」时间线吻合）', file: 'js/mobile-adapt.js', needle: 'var want = Math.round(_hv + _aKbGap());' },
-  { name: '#1537a 收口钉 innerHeight 不清空回 CSS（删＝本机 dvh 收键盘后回落到比视口大 126px 的脏值，输入栏沉到视口外＝「消失几秒」；采样环实锤 rowB=942 vs 视口 816 连续 6 秒静止搁浅）', file: 'js/mobile-adapt.js', needle: "_aPhone.style.height = Math.round(window.innerHeight || 0) + 'px'; // #1537" },
-  { name: '#1537b 无会话时 CSS 高度超出视口才重钉（删＝地址栏显隐后 dvh 脏值让页面比视口长一截＝输入栏沉底）', file: 'js/mobile-adapt.js', needle: 'getBoundingClientRect().bottom > (window.innerHeight || 0) + 2) _aPhone.style.height' },
+  { name: '#1537a 收口钉 innerHeight 不清空回 CSS（删＝本机 dvh 收键盘后回落到比视口大 126px 的脏值，输入栏沉到视口外＝「消失几秒」；采样环实锤 rowB=942 vs 视口 816 连续 6 秒静止搁浅）', file: 'js/mobile-adapt.js', needle: "_aPhone.style.height = _ihPin + 'px'; // #1537" },
+  { name: '#1537b 无会话时 CSS 高度超出视口才重钉（删＝地址栏显隐后 dvh 脏值让页面比视口长一截＝输入栏沉底）', file: 'js/mobile-adapt.js', needle: 'getBoundingClientRect().bottom > _ihPin + 2' },
   { name: '#1537c 键盘期快照环扩容 24 条（删＝4 条存不下开键盘那一刻的样本，56 秒即被挤出＝现场数据丢失）', file: 'js/mobile-adapt.js', needle: 'if (q.length > 24) q.length = 24;' },
   { name: '#1538a 保底停靠有实测读数时禁用 58% 猜测（删＝键盘明明报了真实高度却仍按「键盘占 42%」盲猜停靠＝输入栏悬在键盘上沿数百 px＝恒定巨大空隙；采样环实锤 vv=411 而页面钉 251＝58% 猜测值；用户实测滚动/地址栏变化空隙恒定）', file: 'js/mobile-adapt.js', needle: 'var _realH = 0;' },
   { name: '#1538b 二线兜底同口径禁猜（删＝X5/旧夸克族二线仍盲猜）', file: 'js/mobile-adapt.js', needle: 'var _realH2 = 0;' },
@@ -6876,6 +6876,11 @@ const FIX_SENTINELS = [
   { name: '#1600b 键盘会话可视高地板 34%（删＝0/极小毛刺读数被记成稳态并拿去钉高，回信页寄出栏悬在屏幕四分之一处）', file: 'js/mobile-adapt.js', needle: 'return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;' },
   { name: '#1600c 收起动画分支按地板写高（删＝毛刺帧把内联高写成 0px，整壳塌成 CSS min-height 一条）', file: 'js/mobile-adapt.js', needle: 'var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());' },
   { name: '#1600d 收起标记按几何解粘（删＝读数回到键盘态却因 _aClosing 早退、整壳永久停在塌缩值）', file: 'js/mobile-adapt.js', needle: 'if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {' },
+  // ==== 2026-10-29 #1601 WebView（uni-app/Html5Plus）无会话钉高也吃 0 读数 ====
+  { name: '#1601a #1537 钉高读数先过地板（删＝键盘过渡帧把 innerHeight 报成 0/极小值时照单全收写进内联高＝整壳只剩 18dvh 一条）', file: 'js/mobile-adapt.js', needle: 'if (_ihPin >= _aKbFloorH()) {' },
+  { name: '#1601b 已有内联高比布局视口矮一大截＝毛刺残留，清掉复钉（删＝0px 内联高一直挂着，没人再按真实 innerHeight 停靠）', file: 'js/mobile-adapt.js', needle: 'if (_aPhone.style.height && (!(_phPin > 0) || _phPin < _ihPin - 120)) {' },
+  { name: '#1601c 1s 看门狗清短残留不再等「inner 回基线」（删＝键盘开着时该条件恒不成立，整壳停在塌缩值到收键盘为止）', file: 'js/mobile-adapt.js', needle: 'var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));' },
+  { name: '#1601d 清残留后按当前布局视口立即复钉（删＝清完回落到 100vh 脏高，寄出栏沉到键盘下面直到下一次 resize）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue && _ihW > 0) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

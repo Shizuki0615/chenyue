@@ -2079,11 +2079,20 @@
             var _aInlineHad = !!(_aPhone.style.height || _aPhone.style.alignSelf);
             if (_aInlineHad) {
               var _hNow = Math.round(_aVV.height || 0);
-              if (_hNow > 0 && _hNow >= _aH - 12 && (window.innerHeight || 0) >= _aIH - 12) {
+              var _ihW = window.innerHeight || 0;
+              // #1601：键盘开着时 innerHeight 停在缩小值（本机 888→533），「inner 回基线」永远
+              // 不成立，旧条件只能等收键盘才清；内联高比当前布局视口矮一大截（含 0px）＝
+              // 无会话期绝不该有的残留（键盘过渡帧毛刺写入），直接清并按当前布局视口复钉。
+              var _phW = parseInt(_aPhone.style.height, 10);
+              var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));
+              if (_shortResidue || (_hNow > 0 && _hNow >= _aH - 12 && _ihW >= _aIH - 12)) {
                 _aPhone.style.height = '';
                 _aPhone.style.alignSelf = '';
                 _aPanComp();
                 kbUndockPanels();
+                if (_shortResidue && _ihW > 0) {
+                  try { if (_aPhone.getBoundingClientRect().bottom > _ihW + 2) _aPhone.style.height = Math.round(_ihW) + 'px'; } catch (eSR) {}
+                }
               }
             }
             // FIX 2026-09-20 #916：安卓浏览器稳态高度对账（「顶部白条/显示不全、聊天页
@@ -2456,7 +2465,24 @@
           // #657：_aKbMute=已被几何反证判「键盘不在场」的残留读数，不得再据它收缩（读数真的
           // 变化/回基准即解除，见函数头）。
           if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
-          if (!_aKb && !_aProv && _aPhone && !_aPhone.style.height && _aPhone.getBoundingClientRect().bottom > (window.innerHeight || 0) + 2) _aPhone.style.height = Math.round(window.innerHeight || 0) + 'px'; // #1537：CSS 高度超出视口（地址栏显隐后 dvh 脏值）才钉，正常贴合不碰
+          // #1601：无会话稳态的「布局视口钉高」（#1537）也要过地板——本机是 uni-app/Html5Plus
+          // WebView（fs-active 下 .phone 用 100vh，键盘弹起时 innerHeight 888→533 而壳仍 888，
+          // 停靠全靠这条钉高）；这类内核在键盘/沉浸栏过渡帧会把 innerHeight 报成 0/极小值，
+          // 原写法照单全收＝内联高写成 0px，整壳只剩 CSS min-height:18dvh 一条（回信页实报）。
+          // ① 读数低于地板不钉；② 已有内联高比当前布局视口矮一大截＝键盘期毛刺残留，清掉，
+          //   再按真实 innerHeight 复钉（键盘仍开着就停键盘上沿，收起了就回落 CSS）。
+          if (!_aKb && !_aProv && !_aClosing && _aPhone) {
+            var _ihPin = Math.round(window.innerHeight || 0);
+            if (_ihPin >= _aKbFloorH()) {
+              var _phPin = parseInt(_aPhone.style.height, 10);
+              if (_aPhone.style.height && (!(_phPin > 0) || _phPin < _ihPin - 120)) {
+                _aPhone.style.height = '';
+                _aPhone.style.alignSelf = '';
+                _aPanComp();
+              }
+              if (!_aPhone.style.height && _aPhone.getBoundingClientRect().bottom > _ihPin + 2) _aPhone.style.height = _ihPin + 'px'; // #1537：CSS 高度超出视口（地址栏显隐后 dvh 脏值）才钉，正常贴合不碰
+            }
+          }
           var open = (!_aVvStale && !_aKbMute && h < _aH - 60 && _focNow); // 可视高度明显变小 = 键盘弹出（#236：残留读数闩抑制纯 vv 信号；真键盘不受影响——inner 同缩走原判/交互与回基准解锁；#479：必然伴随文本聚焦）
           if (!open && h > _aH) _aH = Math.min(h, window.innerHeight || h); // #1516：基线钳进布局视口——Edge 工具栏切换会报比 inner 还高的假 vv（实测 690 基线下闯入 816），不钳则正常高度被误判成键盘收缩、会话劫持钉全高
           if (open && !_aKb) { _aClosing = false; _aKb = true; _aVvShrunkSeen = true; _aKbAt = Date.now(); _aKbStableH = 0; _aFullSince = 0; _aHonestSession = 0; _aLowSince = 0; _aVkSeen = 0; _aLowRuns = 0; _aFullReads = 0; _aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil = 0; _aPhone.style.alignSelf = 'flex-start'; kbDockPanels(); _aProvClear(); } _aKbSnapOpen = true; // #1463：本拍钉高落定后留证
