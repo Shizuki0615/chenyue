@@ -6871,6 +6871,11 @@ const FIX_SENTINELS = [
   { name: '#1599d 加号走歌单选择弹窗（删＝只能进默认库，建不了也用不了已有歌单）', file: 'js/music-player.js', needle: 'addFavToPlaylist(b.dataset.id);' },
   { name: '#1599e 弹窗回调兼容下标与值两种返回（删＝有的机型点了 pills 拿不到歌单 id）', file: 'js/music-player.js', needle: 'if (typeof v === \'number\' && opts[v]) val = opts[v].value;' },
   { name: '#1599f 已删收藏先还原再归类（删＝文件不在的歌点了加号没反应）', file: 'js/music-player.js', needle: "if (!x || !favRestorable(x)) { toast('这首歌的文件已不在，无法加入歌单'); return; }" },
+  // ==== 2026-10-29 #1600 回信页上下滑动整壳塌陷（键盘动画毛刺读数被写成内联高）====
+  { name: '#1600a vv 报 0 的过渡帧整拍跳过（删＝open=h<_aH-60 恒真、收起分支把 0 写进内联高＝整壳只剩 18dvh 一条）', file: 'js/mobile-adapt.js', needle: 'if (!(h > 0)) return;' },
+  { name: '#1600b 键盘会话可视高地板 34%（删＝0/极小毛刺读数被记成稳态并拿去钉高，回信页寄出栏悬在屏幕四分之一处）', file: 'js/mobile-adapt.js', needle: 'return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;' },
+  { name: '#1600c 收起动画分支按地板写高（删＝毛刺帧把内联高写成 0px，整壳塌成 CSS min-height 一条）', file: 'js/mobile-adapt.js', needle: 'var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());' },
+  { name: '#1600d 收起标记按几何解粘（删＝读数回到键盘态却因 _aClosing 早退、整壳永久停在塌缩值）', file: 'js/mobile-adapt.js', needle: 'if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

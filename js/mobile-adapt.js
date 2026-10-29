@@ -1324,6 +1324,7 @@ function syncAndroidKb() {
 if (!_aVV || !_aPhone) return;
 try { syncSafeBottomA(); } catch (eSB) {}
 var h = _aVV.height;
+if (!(h > 0)) return;
 if (_aVV.scale && _aVV.scale < 0.95 && (_aKb || _aProv || _aIsText(_aTextFocused) || _aIsText(document.activeElement))) {
 var _zn = Date.now();
 if (_aZoomFixCnt < 3 && _zn - _aZoomFixAt > 4000) {
@@ -1360,11 +1361,15 @@ if (!_aKb && !_aProv && _aPhone && !_aPhone.style.height && _aPhone.getBoundingC
 var open = (!_aVvStale && !_aKbMute && h < _aH - 60 && _focNow); // 可视高度明显变小 = 键盘弹出（#236：残留读数闩抑制纯 vv 信号；真键盘不受影响——inner 同缩走原判/交互与回基准解锁；#479：必然伴随文本聚焦）
 if (!open && h > _aH) _aH = Math.min(h, window.innerHeight || h); // #1516：基线钳进布局视口——Edge 工具栏切换会报比 inner 还高的假 vv（实测 690 基线下闯入 816），不钳则正常高度被误判成键盘收缩、会话劫持钉全高
 if (open && !_aKb) { _aClosing = false; _aKb = true; _aVvShrunkSeen = true; _aKbAt = Date.now(); _aKbStableH = 0; _aFullSince = 0; _aHonestSession = 0; _aLowSince = 0; _aVkSeen = 0; _aLowRuns = 0; _aFullReads = 0; _aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil = 0; _aPhone.style.alignSelf = 'flex-start'; kbDockPanels(); _aProvClear(); } _aKbSnapOpen = true; // #1463：本拍钉高落定后留证
+if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {
+_aClosing = false;
+}
 if (_aKb) { if (h < _aH - 60) { if (!_aLowSince) _aLowSince = Date.now(); _aLowRuns++; _aFullReads = 0; } else { if (_aLowRuns >= 2 && _aLowSince && (Date.now() - _aLowSince) > 120) _aHonestSession = 1; _aLowRuns = 0; _aLowSince = 0; } } // #1524：诚实判位＝收缩持续存在（连续≥2拍且跨度>400ms，回全高那拍结算）；单拍瞬时收缩永不判诚实
 if (!open && _aKb) {
 if (h < _aH - 12) {
 _aClosing = true;
-if (_aPhone.style.height !== h + 'px') _aPhone.style.height = h + 'px';
+var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());
+if (_aPhone.style.height !== _hClose + 'px') _aPhone.style.height = _hClose + 'px';
 if (!_focNow && Date.now() - _aVvChgAt > 1200) { _aKbCloseNow('blur-stale'); return; } // #1524：失焦＋视口读数冻结 1.2s＝键盘确已不在场，别再跟陈旧读数（B 型「失焦回位」；诚实内核上 vv 持续回升故不触发）
 return;
 }
@@ -1468,11 +1473,18 @@ _aKbSnap("prov"); // #1463：盲猜停靠也留现场（后续实测尺/对账�
 var _aDockFix = 0;
 function _aHoldNow() { return _aVkHonest ? (_aVkH >= 80 || !_aVkSeen) : !_aHonestSession; } // #1524：实测尺三态——≥80 在场顶住／<80 且本会话实测过＝键盘真收口放行／还没实测到过＝它还没报，等它报（武装当场读到 0 不是收口信号）；非实测尺内核＝诚实判位说了算
 function _aKbGap() { var a = window.__mochiScreenAdj; return a ? Math.max(-240, Math.min(240, Math.round(+a.kbgap || 0))) : 0; } // #1527：与面板量程统一到 ±240（原 ±80，对「键盘完全不报信号、只能按固定比例猜高度」的机型够不着）
+function _aKbFloorH() {
+var _b = Math.min(_aH || 0, _aIH || 0) || (window.innerHeight || 0);
+return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;
+}
 function _aKbFeedH() {
 var cur = Math.round(_aVV.height || 0);
 if (!_aKb || _aClosing) return cur;
 if (_aVkHonest && _aVkH >= 80) { var _mv = Math.round(Math.max(240, Math.min(_aH, window.innerHeight || _aH) - _aVkH)); _aKbStableH = _mv; _aFullSince = 0; return _mv; } // #1484：overlay 会话用 VirtualKeyboard 实测高度
-if (cur < _aH - 60) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+if (cur < _aH - 60) {
+if (cur >= _aKbFloorH()) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+return Math.round(_aKbStableH) > 0 ? Math.round(_aKbStableH) : _aKbFloorH();
+}
 if (!_aFullSince) _aFullSince = Date.now();
 return Math.round(_aKbStableH) || cur;
 }

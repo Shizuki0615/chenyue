@@ -2387,6 +2387,9 @@
           if (!_aVV || !_aPhone) return;
           try { syncSafeBottomA(); } catch (eSB) {}
           var h = _aVV.height;
+          // #1600：vv 报 0（内核过渡帧/后台态）时整条链无从计算——继续往下 open=h<_aH-60
+          // 恒真、收起分支还会把 0 直接写进内联高。这一拍整段跳过，等下一次真实读数。
+          if (!(h > 0)) return;
           // #810 主判据：键盘/聚焦会话内 vv.scale<0.95＝内核把页面整体缩小了。判据全是内核
           // 可观测信号（正常内核键盘只缩 height、scale 恒 1，永不触发；缩放只在文本聚焦期
           // 出现，用户闲时手动捏合缩放不在聚焦态＝不误伤）。处置＝#174 iOS 同款「重写
@@ -2457,6 +2460,14 @@
           var open = (!_aVvStale && !_aKbMute && h < _aH - 60 && _focNow); // 可视高度明显变小 = 键盘弹出（#236：残留读数闩抑制纯 vv 信号；真键盘不受影响——inner 同缩走原判/交互与回基准解锁；#479：必然伴随文本聚焦）
           if (!open && h > _aH) _aH = Math.min(h, window.innerHeight || h); // #1516：基线钳进布局视口——Edge 工具栏切换会报比 inner 还高的假 vv（实测 690 基线下闯入 816），不钳则正常高度被误判成键盘收缩、会话劫持钉全高
           if (open && !_aKb) { _aClosing = false; _aKb = true; _aVvShrunkSeen = true; _aKbAt = Date.now(); _aKbStableH = 0; _aFullSince = 0; _aHonestSession = 0; _aLowSince = 0; _aVkSeen = 0; _aLowRuns = 0; _aFullReads = 0; _aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil = 0; _aPhone.style.alignSelf = 'flex-start'; kbDockPanels(); _aProvClear(); } _aKbSnapOpen = true; // #1463：本拍钉高落定后留证
+          // #1600：收起标记不得粘死——读数为 0/极小的过渡帧（或工具条、候选条一伸缩）
+          // 会把 _aClosing 置真，而 _aPinHeight/_aDockRecon 见标记即早退；视口随后回到
+          // 键盘态高度却没人再钉高 ⇒ 整壳永久停在那个塌缩值（回信页上下滑动实报）。
+          // 判据只认几何：仍判「键盘开着」+ 读数落在地板以上 + 已稳定 400ms（收起动画
+          // 每帧都在变，不会命中）＝刚才那一下不是收起，清掉标记让本拍重新钉高。
+          if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {
+            _aClosing = false;
+          }
           // #1540：开新会话即拆收口封锁窗——关了马上再开时，钉高不再被上一轮的 1.2s 墙拦住（输入栏被键盘盖住一秒才弹上来＝用户实报）
           // #1533：残差账随会话清零——采样环实锤钉高 328 vs 可视 411、用户七轴全 0 ⇒ 短量是账；旧账跨会话带入＝输入栏抬得过高＝键盘上沿与输入栏的空隙
           // #1524：_aFullReads 武装计数随会话开/收口清零（跨会话继承会让诚实内核开局一两拍就被武装成 overlay）
@@ -2473,7 +2484,10 @@
               //（用户报"手动收起键盘那一刻卡顿"，红米/小米 Chrome 复现）。收起期 offsetTop
               // 通常 ~0（键盘往下收、视口不平移），平移无需逐帧归零；复原时 _aPanComp 统一兜底。
               _aClosing = true;
-              if (_aPhone.style.height !== h + 'px') _aPhone.style.height = h + 'px';
+              // #1600：动画毛刺读数（0/极小）按地板写，不把内联高压到 CSS 地板以下——
+              // 否则整壳只剩 min-height:18dvh 一条、寄出栏悬在屏幕四分之一处（回信页实报）。
+              var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());
+              if (_aPhone.style.height !== _hClose + 'px') _aPhone.style.height = _hClose + 'px';
               if (!_focNow && Date.now() - _aVvChgAt > 1200) { _aKbCloseNow('blur-stale'); return; } // #1524：失焦＋视口读数冻结 1.2s＝键盘确已不在场，别再跟陈旧读数（B 型「失焦回位」；诚实内核上 vv 持续回升故不触发）
               return;
             }
@@ -2658,13 +2672,26 @@
         // #1524：顶住判据（无时间引信）——实测在场（vk≥80）→顶住；零信号且非诚实→B 型顶住；诚实内核→不顶（即时收口）
         function _aHoldNow() { return _aVkHonest ? (_aVkH >= 80 || !_aVkSeen) : !_aHonestSession; } // #1524：实测尺三态——≥80 在场顶住／<80 且本会话实测过＝键盘真收口放行／还没实测到过＝它还没报，等它报（武装当场读到 0 不是收口信号）；非实测尺内核＝诚实判位说了算
         function _aKbGap() { var a = window.__mochiScreenAdj; return a ? Math.max(-240, Math.min(240, Math.round(+a.kbgap || 0))) : 0; } // #1527：与面板量程统一到 ±240（原 ±80，对「键盘完全不报信号、只能按固定比例猜高度」的机型够不着）
+        // #1600：键盘会话的可视高地板——真键盘最多占屏约六成（#337/#267 现场 62%），
+        // 可视高不可能低于无键盘基线的 34%；低于它的读数一律当内核过渡帧毛刺（0/极小）。
+        // 与 _aProvDeepen 的 34% 收口同尺，不新增机型假设。
+        function _aKbFloorH() {
+          var _b = Math.min(_aH || 0, _aIH || 0) || (window.innerHeight || 0);
+          return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;
+        }
         // #1481：会话内取「稳态收缩高度」——真实收缩读数照采照用并记为稳态；全高/回弹读数不采用，
         // 返回上一份稳态值（毛刺顶住），同时给 _aFullSince 起计时（收键盘迟滞的尺）。
         function _aKbFeedH() {
           var cur = Math.round(_aVV.height || 0);
           if (!_aKb || _aClosing) return cur;
           if (_aVkHonest && _aVkH >= 80) { var _mv = Math.round(Math.max(240, Math.min(_aH, window.innerHeight || _aH) - _aVkH)); _aKbStableH = _mv; _aFullSince = 0; return _mv; } // #1484：overlay 会话用 VirtualKeyboard 实测高度
-          if (cur < _aH - 60) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+          if (cur < _aH - 60) {
+            // #1600：低于地板＝异常读数（弹出/收起动画、滚动/工具条伸缩期的毛刺）。
+            // 不记成稳态（否则 0 会把 _aKbStableH 清掉、之后按 0 钉高）、不拿去钉高；
+            // 沿用本会话最后一次真实收缩读数，没有就用地板，等下一次真实读数纠正。
+            if (cur >= _aKbFloorH()) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+            return Math.round(_aKbStableH) > 0 ? Math.round(_aKbStableH) : _aKbFloorH();
+          }
           if (!_aFullSince) _aFullSince = Date.now();
           return Math.round(_aKbStableH) || cur;
         }
