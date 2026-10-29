@@ -6857,6 +6857,13 @@ const FIX_SENTINELS = [
   { name: '#1597c 点手输不触发该行原选择器（删＝一次点击弹两层窗）', file: 'js/personalize.js', needle: 'e.stopPropagation(); // 别触发该行原来的选择器弹窗' },
   { name: '#1597d 手输按钮排在默认按钮之前（删＝常用入口被兜底按钮挤到最右）', file: 'js/personalize.js', needle: 'if (reset) row.insertBefore(btn, reset);' },
   { name: '#1597e 图标文字项先写键再刷新（删＝applyAppNameColor 无参读旧值，颜色不生效）', file: 'js/personalize.js', needle: 'store.set(APP_NAME_COLOR_KEY, c);' },
+  // ==== 2026-10-29 #1598 我的收藏存快照，漫游曲目不再消失 ====
+  { name: '#1598a 收藏时把曲目存成快照（删＝只存 id，漫游曲目被清出库后收藏项整个消失）', file: 'js/music-player.js', needle: 'list.unshift(m ? favSnapOf(m) : { id: id, favAt: Date.now() });' },
+  { name: '#1598b 已删收藏按快照回读（删＝findTrack 找不到就整行丢弃，列表里什么都不剩）', file: 'js/music-player.js', needle: 'const x = favList().find(t => t.id === id);' },
+  { name: '#1598c 已删收藏点击可重新入库播放（删＝只能干看「已删除」，点了没反应）', file: 'js/music-player.js', needle: 'if (x && favRestorable(x)) { restoreFavSong(x); return; }' },
+  { name: '#1598d 旧纯 id 收藏自愈回补快照（删＝老用户的收藏升级后仍是裸 id，迟早丢）', file: 'js/music-player.js', needle: 'if (healed) saveFavList(list);' },
+  { name: '#1598e 漫游换批不清收藏过的 FM 曲目（删＝收藏的漫游歌被 prune，重开就没了）', file: 'js/music-player.js', needle: "if (m.playlistId !== 'fm' || keep[m.id] || favKeep[m.id]) return true;" },
+  { name: '#1598f 收藏仍写回原键 music-favs（删＝换新键后备份导出带不走收藏）', file: 'js/music-player.js', needle: "function saveFavList(list) { store.set('music-favs', JSON.stringify(list)); }" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

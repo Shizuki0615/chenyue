@@ -1413,10 +1413,13 @@ cb && cb(neaTracksFromSongs(j.data), null);
 function pruneFmTracks(keepIds) {
 const keep = {};
 (keepIds || []).forEach(id => { if (id) keep[id] = true; });
+const favKeep = {};
+try { favIds().forEach(id => { favKeep[id] = true; }); } catch (e) {}
+try { taFavIds().forEach(id => { favKeep[id] = true; }); } catch (e) {}
 const before = library.length;
 const removed = [];
 library = library.filter(m => {
-if (m.playlistId !== 'fm' || keep[m.id]) return true;
+if (m.playlistId !== 'fm' || keep[m.id] || favKeep[m.id]) return true;
 removed.push(m.id);
 return false;
 });
@@ -4260,19 +4263,68 @@ saveSettings();
 syncFloatToggle();
 renderFloat();
 };
-function favIds() {
-try { return JSON.parse(store.get('music-favs') || '[]'); } catch (e) { return []; }
+function favList() {
+try {
+const v = JSON.parse(store.get('music-favs') || '[]');
+if (!Array.isArray(v)) return [];
+return v.map(x => (typeof x === 'string') ? { id: x } : x).filter(x => x && x.id);
+} catch (e) { return []; }
 }
-function saveFavIds(list) { store.set('music-favs', JSON.stringify(list)); }
+function saveFavList(list) { store.set('music-favs', JSON.stringify(list)); }
+function favIds() { return favList().map(x => x.id); }
 function isFav(id) { return favIds().indexOf(id) >= 0; }
+function favSnapOf(m) {
+return {
+id: m.id,
+name: m.name || '',
+artist: m.artist || '',
+neteaseId: m.neteaseId || '',
+url: m.url || '',
+cover: m.cover || '',
+duration: m.duration || 0,
+favAt: Date.now()
+};
+}
 function toggleFav(id) {
-const list = favIds();
-const i = list.indexOf(id);
-if (i >= 0) list.splice(i, 1); else list.unshift(id);
-saveFavIds(list);
+const list = favList();
+const i = list.findIndex(x => x.id === id);
+if (i >= 0) list.splice(i, 1);
+else {
+const m = findTrack(id);
+list.unshift(m ? favSnapOf(m) : { id: id, favAt: Date.now() });
+}
+saveFavList(list);
 syncHeartIcons();
 renderFavList();
 return i < 0;
+}
+function favRestorable(x) { return !!(x && (x.neteaseId || validAudioSrc(x.url))); }
+function restoreFavSong(x) {
+if (!x || !x.id) return;
+const url = x.neteaseId ? neteaseMetingUrl(x.neteaseId) : (validAudioSrc(x.url) ? x.url : '');
+if (!url) { toast('该歌曲文件已删除，无法播放'); return; }
+if (!findTrack(x.id)) {
+library.push({
+id: x.id,
+neteaseId: x.neteaseId || '',
+name: x.name || '未知歌曲',
+artist: x.artist || '',
+cover: x.cover || '',
+url: url,
+source: 'url',
+duration: x.duration || 0,
+playlistId: 'default',
+addedAt: Date.now()
+});
+saveLibrary();
+}
+const list = favList();
+const it = list.find(f => f.id === x.id);
+if (it) { it.url = url; saveFavList(list); }
+renderPage();
+renderFavList();
+playTrack(x.id);
+toast('已重新加入音乐库并播放');
 }
 function syncHeartIcons() {
 const m = findTrack(currentId);
@@ -4287,23 +4339,39 @@ if (pb) pb.classList.toggle('liked', liked);
 function renderFavList() {
 const el = document.getElementById('music-fav-list');
 if (!el) return;
-const ids = favIds();
-const songs = ids.map(id => findTrack(id)).filter(Boolean);
-el.innerHTML = songs.length
-? songs.map(m => {
-const active = m.id === currentId;
-return '<div class="sm-song' + (active ? ' active' : '') + '" data-id="' + m.id + '">' +
-songIcoHtml(m) +
-'<div class="sm-song-info"><div class="sm-song-name">' + esc(m.name || '未知歌曲') + '</div>' +
-'<div class="sm-song-sub">' + esc(m.artist || '未知歌手') + '</div></div>' +
-'<button class="sm-song-more" data-id="' + m.id + '" title="取消收藏"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0112 7.1a4.9 4.9 0 017.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/></svg></button>' +
+const list = favList();
+let healed = false;
+list.forEach(x => {
+if (x.name) return; // 已有快照信息
+const m = findTrack(x.id);
+if (m) { // 旧纯 id 数据：歌还在库 → 回补快照
+Object.assign(x, favSnapOf(m), { favAt: x.favAt || Date.now() });
+healed = true;
+}
+});
+if (healed) saveFavList(list);
+const rows = list.map(x => {
+const m = findTrack(x.id);
+const gone = !m;
+const name = (m && m.name) || x.name || '未知歌曲';
+const artist = (m && m.artist) || x.artist || '';
+const active = m && m.id === currentId;
+return '<div class="sm-song' + (active ? ' active' : '') + (gone ? ' ta-fav-gone' : '') + '" data-id="' + x.id + '">' +
+songIcoHtml(m || x) +
+'<div class="sm-song-info"><div class="sm-song-name">' + esc(name) + (gone ? '<span class="sm-fav-gone-tag">已删除</span>' : '') + '</div>' +
+'<div class="sm-song-sub">' + esc(artist || '未知歌手') + (gone ? ' · ' + (favRestorable(x) ? '点击重新加入并播放' : '文件已不在，无法播放') : '') + '</div></div>' +
+'<button class="sm-song-more" data-id="' + x.id + '" title="取消收藏"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0112 7.1a4.9 4.9 0 017.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/></svg></button>' +
 '</div>';
-}).join('')
-: '<div class="ta-empty">还没有收藏歌曲，播放时点击爱心收藏</div>';
+}).join('');
+el.innerHTML = rows || '<div class="ta-empty">还没有收藏歌曲，播放时点击爱心收藏</div>';
 el.querySelectorAll('.sm-song').forEach(row => {
 row.addEventListener('click', (e) => {
 if (e.target.closest('.sm-song-more')) return;
-playTrack(row.dataset.id);
+const id = row.dataset.id;
+if (findTrack(id)) { playTrack(id); return; }
+const x = favList().find(t => t.id === id);
+if (x && favRestorable(x)) { restoreFavSong(x); return; }
+toast('该歌曲已删除，无法播放');
 });
 });
 el.querySelectorAll('.sm-song-more').forEach(b => {
