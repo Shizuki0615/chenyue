@@ -255,8 +255,8 @@ const sliderPreview = document.getElementById('modal-slider-preview');
 const sliderPreviewIco = document.getElementById('modal-slider-preview-ico');
 const colorInput = document.getElementById('modal-color');
 const customBtn = document.getElementById('modal-custom');
-const hexRow = document.getElementById('modal-hexrow');
-const hexInput = document.getElementById('modal-hex');
+let hexRow = document.getElementById('modal-hexrow');
+let hexInput = document.getElementById('modal-hex');
 const selectEl = document.getElementById('modal-select');
 const groupChipsEl = document.getElementById('modal-group-chips');
 const fileBtn = document.getElementById('modal-file');
@@ -321,6 +321,7 @@ let _openedAt = 0;
 let pillClicked = false;
 window.openModal = function (t, v, fn, opts) {
 opts = opts || {};
+ensureHexRow();
 _modalOpts = opts;
 _openSeq++;
 _openedAt = Date.now();
@@ -585,8 +586,8 @@ if (c.charAt(0) !== '#') c = '#' + c;
 return /^#[0-9a-f]{6}$/.test(c) ? c : null;
 };
 const setHexBad = (bad) => {
-try { hexInput.classList.toggle('bad', !!bad); } catch (e) {}
-try { const b = ceBoxOf(hexInput); if (b) b.classList.toggle('bad', !!bad); } catch (e) {}
+try { hexInput.classList.toggle('bad', !!bad); hexInput.style.borderColor = bad ? '#d64545' : ''; } catch (e) {}
+try { const b = ceBoxOf(hexInput); if (b) { b.classList.toggle('bad', !!bad); b.style.borderColor = bad ? '#d64545' : ''; } } catch (e) {}
 };
 const applyHexField = () => {
 if (!hexInput || hexRow.hidden) return false;
@@ -601,7 +602,9 @@ customBtn.classList.add('on');
 Array.prototype.forEach.call(swatches.children, (s) => s.classList.remove('on'));
 return true;
 };
-if (hexInput) {
+function bindHexInput() {
+if (!hexInput || hexInput.__hexBound) return;
+hexInput.__hexBound = true;
 hexInput.addEventListener('input', applyHexField);
 hexInput.addEventListener('change', applyHexField);
 hexInput.addEventListener('keydown', (e) => {
@@ -610,6 +613,34 @@ e.preventDefault();
 if (applyHexField()) { try { hexInput.blur(); } catch (e2) {} }
 });
 }
+function ensureHexRow() {
+if (!mask) return;
+const box = mask.querySelector('.modal');
+if (!box) return;
+if (!hexRow) {
+hexRow = document.createElement('div');
+hexRow.className = 'modal-hexrow';
+hexRow.id = 'modal-hexrow';
+hexRow.hidden = true;
+hexRow.style.cssText = 'margin-top:9px';
+const anchor = document.getElementById('modal-custom');
+if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);
+else box.appendChild(hexRow);
+}
+if (!hexInput) {
+hexInput = document.createElement('input');
+hexInput.type = 'text';
+hexInput.className = 'modal-hex';
+hexInput.id = 'modal-hex';
+hexInput.placeholder = '手输色值：#RRGGBB（如 #e05555）';
+hexInput.autocomplete = 'off';
+hexInput.maxLength = 7;
+hexInput.style.cssText = 'width:100%;border:1px solid var(--input-border,#e0e0e0);border-radius:12px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--input-bg,#fff);color:var(--ink,#111);text-transform:uppercase;box-sizing:border-box';
+hexRow.appendChild(hexInput);
+}
+bindHexInput();
+}
+bindHexInput();
 if (sliderRange) {
 sliderRange.addEventListener('input', () => {
 if (!sliderCfg) return;

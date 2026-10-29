@@ -6890,6 +6890,7 @@ const FIX_SENTINELS = [
   { name: '#1603b 手输框非法值红框（删＝填错格式没反馈，用户以为没生效/已生效）', file: 'css/base.css', needle: '.modal-hex.bad { border-color:#d64545; }' },
   { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
   { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
+  { name: '#1603e 旧 index 缓存时 js 现场补建手输行（删＝新版 js 配旧模板完全没有手输入口，P2 看不到）', file: 'js/personalize.js', needle: 'if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
