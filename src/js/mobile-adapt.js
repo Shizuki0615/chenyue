@@ -1899,6 +1899,9 @@
         // VivoBrowser 残留族原语义）；false=无聚焦深缩（窗口被改小：Edge/Chrome 自由
         // 小窗、分屏、桌面缩放窗口——基线全体重锚跟随、绝不进 #369 钉高）。
         var _aShrinkHadFoc = false;
+        // #1602：最近一拍 syncAndroidKb 判定的「文本持焦」——只读诊断用（判断「键盘期
+        // 基线为什么被钳/会话为什么没开」时，光看 focusTag 分不清是焦点丢失还是读数问题）。
+        var _aFocDbg = false;
         // #479：#369 钉高时刻——「钉高前提失败阀」用（钉后 10s 内核仍不回全屏高且
         // 用户在深缩态有新交互＝在用这个窗口尺寸，放弃钉高、基线重锚到现实）。
         var _aVpPinAt = 0;
@@ -2175,6 +2178,7 @@
             closing: !!_aClosing,
             staleVv: !!_aVvStale, // #236：vv 残留读数闩在位（诊断现场用）
             shrinkHadFoc: !!_aShrinkHadFoc, // #479：最近深缩的焦点语境（true=键盘形/#369 语义；false=窗口改尺寸已重锚）
+            focNow: !!_aFocDbg, // #1602：最近一拍 syncAndroidKb 是否判出「文本持焦」（区分焦点丢失与读数问题）
             vpPin: !!_aVpPin, // #369：布局视口残留钉高在位（诊断现场用）
             docLocked: false,
             fullInner: Math.round(_aIH),
@@ -2469,8 +2473,12 @@
           // 否则 #1531 把 _aH 钳成 533 → open 恒假 → 键盘会话永不开启 → 输入框「被盖」改走
           // _aProv 盲猜停靠，并逐拍 8% 深收到 34% 地板（533×0.34=181px，与回信页实报壳高逐字吻合）。
           // 地址栏显隐（<60px 或已无聚焦）照旧钳；resizes-visual 内核 innerHeight 不缩，本条零命中。
+          _aFocDbg = _focNow;
           var _ihNowKb = window.innerHeight || 0;
-          var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;
+          // 判据两把尺取大值：_aH 可能已被上一帧钳成键盘高度（#1531 的老现场），
+          // 光看它会把「正在缩小」误判成「已经很小」；_aIH 是布局基线，键盘期不动。
+          var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;
+          if (_kbShrink && _aIH > _aH + 60) _aH = _aIH; // 基线已被钳小过 → 按布局基线回补
           if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
           // #1601：无会话稳态的「布局视口钉高」（#1537）也要过地板——本机是 uni-app/Html5Plus
           // WebView（fs-active 下 .phone 用 100vh，键盘弹起时 innerHeight 888→533 而壳仍 888，

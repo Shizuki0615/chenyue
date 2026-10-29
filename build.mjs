@@ -6882,7 +6882,9 @@ const FIX_SENTINELS = [
   { name: '#1601c 1s 看门狗清短残留不再等「inner 回基线」（删＝键盘开着时该条件恒不成立，整壳停在塌缩值到收键盘为止）', file: 'js/mobile-adapt.js', needle: 'var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));' },
   { name: '#1601d 清残留后按当前布局视口立即复钉（删＝清完回落到 100vh 脏高，寄出栏沉到键盘下面直到下一次 resize）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue && _ihW > 0) {' },
   // ==== 2026-10-29 #1602 resizes-content WebView：键盘缩布局视口时基线不得被钳 ====
-  { name: '#1602a 键盘期不钳无键盘基线（删＝#1531 把 _aH 钳成 keyboard 高度 533 → open 恒假 → 键盘会话永不开启 → _aProv 盲猜并深收到 34% 地板 181px＝回信页整壳塌陷实报）', file: 'js/mobile-adapt.js', needle: 'var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;' },
+  { name: '#1602a 键盘期不钳无键盘基线（删＝#1531 把 _aH 钳成 keyboard 高度 533 → open 恒假 → 键盘会话永不开启 → _aProv 盲猜并深收到 34% 地板 181px＝回信页整壳塌陷实报）', file: 'js/mobile-adapt.js', needle: 'var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;' },
+  { name: '#1602b 已钳小的基线按布局基线回补（删＝_aH 上一帧已被键盘高度污染，取它判定「正在缩小」永远为假＝会话仍开不起来）', file: 'js/mobile-adapt.js', needle: 'if (_kbShrink && _aIH > _aH + 60) _aH = _aIH;' },
+  { name: '#1602c 诊断暴露最近一拍的文本持焦（删＝报障分不清「焦点丢了」还是「读数被钳」，只能再猜一轮）', file: 'js/mobile-adapt.js', needle: 'focNow: !!_aFocDbg,' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

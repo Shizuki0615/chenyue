@@ -1058,6 +1058,7 @@ var _aFullIH = Math.max(window.innerHeight || 0, Math.round(_aVV.height || 0));
 var _aScrKey = (screen.width || 0) + 'x' + (screen.height || 0);
 var _aVpPin = false;
 var _aShrinkHadFoc = false;
+var _aFocDbg = false;
 var _aVpPinAt = 0;
 var _aFitPend = null;
 var _aFitPin = false;
@@ -1208,6 +1209,7 @@ prov: !!_aProv,
 closing: !!_aClosing,
 staleVv: !!_aVvStale, // #236：vv 残留读数闩在位（诊断现场用）
 shrinkHadFoc: !!_aShrinkHadFoc, // #479：最近深缩的焦点语境（true=键盘形/#369 语义；false=窗口改尺寸已重锚）
+focNow: !!_aFocDbg, // #1602：最近一拍 syncAndroidKb 是否判出「文本持焦」（区分焦点丢失与读数问题）
 vpPin: !!_aVpPin, // #369：布局视口残留钉高在位（诊断现场用）
 docLocked: false,
 fullInner: Math.round(_aIH),
@@ -1362,8 +1364,10 @@ if (_aKb && h > _aPrevH && _aPrevH > 0) {
 _aClosing = true;
 }
 _aPrevH = h;
+_aFocDbg = _focNow;
 var _ihNowKb = window.innerHeight || 0;
-var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < _aH - 60;
+var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;
+if (_kbShrink && _aIH > _aH + 60) _aH = _aIH; // 基线已被钳小过 → 按布局基线回补
 if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
 if (!_aKb && !_aProv && !_aClosing && _aPhone) {
 var _ihPin = Math.round(window.innerHeight || 0);
