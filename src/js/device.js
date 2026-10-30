@@ -1325,7 +1325,7 @@
       L[remoteIdx] = '远端 version.json：' + (r.info ? r.info + '，' : '') + 'ts=' + r.ts + '（' + tsStr(r.ts) + '）';
       if (!localTs) { L[cmpIdx] = '比对结论：无法比较（本机无构建时间戳）'; return; }
       L[cmpIdx] = '比对结论：' + (r.ts > localTs
-        ? '不一致——他 手机上跑的是旧版（落后最新版' + devStr(r.ts - localTs) + '；对方点顶部更新条刷新，或关掉全部标签页重开）'
+        ? '不一致——他手机上跑的是旧版（落后最新版' + devStr(r.ts - localTs) + '；对方点顶部更新条刷新，或关掉全部标签页重开）'
         : (r.ts === localTs ? '一致（已是最新）' : '远端比本机还旧（差' + devStr(localTs - r.ts) + '，GitHub Pages CDN 延迟？一般可忽略）'));
     }));
     jobs.push(swStateText().then(function (t) { L[swIdx] = 'SW：' + t; }));
@@ -1935,7 +1935,7 @@
                 out.push('· 库(IDB)直读：' + side(db));
                 const sp = Math.max(scr.rp, ls ? ls.rp : 0);
                 if (db.rp > sp) out.push('· 判读：库里多 ' + (db.rp - sp) + ' 封带他回信 ⇒ 回信【还在库里】，屏上/LS 那份是旧账（可救回）');
-                else if (db.rp === 0 && scr.rp === 0 && (!ls || ls.rp === 0)) out.push('· 判读：三处都没有 他 回信 ⇒ 库里确实没有（从未落地，或被旧账整包写回覆盖）');
+                else if (db.rp === 0 && scr.rp === 0 && (!ls || ls.rp === 0)) out.push('· 判读：三处都没有他回信 ⇒ 库里确实没有（从未落地，或被旧账整包写回覆盖）');
                 else if (db.n > scr.n) out.push('· 判读：库里比屏上多 ' + (db.n - scr.n) + ' 封 ⇒ 屏上是旧账（同步读口没交出新值）');
                 else out.push('· 判读：三处条数/回信数一致（本刻未复现）');
                 if (scr.rp > (ls ? ls.rp : 0)) out.push('· 屏上比 LS 多 ' + (scr.rp - (ls ? ls.rp : 0)) + ' 封带他回信 ⇒ 新值只在内存，重开／被系统回收后就看不到（LS 写不进去）');
@@ -4108,9 +4108,9 @@ window.mochiViewportForm = function (sig) {
     { n: '群聊', app: 'group-chat', page: 'page-group-chat', open: true },   // #1280 「开启群聊」开关只把桌面图标收进组件库、不拦打开（group-chat.js enterGroupChat 无门控，无头实测默认未开启时图标照样开页）：打不开＝真故障照实报 ✗，本行不再给不存在的原因
     { n: '帮我决定', fn: 'openDecision' },
     { n: '多人决定', fn: 'openGroupDecision' },
-    { n: '他 询问', fn: 'openAskReply' },
-    { n: '他 心情', fn: 'openCurious' },
-    { n: '他 调侃', fn: 'openRoast' }
+    { n: '他询问', fn: 'openAskReply' },
+    { n: '他心情', fn: 'openCurious' },
+    { n: '他调侃', fn: 'openRoast' }
   ];
   function fToast(msg) {
     try {

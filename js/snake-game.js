@@ -272,7 +272,7 @@ if (document.hidden && state && state.status === 'playing') { saveGame(); toggle
 function modeHint() {
 const m = curMode();
 if (m === 'pvp') return '点开始 · P1 左半屏/方向键 · P2 右半屏/WASD';
-if (m === 'coop') return '点开始 · 组队对抗 他 · P2 用 WASD/右半屏';
+if (m === 'coop') return '点开始 · 组队对抗他 · P2 用 WASD/右半屏';
 return '点开始 · 滑动控制方向';
 }
 function setupInput() {
@@ -863,7 +863,7 @@ resTxt = d.result === 'win' ? '组队获胜' : d.result === 'lose' ? taName + ' 
 rows = '<div class="snake-res-row"><span>👥 队伍 (P1+P2)</span><span>' + psOf(d) + ' 分</span></div>' +
 '<div class="snake-res-row"><span>🤖 ' + taName + '</span><span>长度 ' + d.oLen + ' · 食物 ' + d.oFood + ' · ' + d.oScore + '分</span></div>';
 } else {
-resTxt = d.result === 'win' ? '你赢了' : d.result === 'lose' ? (window.taFit ? window.taFit('他 赢了') : '他 赢了') : '平局';
+resTxt = d.result === 'win' ? '你赢了' : d.result === 'lose' ? (window.taFit ? window.taFit('他赢了') : '他赢了') : '平局';
 rows = '<div class="snake-res-row"><span>🐍 你</span><span>长度 ' + d.pLen + ' · 食物 ' + d.pFood + ' · ' + psOf(d) + '分</span></div>' +
 '<div class="snake-res-row"><span>🤖 ' + taName + '</span><span>长度 ' + d.oLen + ' · 食物 ' + d.oFood + ' · ' + d.oScore + '分</span></div>';
 }

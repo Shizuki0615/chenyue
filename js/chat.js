@@ -2958,7 +2958,7 @@ row.className = 'ip-row';
 const inp = document.createElement('input');
 inp.className = 'ip-input';
 inp.type = 'text';
-inp.placeholder = type === 'roast' ? (window.taFit ? window.taFit('回 他 一句…') : '回 他 一句…') : '输入你的回答…';
+inp.placeholder = type === 'roast' ? (window.taFit ? window.taFit('回他一句…') : '回他一句…') : '输入你的回答…';
 const send = document.createElement('button');
 send.type = 'button';
 send.className = 'ip-send';
@@ -4200,7 +4200,7 @@ rows += '<div class="msg-survey-item' + (a ? ' answered' : '') + '">' +
 const moreHtml = moreN > 0 ? '<div class="msg-survey-more">…还有 ' + moreN + ' 道题</div>' : '';
 return '<div class="msg-ask-card msg-survey-card' + (done ? ' done' : ' answered') + '">' +
 '<div class="msg-survey-head">你发出的问卷 · ' + qs.length + ' 题</div>' +
-'<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他 作答中 · 已答 ' + nDone + '/' + qs.length : '等待 他 作答')) + '</div>' +
+'<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他作答中 · 已答 ' + nDone + '/' + qs.length : '等待他作答')) + '</div>' +
 '<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + moreHtml + '</div>' +
 '<div class="msg-survey-actions">' +
 '<button type="button" class="msg-survey-detail-btn" data-sv-detail="1" aria-label="' + (done ? '查看问卷详情' : '查看作答进度') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
@@ -4557,8 +4557,8 @@ const inviteTitle = answered ? T('邀请他') : T('邀请他') + ' · ' + escTxt
 m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + inviteTitle + '</div>' +
 (answered
-? askAnsweredLinesHtml(inviteContent, T(askCardReplyClean(rec.inviteAnswer) || '他 回应了你'))
-: '<div class="msg-ask-tip">' + T('等待 他 回应…') + '</div>') +
+? askAnsweredLinesHtml(inviteContent, T(askCardReplyClean(rec.inviteAnswer) || '他回应了你'))
+: '<div class="msg-ask-tip">' + T('等待他回应…') + '</div>') +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
@@ -4580,7 +4580,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answ
 '<div class="msg-ask-q">' + askTitle + '</div>' +
 (answered
 ? askAnsweredLinesHtml(askQ, askTa)
-: '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>' + (optsOut.length ? askOutgoingOptsHtml(optsOut) : '')) +
+: '<div class="msg-ask-tip">' + (askIsPick ? T('等待他选择…') : T('等待他回答…')) + '</div>' + (optsOut.length ? askOutgoingOptsHtml(optsOut) : '')) +
 favHeartHtml(rec) +
 (askShowArrow ? ASK_VIEW_ARROW_HTML : '') +
 '</div>');
@@ -4678,7 +4678,7 @@ return m;
 }
 if (rec.special === 'snake') {
 m.className = 'msg-rps';
-const snkResTxt = rec.snkResult === 'win' ? '你赢了' : rec.snkResult === 'lose' ? T('他 赢了') : '平局';
+const snkResTxt = rec.snkResult === 'win' ? '你赢了' : rec.snkResult === 'lose' ? T('他赢了') : '平局';
 const snkClr = rec.snkResult === 'win' ? '#34c759' : rec.snkResult === 'lose' ? '#ff6b6b' : '#888';
 m.innerHTML = '<div class="msg-rps-card msg-snake-card">' +
 '<div class="msg-snake-title">🐍 双人贪吃蛇</div>' +
@@ -4772,7 +4772,7 @@ m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const wStill = wishCardIsPending(rec); // #1316：卡片自己记的 wishSent 优先，其次才是「TA 心愿单此刻还有这件」
 const wgc = ((window.GIFT_CAT_COLOR || {})[rec.wishGiftCat]) || '#f2f2f5';
 m.innerHTML = '<div class="msg-gift-card msg-wish-card">' +
-'<div class="msg-wish-tag">' + escTxt(T('他 的心愿')) + '</div>' +
+'<div class="msg-wish-tag">' + escTxt(T('他的心愿')) + '</div>' +
 '<div class="msg-gift-emoji" style="background:' + escTxt(wgc) + '">' + (rec.wishGiftImg ? '<img class="msg-gift-img" src="' + escTxt(rec.wishGiftImg) + '" alt="">' : escTxt(rec.wishGiftEmoji || '\uD83C\uDF81')) + '</div>' +
 '<div class="msg-gift-name">' + escTxt(rec.wishGiftName || '礼物') + '</div>' +
 '<div class="msg-gift-divider"></div>' +
@@ -4780,7 +4780,7 @@ m.innerHTML = '<div class="msg-gift-card msg-wish-card">' +
 '<div class="msg-gift-foot"><span class="mg-side">' + escTxt(chatPartnerName() + T(' 许愿')) + '</span>' +
 '<span class="msg-gift-price">\u00A5' + escTxt(Number(rec.wishGiftPrice || 0).toFixed(2)) + '</span></div>' +
 (wStill
-? '<div class="msg-wish-acts"><button class="msg-wish-buy" type="button">' + T('送 他') + '</button></div>'
+? '<div class="msg-wish-acts"><button class="msg-wish-buy" type="button">' + T('送他') + '</button></div>'
 : '<div class="msg-wish-done">\u2713 ' + T('已送出') + '</div>') +
 favHeartHtml(rec) +
 '</div>';
@@ -4831,7 +4831,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' a
 '<div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div>' +
 (answered
 ? askAnsweredLinesHtml(rec.curiousAnswer, T(askCardReplyClean(rec.curiousReply)) || '…')
-: '<div class="msg-ask-tip">' + T('点击回答 他 的好奇') + '</div>') +
+: '<div class="msg-ask-tip">' + T('点击回答他的好奇') + '</div>') +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
@@ -4847,7 +4847,7 @@ m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' a
 '<div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div>' +
 (answered
 ? askAnsweredLinesHtml(rec.roastAnswer, T(askCardReplyClean(rec.roastReply)) || '…')
-: '<div class="msg-ask-tip">' + T('点击回 他 一句') + '</div>') +
+: '<div class="msg-ask-tip">' + T('点击回他一句') + '</div>') +
 favHeartHtml(rec) +
 '</div>');
 appendMsg(m);
@@ -4874,7 +4874,7 @@ const opts = Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec
 const capN = (isMulti && rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;
 const pendingHtml = isMulti && opts.length ? askMultiOptsHtml(opts, capN)
 : isSingle && opts.length ? askSingleOptsHtml(opts)
-: '<div class="msg-ask-tip">' + T('点击回答 他 的提问') + '</div>';
+: '<div class="msg-ask-tip">' + T('点击回答他的提问') + '</div>';
 m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text) + '</div>' +
 (answered
@@ -5047,7 +5047,7 @@ chatRetractToggleAfter('rcm'); // #871：情绪字卡明细开合同样是滚动
 fillAvatar(av, rec.side === 'out' ? 'cs-avatar-user' : 'cs-avatar-partner');
 if (rec.side === 'in') {
 av.style.cursor = 'pointer';
-av.title = T('对 他 拍一拍');
+av.title = T('对他拍一拍');
 let pokeTapT = null;    // touch 路布点
 let pokeTapP = null;    // pointer 路布点
 let pokeTapGuard = 0;   // 三路共用防重入
@@ -6080,7 +6080,7 @@ write(list);
 };
 window.chatAppendDeskCkTo = function (cid, q) {
 const field = (window.buildDeskCkCard ? window.buildDeskCkCard(q) : null)
-|| { deskCkDir: 'toMe', text: '在干嘛呢？想你了。', hint: '他 来查岗了。', opts: null, askType: 'text' };
+|| { deskCkDir: 'toMe', text: '在干嘛呢？想你了。', hint: '他来查岗了。', opts: null, askType: 'text' };
 window.chatAppendDeskRec(cid, {
 side: 'in', special: 'ask-card', text: field.text,
 askQuestion: field.text, askOptions: field.opts, askType: field.askType,
@@ -6636,7 +6636,7 @@ break;
 }
 fav.push({ side: 'out', text: lastMineText, type: favType, ts: Date.now(), by: 'ta', parts: favParts });
 saveFav(fav);
-setTimeout(() => { if (!sameCid()) return; toast('他 收藏了你的一条消息'); }, 1200);
+setTimeout(() => { if (!sameCid()) return; toast('他收藏了你的一条消息'); }, 1200);
 }
 }
 if (rep.type === 'text' || rep.type === 'sticker' || rep.type === 'image') {
@@ -8168,7 +8168,7 @@ return -1;
 function sendRps(mine) {
 closeRpsPanel();
 const mineName = { rock: '石头', scissors: '剪刀', paper: '布' }[mine] || '';
-addRec({ side: 'in', special: 'poke', text: '我出了 ' + mineName + '，等 他 出拳…', nightAllow: true, rateAllow: true });
+addRec({ side: 'in', special: 'poke', text: '我出了 ' + mineName + '，等他出拳…', nightAllow: true, rateAllow: true });
 showTyping();
 setTimeout(() => {
 hideTyping();
@@ -8685,7 +8685,7 @@ wallet.myBalance += amtFen;
 rpWalletSet(wallet);
 saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 拒收了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他拒收了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
 } else if (r < rejectP + claimP) {
 rec.rpStatus = 'received';
 rec.rpOpenedAt = Date.now();
@@ -8694,7 +8694,7 @@ rpWalletSet(wallet);
 saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
 const amtTxt = '（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）';
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
 rpCollectFeedback('out');
 }
 }
@@ -8712,7 +8712,7 @@ saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
 const amtTxt = '（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）';
 const myCid = window.__activeCid || 'default';
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
 rpCollectFeedback('out');
 }
 function rpExpireCheck() {
@@ -9721,9 +9721,9 @@ return p(d.getHours()) + ':' + p(d.getMinutes());
 function ihItemHtml(x) {
 const st = (x.st === '接受' || x.st === '拒绝' || x.st === '未回应') ? x.st : '';
 const words = x.a && String(x.a) !== st ? String(x.a) : '';
-const verdict = !st ? '' : (st === '接受' ? '<span class="ih-ok">✓ 他 接受了</span>'
-: st === '拒绝' ? '<span class="ih-no">✕ 他 拒绝了</span>'
-: '<span class="ih-nu">… 他 未回应</span>');
+const verdict = !st ? '' : (st === '接受' ? '<span class="ih-ok">✓ 他接受了</span>'
+: st === '拒绝' ? '<span class="ih-no">✕ 他拒绝了</span>'
+: '<span class="ih-nu">… 他未回应</span>');
 const tail = verdict && words ? ' · ' : '';
 const ta = words ? escTxt(window.taFit ? window.taFit(words) : words) : '';
 return '<div class="tc-listitem"><div class="tc-li-q">' + escTxt(x.q) + '</div>' +
@@ -9782,7 +9782,7 @@ const chatAskHistClear = document.getElementById('chat-ask-hist-clear');
 if (chatAskHistClear) chatAskHistClear.addEventListener('click', (e) => {
 e.stopPropagation();
 if (!window.openModal) { toast('弹窗组件未就绪'); return; }
-window.openModal('清空本桌面的全部邀请记录？（不可恢复，问问他 的记录不受影响）', '', () => {
+window.openModal('清空本桌面的全部邀请记录？（不可恢复，问问他的记录不受影响）', '', () => {
 try {
 const all = JSON.parse(store.get('invite-ask-history') || '[]');
 const keep = Array.isArray(all) ? all.filter(x => x && x.type !== 'invite') : [];
@@ -10978,7 +10978,7 @@ const _favProbCard = (window.favCfg ? window.favCfg().taCard : 30);
 if (!rec || Math.random() * 100 >= _favProbCard) return;
 const f = cardSnapshot(rec);
 if (!f) return;
-if (window.addTaFavItem(f)) setTimeout(() => toast('他 收藏了你们的互动卡片'), 1200);
+if (window.addTaFavItem(f)) setTimeout(() => toast('他收藏了你们的互动卡片'), 1200);
 }
 function closeMsgActions() {
 if (msgActions && typeof msgActions.__maFollowStop === 'function') { try { msgActions.__maFollowStop(); } catch (e) {} } // FIX 2026-09-16 #642 摘跟随监听
@@ -11457,10 +11457,10 @@ if (manageBtn) manageBtn.classList.toggle('sel', favBatch);
 const barEl = document.getElementById('fav-batch-bar');
 if (barEl) { barEl.hidden = !favBatch; syncBatchBar(); }
 const title = favTab === 'ta' ? partnerName + ' 的收藏' : myName + ' 的收藏';
-let empty = favTab === 'ta' ? '他 还没有收藏' : '暂无收藏';
+let empty = favTab === 'ta' ? '他还没有收藏' : '暂无收藏';
 if (favKind !== 'all') {
 const K_EMPTY = { msg: '聊天消息', card: '互动卡片', mail: '信件', feed: '朋友圈' };
-empty = (favTab === 'ta' ? '他 还没有收藏' : '暂无') + K_EMPTY[favKind];
+empty = (favTab === 'ta' ? '他还没有收藏' : '暂无') + K_EMPTY[favKind];
 }
 const h = document.createElement('div');
 h.className = 'cc-group-header';

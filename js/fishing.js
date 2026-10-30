@@ -116,7 +116,7 @@ shell: ['捡到一个小贝壳，给你。', '这个贝壳挺好看的，留给�
 stone: ['捡到一块小石头，很光滑，给你。', '这块石头摸起来很舒服，送你。'],
 bottle: ['捞到一个漂流瓶，没舍得打开，给你。', '捡到一个漂流瓶，送你了。'],
 trinket: ['钓上来一个小饰品，是你的了。', '这个小东西，很想给你。'],
-flower: ['这朵花给你。', '他 把花递给你。', '捞起一朵花，觉得适合你。']
+flower: ['这朵花给你。', '他把花递给你。', '捞起一朵花，觉得适合你。']
 };
 function giftNoteFor(item) {
 const builtin = GIFT_NOTES[item.giftNote || item.id] || ['这个给你。', '想把这份小惊喜留给你。'];
@@ -561,7 +561,7 @@ castBtn.textContent = waiting ? '等待鱼漂…' : '抛竿';
 if (reelBtn) reelBtn.hidden = !bitting;
 if (timingWrapEl) timingWrapEl.hidden = !bitting;
 if (statusEl && !statusEl.dataset.keep) {
-if (mine.phase === 'waiting') statusEl.textContent = '鱼漂已下水，等 他 咬钩…';
+if (mine.phase === 'waiting') statusEl.textContent = '鱼漂已下水，等他咬钩…';
 else if (mine.phase === 'idle' && curTab === 'today') { if (statusEl.textContent !== lastNotice) statusEl.textContent = lastNotice; }
 }
 renderPage();
@@ -656,11 +656,11 @@ return html;
 function renderGifts() {
 const g = loadGifts();
 const html =
-'<div class="fish-sub">他 送我的东西</div>' +
+'<div class="fish-sub">他送我的东西</div>' +
 (g.length ? g.map(function (item, idx) {
 const it = ITEM_MAP[item.id]; if (!it) return '';
 return '<div class="fish-row"><span class="fish-ico">' + it.icon + '</span><span class="fish-name">' + esc(it.name) + '</span><span class="fish-gift-ts">' + esc(fmtTs(item.ts)) + '</span><button class="fish-exch" data-idx="' + idx + '">兑换 ¥5.20</button></div>';
-}).join('') : '<div class="fish-empty">他 还没送你东西，继续一起钓鱼吧～</div>');
+}).join('') : '<div class="fish-empty">他还没送你东西，继续一起钓鱼吧～</div>');
 return html;
 }
 function renderCook() {

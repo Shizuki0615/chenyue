@@ -571,7 +571,7 @@
     if (!rows.length) {
       // #797：瓶子记录走 IDB 回填，未完成时不把空值陈述成终态文案（诱导用户以为记录丢了）
       if (window.mochiDataPending && window.mochiDataPending()) { el.innerHTML = window.mochiLoadingHtml('漂流瓶'); return; }
-      el.innerHTML = '<div class="dl-empty">' + (tab === 'mine' ? '还没有放过的瓶子。写一句话放进海里吧。<br><button class="memo-send-btn" id="dl-empty-put" style="margin-top:8px">写一句话放瓶子</button>' : tab === 'got' ? '还没有捡到的瓶子。去海边捡一个试试。' : tab === 'theirs' ? '还没有捡到过你说的话。多去捡几次，说不定就被 他 捞起来了。' : '还没有收藏的瓶子。') + '</div>';
+      el.innerHTML = '<div class="dl-empty">' + (tab === 'mine' ? '还没有放过的瓶子。写一句话放进海里吧。<br><button class="memo-send-btn" id="dl-empty-put" style="margin-top:8px">写一句话放瓶子</button>' : tab === 'got' ? '还没有捡到的瓶子。去海边捡一个试试。' : tab === 'theirs' ? '还没有捡到过你说的话。多去捡几次，说不定就被他捞起来了。' : '还没有收藏的瓶子。') + '</div>';
       return;
     }
     rows.slice(0, 60).forEach(r => {

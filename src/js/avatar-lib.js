@@ -1387,9 +1387,9 @@
   // pokePersonMap 回填成当前昵称（所以写"TA 把…"读起来就是"{当前名} 把…"）；被引号包住的
   // 昵称若恰好含 TA/ta/他/她 这几个 token 仍会被该回填改写——与全站其它系统消息同一口径
   // （现有通话/红包/寻踪等消息都如此），本次不收窄，避免为病态昵称扩大 chat.js 改动面。
-  function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }
+  function nickMsgPartner(to) { return '他把聊天昵称换成了「' + to + '」'; }
   // v8.45：用户手动给联系人改聊天昵称时，聊天里也落一条同格式记录——主语固定「我」：
-  //   我 把聊天昵称换成了「{新昵称}」，与「他 把聊天昵称换成了「X」」完全对称。
+  //   我 把聊天昵称换成了「{新昵称}」，与「他把聊天昵称换成了「X」」完全对称。
   //   不跟随本人的聊天昵称（用户明确要求写「我」，而不是「阿玥 把…」）。
   //   引号里的新昵称是当时发生的事实，调用方照旧传 keep=true 豁免改名清扫（同 #616 其余三条）。
   function nickMsgMeSet(to) {
@@ -1398,7 +1398,7 @@
   // 聊天设置→形象→联系人昵称 复用同一条文案（两处入口的字形/措辞必须一致）
   window.chatNickMsgMeSet = nickMsgMeSet;
   function nickMsgMeSelf(to) { return '我把自己的聊天昵称换成了「' + to + '」'; }
-  function nickMsgTaSetMine(to) { return '他 把我的聊天昵称换成了「' + to + '」'; }
+  function nickMsgTaSetMine(to) { return '他把我的聊天昵称换成了「' + to + '」'; }
 
   // 换昵称的回应文案（对齐头像池 replyInvite：聊天消息 + 黑色小字 toast）
   // 「换成了「X」」里的 X 取**实际生效值**（先参数、参数无效则回落到键里已写入的值），
@@ -1406,8 +1406,8 @@
   function replyNickInvite(accepted, name) {
     const to = String(name || store.get('cs-lbl-partner') || '');
     const text = accepted
-      ? (to ? '他 同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他 同意了我的换昵称邀请')
-      : '他 拒绝了我的换昵称邀请，昵称保持不变';
+      ? (to ? '他同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他同意了我的换昵称邀请')
+      : '他拒绝了我的换昵称邀请，昵称保持不变';
     chatSystem(text, null, true);
     toast(text);
   }
@@ -1417,8 +1417,8 @@
   function replyMeNickInvite(accepted, name) {
     const to = String(name || store.get('cs-lbl-user') || '');
     const text = accepted
-      ? (to ? '我同意了 他 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 他 的换昵称邀请')
-      : '我拒绝了 他 的换昵称邀请，昵称保持不变';
+      ? (to ? '我同意了他的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了他的换昵称邀请')
+      : '我拒绝了他的换昵称邀请，昵称保持不变';
     chatSystem(text, null, true);
   }
   // 手动点击 TA 的昵称池：立即换聊天昵称（cs-lbl-partner）

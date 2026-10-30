@@ -404,7 +404,7 @@ const rt = rarityOf(item);
 showOverlay(T('他') + '拍得了',
 '<div class="au-ov-ico">' + item.ico + '</div>' +
 '<div class="pong-end-stat"><span class="au-rare ' + rt.cls + '">' + rt.label + '</span> ' + esc(item.name) + ' · ' + yuan(st.cur) + ' 归 ' + esc(T('他')) + '</div>' +
-'<div class="pong-end-stat">📬 不过 他 拍走的拍品，过几天会寄回给你</div>',
+'<div class="pong-end-stat">📬 不过他拍走的拍品，过几天会寄回给你</div>',
 st.idx + 1 < st.lots.length ? '下一件' : '结算', 'ta');
 setStatus(esc(T('他')) + '把「' + esc(item.name) + '」抱走了');
 try {

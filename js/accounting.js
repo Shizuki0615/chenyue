@@ -763,7 +763,7 @@ if (!scroll) return null;
 rmRow = document.createElement('div');
 rmRow.className = 'acc-remind glass';
 rmRow.id = 'acc-remind-row';
-rmRow.innerHTML = '<div class="acc-remind-main"><div class="acc-remind-title">他 记账提醒</div>' +
+rmRow.innerHTML = '<div class="acc-remind-main"><div class="acc-remind-title">他记账提醒</div>' +
 '<div class="acc-remind-sub" id="acc-remind-sub"></div></div>' +
 '<div class="acc-remind-badge" id="acc-remind-badge"></div>';
 var ov = scroll.querySelector('.acc-overview');
@@ -778,7 +778,7 @@ if (!el) return;
 var on = rmOn();
 var s = document.getElementById('acc-remind-sub');
 var b = document.getElementById('acc-remind-badge');
-if (s) s.textContent = on ? '他 每天有概率在聊天里提醒你记账（今天记过就不再催）' : '默认关闭 · 点击开启';
+if (s) s.textContent = on ? '他每天有概率在聊天里提醒你记账（今天记过就不再催）' : '默认关闭 · 点击开启';
 if (b) { b.textContent = on ? '已开启 · ' + rmProb() + '%' : '已关闭'; b.className = 'acc-remind-badge' + (on ? ' on' : ''); }
 }
 function rmPills() {
@@ -789,13 +789,13 @@ return [
 }
 function rmHint() {
 return rmOn()
-? '已开启：白天（9:00-23:00）每天掷一次骰，命中时 他 在聊天里发一条带「记账提醒」标签的字卡；每个联系人单独设，当天最多 1 条。'
-: '当前关闭：他 不会主动提醒记账。开启后按下面的概率每天判定一次，今天已经记过账就不催。';
+? '已开启：白天（9:00-23:00）每天掷一次骰，命中时他在聊天里发一条带「记账提醒」标签的字卡；每个联系人单独设，当天最多 1 条。'
+: '当前关闭：他不会主动提醒记账。开启后按下面的概率每天判定一次，今天已经记过账就不催。';
 }
 function rmSettings() {
 if (!window.openModal) return;
 var phase = 1;
-const ctl = window.openModal('他 记账提醒', '', function (v) {
+const ctl = window.openModal('他记账提醒', '', function (v) {
 if (phase === 1) {
 if (v === 'toggle') {
 try { store.set(KEY_RM_ON, rmOn() ? '0' : '1'); } catch (e) {}
@@ -803,7 +803,7 @@ ctl.stay();
 ctl.pills(rmPills());
 ctl.hint(rmHint());
 rmSyncRow();
-toast(rmOn() ? '已开启 他 记账提醒' : '已关闭 他 记账提醒');
+toast(rmOn() ? '已开启他记账提醒' : '已关闭他记账提醒');
 } else if (v === 'prob') {
 phase = 2;
 ctl.stay();

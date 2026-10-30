@@ -382,6 +382,8 @@ try {
     const sliderPreviewIco = document.getElementById('modal-slider-preview-ico');
     const colorInput = document.getElementById('modal-color');
     const customBtn = document.getElementById('modal-custom');
+    let hexRow = document.getElementById('modal-hexrow');
+    let hexInput = document.getElementById('modal-hex');
     const selectEl = document.getElementById('modal-select');
     const groupChipsEl = document.getElementById('modal-group-chips');
     const fileBtn = document.getElementById('modal-file');
@@ -476,6 +478,8 @@ try {
     let pillClicked = false;
     window.openModal = function (t, v, fn, opts) {
       opts = opts || {};
+      // #1603：旧 index.html 缓存（模板里没有手输行）时由 js 现场补建，不依赖模板同步更新
+      ensureHexRow();
       _modalOpts = opts;
       _openSeq++;
       _openedAt = Date.now();
@@ -590,6 +594,14 @@ try {
       swatches.innerHTML = '';
       picked = -1;
       customVal = null;
+      // #1603：手输色值行跟着取色弹窗出现；当前就是自定义色时回填，方便改一个字符
+      if (hexRow) hexRow.hidden = !opts.colorPicker;
+      if (hexInput) { hexInput.value = ''; setHexBad(false); }
+      if (opts.colorPicker && opts.pick === -2 && opts.color) {
+        customVal = opts.color;
+        picked = -2;
+        if (hexInput) hexInput.value = String(opts.color);
+      }
       if (opts.swatches && opts.swatches.length) {
         opts.swatches.forEach((label, i) => {
           const s = document.createElement('span');
@@ -601,6 +613,8 @@ try {
             s.classList.add('on');
             picked = i;
             customBtn.classList.remove('on');
+            // 点了色块＝放弃手输值，避免「色块亮着、确定却提交手输色」
+            if (hexInput) { hexInput.value = ''; setHexBad(false); }
           });
           swatches.appendChild(s);
         });
@@ -801,6 +815,76 @@ try {
       void colorInput.offsetWidth; // 强制回流，确保 iOS 判定该元素已渲染
       try { colorInput.click(); } catch (e) { try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e2) {} }
     });
+    // #1603：通用取色弹窗的手输色值——原生取色器在 APP 内嵌 WebView / 内置浏览器里
+    // 可能完全打不开（点「自定义颜色」没反应），手输 #RRGGBB 是常驻兜底。
+    // 合法值即时记成「自定义色」（与 colorInput 的 change 同一条状态：picked=-2 + customVal），
+    // 确定时走 fire() 的颜色分支；不合法只标红、不覆盖已选色。
+    const normHex = (v) => {
+      let c = String(v == null ? '' : v).trim().toLowerCase();
+      if (!c) return '';
+      if (c.charAt(0) !== '#') c = '#' + c;
+      return /^#[0-9a-f]{6}$/.test(c) ? c : null;
+    };
+    // 安卓 ce-box 接管后可见的是 div，红框要同时落到原生框与代理框上；
+    // 内联 border-color 兜底旧 CSS 缓存（那里没有 .modal-hex.bad 规则）
+    const setHexBad = (bad) => {
+      try { hexInput.classList.toggle('bad', !!bad); hexInput.style.borderColor = bad ? '#d64545' : ''; } catch (e) {}
+      try { const b = ceBoxOf(hexInput); if (b) { b.classList.toggle('bad', !!bad); b.style.borderColor = bad ? '#d64545' : ''; } } catch (e) {}
+    };
+    const applyHexField = () => {
+      if (!hexInput || hexRow.hidden) return false;
+      const raw = readModalVal(hexInput).trim();
+      if (!raw) { setHexBad(false); return false; }
+      const c = normHex(raw);
+      if (c === null) { setHexBad(true); return false; }
+      setHexBad(false);
+      customVal = c;
+      picked = -2;
+      customBtn.classList.add('on');
+      Array.prototype.forEach.call(swatches.children, (s) => s.classList.remove('on'));
+      return true;
+    };
+    function bindHexInput() {
+      if (!hexInput || hexInput.__hexBound) return;
+      hexInput.__hexBound = true;
+      hexInput.addEventListener('input', applyHexField);
+      hexInput.addEventListener('change', applyHexField);
+      hexInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (applyHexField()) { try { hexInput.blur(); } catch (e2) {} }
+      });
+    }
+    // #1603：旧 index.html 缓存（模板里没有 #modal-hexrow/#modal-hex）时现场补建整行——
+    // 新版 js + 旧模板的组合也要有手输入口；内联样式保证旧 CSS 缓存下外观一致。
+    function ensureHexRow() {
+      if (!mask) return;
+      const box = mask.querySelector('.modal');
+      if (!box) return;
+      if (!hexRow) {
+        hexRow = document.createElement('div');
+        hexRow.className = 'modal-hexrow';
+        hexRow.id = 'modal-hexrow';
+        hexRow.hidden = true;
+        hexRow.style.cssText = 'margin-top:9px';
+        const anchor = document.getElementById('modal-custom');
+        if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);
+        else box.appendChild(hexRow);
+      }
+      if (!hexInput) {
+        hexInput = document.createElement('input');
+        hexInput.type = 'text';
+        hexInput.className = 'modal-hex';
+        hexInput.id = 'modal-hex';
+        hexInput.placeholder = '手输色值：#RRGGBB（如 #e05555）';
+        hexInput.autocomplete = 'off';
+        hexInput.maxLength = 7;
+        hexInput.style.cssText = 'width:100%;border:1px solid var(--input-border,#e0e0e0);border-radius:12px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--input-bg,#fff);color:var(--ink,#111);text-transform:uppercase;box-sizing:border-box';
+        hexRow.appendChild(hexInput);
+      }
+      bindHexInput();
+    }
+    bindHexInput();
     // v3.6.x：滑块拖动——实时更新值/预览块/onChange（图标圆角所见即所得）
     if (sliderRange) {
       sliderRange.addEventListener('input', () => {
@@ -816,6 +900,8 @@ try {
       Array.prototype.forEach.call(swatches.children, c => c.classList.remove('on'));
       customBtn.classList.add('on');
       picked = -2;
+      // #1603：原生取色器的结果同步回手输框——用户可在这里微调/复制同一个值
+      if (hexInput) { hexInput.value = customVal; setHexBad(false); }
       // 取完色后把离屏状态恢复隐藏（值已进 customVal，不影响后续）
       try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e) {}
     });
@@ -854,6 +940,15 @@ try {
         if (ae && ae.isContentEditable && mask.contains(ae)) ae.blur();
       } catch (e) {}
       if (!cb) return;
+      // #1603：用户明确点过胶囊（如「恢复默认」）时胶囊优先——否则手输色/色板会把复位吞掉；
+      // 未点过胶囊时仍是色板/手输色优先（v3.6.x 原口径：opts.pill 预设值不能抢色板）
+      if (pillsEl && !pillsEl.hidden && pillClicked) {
+        if (pillsOnOk) pillsOnOk(pillVal);
+        cb(pillVal);
+        return;
+      }
+      // #1603：手输色值优先（含只开 colorPicker、没有色板的弹窗）——与原生取色器同一状态位
+      if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }
       // 色板/自定义取色优先于 pills（v3.6.x：widget 颜色等弹窗同时带 pills 和色板时，
       // 点色板确定被 pills 分支拦截传 null → 设置不生效）
       if (swatches && !swatches.hidden && (picked === -2 || picked >= 0)) {
@@ -963,7 +1058,7 @@ try {
   //   没进清单（无头实测：库里那份回到内存后 store='宝贝'、摸鱼卡小字='宝贝 摸鱼值'，而
   //   #lbl-partner 仍是 'TA'，切一次桌面才归位）。
   // FIX 2026-09-28 #1358b：TA 侧的回退值改问 window.taWord()——称呼存在 partner-gender（他/她/TA），
-  //   而这两格拿写死的 'TA' 当回退，主页永远看不到用户设的「他/她」＝实报「昵称小字 TA 他 她
+  //   而这两格拿写死的 'TA' 当回退，主页永远看不到用户设的「他/她」＝实报「昵称小字 TA 他她
   //   设置了但是没用，每次都是TA」。判据只取「这一格当前读数有没有值」，零机型／零 UA 分支。
   function deskNameText(key) {
     const v = store.get(key);
@@ -2998,6 +3093,29 @@ try {
         });
         tip.appendChild(tipTx); tip.appendChild(hexBtn);
         paletteHost.appendChild(tip);
+        // #1603：六个颜色行（主题色/边框/按钮文字/组件背景/按钮/爱心外框）都再给一格直接手输，
+        // 不用多开一层弹窗——色值合法即生效，非法只提示不覆盖当前色。
+        const hexLine = document.createElement('div');
+        hexLine.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap';
+        const hexIn = document.createElement('input');
+        hexIn.type = 'text';
+        hexIn.placeholder = '#RRGGBB';
+        hexIn.maxLength = 7;
+        hexIn.autocomplete = 'off'; hexIn.autocorrect = 'off'; hexIn.autocapitalize = 'off'; hexIn.spellcheck = false;
+        hexIn.style.cssText = 'width:104px;font-size:11px;padding:3px 7px;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--input-bg,#fff);color:var(--ink,#111);outline:none';
+        const applyInlineHex = () => {
+          let c = String(hexIn.value || '').trim().toLowerCase();
+          if (!c) return;
+          if (c.charAt(0) !== '#') c = '#' + c;
+          if (!/^#[0-9a-f]{6}$/.test(c)) { toast('格式不对：# + 6 位十六进制，如 #e05555'); return; }
+          item.curSet(c);
+          hexIn.value = c;
+          toast(item.label + ' 已设为 ' + c.toUpperCase());
+        };
+        hexIn.addEventListener('change', applyInlineHex);
+        hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyInlineHex(); } });
+        hexLine.appendChild(hexIn);
+        paletteHost.appendChild(hexLine);
       };
       const zoomWorks = !(window.matchMedia && window.matchMedia('(max-width: 900px)').matches) && !document.documentElement.classList.contains('force-mobile');
       const SECS = [
@@ -5145,7 +5263,7 @@ try {
     } catch (e) {
       // #602：解不出来不再静默——最常见是链接被聊天软件/复制截断。明确告知并给出「导出文件」正路。
       cleanHash();
-      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+      const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让他用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
       if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
       else toast(msg);
       return;
@@ -5744,6 +5862,69 @@ try {
         try { if (typeof toast === 'function') toast('已恢复默认'); } catch (err) {}
       });
       row.appendChild(btn);
+    });
+  })();
+
+  // 2026-10-29：每个颜色行再补一个「手输」入口——取色器打不开的手机（内置浏览器/WebView）
+  // 点行里的「自定义颜色」常常没反应，这里直接弹 #RRGGBB 输入框，不经过系统取色器。
+  // 顺序排在「默认」按钮前面：手输入口是常用操作，恢复默认是兜底。
+  (function bindBeautyColorHexInputs() {
+    const rows = [
+      ['row-accent-color', '主题色', getAccentColor, (c) => {
+        try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
+        applyAccentColor(c);
+      }],
+      ['row-widget-color', '小组件颜色', () => store.get('widget-bg-color') || '', (c) => {
+        store.set('widget-bg-color', c);
+        applyWidgetColor(c);
+      }],
+      ['row-widget-border', '小组件边框', () => store.get('widget-border-color') || '', (c) => {
+        store.set('widget-border-color', c);
+        applyWidgetBorder(c);
+      }],
+      ['row-widget-btn', '按钮', () => store.get('widget-btn-color') || '', (c) => {
+        store.set('widget-btn-color', c);
+        applyWidgetBtn(c);
+      }],
+      ['row-widget-btn-text', '按钮文字', () => store.get('widget-btn-text-color') || '', (c) => {
+        store.set('widget-btn-text-color', c);
+        applyWidgetBtnText(c);
+      }],
+      ['row-app-name-color', '图标文字', () => store.get(APP_NAME_COLOR_KEY) || '', (c) => {
+        store.set(APP_NAME_COLOR_KEY, c);
+        applyAppNameColor();
+      }],
+      ['row-icon-ink', '图标与底栏线条', iconInkValOf, (c) => {
+        store.set(ICON_INK_KEY, c);
+        applyIconInkColor();
+      }],
+      ['row-widget-heart', '爱心外框', () => store.get('widget-heart-color') || '', (c) => {
+        store.set('widget-heart-color', c);
+        applyWidgetHeart(c);
+      }]
+    ];
+    rows.forEach(function (it) {
+      const row = document.getElementById(it[0]);
+      if (!row || row.querySelector('.bfy-hex-btn')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bfy-hex-btn';
+      btn.textContent = '手输';
+      btn.title = '手动输入 #RRGGBB 色值（取色器打不开的手机用）';
+      btn.style.cssText = 'flex:none;margin-left:6px;padding:3px 9px;font-size:11px;line-height:1.4;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);cursor:pointer';
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation(); // 别触发该行原来的选择器弹窗
+        if (typeof openHexColorModal !== 'function') return;
+        let cur = '';
+        try { cur = it[2]() || ''; } catch (err) { cur = ''; }
+        openHexColorModal('输入' + it[1] + '色值', /^#[0-9a-fA-F]{6}$/.test(cur) ? cur : '#111111', function (c) {
+          try { it[3](c); } catch (err) {}
+          try { if (typeof toast === 'function') toast(it[1] + '已设为 ' + String(c).toUpperCase()); } catch (err) {}
+        });
+      });
+      const reset = row.querySelector('.bfy-reset-btn');
+      if (reset) row.insertBefore(btn, reset);
+      else row.appendChild(btn);
     });
   })();
 

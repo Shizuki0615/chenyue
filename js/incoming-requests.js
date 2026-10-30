@@ -132,7 +132,7 @@ ico: '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" s
 title: '联系人跨桌面查岗',
 subTag: '功能说明',
 tagTitle: '联系人跨桌面查岗',
-detail: '其他桌面的联系人是各自独立触发、互不影响：他 每 60 秒「探测」一次你是否还醒着，触发频率按「跨桌面查岗频率」档位全局统一控制（原频率/安静/更安静/最安静，下方可选，含来电；没有比「原频率」更高的档）；同一联系人触发后有冷却、不重复打扰。你回复后 他 会现场回应。浏览器在后台时收到的查岗会像来电一样等你 3 分钟（通知里写明「快回来回应」），回到应用弹同一个窗；3 分钟内没回来＝错过，这一次不会出现在 他 桌面的聊天里，只在主页「联系人跨桌面查岗」记一行「错过未回应」。弹窗里点了「稍后」或「现在回他」的，卡都留在 他 桌面的聊天里可补答。关闭后其他桌面的 他 不再来查岗、也不再找你聊天。想立刻来一次：聊天 →「更多功能 → 他的提问 → 跨桌面查岗」（不看概率与冷却；本开关关着时只提示、不触发）。',
+detail: '其他桌面的联系人是各自独立触发、互不影响：他每 60 秒「探测」一次你是否还醒着，触发频率按「跨桌面查岗频率」档位全局统一控制（原频率/安静/更安静/最安静，下方可选，含来电；没有比「原频率」更高的档）；同一联系人触发后有冷却、不重复打扰。你回复后他会现场回应。浏览器在后台时收到的查岗会像来电一样等你 3 分钟（通知里写明「快回来回应」），回到应用弹同一个窗；3 分钟内没回来＝错过，这一次不会出现在他桌面的聊天里，只在主页「联系人跨桌面查岗」记一行「错过未回应」。弹窗里点了「稍后」或「现在回他」的，卡都留在他桌面的聊天里可补答。关闭后其他桌面的他不再来查岗、也不再找你聊天。想立刻来一次：聊天 →「更多功能 → 他的提问 → 跨桌面查岗」（不看概率与冷却；本开关关着时只提示、不触发）。',
 get: deskCheckinEn,
 set: window.setDeskCheckinEn,
 toast: function (en) { return en ? '已开启：其他桌面的他会来查岗、找你聊天' : '已关闭：其他桌面的他不再来查岗打扰'; }
@@ -143,7 +143,7 @@ ico: '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" s
 title: '联系人跨桌面打电话',
 subTag: '功能说明',
 tagTitle: '联系人跨桌面打电话',
-detail: '开启后，其他桌面的联系人会主动给你打语音电话（本开关默认关闭，需要用请在下方手动打开；#448）；概率与冷却由下方「跨桌面查岗频率」档位全局统一生效（原频率 2%/30min、安静 1%/3h、更安静 0.5%/6h、最安静 0.2%/12h，对所有桌面联系人同时生效），不再逐个联系人在回复设置里单独调。来电弹出后点「接听」，会先自动跳到来电联系人的桌面再响铃——这是刻意的设计：通话、聊天系统消息和主页通话记录都归属 他 自己的桌面，方便按联系人分账，切回原桌面不会留下这条记录；若正在通话中，接听会自动挂断当前通话再转接。点「稍后」或弹窗未接，也会在 他 的桌面留一条未接来电记录。关闭后不再有跨桌面来电。',
+detail: '开启后，其他桌面的联系人会主动给你打语音电话（本开关默认关闭，需要用请在下方手动打开；#448）；概率与冷却由下方「跨桌面查岗频率」档位全局统一生效（原频率 2%/30min、安静 1%/3h、更安静 0.5%/6h、最安静 0.2%/12h，对所有桌面联系人同时生效），不再逐个联系人在回复设置里单独调。来电弹出后点「接听」，会先自动跳到来电联系人的桌面再响铃——这是刻意的设计：通话、聊天系统消息和主页通话记录都归属他自己的桌面，方便按联系人分账，切回原桌面不会留下这条记录；若正在通话中，接听会自动挂断当前通话再转接。点「稍后」或弹窗未接，也会在他的桌面留一条未接来电记录。关闭后不再有跨桌面来电。',
 get: deskCallEn,
 set: window.setDeskCallEn,
 toast: function (en) { return en ? '已开启：其他桌面的他会主动给你打电话' : '已关闭：其他桌面的他不再主动来电'; }
@@ -195,7 +195,7 @@ var freqDetail = '「跨桌面查岗 / 来电」的频率按全局档位统一�
 '\n· 安静：概率 1%、冷却 3 小时（默认）；' +
 '\n· 更安静：概率 0.5%、冷却 6 小时；' +
 '\n· 最安静：概率 0.2%、冷却 12 小时。' +
-'\n\n没有比「原频率」更高的档（用户要求不再提供高频率档）。选档后立即对所有桌面的联系人生效，改一次全绿。只影响「联系人跨桌面查岗 / 来电」的触发频率，不影响桌面上 他 主动查岗（主动查岗仍按回复设置里各自的概率/冷却）。';
+'\n\n没有比「原频率」更高的档（用户要求不再提供高频率档）。选档后立即对所有桌面的联系人生效，改一次全绿。只影响「联系人跨桌面查岗 / 来电」的触发频率，不影响桌面上他主动查岗（主动查岗仍按回复设置里各自的概率/冷却）。';
 function syncFreqPills() {
 try {
 const cur = deskFreqMode();
@@ -488,7 +488,7 @@ if (window.callHoldIncoming) window.callHoldIncoming(name, req.cid, av);
 else if (window.bgNotifyCheck) window.bgNotifyCheck(title, Date.now(), { name: name + '来电', av: av, avFixed: true, force: true, kind: 'call', cid: req.cid });
 } else if (req.kind === 'checkin') {
 if (!deskQSeenRecently(req.cid, req.text)) {
-if (window.bgNotifyCheck) window.bgNotifyCheck(title + '：' + (req.text || '') + '，快回来回应，他 会等你几分钟', Date.now(), { name: name + '查岗', av: av, avFixed: true, kind: 'checkin', cid: req.cid });
+if (window.bgNotifyCheck) window.bgNotifyCheck(title + '：' + (req.text || '') + '，快回来回应，他会等你几分钟', Date.now(), { name: name + '查岗', av: av, avFixed: true, kind: 'checkin', cid: req.cid });
 return true;
 }
 } else { // chat 求聊天
@@ -701,7 +701,7 @@ const cur = window.__activeCid || 'default';
 const others = (window.getContacts() || []).filter(function (c) { return c && c.id !== cur; });
 if (!others.length) { _toast('只有当前桌面，没有其他桌面的联系人'); return false; }
 const pool = others.filter(function (c) { return num(cfgFor(c.id), 'ckq-en', 1) === 1 && !hasPending(c.id); });
-if (!pool.length) { _toast('其他桌面的联系人都关了「他 主动查岗」，可在 回复设置 → 查岗 里开启'); return false; }
+if (!pool.length) { _toast('其他桌面的联系人都关了「他主动查岗」，可在 回复设置 → 查岗 里开启'); return false; }
 const who = pool[Math.floor(Math.random() * pool.length)];
 const fired = window.triggerIncomingCheckin(who.id);
 if (!fired) _toast('这个桌面的查岗题库是空的，可在 字卡库 →「他的查岗」里添加或开启');

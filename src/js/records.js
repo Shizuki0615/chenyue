@@ -88,7 +88,7 @@
           '</div>'
     })), {
       key: 'records-catch',
-      empty: recEmpty('<div class="ta-empty">暂无摸鱼抓包记录（桌面浮字可点击抓包 他；点太快会被 他 反向抓包）</div>'),
+      empty: recEmpty('<div class="ta-empty">暂无摸鱼抓包记录（桌面浮字可点击抓包他；点太快会被他反向抓包）</div>'),
       todayEmpty: '<div class="dc-h-day-empty">今天没有被抓包</div>'
     });
     window.mochiHistDelBind(el, {
@@ -287,7 +287,7 @@
       else if (tag === '喝水提醒') rows.push({ icon: KIND_ICON.water, main: '提醒喝水 · ' + esc(m.text || ''), sub: fmtDT(t), ts: t });
       else if (tag === '吃饭提醒') rows.push({ icon: KIND_ICON.eat, main: '提醒吃饭 · ' + esc(m.text || ''), sub: fmtDT(t), ts: t });
     });
-    if (!rows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无联系人的关心记录（他 会提醒你喝水吃饭、关心经期与症状、陪你专注；查岗看「联系人对我查岗」与「联系人跨桌面查岗」两栏）</div>'); return; }
+    if (!rows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无联系人的关心记录（他会提醒你喝水吃饭、关心经期与症状、陪你专注；查岗看「联系人对我查岗」与「联系人跨桌面查岗」两栏）</div>'); return; }
     rows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     // #1403：这两栏（关心／红包）只做「当天直显＋更早按月折叠」，**刻意不给按条删除**——
     // 它们是**现算出来的汇总视图**：关心＝聊天记录里带 mood 标记的那几条 ＋ records-care 里的番茄陪伴，
@@ -356,7 +356,7 @@
         if (!nearCard) ckRows.push({ ts: t, q: '📋 ' + name + ' 查岗', sub: fmtDT(t), line: '' });
       }
     });
-    if (!ckRows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无查岗记录（他 按回复设置里的概率与冷却主动来查岗，问你在干嘛/在做什么）</div>'); return; }
+    if (!ckRows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无查岗记录（他按回复设置里的概率与冷却主动来查岗，问你在干嘛/在做什么）</div>'); return; }
     ckRows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     el.innerHTML = window.mochiHistFold(ckRows.map(r => ({ ts: Number(r.ts) || 0, html: '<div class="tc-listitem"><div class="tc-li-top"><span class="tc-li-q">' + r.q + '</span><span class="tc-li-time">' + r.sub + '</span></div>' + (r.line ? '<div class="tc-li-line">' + (window.taFit ? window.taFit(r.line) : r.line) + '</div>' : '') + '</div>' })), {
       key: 'records-ck', // #1416 那族口径：开合态交给 mochiHistFold 的模块级 map，每张列表一个前缀（不写 key 就全站的月块共用 'hist'，在查岗栏展开「8 月」会顺手掀开别栏）
@@ -409,7 +409,7 @@
           line: m.askAnswer ? '✓ 已回答：' + esc(m.askAnswer) : '' });
       });
     });
-    if (!xckRows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无跨桌面查岗记录（其他桌面的 他 会按「跨桌面查岗频率」来查岗；错过没点【确认】的也记在这里，但不进聊天）</div>'); return; }
+    if (!xckRows.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无跨桌面查岗记录（其他桌面的他会按「跨桌面查岗频率」来查岗；错过没点【确认】的也记在这里，但不进聊天）</div>'); return; }
     xckRows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     el.innerHTML = window.mochiHistFold(xckRows.map(r => ({ ts: Number(r.ts) || 0, html: '<div class="tc-listitem"><div class="tc-li-top"><span class="tc-li-q">' + r.q + '</span><span class="tc-li-time">' + r.sub + '</span></div>' + (r.line ? '<div class="tc-li-line">' + (window.taFit ? window.taFit(r.line) : r.line) + '</div>' : '') + '</div>' })), {
       key: 'records-xck', // 同上：每张列表一枚前缀，月块开合态互不串
@@ -427,7 +427,7 @@
     const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const RES = { pending: '待回应', replied: '你接受了', declined: '你拒绝了', missed: '错过未回应' };
     const list = cuddleLoad();
-    if (!list.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无贴贴邀请记录（他 会按回复设置里的概率发起贴贴邀请；弹窗不自动关，切后台回来还在）</div>'); return; }
+    if (!list.length) { el.innerHTML = recEmpty('<div class="ta-empty">暂无贴贴邀请记录（他会按回复设置里的概率发起贴贴邀请；弹窗不自动关，切后台回来还在）</div>'); return; }
     // 行先攒成 cuItems 再交折叠尺（刻意不写成 mochiHistFold(list.map(...)) 那一形——
     // 那个片段是摸鱼抓包那栏 #1403r 哨兵的 needle，撞上去会让那条针变成删掉也照绿的哑针）
     const cuItems = list.map((x) => ({ ts: Number(x.ts) || 0, html:

@@ -180,7 +180,7 @@ return Math.min(5, k);
 function capOf() { return LV_CAP[Math.min(d.lv, LV_CAP.length - 1)]; }
 function itemAt(x, y) { return d.fx.find(f => f.x === x && f.y === y) || null; }
 function ownedCount(t) { return (d.inv[t] || 0) + d.fx.filter(x => x.t === t).length; }
-const EARN_CAP = { ta: { cap: 5, name: '陪 他 互动' }, n: { cap: 10, name: '家具互动' } };
+const EARN_CAP = { ta: { cap: 5, name: '陪他互动' }, n: { cap: 10, name: '家具互动' } };
 function gainPts(n, kind) {
 const tk = todayKey();
 if (d.earn.day !== tk) d.earn = { day: tk, n: 0, ta: 0 };

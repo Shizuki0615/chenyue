@@ -570,7 +570,7 @@ toast('已导入 ' + lines.length + ' 条' + kindLabel(kind));
 }
 const nowBtn = document.getElementById('ti-now');
 if (nowBtn) nowBtn.addEventListener('click', () => {
-if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('他 在聊天里向你发起了邀请');
+if (window.triggerTaInviteNow && window.triggerTaInviteNow()) toast('他在聊天里向你发起了邀请');
 });
 const page = document.getElementById('page-ta-invite');
 if (page) {

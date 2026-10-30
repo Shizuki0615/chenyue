@@ -776,6 +776,17 @@ border:1px solid var(--pill-border); border-radius:99px; cursor:pointer; font-fa
 .modal-custom:hover { color:var(--ink); border-color:#bbb; }
 .modal-custom.on { color:var(--ink); border-color:var(--ink); }
 .modal-custom[hidden] { display:none; }
+.modal-hexrow { margin-top:9px; }
+.modal-hexrow[hidden] { display:none; }
+.modal-hex {
+width:100%; border:1px solid var(--input-border); border-radius:12px;
+padding:9px 12px; font-size:13px; font-family:inherit;
+outline:none; background:var(--input-bg); color:var(--ink);
+text-transform:uppercase;
+}
+.modal-hex:focus { border-color:var(--input-focus-border); }
+.modal-hex.bad { border-color:#d64545; }
+.modal-hex.ce-box { padding:9px 12px; min-height:0; line-height:1.5; white-space:nowrap; overflow:hidden; }
 .modal-btns { display:flex; gap:10px; margin-top:16px; }
 .modal-btn {
 flex:1; border:none; border-radius:12px; padding:11px;
@@ -1434,7 +1445,7 @@ cursor:pointer; -webkit-tap-highlight-color:transparent;
 .week-day.today b { color:#fff; }
 .week-day:not(.today):active { background:rgba(0,0,0,.10); }
 .desk-msg {
-position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
+position:fixed; top:calc(44px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
 z-index:89; width:min(320px, calc(100% - 24px));
 display:flex; align-items:center; gap:10px; padding:10px 12px;
 background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1);
@@ -11259,7 +11270,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
              口径与 clock.js 的锁定态 tip / 解锁弹窗 / 进入后提醒弹窗一致（#1216 起开屏必读摘要块已撤除，指路走第一页目录）-->
         <div class="splash-alert splash-cardlock" data-anti-scam="l" id="splash-cardlock">
           <div class="splash-alert-t">防未成年人 · 系统内置字卡已锁定</div>
-          <p id="splash-cardlock-tip">系统内置字卡已全部锁定，这是面向未成年人的保护措施。如你已年满 18 周岁，可输入二级验证密码解锁使用。锁定不影响：聊天情绪字卡、他 的心情、聊天回应字卡、你自建的字卡均照常可用。密码非常简单，答案就在开屏第一页的章节目录里：点开第一页顶部的「目录」，逐章翻一下就能找到（第一页第一章与第二页最顶那张时间线卡都写着——日期就是字面意思，不是隐藏答案）。解锁用的密码与开屏问答页的「暗号」是同一个（同一串 6 位数字，两个入口都用它）；解开密码请勿二传（不要告诉别人），一旦有人二传，密码就会被重新设置。继续使用即视为你确认已年满 18 周岁。</p>
+          <p id="splash-cardlock-tip">系统内置字卡已全部锁定，这是面向未成年人的保护措施。如你已年满 18 周岁，可输入二级验证密码解锁使用。锁定不影响：聊天情绪字卡、他的心情、聊天回应字卡、你自建的字卡均照常可用。密码非常简单，答案就在开屏第一页的章节目录里：点开第一页顶部的「目录」，逐章翻一下就能找到（第一页第一章与第二页最顶那张时间线卡都写着——日期就是字面意思，不是隐藏答案）。解锁用的密码与开屏问答页的「暗号」是同一个（同一串 6 位数字，两个入口都用它）；解开密码请勿二传（不要告诉别人），一旦有人二传，密码就会被重新设置。继续使用即视为你确认已年满 18 周岁。</p>
           <div class="cardlock-actions" id="splash-cardlock-actions"></div>
         </div>
       </div>
@@ -11384,10 +11395,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <p class="splash-item">建议先跑 设置 → 信息诊断 →「屏幕适配诊断」 看差多少像素，再来填对应偏移；聊天页内还可配合聊天设置→美化 的「顶栏/底栏位置」滑杆单独微调。</p>
           </div>
                     <div class="splash-sec-wrap">
-            <p class="splash-sec">10、关于 他 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>
-            <p class="splash-bullet"><b>「回复条数最少/最多」＝你每发 1 条消息，他 跟着回你几条</b>，它只管这一件事，<b>不是 他 一天最多发几条</b>。所以把它调成 1~2 之后，你还是可能收到很多条。</p>
-            <p class="splash-bullet"><b>这几类不占「回复条数」的名额、会额外多发</b>：词典拼字的「多回复逐卡连发」（默认不受条数限制）、撤回后补发、他 的心情分享、红包/心意币/听歌邀请、他 主动发送的消息（连发几条由「主动发送 → 发送条数」单独控制）。位置都在 聊天 → 更多 → 回复设置 → 聊天 →「回复与主动」。</p>
-            <p class="splash-bullet"><b>「总量限流」（同面板下方，默认关闭）</b>：打开后，任意「限流窗口」这段时间里 他 最多发「窗口内最多条数」条，超出的直接不再发出，窗口滑过去自动恢复。<b>上面那些额外多发的类型在这里全部一起计数、一起拦</b>——已读回执、你当刻操作引发的记录（决定结果、游戏战绩、存钱罐结算、红包领取退回）、他 在身边的换位播报（自动换位、【感知一下】催的那一发与你手动发的位置卡）不占额度也不会被拦；额度满时你刚说的那句话仍<b>保底换来 1 条回应</b>，不会只剩一个「已读」。两处例外请知悉：限流只管<b>你当前打开的这个联系人</b>（其他桌面的 他 走跨桌面补投，不占这份额度）；经期关心、音乐互动的系统台词<b>照常计入额度、也会被拦</b>。</p>
+            <p class="splash-sec">10、关于他发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>
+            <p class="splash-bullet"><b>「回复条数最少/最多」＝你每发 1 条消息，他跟着回你几条</b>，它只管这一件事，<b>不是他一天最多发几条</b>。所以把它调成 1~2 之后，你还是可能收到很多条。</p>
+            <p class="splash-bullet"><b>这几类不占「回复条数」的名额、会额外多发</b>：词典拼字的「多回复逐卡连发」（默认不受条数限制）、撤回后补发、他的心情分享、红包/心意币/听歌邀请、他主动发送的消息（连发几条由「主动发送 → 发送条数」单独控制）。位置都在 聊天 → 更多 → 回复设置 → 聊天 →「回复与主动」。</p>
+            <p class="splash-bullet"><b>「总量限流」（同面板下方，默认关闭）</b>：打开后，任意「限流窗口」这段时间里他最多发「窗口内最多条数」条，超出的直接不再发出，窗口滑过去自动恢复。<b>上面那些额外多发的类型在这里全部一起计数、一起拦</b>——已读回执、你当刻操作引发的记录（决定结果、游戏战绩、存钱罐结算、红包领取退回）、他在身边的换位播报（自动换位、【感知一下】催的那一发与你手动发的位置卡）不占额度也不会被拦；额度满时你刚说的那句话仍<b>保底换来 1 条回应</b>，不会只剩一个「已读」。两处例外请知悉：限流只管<b>你当前打开的这个联系人</b>（其他桌面的他走跨桌面补投，不占这份额度）；经期关心、音乐互动的系统台词<b>照常计入额度、也会被拦</b>。</p>
             <p class="splash-bullet"><b>怎么配</b>：嫌刷屏就开限流、窗口 5 分钟／上限 15 条起步（还是多就把上限往下调、窗口往上调）；只想让每句话的回应变短，就把「回复条数」两项都调成 1 并关掉「多字卡回复」。别把窗口拉到 60 分钟又把上限压到 1 条＝一小时只回你一句。限流按联系人独立生效，改动即时保存。</p>
           </div>
           <!-- #1449（2026-09-29 作者直派「公告第一页需要新增目录一条，并且二改说明里也要加这一条：没有云存储，如果二改不要公开云存储」）：
@@ -11410,7 +11421,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <!-- #1500：本节此前只在在线权威源 src/pwa/notice.json、离线兜底缺章——随「目录编号统一」补齐，两源同口径 -->
           <div class="splash-sec-wrap">
             <p class="splash-sec">13、关于「在后台放音乐，进本站突然变响、退出来又变轻」（后台保活不再占用手机音频通道）</p>
-            <p class="splash-bullet">成因：「后台保活」靠一条近乎无声的音频一直循环播放，让系统别把本页冻结，他 的消息才照常进来。而这条在系统眼里＝「本站正在放媒体」＝占住了手机音频通道，你另一个 App 的音乐于是被强制压低。前一版为了治「站内一直有嘟嘟声」，把这条音频在前台压成 0、切到后台才恢复音量——于是每次切进切出都在改「本站到底算不算在放媒体」：进本站＝系统收走我们的占用，你的音乐恢复原音量（突然变响）；退出去＝我们又占上，你的音乐再被压低（又变轻）。这是音频通道的性质，不是某一款机型的毛病，各家认音频焦点的浏览器都一样。</p>
+            <p class="splash-bullet">成因：「后台保活」靠一条近乎无声的音频一直循环播放，让系统别把本页冻结，他的消息才照常进来。而这条在系统眼里＝「本站正在放媒体」＝占住了手机音频通道，你另一个 App 的音乐于是被强制压低。前一版为了治「站内一直有嘟嘟声」，把这条音频在前台压成 0、切到后台才恢复音量——于是每次切进切出都在改「本站到底算不算在放媒体」：进本站＝系统收走我们的占用，你的音乐恢复原音量（突然变响）；退出去＝我们又占上，你的音乐再被压低（又变轻）。这是音频通道的性质，不是某一款机型的毛病，各家认音频焦点的浏览器都一样。</p>
             <p class="splash-bullet">现在的做法：那段近无声音频默认改走「站内音效」那条通道（设置 → 系统 新增一档「保活不抢其他 App 的声音」，默认开启）。页面照样持续出声、系统照样不冻结本页，但不再向手机声明「本站正在放媒体」——你在别的 App 听歌 / 看视频时不会被本站压低音量，切进切出也不再忽响忽轻。代价说清楚：通知栏那条「Mochi 后台保活」的媒体横幅不再出现，因为那条横幅本身就是那次音频通道的占用。</p>
             <p class="splash-bullet">万一因此收不到后台消息：个别浏览器只认那条媒体横幅给的豁免。把 设置 → 系统 →「保活不抢其他 App 的声音」关掉就回到老路（有横幅、会占用音频通道），当场生效、不用等改版。上传了自定义保活音频（白噪音 / 助眠声）时这一档不参与——那是你要出声放的东西，照旧走媒体通道。想知道此刻走的是哪条：设置 → 查看诊断 →【保活现场】里的「锚=」那一格（媒体元素(占媒体通道) / WebAudio(不占媒体通道)）。</p>
           </div>
@@ -11418,12 +11429,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
                与在线权威源 src/pwa/notice.json 的 sections 末条同口径（在线整段替换本段；此处为断网/弱网兜底） -->
           <div class="splash-sec-wrap">
             <p class="splash-sec">14、关于后台通知相关设置（怎么开、收不到怎么办）</p>
-            <p class="splash-bullet"><b>三个开关都在 设置 → 系统</b>：「后台通知」＝页面在后台时 他 发消息弹系统通知（打开它会自动把「后台保活」一起打开，保活是通知的前提）；「通知逐条弹（关闭去重）」＝默认关闭（连发内容相同或近期弹过的消息只弹一条），<b>打开后联系人每条消息都单独弹</b>（字卡重复率高时会连环弹同句，按需开）；「后台保活」＝让页面在后台继续运行。</p>
+            <p class="splash-bullet"><b>三个开关都在 设置 → 系统</b>：「后台通知」＝页面在后台时他发消息弹系统通知（打开它会自动把「后台保活」一起打开，保活是通知的前提）；「通知逐条弹（关闭去重）」＝默认关闭（连发内容相同或近期弹过的消息只弹一条），<b>打开后联系人每条消息都单独弹</b>（字卡重复率高时会连环弹同句，按需开）；「后台保活」＝让页面在后台继续运行。</p>
             <p class="splash-bullet"><b>怎么确认通了</b>：点「后台通知」行右边的「测试」——当场体检（开关 / 通知权限 / 后台保活与锚点 / 后台服务通道 / 历史冻结与断流取证）并真发一条通知、回读系统通知队列，卡在哪一环直接写在结果里；结果里还有第二段可测「后台阶段」。</p>
             <p class="splash-bullet"><b>收不到①·浏览器权限</b>：地址栏左侧图标 → 权限 → 通知 → 允许；若列表里没有本站、或授权框从不出现（浏览器会把反复弹过授权框的站自动挡掉）→ Chrome ⋮ → 设置 → 网站设置 → 通知 →「添加网站例外」→ 输入本站网址。若你是从桌面图标（已安装应用）打开的，通知权限由应用自己管理、Chrome 网站设置里不显示本站属正常：<b>长按图标卸载后重新「添加到主屏幕」，安装时允许通知即可重置</b>。</p>
             <p class="splash-bullet"><b>收不到②·页面在后台被冻结或回收</b>：保活靠页面在后台运行，系统省电/内存策略会把挂久的页面冻结甚至丢弃（Chrome「内存节省程序」约 30 分钟，手机内存紧张时更快），别的 App 刷视频/听音乐也会占用音频通道把保活截断——表现就是「弹一下就停了」。恢复：彻底关闭网页重新打开，再把「后台保活」「后台通知」重新打开；并把 Chrome 加入「始终保持活动」、省电策略设「无限制」，到 设置 → 工具 → 查看存储 清掉最占地方的数据（页越轻越不容易被丢）。</p>
             <p class="splash-bullet"><b>收不到③·设计内不弹</b>：你正在前台看着聊天时不弹（聊天里直接可见）；切后台头 15 秒内的旧内容不弹（防刚看完的又弹一遍，打开「通知逐条弹」后此项不再拦）；跨桌面补投递的历史旧消息不弹。</p>
-            <p class="splash-bullet"><b>收不到④·手机开了勿扰/免打扰</b>：安卓的「勿扰/免打扰」、iPhone 的「专注模式」（勿扰·睡眠·驾驶·工作）会把所有应用的通知静默收进通知栏——屏幕上方不弹横幅，而<b>网页读不到这个状态</b>，所以会出现「测试体检全绿、通知真发出去了，屏幕上却什么都没有」。<b>一步自查</b>：下拉通知栏看那条测试通知在不在，<b>在＝被系统压住</b>，不是链路坏了——去系统设置关掉勿扰，或在勿扰设置里把本浏览器（或桌面上的 Mochi）加进「允许的应用/例外」。同一族还有：通知被长按成「静默/减少干扰」、浏览器「网站通知」那一类单独关掉、锁屏设成隐藏通知内容、iPhone 开过「定时推送摘要」（通知攒到点才出现）；电脑端＝Windows「请勿打扰/专注助手」与 macOS「专注模式」。另外开着本站自己的<b>「夜间免打扰模式」</b>（原「夜间模式」）时 22:00–7:00 他 不主动发消息，后半夜本来就没有可弹的内容——本站那两个档管「有没有消息可弹」，手机系统勿扰管「有消息也弹不出来」。</p>
+            <p class="splash-bullet"><b>收不到④·手机开了勿扰/免打扰</b>：安卓的「勿扰/免打扰」、iPhone 的「专注模式」（勿扰·睡眠·驾驶·工作）会把所有应用的通知静默收进通知栏——屏幕上方不弹横幅，而<b>网页读不到这个状态</b>，所以会出现「测试体检全绿、通知真发出去了，屏幕上却什么都没有」。<b>一步自查</b>：下拉通知栏看那条测试通知在不在，<b>在＝被系统压住</b>，不是链路坏了——去系统设置关掉勿扰，或在勿扰设置里把本浏览器（或桌面上的 Mochi）加进「允许的应用/例外」。同一族还有：通知被长按成「静默/减少干扰」、浏览器「网站通知」那一类单独关掉、锁屏设成隐藏通知内容、iPhone 开过「定时推送摘要」（通知攒到点才出现）；电脑端＝Windows「请勿打扰/专注助手」与 macOS「专注模式」。另外开着本站自己的<b>「夜间免打扰模式」</b>（原「夜间模式」）时 22:00–7:00 他不主动发消息，后半夜本来就没有可弹的内容——本站那两个档管「有没有消息可弹」，手机系统勿扰管「有消息也弹不出来」。</p>
             <p class="splash-bullet"><b>换浏览器 / 换网址要重新允许</b>：通知权限按「浏览器 + 网址」记，Chrome 与 Edge 各自独立；同一台手机换了浏览器，按上面「收不到①」重做一遍即可。</p>
           </div>
         </div>
@@ -11577,7 +11588,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793187899530" data-version="v8.62.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793351028270" data-version="v8.63.7">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -11777,7 +11788,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 <div class="weekend-box glass" id="weekend-box" data-desk-widget="weekend" data-card-bg="weekend">
 <div class="we-left">
 <span class="we-top"><span class="we-days" id="weekend-days">离周末还有 0 天</span><span class="we-sub">距离周末 · 摸鱼倒计时</span></span>
-<span class="we-ta" id="weekend-ta-name"><span class="pair"><i>他 摸鱼值</i><b id="weekend-ta">0</b></span><span class="pair"><i>他 工作值</i><b id="weekend-work-ta">0</b></span></span>
+<span class="we-ta" id="weekend-ta-name"><span class="pair"><i>他摸鱼值</i><b id="weekend-ta">0</b></span><span class="pair"><i>他工作值</i><b id="weekend-work-ta">0</b></span></span>
 <span class="we-ta" id="weekend-mine-name"><span class="pair"><i>我 摸鱼值</i><b id="weekend-mine">0</b></span><span class="pair"><i>我 工作值</i><b id="weekend-work">0</b></span></span>
 </div>
 <button class="we-btn" id="weekend-fish" title="摸鱼 +1">摸鱼 +<b id="weekend-count">0</b></button>
@@ -11997,7 +12008,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-deskcheck">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M8 3.2a9 9 0 108 0"/></svg></div>
-        <div class="ci"><div class="n">联系人跨桌面查岗</div><div class="m">其他桌面的联系人来查岗时 他 的回应字卡</div></div>
+        <div class="ci"><div class="n">联系人跨桌面查岗</div><div class="m">其他桌面的联系人来查岗时他的回应字卡</div></div>
         <div class="t" id="dk-lib-count">0</div>
       </div>
       <div class="chat-item glass" id="li-mood-cards">
@@ -12007,7 +12018,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-ta-mood">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0112 6.4 5.3 5.3 0 0121.3 12c-1.8 4.3-9.3 9-9.3 9z"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/><path d="M8.5 14.5a4 4 0 007 0"/></svg></div>
-        <div class="ci"><div class="n">他的心情</div><div class="m">他 偶尔主动分享 · 心情/近况/状态</div></div>
+        <div class="ci"><div class="n">他的心情</div><div class="m">他偶尔主动分享 · 心情/近况/状态</div></div>
         <div class="t" id="cc-ta-mood-count">235</div>
       </div>
       <div class="chat-item glass" id="li-reply-cards">
@@ -12017,7 +12028,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-checkin-cards">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M12 3a9 9 0 000 18"/></svg></div>
-        <div class="ci"><div class="n">寻踪日常字卡</div><div class="m">他 的日常 · 地点/做的事/说的话</div></div>
+        <div class="ci"><div class="n">寻踪日常字卡</div><div class="m">他的日常 · 地点/做的事/说的话</div></div>
         <div class="t" id="cc-checkin-count">30</div>
       </div>
       <div class="chat-item glass" id="li-quote-cards">
@@ -12027,7 +12038,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-loc-cards">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1112 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg></div>
-        <div class="ci"><div class="n">他在身边位置卡</div><div class="m">他 的位置 · 方位/距离/状态/感知</div></div>
+        <div class="ci"><div class="n">他在身边位置卡</div><div class="m">他的位置 · 方位/距离/状态/感知</div></div>
         <div class="t" id="cc-loc-count">0</div>
       </div>
       <div class="chat-item glass" id="li-ta-ask">
@@ -12037,12 +12048,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-ta-choose">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <div class="ci"><div class="n">他的小问题</div><div class="m">选择题轻互动 · 选完 他 再回应</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
+        <div class="ci"><div class="n">他的小问题</div><div class="m">选择题轻互动 · 选完他再回应</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
         <div class="t">18</div>
       </div>
       <div class="chat-item glass" id="li-ta-curious">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18"/><circle cx="12" cy="12" r="2"/></svg></div>
-        <div class="ci"><div class="n">他的好奇</div><div class="m">开放式提问 · 回答后 他 记住你</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
+        <div class="ci"><div class="n">他的好奇</div><div class="m">开放式提问 · 回答后他记住你</div><div class="note">回应：90% 系统预设 + 10% 字卡库</div></div>
         <div class="t">26</div>
       </div>
       <div class="chat-item glass" id="li-ta-roast">
@@ -12052,12 +12063,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       </div>
       <div class="chat-item glass" id="li-ta-checkin">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M12 3a9 9 0 000 18"/></svg></div>
-        <div class="ci"><div class="n">他的查岗</div><div class="m">他 来查你的岗 · 随机出查岗问题卡</div><div class="note">开关/概率在 回复设置 → 查岗</div></div>
+        <div class="ci"><div class="n">他的查岗</div><div class="m">他来查你的岗 · 随机出查岗问题卡</div><div class="note">开关/概率在 回复设置 → 查岗</div></div>
         <div class="t" id="cc-ta-checkin-count">23</div>
       </div>
       <div class="chat-item glass" id="li-ta-invite">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v3M5.5 12h3"/><path d="M15.5 11h.01M18.5 13h.01"/></svg></div>
-        <div class="ci"><div class="n">他的邀请</div><div class="m">他 主动约你玩 · 猜拳/Pong/贪吃蛇邀请话术</div><div class="note">开关/概率在 回复设置 → 其他</div></div>
+        <div class="ci"><div class="n">他的邀请</div><div class="m">他主动约你玩 · 猜拳/Pong/贪吃蛇邀请话术</div><div class="note">开关/概率在 回复设置 → 其他</div></div>
         <div class="t" id="cc-ta-invite-count">10</div>
       </div>
       </div>
@@ -12081,7 +12092,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       设置批量提问问卷
     </button>
     <div class="set-group glass">
-      <div class="gs-row"><span>他 偶尔向你提问</span><label class="toggle"><input type="checkbox" id="ta-ask-enable"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他偶尔向你提问</span><label class="toggle"><input type="checkbox" id="ta-ask-enable"><span class="tk"></span></label></div>
       <div class="gs-row"><span>使用系统预设问题</span><label class="toggle"><input type="checkbox" id="ta-ask-default" checked><span class="tk"></span></label></div>
       <div class="gs-row"><span>回应接聊天字卡/词典（文字+单选）</span><label class="toggle"><input type="checkbox" id="ta-ask-chatcard"><span class="tk"></span></label></div>
       <div class="gs-row"><span>触发概率</span><input type="range" id="ta-ask-prob" min="1" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="ta-ask-prob-val">5%</span></div>
@@ -12129,13 +12140,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     <div class="set-group glass" style="padding:14px">
       <div class="cal-card-title" style="padding:0 0 8px">问卷题目（批量设置）</div>
       <div class="dec-inp-wrap" style="flex:1 0 100%"><textarea id="ta-survey-text" class="tc-input" rows="12" placeholder="单选题：第一行【问题】，下面每行一个选项，如：&#10;【今晚想吃什么？】&#10;火锅&#10;烧烤&#10;寿司&#10;&#10;多选题：题干里写「（多选）」，也可写「（多选·最多2）」给这一题单独限个数，下面每行一个选项，如：&#10;【今晚想吃点什么？（多选·最多2）】&#10;火锅&#10;烧烤&#10;寿司&#10;&#10;文字题：第一行【问题】，下一行只写一个「一」，如：&#10;【今天过得怎么样？】&#10;一"></textarea><button type="button" class="dec-inp-clear" data-clear="ta-survey-text" aria-label="清空" title="清空">✕</button></div>
-      <div style="font-size:12px;color:var(--muted,#999);padding-top:8px;line-height:1.8">· 单选题：【问题】后每行一个选项（至少 2 个）<br>· 多选题：题干末尾写「（多选）」（【问题（多选）】），他 一次答好几个，几个之间用「、」连着念；这几种题的「最多选几个」在下面那根杆子上调，个别题想另限就写成「（多选·最多2）」（2~6 有效，写了它这题按题上的数算、不看杆）<br>· 文字题：【问题】后一行只写「一」，他 会用字卡作答（和正常聊天一样用自定义字卡 + 系统预设字卡；未成年人防护锁定系统预设字卡时，只用自定义字卡）<br>· 发出后 他 开始作答：到交卷时间自动交卷，之前每 30 秒按「提前交卷概率」可能提前交卷<br>· 关闭「他 的每条作答都发送到聊天消息」后，他 只把答案写进聊天里的问卷卡片，不再把每题作答逐条发到聊天（单题默认会发，题多怕刷屏可关）</div>
+      <div style="font-size:12px;color:var(--muted,#999);padding-top:8px;line-height:1.8">· 单选题：【问题】后每行一个选项（至少 2 个）<br>· 多选题：题干末尾写「（多选）」（【问题（多选）】），他一次答好几个，几个之间用「、」连着念；这几种题的「最多选几个」在下面那根杆子上调，个别题想另限就写成「（多选·最多2）」（2~6 有效，写了它这题按题上的数算、不看杆）<br>· 文字题：【问题】后一行只写「一」，他会用字卡作答（和正常聊天一样用自定义字卡 + 系统预设字卡；未成年人防护锁定系统预设字卡时，只用自定义字卡）<br>· 发出后他开始作答：到交卷时间自动交卷，之前每 30 秒按「提前交卷概率」可能提前交卷<br>· 关闭「他的每条作答都发送到聊天消息」后，他只把答案写进聊天里的问卷卡片，不再把每题作答逐条发到聊天（单题默认会发，题多怕刷屏可关）</div>
     </div>
     <div class="set-group glass">
       <div class="gs-row" style="cursor:pointer"><span>交卷时间（到点他自动交卷）</span><button type="button" id="ta-survey-deadline" class="tc-input deadline-btn" style="flex:1;min-width:0;max-width:170px;padding:5px 8px;font-size:12px">未设置</button><button type="button" id="ta-survey-deadline-clear" style="flex:none;margin-left:6px;padding:4px 10px;font-size:12px;border:1px solid var(--line,#e5e5e5);border-radius:8px;background:transparent;color:var(--muted,#999)">清除</button></div>
       <div class="gs-row"><span>每30秒提前交卷概率</span><input type="range" id="ta-survey-prob" min="0" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="ta-survey-prob-val">10%</span></div>
       <div class="gs-row"><span>多选题最多选几个</span><div class="stepper" id="ta-survey-mmax" data-min="2" data-max="6" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="ta-survey-mmax-val" readonly><button type="button" class="stp-max">+</button></div></div>
-      <div class="gs-row"><span>他 的每条作答都发送到聊天消息</span><label class="toggle"><input type="checkbox" id="ta-survey-chat" checked><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他的每条作答都发送到聊天消息</span><label class="toggle"><input type="checkbox" id="ta-survey-chat" checked><span class="tk"></span></label></div>
     </div>
     <div class="set-group glass" style="padding:12px 14px">
       <div id="ta-survey-status" style="font-size:13px;line-height:1.8">尚未发出问卷</div>
@@ -12160,7 +12171,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       让他现在问一次
     </button>
     <div class="set-group glass">
-      <div class="gs-row"><span>他 偶尔递选择题</span><label class="toggle"><input type="checkbox" id="tc-enable"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他偶尔递选择题</span><label class="toggle"><input type="checkbox" id="tc-enable"><span class="tk"></span></label></div>
       <div class="gs-row"><span>使用系统预设问题</span><label class="toggle"><input type="checkbox" id="tc-default" checked><span class="tk"></span></label></div>
       <div class="gs-row"><span>触发概率</span><input type="range" id="tc-prob" min="1" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tc-prob-val">5%</span></div>
       <div class="gs-row"><span>自动弹窗概率</span><input type="range" id="tc-popup" min="0" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tc-popup-val">70%</span></div>
@@ -12221,11 +12232,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       让他现在好奇一次
     </button>
     <div class="set-group glass">
-      <div class="gs-row"><span>他 偶尔对你好奇</span><label class="toggle"><input type="checkbox" id="tcu-enable"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他偶尔对你好奇</span><label class="toggle"><input type="checkbox" id="tcu-enable"><span class="tk"></span></label></div>
       <div class="gs-row"><span>使用系统预设问题</span><label class="toggle"><input type="checkbox" id="tcu-default" checked><span class="tk"></span></label></div>
       <div class="gs-row"><span>触发概率</span><input type="range" id="tcu-prob" min="1" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tcu-prob-val">5%</span></div>
       <div class="gs-row"><span>自动弹窗概率</span><input type="range" id="tcu-popup" min="0" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tcu-popup-val">70%</span></div>
-      <div class="gs-row"><span>回答后 他 偶尔追问</span><label class="toggle"><input type="checkbox" id="tcu-followup"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>回答后他偶尔追问</span><label class="toggle"><input type="checkbox" id="tcu-followup"><span class="tk"></span></label></div>
     </div>
     <div class="card-tabs" id="tcu-tabs" style="padding:6px 12px 8px">
       <button class="cc-tab sel" data-tab="sys">系统预设</button>
@@ -12256,8 +12267,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </select>
           <input id="tcu-new-text" class="tc-input" type="text" placeholder="问题内容（开放式）…">
           <input id="tcu-new-quick" class="tc-input" type="text" placeholder="快捷回复，用 | 分隔（可选），如：看动画|出去玩">
-          <input id="tcu-new-replies" class="tc-input" type="text" placeholder="他 的回应，用 | 分隔（可选，至少1条）">
-          <input id="tcu-new-followup" class="tc-input" type="text" placeholder="他 偶尔的自然追问（可选）">
+          <input id="tcu-new-replies" class="tc-input" type="text" placeholder="他的回应，用 | 分隔（可选，至少1条）">
+          <input id="tcu-new-followup" class="tc-input" type="text" placeholder="他偶尔的自然追问（可选）">
           <button class="ta-add-btn" style="width:100%" id="tcu-new-add">添加</button>
         </div>
       </div>
@@ -12283,7 +12294,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       让他现在调侃一次
     </button>
     <div class="set-group glass">
-      <div class="gs-row"><span>他 偶尔调侃你一句</span><label class="toggle"><input type="checkbox" id="tr-enable"><span class="tk"></span></label></div>
+      <div class="gs-row"><span>他偶尔调侃你一句</span><label class="toggle"><input type="checkbox" id="tr-enable"><span class="tk"></span></label></div>
       <div class="gs-row"><span>使用系统预设字卡</span><label class="toggle"><input type="checkbox" id="tr-default" checked><span class="tk"></span></label></div>
       <div class="gs-row"><span>触发概率</span><input type="range" id="tr-prob" min="1" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tr-prob-val">5%</span></div>
       <div class="gs-row"><span>自动弹窗概率</span><input type="range" id="tr-popup" min="0" max="100" step="1" class="tc-range"><span class="tc-prob-val" id="tr-popup-val">70%</span></div>
@@ -12341,7 +12352,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     </button>
     <div class="set-group glass">
       <div class="gs-row"><span>使用系统预设问题</span><label class="toggle"><input type="checkbox" id="ckq-default" checked><span class="tk"></span></label></div>
-      <div class="gs-sub" style="padding:0 14px 14px">他 来查岗的开关/概率/冷却/自动弹窗概率在「回复设置 → 查岗」里按联系人独立设置；这里的题库随当前桌面的联系人保存</div>
+      <div class="gs-sub" style="padding:0 14px 14px">他来查岗的开关/概率/冷却/自动弹窗概率在「回复设置 → 查岗」里按联系人独立设置；这里的题库随当前桌面的联系人保存</div>
     </div>
     <div class="card-tabs" id="ckq-tabs" style="padding:6px 12px 8px">
       <button class="cc-tab sel" data-tab="sys">系统预设</button>
@@ -12369,7 +12380,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- 他的邀请（联系人主动邀请话术管理页；触发开关/概率在 回复设置→其他 按联系人设置） -->
+<!-- 他的邀请（联系人主动邀请话术管理页；触发开关/概率在 回复设置→其他按联系人设置） -->
 <div class="page" id="page-ta-invite" hidden>
   <div class="chat-head">
     <span class="ch-back" id="ti-back">
@@ -12384,7 +12395,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     </button>
     <div class="set-group glass">
       <div class="gs-row"><span>使用系统预设话术</span><label class="toggle"><input type="checkbox" id="ti-default" checked><span class="tk"></span></label></div>
-      <div class="gs-sub" style="padding:0 14px 14px">他 主动邀请的开关/概率在「回复设置 → 其他」（猜拳 / 玩游戏 / 贴贴）按联系人独立设置；同意猜拳/Pong/贪吃蛇会打开对应半框，同意贴贴则 他 会回应一句贴贴的话；拒绝都回一句婉拒。题库随当前桌面的联系人保存</div>
+      <div class="gs-sub" style="padding:0 14px 14px">他主动邀请的开关/概率在「回复设置 → 其他」（猜拳 / 玩游戏 / 贴贴）按联系人独立设置；同意猜拳/Pong/贪吃蛇会打开对应半框，同意贴贴则他会回应一句贴贴的话；拒绝都回一句婉拒。题库随当前桌面的联系人保存</div>
     </div>
     <div class="card-tabs" id="ti-tabs" style="padding:6px 12px 8px">
       <button class="cc-tab sel" data-tab="sys">系统预设</button>
@@ -12418,7 +12429,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- 寻踪日常字卡（他 的日常，自定义字卡库） -->
+<!-- 寻踪日常字卡（他的日常，自定义字卡库） -->
 <div class="page" id="page-checkin-cards" hidden>
   <div class="chat-head">
     <span class="ch-back" id="checkin-cards-back">
@@ -12437,7 +12448,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     <div class="set-group glass" id="ck-prob-box" style="margin:10px 12px 0">
       <div class="gs-row"><span>寻踪日常发送到聊天</span><div class="stepper" id="dcf-prob-checkin-ck" data-dcfkey="checkin" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcf-prob-checkin-ck-val" readonly><button class="stp-max">+</button></div></div>
     </div>
-    <div class="sm-set-hint" id="ck-prob-hint" style="padding:2px 16px 4px">说明：本概率控制「他 更新日常时是否往聊天里推消息」（更新提示 + 日常内容 + 概率「提醒你来寻踪」），与「其他互动功能字卡」页的同一项设置共用一个值，改任意一处两处同步。调到 0% 时寻踪页与历史记录照常生成，只是不再在聊天里推送。</div>
+    <div class="sm-set-hint" id="ck-prob-hint" style="padding:2px 16px 4px">说明：本概率控制「他更新日常时是否往聊天里推消息」（更新提示 + 日常内容 + 概率「提醒你来寻踪」），与「其他互动功能字卡」页的同一项设置共用一个值，改任意一处两处同步。调到 0% 时寻踪页与历史记录照常生成，只是不再在聊天里推送。</div>
     <div class="fav-tabs">
       <button class="fav-tab sel" data-cktab="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"><path d="M12 21s-6-5.3-6-10a6 6 0 1112 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>地点</button>
       <button class="fav-tab" data-cktab="action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"><path d="M13 2L4.5 13.5H11l-1 8.5L18.5 10H12l1-8z"/></svg>在做什么</button>
@@ -12467,7 +12478,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div id="cck-mine-list" style="padding:8px 14px 14px"></div>
       </div>
     </div>
-    <div class="cal-card-title" style="padding:0 2px">寻踪时 他 会随机从这三组字卡里各抽一条展示</div>
+    <div class="cal-card-title" style="padding:0 2px">寻踪时他会随机从这三组字卡里各抽一条展示</div>
   </div>
 </div>
 
@@ -12515,7 +12526,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
     <div class="set-group glass">
       <div class="gs-row"><span>使用系统预设位置卡</span><label class="toggle"><input type="checkbox" id="loc-default" checked><span class="tk"></span></label></div>
     </div>
-    <div class="cal-card-title" style="padding:0 14px 2px">他 想告诉你的位置（发送字卡）</div>
+    <div class="cal-card-title" style="padding:0 14px 2px">他想告诉你的位置（发送字卡）</div>
     <div class="fav-tabs">
       <button class="fav-tab sel" data-loctab="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"><path d="M12 21s-6-5.3-6-10a6 6 0 1112 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>方位</button>
       <button class="fav-tab" data-loctab="dist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="M12 12l3-3"/></svg>距离</button>
@@ -12548,8 +12559,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <div class="cal-card-title" style="padding:14px 14px 0" id="cloc-mine-title">我的位置卡</div>
       <div id="cloc-mine-list" style="padding:8px 14px 14px"></div>
     </div>
-    <div class="cal-card-title" style="padding:0 2px">他 想告诉你 他 在哪时，会从上面的发送字卡里选（发出后有光点动效）；方位感知用的是下面的感知字卡</div>
-    <div class="cal-card-title" style="padding:4px 2px 0">光点落在哪儿＝他 在哪儿：方位卡（在你左边 / 右边 / 身后 / 前面）落在画面对应方向；距离卡与状态卡跟着<b>最近一张方位卡</b>的方位走——「再近一点」朝屏幕中心靠近，「再远一点」朝屏幕边缘再退开。所以上一张说的是「在你右边」，接着发「再远一点」时，光点会出现在屏幕右侧靠边处，这是正常的（不是跑偏）。</div>
+    <div class="cal-card-title" style="padding:0 2px">他想告诉你他在哪时，会从上面的发送字卡里选（发出后有光点动效）；方位感知用的是下面的感知字卡</div>
+    <div class="cal-card-title" style="padding:4px 2px 0">光点落在哪儿＝他在哪儿：方位卡（在你左边 / 右边 / 身后 / 前面）落在画面对应方向；距离卡与状态卡跟着<b>最近一张方位卡</b>的方位走——「再近一点」朝屏幕中心靠近，「再远一点」朝屏幕边缘再退开。所以上一张说的是「在你右边」，接着发「再远一点」时，光点会出现在屏幕右侧靠边处，这是正常的（不是跑偏）。</div>
   </div>
 </div>
 
@@ -12574,7 +12585,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <path d="M32 15l4.2 12.8L49 32l-12.8 4.2L32 49l-4.2-12.8L15 32l12.8-4.2z" fill="#a7741c"/>
       </svg>
     </div>
-    <div class="rp-open-from" id="rp-open-from">来自 他</div>
+    <div class="rp-open-from" id="rp-open-from">来自他</div>
     <div class="rp-open-amt" id="rp-open-amt">¥0.00</div>
     <div class="rp-open-wish" id="rp-open-wish">心意</div>
     <div class="rp-open-note" id="rp-open-note"></div>
@@ -12609,7 +12620,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>
       </button>
     </div>
-    <!-- 视频通话舞台：他 的画面（背景图）/ 头像 + 我的摄像头小窗。语音模式整块隐藏 -->
+    <!-- 视频通话舞台：他的画面（背景图）/ 头像 + 我的摄像头小窗。语音模式整块隐藏 -->
     <div class="vt-stage" id="vt-stage" hidden>
       <img class="vt-ta" id="vt-ta-img" alt="" hidden>
       <div class="vt-ta-av" id="vt-ta-av" hidden>
@@ -12662,7 +12673,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- 通话小框（接通后最小化；视频态是一块真正的视频小窗：他 画面铺满 + 我的摄像头右上角） -->
+<!-- 通话小框（接通后最小化；视频态是一块真正的视频小窗：他画面铺满 + 我的摄像头右上角） -->
 <div class="call-mini" id="call-mini" hidden>
   <img class="call-mini-frame" id="call-mini-frame" alt="" hidden>
   <video class="call-mini-self" id="call-mini-self" playsinline muted autoplay hidden></video>
@@ -12928,7 +12939,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="gs-row"><span>后台通知</span><label class="toggle"><input type="checkbox" id="bg-notify"><span class="tk"></span></label><button class="bg-notify-test" id="bg-notify-test">测试</button></div>
         <!-- v3.26.x：后台弹窗使用说明——要点直接铺在行下（用户直派「后台弹窗要有使用说明、详细说清楚」），
              完整步骤见本行「功能说明」胶囊（settings-help.js #bg-notify）与 使用说明 → 第 10 节 -->
-        <div class="gs-sub" id="bg-notify-sub"><b>后台弹窗＝页面切到后台（锁屏 / 切到别的应用）时，他 发消息用系统通知弹横幅。</b>必备：① 本机得有网页通知能力——安卓或电脑上的 Chrome / Edge（Chromium 内核）且 https 打开，或 iPhone / iPad 用 Safari「添加到主屏幕」后从桌面图标打开本站（标签页形态没有这个能力）；小米 / vivo / OPPO 自带浏览器、UC、夸克这些没有通知能力，开不起来；② 允许通知权限（地址栏左侧图标 → 网站设置 → 通知）；③ 本开关（会自动开启「后台保活」——后台不产生消息就无从弹起）；④ 系统设置里给浏览器允许通知、且不限制其后台运行/省电（小米 / 红米还要开「在屏幕上方显示 / 悬浮通知」）。<b>iPhone / iPad：Safari 标签页里没有网页通知能力，要到 Safari「添加到主屏幕」后从桌面图标打开本站，这个开关才开得了</b>——那边能授权、能弹系统通知；但 iOS 不给网页推送服务端，应用被系统收回后不保证弹，所以「后台保活」要一起开着，并可用「桌面消息弹窗」的应用内横幅兜底。点本行「功能说明」看完整步骤与「收不到」的排查，点右侧「测试」＝后台弹窗自测：第一段当场体检（开关/权限/保活/后台服务）并真发一条；成功后再点「现在测（切后台）」按 Home 切后台，第二段会由页面在后台再发一条、回来给结论。<b>⚠ 后台弹窗跟着保活一起：保活被截断/页面被丢弃＝后台弹窗一起停摆</b>（别的 App 刷视频、听歌占用音频；挂后台太久被系统冻结——见上方红字）；失效后彻底关闭网页重新打开，再把两个开关重新打开。<b>还有一条最容易漏：手机开了勿扰 / 免打扰（iPhone 叫「专注模式」）时，通知被系统静默收进通知栏、屏幕上方不弹横幅</b>——网页读不到它，「测试」体检全绿你也可能什么都没看到；先下拉通知栏看那条测试通知在不在，在＝被系统压住（去系统设置关掉勿扰，或把本浏览器 / 桌面上的 Mochi 加进勿扰的允许例外）。</div>
+        <div class="gs-sub" id="bg-notify-sub"><b>后台弹窗＝页面切到后台（锁屏 / 切到别的应用）时，他发消息用系统通知弹横幅。</b>必备：① 本机得有网页通知能力——安卓或电脑上的 Chrome / Edge（Chromium 内核）且 https 打开，或 iPhone / iPad 用 Safari「添加到主屏幕」后从桌面图标打开本站（标签页形态没有这个能力）；小米 / vivo / OPPO 自带浏览器、UC、夸克这些没有通知能力，开不起来；② 允许通知权限（地址栏左侧图标 → 网站设置 → 通知）；③ 本开关（会自动开启「后台保活」——后台不产生消息就无从弹起）；④ 系统设置里给浏览器允许通知、且不限制其后台运行/省电（小米 / 红米还要开「在屏幕上方显示 / 悬浮通知」）。<b>iPhone / iPad：Safari 标签页里没有网页通知能力，要到 Safari「添加到主屏幕」后从桌面图标打开本站，这个开关才开得了</b>——那边能授权、能弹系统通知；但 iOS 不给网页推送服务端，应用被系统收回后不保证弹，所以「后台保活」要一起开着，并可用「桌面消息弹窗」的应用内横幅兜底。点本行「功能说明」看完整步骤与「收不到」的排查，点右侧「测试」＝后台弹窗自测：第一段当场体检（开关/权限/保活/后台服务）并真发一条；成功后再点「现在测（切后台）」按 Home 切后台，第二段会由页面在后台再发一条、回来给结论。<b>⚠ 后台弹窗跟着保活一起：保活被截断/页面被丢弃＝后台弹窗一起停摆</b>（别的 App 刷视频、听歌占用音频；挂后台太久被系统冻结——见上方红字）；失效后彻底关闭网页重新打开，再把两个开关重新打开。<b>还有一条最容易漏：手机开了勿扰 / 免打扰（iPhone 叫「专注模式」）时，通知被系统静默收进通知栏、屏幕上方不弹横幅</b>——网页读不到它，「测试」体检全绿你也可能什么都没看到；先下拉通知栏看那条测试通知在不在，在＝被系统压住（去系统设置关掉勿扰，或把本浏览器 / 桌面上的 Mochi 加进勿扰的允许例外）。</div>
         <!-- #1059：通知逐条弹（关闭内容去重）——用户直派「联系人发来的多条消息我都要看到弹窗」。
              默认关闭＝保持去重（同内容/近期弹过只弹一条）；打开后每条消息都单独弹系统通知。 -->
         <div class="gs-row"><span>通知逐条弹（关闭去重）</span><label class="toggle"><input type="checkbox" id="bg-notify-nodedup"><span class="tk"></span></label></div>
@@ -12952,10 +12963,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
              会调节音量/亮度（浏览器自带手势，网页拦不住）。开启后用边缘拦截层+touchstart
              兜底尝试阻挡；对系统级手势可能无效，最可靠仍是浏览器设置关闭边缘滑动调节。 -->
         <div class="gs-row"><span>全屏边缘防误触</span><label class="toggle"><input type="checkbox" id="sf-edge-guard"><span class="tk"></span></label></div>
-        <!-- v3.5.104：桌面消息弹窗开关（独立设置项）——非聊天页时 他 新消息在桌面顶部弹横幅 -->
+        <!-- v3.5.104：桌面消息弹窗开关（独立设置项）——非聊天页时他新消息在桌面顶部弹横幅 -->
         <div class="gs-row"><span>桌面消息弹窗</span><label class="toggle"><input type="checkbox" id="desk-msg-en"><span class="tk"></span></label></div>
         <!-- v3.15.x：离线消息提醒（Periodic Background Sync）——页面全关后浏览器定期唤醒
-             Service Worker，用本地快照弹一条 他 的消息（零后端）；门槛是 Chromium 内核
+             Service Worker，用本地快照弹一条他的消息（零后端）；门槛是 Chromium 内核
              （安卓 / 电脑的 Chrome、Edge，不是「安卓」这个系统）且添加到桌面后生效，
              调度频率由系统决定；状态见下方说明行（#978 撤掉了静态「仅安卓」胶囊：
              桌面版 Chrome 同样可用，而安卓自带浏览器多数没有这个能力） -->
@@ -13160,7 +13171,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.62.4</div>
+          <div class="val" id="about-ver-val">v8.63.7</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13267,7 +13278,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
              不进设置搜索索引、也不动 verify-about-cat 的 B1（组标题）/B2（行 order）/B5（组数）/B12，零改尺。
              #1475（2026-09-30）：随开屏免责卡 #1475 同批重排（①-⑪，新增③自担强化/④按现状无担保/⑩可分割，最后更新 2026-09-30），措辞与开屏卡保持同口径（个别措辞有意微差＝让 #1475c 等哨兵 needle 在 template.html 内唯一，语义一致）。
              ⚠ 与开屏第一页「免责声明」卡（#splash-disclaimer）、使用说明第 15 章「许可与免责」同一口径，改文案必须三处同批同步 -->
-        <div class="gs-sub" id="about-disclaimer-sub"><b>免责声明（与开屏第一页「免责声明」卡同源）</b>：<b>本站禁止未满 18 周岁的未成年人使用</b>；点击进入即视为确认本人已年满 18 周岁，并已阅读、理解并同意《免责声明》全文（本站将在你的设备浏览器本地记录确认时间与声明版本，不上传）。① 所有字卡回复、他 的消息与互动均为<b>预先编写的随机代码随机触发，纯属虚构娱乐</b>，不代表任何真实人物的观点、承诺或情感，不具备任何形式的承诺、建议或专业意见，不产生任何法律效力。② 本站的虚拟互动<b>不能替代、也不应替代</b>真实的人际交往、恋爱关系、心理疏导或专业帮助；若你正处于情绪低落、焦虑或其他心理困境，请及时向家人朋友求助，或前往正规医疗机构、心理援助热线（全国心理援助热线：12356）寻求专业支持；<b>如遇紧急或危险情形，请立即拨打 110（报警）或 120（急救），或前往就近医院急诊</b>。③ <b>本站仅供自愿使用：请在充分理解本声明内容、自愿承担全部使用风险的前提下使用本站</b>；使用本站产生的一切后果（包括但不限于情绪影响、时间消耗、数据丢失、设备问题、纠纷与损失）均<b>由使用者本人自行承担、自行负责</b>，未成年人违规使用的相关责任由其本人及监护人承担；本站完全免费，作者未因你的使用收取任何费用或对价；<b>在法律法规允许的最大范围内，无论基于何种原因（包括但不限于违约、侵权或其他事由），作者均不承担任何直接、间接、附带或后果性的责任</b>。④ <b>本站按「现状」与「当前可用性」提供，不作任何形式的明示或默示保证（持续可用、不中断、无错误、适用于特定目的等）</b>；因第三方托管服务（如 GitHub Pages）、网络、设备、系统或浏览器等非作者可控原因导致的无法访问、显示异常或损失，作者亦不承担责任。⑤ 本站无后端服务器、无账号体系，所有数据仅保存在你自己的设备浏览器中，<b>不会上传至任何网络</b>，作者不收集、不读取、不对外分享你的任何内容；清除浏览器数据、卸载、换机、iOS 系统回收存储均会导致数据丢失，<b>请务必定期导出备份</b>；作者无法找回任何丢失数据。⑥ 你自行导入或保存的音乐、图片、表情、字卡等素材，<b>其版权与合法性由你本人负责</b>，请勿导入或分享侵权、违法的内容；由此产生的纠纷与责任由你承担。⑦ 本站指作者本人发布与部署的原版，<b>官方入口以站内署名卡公布的作者账号所发链接为准</b>；开放二传二改后产生的其他版本<b>并非原版，其内容、改动（可能自行添加云存储等联网功能）与运营均与作者无关</b>，从非原版入口使用所产生的一切后果，作者不承担责任。⑧ 禁止利用本站从事任何违法违规活动，包括但不限于骚扰、辱骂、诈骗、传播违法信息等，违者自行承担全部法律责任。⑨ 本站已于 2026-09-30 起停止功能更新（永久停更），此后仅可能发布必要的声明修正，<b>停更不等于下线</b>：已部署的页面与相关链接可能继续可访问，但作者不再维护更新，<b>不承诺本站与相关链接的持续可用、可访问或不中断</b>，也不承诺任何内容永不失效。⑩ 本声明任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。⑪ 本免责声明最后更新：2026-09-30。</div>
+        <div class="gs-sub" id="about-disclaimer-sub"><b>免责声明（与开屏第一页「免责声明」卡同源）</b>：<b>本站禁止未满 18 周岁的未成年人使用</b>；点击进入即视为确认本人已年满 18 周岁，并已阅读、理解并同意《免责声明》全文（本站将在你的设备浏览器本地记录确认时间与声明版本，不上传）。① 所有字卡回复、他的消息与互动均为<b>预先编写的随机代码随机触发，纯属虚构娱乐</b>，不代表任何真实人物的观点、承诺或情感，不具备任何形式的承诺、建议或专业意见，不产生任何法律效力。② 本站的虚拟互动<b>不能替代、也不应替代</b>真实的人际交往、恋爱关系、心理疏导或专业帮助；若你正处于情绪低落、焦虑或其他心理困境，请及时向家人朋友求助，或前往正规医疗机构、心理援助热线（全国心理援助热线：12356）寻求专业支持；<b>如遇紧急或危险情形，请立即拨打 110（报警）或 120（急救），或前往就近医院急诊</b>。③ <b>本站仅供自愿使用：请在充分理解本声明内容、自愿承担全部使用风险的前提下使用本站</b>；使用本站产生的一切后果（包括但不限于情绪影响、时间消耗、数据丢失、设备问题、纠纷与损失）均<b>由使用者本人自行承担、自行负责</b>，未成年人违规使用的相关责任由其本人及监护人承担；本站完全免费，作者未因你的使用收取任何费用或对价；<b>在法律法规允许的最大范围内，无论基于何种原因（包括但不限于违约、侵权或其他事由），作者均不承担任何直接、间接、附带或后果性的责任</b>。④ <b>本站按「现状」与「当前可用性」提供，不作任何形式的明示或默示保证（持续可用、不中断、无错误、适用于特定目的等）</b>；因第三方托管服务（如 GitHub Pages）、网络、设备、系统或浏览器等非作者可控原因导致的无法访问、显示异常或损失，作者亦不承担责任。⑤ 本站无后端服务器、无账号体系，所有数据仅保存在你自己的设备浏览器中，<b>不会上传至任何网络</b>，作者不收集、不读取、不对外分享你的任何内容；清除浏览器数据、卸载、换机、iOS 系统回收存储均会导致数据丢失，<b>请务必定期导出备份</b>；作者无法找回任何丢失数据。⑥ 你自行导入或保存的音乐、图片、表情、字卡等素材，<b>其版权与合法性由你本人负责</b>，请勿导入或分享侵权、违法的内容；由此产生的纠纷与责任由你承担。⑦ 本站指作者本人发布与部署的原版，<b>官方入口以站内署名卡公布的作者账号所发链接为准</b>；开放二传二改后产生的其他版本<b>并非原版，其内容、改动（可能自行添加云存储等联网功能）与运营均与作者无关</b>，从非原版入口使用所产生的一切后果，作者不承担责任。⑧ 禁止利用本站从事任何违法违规活动，包括但不限于骚扰、辱骂、诈骗、传播违法信息等，违者自行承担全部法律责任。⑨ 本站已于 2026-09-30 起停止功能更新（永久停更），此后仅可能发布必要的声明修正，<b>停更不等于下线</b>：已部署的页面与相关链接可能继续可访问，但作者不再维护更新，<b>不承诺本站与相关链接的持续可用、可访问或不中断</b>，也不承诺任何内容永不失效。⑩ 本声明任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。⑪ 本免责声明最后更新：2026-09-30。</div>
       </div>
       <!-- 联系与反馈：作者账号与反馈渠道（只读说明，导航见 personalize.js） -->
       <div class="set-group glass">
@@ -13279,7 +13290,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.62.4</div>
+      <div class="ver">Mochi 字卡传讯 v8.63.7</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13694,7 +13705,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.62.4</span>
+              <span class="lic-ver">v8.63.7</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -13751,28 +13762,28 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">联系人发送的消息可额外触发聊天情绪字卡（情绪 / 心意 / 交流意图）</div>
           <div class="lic-li">联系人偶尔主动分享自己的心情/近况/状态（他的心情字卡库，可调触发概率）</div>
           <div class="lic-li">撤回与补发、已读不回、拍一拍、颜文字附加</div>
-          <div class="lic-li">聊天可同时发送图文消息（表情包或上传图片），一条消息还能放多张图——我和 他 都可以</div>
+          <div class="lic-li">聊天可同时发送图文消息（表情包或上传图片），一条消息还能放多张图——我和他都可以</div>
           <div class="lic-li">聊天可引用消息，引用可发送表情包 + 文字</div>
           <div class="lic-li">联系人可随机收藏我发送的消息；我也可以收藏联系方发送的消息</div>
-          <div class="lic-li">主动发送：他 会主动找你，可调概率、间隔、免打扰与消息标识（内置五种 + 自定义）</div>
-          <div class="lic-li">聊天里点击顶部栏联系人的头像可打开【寻踪 他 的日常】页面</div>
+          <div class="lic-li">主动发送：他会主动找你，可调概率、间隔、免打扰与消息标识（内置五种 + 自定义）</div>
+          <div class="lic-li">聊天里点击顶部栏联系人的头像可打开【寻踪他的日常】页面</div>
           <div class="lic-li">聊天页面点击顶部栏联系人的昵称，可以让对方立即发送消息</div>
           <div class="lic-li">可搜索聊天记录并跳转到对应位置</div>
           <div class="lic-li">聊天 + 按钮展开更多功能面板（互动 / 小游戏 / 工具 / 他的提问 四分类）：互动类——邀请他、通话、拍一拍、红包、心意集市、心意柜、头像和昵称互动</div>
           <div class="lic-li">「邀请他」半框内置【我的邀请】字卡库：预设 + 自定义分组，可存入 / 修改 / 删除邀请字卡，点字卡即可重复发送</div>
-          <div class="lic-li">「邀请他」半框顶部【📜 邀请记录】：查自己发出过的邀请与 他 的回应（接受 / 拒绝 / 未回应）。<b>今天</b>的直接列出，更早的按日期折成一行、点日期展开，一次只露 5 天、点「加载更多」翻页；「清空记录」只清本桌面的邀请记录，问问他 的记录不受影响</div>
+          <div class="lic-li">「邀请他」半框顶部【📜 邀请记录】：查自己发出过的邀请与他的回应（接受 / 拒绝 / 未回应）。<b>今天</b>的直接列出，更早的按日期折成一行、点日期展开，一次只露 5 天、点「加载更多」翻页；「清空记录」只清本桌面的邀请记录，问问他的记录不受影响</div>
           <div class="lic-li">小游戏类——猜拳、Pong、贪吃蛇、打砖块、钓鱼、四子棋、扫雷、记忆翻牌、五子棋、连连看、消消乐、拍卖会；工具类——帮我决定、多人决定、问问他、搜索记录、占卜、漂流瓶、寻踪、此间、房间、心情日记</div>
-          <div class="lic-li">朋友圈贴纸回复：配图动态下点「贴纸」，选表情包贴到照片上（张数不限制，自己贴的可点撤回），他 会按评论概率回贴一张并进朋友圈通知</div>
+          <div class="lic-li">朋友圈贴纸回复：配图动态下点「贴纸」，选表情包贴到照片上（张数不限制，自己贴的可点撤回），他会按评论概率回贴一张并进朋友圈通知</div>
           <div class="lic-li">回忆闪回：打开朋友圈时，「那年今天」的旧动态会以记忆卡置顶，点击定位到原动态并高亮，✕ 当天不再显示</div>
-          <div class="lic-li">心情日记：桌面「日历」→ 顶部心情日记卡，每天选一个心情表情+一句话，他 的心情按天生成；月视图两人心情曲线对照、心情日历格与连续记录统计（#303）</div>
-          <div class="lic-li">「他 的提问」面板：让 他 现在问一次（询问 / 小问题 / 好奇 / 调侃 / 邀请 / 贴贴 / 查岗 / 跨桌面查岗）——前五项问的是 他 自己（提问、出选择题、好奇、调侃、约你玩），后三项＝让 他 当场做一件平常只按概率发生的事（发一次贴贴邀请、来查一次岗、让其他桌面的联系人来查一次岗）</div>
-          <div class="lic-li">贴贴邀请：他 会主动发来贴贴 / 抱抱 / 牵手 / 靠着的邀请，同意有轻震回应，婉拒也有专属台阶文案</div>
-          <div class="lic-li">他 的查岗：温柔关心式查岗问题卡（单选 / 文字作答 / 互动动作），作答后 他 会回应</div>
+          <div class="lic-li">心情日记：桌面「日历」→ 顶部心情日记卡，每天选一个心情表情+一句话，他的心情按天生成；月视图两人心情曲线对照、心情日历格与连续记录统计（#303）</div>
+          <div class="lic-li">「他的提问」面板：让他现在问一次（询问 / 小问题 / 好奇 / 调侃 / 邀请 / 贴贴 / 查岗 / 跨桌面查岗）——前五项问的是他自己（提问、出选择题、好奇、调侃、约你玩），后三项＝让他当场做一件平常只按概率发生的事（发一次贴贴邀请、来查一次岗、让其他桌面的联系人来查一次岗）</div>
+          <div class="lic-li">贴贴邀请：他会主动发来贴贴 / 抱抱 / 牵手 / 靠着的邀请，同意有轻震回应，婉拒也有专属台阶文案</div>
+          <div class="lic-li">他的查岗：温柔关心式查岗问题卡（单选 / 文字作答 / 互动动作），作答后他会回应</div>
           <div class="lic-li">批量发送消息：聊天输入栏「批量发送」按钮，可插入表情包 / 图片 / 文字，每条单独一条，多条按顺序一次性发送</div>
           <div class="lic-li">语音消息：聊天输入栏「麦克风」按钮录音，最长 60 秒可试听后发送为语音消息</div>
           <div class="lic-li">桌面【收藏】：我的收藏 / 联系人的收藏 分页浏览，收藏设置里可调联系人自动收藏概率（聊天消息 / 互动卡片 / 我的回信 / 朋友圈动态）；顶栏勾选图标进入批量管理，可多选 / 全选批量删除收藏（v3.31.x）</div>
           <div class="lic-li">隐藏联系人的表情包：开启后聊天与朋友圈的表情包面板只显示「我的表情包」</div>
-          <div class="lic-li">允许删除联系人消息：默认关闭，开启后长按 他 的消息可永久删除</div>
+          <div class="lic-li">允许删除联系人消息：默认关闭，开启后长按他的消息可永久删除</div>
             </div>
           </details>
 
@@ -13781,15 +13792,15 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
           <div class="lic-li">字卡库：浏览全部字卡，支持搜索与自定义分组管理</div>
           <div class="lic-li">聊天字卡分类可上传：【主字卡】【颜文字】【emoji】【表情包】【图片】【拍一拍】【语音】分类</div>
-          <div class="lic-li">其他互动功能字卡（自定义）：字卡库→可自定义字卡→其他互动功能字卡·公用 / ·专属，可为摸鱼 / 吃饭 / 经期 / 喝水 / 音乐等功能添加自定义字卡（可编辑 / 删除），功能触发时 他 会随机使用</div>
+          <div class="lic-li">其他互动功能字卡（自定义）：字卡库→可自定义字卡→其他互动功能字卡·公用 / ·专属，可为摸鱼 / 吃饭 / 经期 / 喝水 / 音乐等功能添加自定义字卡（可编辑 / 删除），功能触发时他会随机使用</div>
           <div class="lic-li">互动卡片可自定义内容，概率触发互动（在字卡库里）</div>
-          <div class="lic-li">他 的询问 / 小问题 / 好奇 / 调侃 / 查岗（含互动动作）/ 邀请：题库内容均可自定义</div>
+          <div class="lic-li">他的询问 / 小问题 / 好奇 / 调侃 / 查岗（含互动动作）/ 邀请：题库内容均可自定义</div>
           <div class="lic-li">寻踪日常字卡：地点、在做什么、说的话，均可自定义</div>
           <div class="lic-li">情绪回复：按你当前的心情自动匹配相应字卡</div>
           <div class="lic-li">内置词库规模：情绪 11 组 → 心意 9 组 + 特殊心意 4 组 → 交流意图 8 组三级链路，整类与单张均可开关</div>
-          <div class="lic-li">经期中负面情绪组权重自动上调、正向组下调，他 的回应更贴合状态</div>
-          <div class="lic-li">游戏结果回应池：游戏胜利 / 失败 / 平局后 他 抽对应字卡回应</div>
-          <div class="lic-li">新功能专属字卡：他 的邀请（猜拳 / Pong / 贪吃蛇 / 贴贴）、经期关心、喝水、房间、漂流瓶、位置卡等，逐条开关 + 自定义添加</div>
+          <div class="lic-li">经期中负面情绪组权重自动上调、正向组下调，他的回应更贴合状态</div>
+          <div class="lic-li">游戏结果回应池：游戏胜利 / 失败 / 平局后他抽对应字卡回应</div>
+          <div class="lic-li">新功能专属字卡：他的邀请（猜拳 / Pong / 贪吃蛇 / 贴贴）、经期关心、喝水、房间、漂流瓶、位置卡等，逐条开关 + 自定义添加</div>
           <div class="lic-li">字卡库页入口：公用字卡（全桌面联系人共享）、专属字卡（仅当前桌面联系人）、寻踪日常字卡、桌面今日情话、聊天默认字卡、聊天情绪字卡、聊天回应字卡及各功能专属字卡统一管理</div>
           <div class="lic-li">字卡管理：去重复、导出数据、一键清空所有分类</div>
           <div class="lic-li">触发概率可查看可调：系统预设字卡各页都能看到「当前触发概率」并当场调整（0~100%，0% 即该字卡不再出现）——聊天默认字卡（聊天 / 写信 / 朋友圈）、聊天情绪字卡（情绪 / 心意 / 交流意图）、聊天回应字卡（整条替换 / 连接词追加）、寻踪日常字卡（发送到聊天）以及其他互动功能字卡各分类</div>
@@ -13801,9 +13812,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">03</span><span class="lg-name">互动卡片</span><span class="lg-count">7</span></summary>
             <div class="lg-body">
           <div class="lic-li">联系人发送互动卡片：概率触发弹窗，或直接在聊天发送卡片</div>
-          <div class="lic-li">互动卡频率可整体往下调档：原频率（默认）/ 稍安静 / 安静 / 很安静——覆盖聊天里 他 主动发的提问卡五类、邀请三类与音乐邀请（没有比原频率更高的档），档位在 设置 → 回复设置 →「互动卡频率」</div>
-          <div class="lic-li">我发送互动卡片与联系人互动（邀请 他 / 问问 他 在聊天内发送卡片）</div>
-          <div class="lic-li">他 的邀请三类开局：猜拳 / Pong / 贪吃蛇邀请，同意后直接进入对局</div>
+          <div class="lic-li">互动卡频率可整体往下调档：原频率（默认）/ 稍安静 / 安静 / 很安静——覆盖聊天里他主动发的提问卡五类、邀请三类与音乐邀请（没有比原频率更高的档），档位在 设置 → 回复设置 →「互动卡频率」</div>
+          <div class="lic-li">我发送互动卡片与联系人互动（邀请他 / 问问他在聊天内发送卡片）</div>
+          <div class="lic-li">他的邀请三类开局：猜拳 / Pong / 贪吃蛇邀请，同意后直接进入对局</div>
           <div class="lic-li">可使用【帮我决定】提问联系人（功能参考：小红书@FelixFelicis 9416318007）</div>
           <div class="lic-li">可使用【多人决定】让多位成员各自给出决定（功能参考同上）</div>
           <div class="lic-li">联系人邀请一起播放音乐</div>
@@ -13814,15 +13825,15 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">04</span><span class="lg-name">心意币 · 红包 · 礼物</span><span class="lg-count">11</span></summary>
             <div class="lg-body">
           <div class="lic-li">全局统一账本「心意币」：红包、礼物、小游戏、钓鱼、漂流瓶共用一本账，新用户双方各 ¥520</div>
-          <div class="lic-li">聊天红包：「我发 / 他 发」双向红包，预设情侣金额档（¥5.20 / 13.14 / 52 / 99.99 / 131.40 / 520）与七夕特别档，支持随机金额、自定义金额、留言与红包封面图</div>
-          <div class="lic-li">发出的红包约 80% 概率被领取并致谢，24 小时未领取自动退回；长按可退回待领红包；被领取后 他 还有概率再捎一句（我领 他 的、他 领我的都算；默认开启、默认 60%，开关 / 概率 / 「捎什么内容」三档都在聊天页红包的「设置」里，按每个联系人单独保存）</div>
-          <div class="lic-li">他 平时也会主动发红包（每天最多 5 次），七夕更爱发大额</div>
+          <div class="lic-li">聊天红包：「我发 / 他发」双向红包，预设情侣金额档（¥5.20 / 13.14 / 52 / 99.99 / 131.40 / 520）与七夕特别档，支持随机金额、自定义金额、留言与红包封面图</div>
+          <div class="lic-li">发出的红包约 80% 概率被领取并致谢，24 小时未领取自动退回；长按可退回待领红包；被领取后他还有概率再捎一句（我领他的、他领我的都算；默认开启、默认 60%，开关 / 概率 / 「捎什么内容」三档都在聊天页红包的「设置」里，按每个联系人单独保存）</div>
+          <div class="lic-li">他平时也会主动发红包（每天最多 5 次），七夕更爱发大额</div>
           <div class="lic-li">余额不足也能照发照买：直接透支成负数不拦截，后续收红包 / 申请回正</div>
-          <div class="lic-li">「向 Mochi 申请心意币」：点击任意余额行弹出，可给我和 他 双向充值入账；他 也会随机向 Mochi 申请并在聊天留下申请记录——申请概率与每日上限在聊天页红包的「设置」里按每个联系人单独调整（默认 4%、不限次数）</div>
-          <div class="lic-li">心意市集：340+ 件默认商品分 15 类（含药品医护：常备药 / 外伤处理 / 经期关怀，以及节日节令、美妆个护；节日有粽子汤圆月饼，家里有口红面膜暖宝宝），支持搜索、自建商品（名字 / 图片 / 价格 / 默认留言）、编辑与恢复默认商品；他 逛市集时会把想要的加进自己的心愿单，并按概率把这份心愿发一张卡片到聊天——点卡片上的【送 他】即可一键买下送出（默认开启、默认 60%，概率与开关在「心意集市和心意柜设置」里）</div>
-          <div class="lic-li"><b>心意市集·上传我的商品</b>：市集顶部的【＋ 上传我的商品】——用自己的照片当礼物（不传图就用 emoji），填上名字、价格、分类和一句默认留言就能存进市集，自己送、他 送、加心愿单都跟默认商品一样能用。同一块里还有【导出商品数据】和【导入商品数据】：导出是一份 json 文件（你上传的图片一起打包），换手机、换浏览器或搬到另一个桌面，选这个文件导入即可还原；同一件商品（名字/分类/价格/图片都一样）会自动跳过，反复导入也不会翻倍。导出只装你自己上传的商品——默认商品、对默认商品的修改与删除、心意币、心愿单、心意柜记录都不包含、也不会被改动；导入时可选「合并」（已有的保留、缺的补上）或「先清空我的商品再导入」，文件里格式不对的条目会被忽略并在提示里说明跳过了几件</div>
-          <div class="lic-li">送礼给 他：挑商品写心意留言送出，礼物卡片飞进聊天并同步存进心意柜；他 每天 5% 概率主动从市集挑礼物回礼（最多 3 次）；反过来我送出的每一份礼物（含心愿卡上点【送 他】）都有概率换 他 回一句——默认开启、默认 60%，「他 回什么」可切系统预设话术 / 像正常聊天一样回复 / 混合，开关与概率都在「心意集市和心意柜设置」里</div>
-          <div class="lic-li">心意柜：收到 / 送出礼物册，「他 送我的 / 我送 他 的」分类翻看与统计</div>
+          <div class="lic-li">「向 Mochi 申请心意币」：点击任意余额行弹出，可给我和他双向充值入账；他也会随机向 Mochi 申请并在聊天留下申请记录——申请概率与每日上限在聊天页红包的「设置」里按每个联系人单独调整（默认 4%、不限次数）</div>
+          <div class="lic-li">心意市集：340+ 件默认商品分 15 类（含药品医护：常备药 / 外伤处理 / 经期关怀，以及节日节令、美妆个护；节日有粽子汤圆月饼，家里有口红面膜暖宝宝），支持搜索、自建商品（名字 / 图片 / 价格 / 默认留言）、编辑与恢复默认商品；他逛市集时会把想要的加进自己的心愿单，并按概率把这份心愿发一张卡片到聊天——点卡片上的【送他】即可一键买下送出（默认开启、默认 60%，概率与开关在「心意集市和心意柜设置」里）</div>
+          <div class="lic-li"><b>心意市集·上传我的商品</b>：市集顶部的【＋ 上传我的商品】——用自己的照片当礼物（不传图就用 emoji），填上名字、价格、分类和一句默认留言就能存进市集，自己送、他送、加心愿单都跟默认商品一样能用。同一块里还有【导出商品数据】和【导入商品数据】：导出是一份 json 文件（你上传的图片一起打包），换手机、换浏览器或搬到另一个桌面，选这个文件导入即可还原；同一件商品（名字/分类/价格/图片都一样）会自动跳过，反复导入也不会翻倍。导出只装你自己上传的商品——默认商品、对默认商品的修改与删除、心意币、心愿单、心意柜记录都不包含、也不会被改动；导入时可选「合并」（已有的保留、缺的补上）或「先清空我的商品再导入」，文件里格式不对的条目会被忽略并在提示里说明跳过了几件</div>
+          <div class="lic-li">送礼给他：挑商品写心意留言送出，礼物卡片飞进聊天并同步存进心意柜；他每天 5% 概率主动从市集挑礼物回礼（最多 3 次）；反过来我送出的每一份礼物（含心愿卡上点【送他】）都有概率换他回一句——默认开启、默认 60%，「他回什么」可切系统预设话术 / 像正常聊天一样回复 / 混合，开关与概率都在「心意集市和心意柜设置」里</div>
+          <div class="lic-li">心意柜：收到 / 送出礼物册，「他送我的 / 我送他的」分类翻看与统计</div>
           <div class="lic-li">小游戏奖励对齐红包金额体系（¥5.2 / 13.14 / 52 / 1314…），各自每日封顶防刷</div>
             </div>
           </details>
@@ -13832,19 +13843,19 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
           <div class="lic-li">入口：聊天更多功能 → 小游戏，共 13 项——游乐室 / 猜拳 / Pong / 贪吃蛇 / 打砖块 / 钓鱼 / 四子棋 / 扫雷 / 记忆翻牌 / 五子棋 / 连连看 / 消消乐 / 心意币拍卖会</div>
           <div class="lic-li">游乐室：所有小游戏战绩聚合 + 徽章墙 + 限定摆件图鉴；每日随机一款「幸运游戏」奖励 ×2；五子棋/连连看/消消乐胜利有 8% 概率掉落限定摆件（互通收藏）</div>
-          <div class="lic-li">他 会主动邀请玩 Pong / 贪吃蛇 / 猜拳 / 五子棋 / 连连看 / 消消乐 / 拍卖会，同意即直达；对局中 他 会冒气泡说话（堵棋、连击、点错、抢拍品）</div>
-          <div class="lic-li">五子棋（11×11 迷你盘）：三档难度，他 每回合状态随机（认真 / 正常 / 放水 / 失误）但保证会堵你的成五点；连胜负战绩与先手规则同四子棋</div>
-          <div class="lic-li">连连看（合作）：和 他 轮流消除同款图案，连线不超过两个弯；他 会快速找对、凭记忆翻牌，也会随缘点错；提示 ×3 / 洗牌 ×2，死锁自动洗牌</div>
-          <div class="lic-li">消消乐（合作）：轮流交换相邻两格凑三连，连锁连消共同冲目标分；默认简单模式无道具，头部可切「💣 道具」——四连直线出 ↔️/↕️（清整行/整列）、L/T 交叉出 💥 炸弹、五连出 🌈 彩虹；他 走最优步也会放水、手滑，达成目标结算默契与心意币</div>
-          <div class="lic-li">心意币拍卖会：每场 3 件拍品与 他 轮番举牌，落槌价从心意币真实扣款（拍不到不花钱），他 心理价位是暗的；拍品收进 🎒 小收藏</div>
-          <div class="lic-li">对战三款：猜拳、Pong（四档难度）、四子棋（他 每局状态随机：认真 / 放水 / 失误），累计战绩记录</div>
+          <div class="lic-li">他会主动邀请玩 Pong / 贪吃蛇 / 猜拳 / 五子棋 / 连连看 / 消消乐 / 拍卖会，同意即直达；对局中他会冒气泡说话（堵棋、连击、点错、抢拍品）</div>
+          <div class="lic-li">五子棋（11×11 迷你盘）：三档难度，他每回合状态随机（认真 / 正常 / 放水 / 失误）但保证会堵你的成五点；连胜负战绩与先手规则同四子棋</div>
+          <div class="lic-li">连连看（合作）：和他轮流消除同款图案，连线不超过两个弯；他会快速找对、凭记忆翻牌，也会随缘点错；提示 ×3 / 洗牌 ×2，死锁自动洗牌</div>
+          <div class="lic-li">消消乐（合作）：轮流交换相邻两格凑三连，连锁连消共同冲目标分；默认简单模式无道具，头部可切「💣 道具」——四连直线出 ↔️/↕️（清整行/整列）、L/T 交叉出 💥 炸弹、五连出 🌈 彩虹；他走最优步也会放水、手滑，达成目标结算默契与心意币</div>
+          <div class="lic-li">心意币拍卖会：每场 3 件拍品与他轮番举牌，落槌价从心意币真实扣款（拍不到不花钱），他心理价位是暗的；拍品收进 🎒 小收藏</div>
+          <div class="lic-li">对战三款：猜拳、Pong（四档难度）、四子棋（他每局状态随机：认真 / 放水 / 失误），累计战绩记录</div>
           <div class="lic-li">双人贪吃蛇同场抢食：三档速度分段提速 + 穿墙 / 安全模式开关，手机端打开自动全屏放大地图</div>
           <div class="lic-li">双人打砖块合作：各守半场共同清砖，球数可设 1~3，COMBO 连击与危险预警，结算按 ❤ 给出合作评级</div>
-          <div class="lic-li">合作扫雷：轮流挖完整张地图的安全格，共用 3 颗❤；他 会推理插旗也会失误，格子藏心意币 / 礼物彩蛋</div>
-          <div class="lic-li">记忆翻牌和 他 合作找配对：三档难度记「默契分」，完成 / 连击 / 首通均有心意币奖励</div>
-          <div class="lic-li">双人钓鱼：抛竿等咬钩，时机条蓝区收竿最佳；14 种收集物鱼图鉴，他 会钓到纪念品送你并可兑换</div>
+          <div class="lic-li">合作扫雷：轮流挖完整张地图的安全格，共用 3 颗❤；他会推理插旗也会失误，格子藏心意币 / 礼物彩蛋</div>
+          <div class="lic-li">记忆翻牌和他合作找配对：三档难度记「默契分」，完成 / 连击 / 首通均有心意币奖励</div>
+          <div class="lic-li">双人钓鱼：抛竿等咬钩，时机条蓝区收竿最佳；14 种收集物鱼图鉴，他会钓到纪念品送你并可兑换</div>
           <div class="lic-li">钓鱼陪伴奖励：双方同时在钓鱼满 5 分钟，每天一次 ¥13.14 与一句留言</div>
-          <div class="lic-li">所有对局结果以系统消息写进聊天，他 抽『游戏胜利 / 失败 / 平局·回应』字卡回应；赢局有心意币入账（各游戏每日封顶）</div>
+          <div class="lic-li">所有对局结果以系统消息写进聊天，他抽『游戏胜利 / 失败 / 平局·回应』字卡回应；赢局有心意币入账（各游戏每日封顶）</div>
             </div>
           </details>
 
@@ -13852,8 +13863,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">06</span><span class="lg-name">漂流瓶</span><span class="lg-count">5</span></summary>
             <div class="lg-body">
           <div class="lic-li">全屏页「两个世界之间的海」：捡一个瓶子 / 放一个瓶子，19 点后切换夜景</div>
-          <div class="lic-li">可捡到话痨瓶 / 装小物的瓶子 / 特别瓶；小概率捡到 他 的瓶子——内容取自 他 说过的字卡，越久没聊越可能出现</div>
-          <div class="lic-li">放出去的瓶子 36~96 小时后可能漂回来；他 也可能捡到你的瓶子并回一瓶</div>
+          <div class="lic-li">可捡到话痨瓶 / 装小物的瓶子 / 特别瓶；小概率捡到他的瓶子——内容取自他说过的字卡，越久没聊越可能出现</div>
+          <div class="lic-li">放出去的瓶子 36~96 小时后可能漂回来；他也可能捡到你的瓶子并回一瓶</div>
           <div class="lic-li">瓶中可能附小礼物彩蛋；捡瓶有心意币小奖励（每天首次 +2、特殊瓶 +5、日上限 ¥10）</div>
           <div class="lic-li">我的瓶子 / 捡到的 / 收藏三个页签，瓶子可 ♡ 收藏，顶部统计</div>
             </div>
@@ -13886,11 +13897,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">08</span><span class="lg-name">寻踪</span><span class="lg-count">5</span></summary>
             <div class="lg-body">
-          <div class="lic-li">桌面【寻踪】包含：他 的日常、他 在哪里、他 在做什么、他 想对你说——为【他 的日常】字卡库内容随机刷新，可自由添加字卡</div>
+          <div class="lic-li">桌面【寻踪】包含：他的日常、他在哪里、他在做什么、他想对你说——为【他的日常】字卡库内容随机刷新，可自由添加字卡</div>
           <div class="lic-li">联系人更新日常时，聊天消息里会发送一条【联系人昵称 更新了一条日常】，且有概率触发联系人提醒你寻踪的消息</div>
-          <div class="lic-li">不想用寻踪可以整体关闭：<b>设置 → 工具 → 寻踪（他 的日常）</b>，或字卡库【他 的日常】页顶部的同名开关。关闭后该行显示<b>已禁用：联系人无法再触发更新日常</b>，日常不再自动更新、不再推消息、也不写新记录，聊天「更多功能」里的寻踪与点 他 头像弹出的寻踪半框收起。<b>桌面【寻踪】图标不收起</b>——点进去页面照常打开、页顶写明这条已禁用，页里的「他在身边 · 位置感知」是独立功能、不受影响（位置面板的入口就住在这页里）；已有的日常与寻踪记录原样保留（记录默认只展开当天，更早的收在「更早记录」里点开可看），重新开启即恢复（按联系人桌面分别保存）</div>
-          <div class="lic-li">「他 在身边」位置感知：模糊感知 他 的方位与距离，文案来自字卡库「他在身边位置卡」——含系统预设（方位 / 距离 / 状态 / 感知 / 彩蛋分类，总开关 + 单卡开关）与自定义位置卡（可分组 / 批量添加），组合发送与彩蛋冷却（彩蛋「在你心里」每位联系人一周只能用一次）</div>
-          <div class="lic-li">位置卡发出后屏幕上有一个光点，<b>光点落在哪儿＝他 在哪儿</b>：方位卡（在你左边 / 右边 / 身后 / 前面）落在画面对应方向；距离卡、状态卡跟着<b>最近一张方位卡</b>的方位走——「再近一点」朝屏幕中心靠近、「再远一点」朝屏幕边缘退开（上一张是「在你右边」时挨着屏幕右侧属正常）；组合发送按其中的方位卡落点。方位感知的方向也会与最近的位置卡对齐</div>
+          <div class="lic-li">不想用寻踪可以整体关闭：<b>设置 → 工具 → 寻踪（他的日常）</b>，或字卡库【他的日常】页顶部的同名开关。关闭后该行显示<b>已禁用：联系人无法再触发更新日常</b>，日常不再自动更新、不再推消息、也不写新记录，聊天「更多功能」里的寻踪与点他头像弹出的寻踪半框收起。<b>桌面【寻踪】图标不收起</b>——点进去页面照常打开、页顶写明这条已禁用，页里的「他在身边 · 位置感知」是独立功能、不受影响（位置面板的入口就住在这页里）；已有的日常与寻踪记录原样保留（记录默认只展开当天，更早的收在「更早记录」里点开可看），重新开启即恢复（按联系人桌面分别保存）</div>
+          <div class="lic-li">「他在身边」位置感知：模糊感知他的方位与距离，文案来自字卡库「他在身边位置卡」——含系统预设（方位 / 距离 / 状态 / 感知 / 彩蛋分类，总开关 + 单卡开关）与自定义位置卡（可分组 / 批量添加），组合发送与彩蛋冷却（彩蛋「在你心里」每位联系人一周只能用一次）</div>
+          <div class="lic-li">位置卡发出后屏幕上有一个光点，<b>光点落在哪儿＝他在哪儿</b>：方位卡（在你左边 / 右边 / 身后 / 前面）落在画面对应方向；距离卡、状态卡跟着<b>最近一张方位卡</b>的方位走——「再近一点」朝屏幕中心靠近、「再远一点」朝屏幕边缘退开（上一张是「在你右边」时挨着屏幕右侧属正常）；组合发送按其中的方位卡落点。方位感知的方向也会与最近的位置卡对齐</div>
             </div>
           </details>
 
@@ -13903,12 +13914,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">联系人可主动更换音乐播放模式（循环播放 / 顺序播放 / 随机播放）</div>
           <div class="lic-li">我的收藏、批量管理、悬浮小框可拖动</div>
           <div class="lic-li">歌单：可新建歌单管理</div>
-          <div class="lic-li">听歌记录分「他 邀请听歌 / 我的听歌」两个页签</div>
+          <div class="lic-li">听歌记录分「他邀请听歌 / 我的听歌」两个页签</div>
           <div class="lic-li">自定义歌曲封面（上传图片压缩）、批量导入歌曲</div>
-          <div class="lic-li">他 想和你一起听歌：聊天弹窗邀请（一起听 / 稍后），接受即开始播放并记入记录</div>
-          <div class="lic-li"><b>你也可以主动邀请 他 听歌</b>：那首歌按「⋯」→「邀请 他 一起听」，他 会<b>同意</b>（当场一起播）／<b>拒绝</b>（说待会儿再听）／<b>申请换一首</b>（他 紧接着用它自己的邀请弹窗换一首邀你，你点「一起听」才播）；同一排还有<b>「让 他 邀我听这首」</b>＝立刻请 他 开口邀你听这一首，不走概率、不等冷却</div>
-          <div class="lic-li">歌曲播完 他 可能接动作：切下一首 / 随机挑一首 / 更换播放模式（概率可调）；还会按概率把你在听的歌收进「他的收藏」</div>
-          <div class="lic-li">播放队列：歌曲上「⋯」选「下一首播放」加入待播队列（可清空 / 移出 / 长按拖动调整播放顺序），播完当前按队列依次播放；他 也会按概率「预订下一首」把歌排进队列并发系统消息（概率可调）</div>
+          <div class="lic-li">他想和你一起听歌：聊天弹窗邀请（一起听 / 稍后），接受即开始播放并记入记录</div>
+          <div class="lic-li"><b>你也可以主动邀请他听歌</b>：那首歌按「⋯」→「邀请他一起听」，他会<b>同意</b>（当场一起播）／<b>拒绝</b>（说待会儿再听）／<b>申请换一首</b>（他紧接着用它自己的邀请弹窗换一首邀你，你点「一起听」才播）；同一排还有<b>「让他邀我听这首」</b>＝立刻请他开口邀你听这一首，不走概率、不等冷却</div>
+          <div class="lic-li">歌曲播完他可能接动作：切下一首 / 随机挑一首 / 更换播放模式（概率可调）；还会按概率把你在听的歌收进「他的收藏」</div>
+          <div class="lic-li">播放队列：歌曲上「⋯」选「下一首播放」加入待播队列（可清空 / 移出 / 长按拖动调整播放顺序），播完当前按队列依次播放；他也会按概率「预订下一首」把歌排进队列并发系统消息（概率可调）</div>
             </div>
           </details>
 
@@ -13916,11 +13927,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">10</span><span class="lg-name">通话</span><span class="lg-count">6</span></summary>
             <div class="lg-body">
           <div class="lic-li">联系人可主动拨打和挂断电话；我也可以拨打</div>
-          <div class="lic-li">他 会来电，可接听 / 拒绝，接通后缩为可拖动的迷你通话小框（位置记忆）</div>
+          <div class="lic-li">他会来电，可接听 / 拒绝，接通后缩为可拖动的迷你通话小框（位置记忆）</div>
           <div class="lic-li">来电可播放自定义铃声（音效设置）</div>
           <div class="lic-li">通话设置页：可调来电 / 接听 / 忙线 / 拒接 / 通话中挂断概率</div>
           <div class="lic-li">通话背景图片：可上传 / 移除（作用于通话小框）；「通话半框背景图片」单独给来电 / 去电的方形通话弹窗换背景</div>
-          <div class="lic-li">跨桌面来电（默认关闭，需在 设置 →「开启 联系人跨桌面打电话」手动打开）：其他桌面的联系人也会打来；点接听会自动跳到 他 的桌面再响铃（刻意设计），通话与通话记录都归属 他 的桌面主页/聊天；点「稍后」或未接也会在 他 的桌面留未接记录</div>
+          <div class="lic-li">跨桌面来电（默认关闭，需在 设置 →「开启 联系人跨桌面打电话」手动打开）：其他桌面的联系人也会打来；点接听会自动跳到他的桌面再响铃（刻意设计），通话与通话记录都归属他的桌面主页/聊天；点「稍后」或未接也会在他的桌面留未接记录</div>
             </div>
           </details>
 
@@ -13943,7 +13954,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">联系人可评论、回复我的朋友圈，我也可以评论、回复</div>
           <div class="lic-li">点击动态头像可查看我的 / 联系人的全部朋友圈</div>
           <div class="lic-li">点赞、评论、通知提醒（未读数字角标）</div>
-          <div class="lic-li">可删除单条动态（我的与 他 的均可删）</div>
+          <div class="lic-li">可删除单条动态（我的与他的均可删）</div>
           <div class="lic-li">可删除全部动态（分类删除：只删我的 / 只删联系人的 / 全部删除）</div>
           <div class="lic-li">多联系人：朋友圈为全局共享，按联系人聚合显示</div>
             </div>
@@ -13957,7 +13968,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">日历可切换月份查看</div>
           <div class="lic-li">日历可按天切换查看：联系人当日情话、我的备忘、我的心情（记录来源桌面组件）</div>
           <div class="lic-li">今日心情卡片（心情图标 + 分类标签）</div>
-          <div class="lic-li">他 正在做什么、他 的留言卡片、我的留言卡片（可编辑留言）</div>
+          <div class="lic-li">他正在做什么、他的留言卡片、我的留言卡片（可编辑留言）</div>
             </div>
           </details>
 
@@ -13973,10 +13984,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">15</span><span class="lg-name">生活工具</span><span class="lg-count">6</span></summary>
             <div class="lg-body">
-          <div class="lic-li">【备忘录】待办管理：置顶 / 截止日期 / 临期排序 / 一键清已完成；添加备忘 他 会在聊天里回应追问，还能概率催办提醒（开关 + 概率可调，命中后至少隔 2 天一次，不频扰）、偶尔帮你勾掉最旧一条</div>
-          <div class="lic-li">【喝水】今日杯数进度环 + 近 7 天柱状图，目标杯数 / 杯量自定义；他 定时催喝水、达标夸奖，战报可发到聊天</div>
-          <div class="lic-li">【吃什么】随机抽菜或转盘抽取，多菜单管理与批量编辑，「问 他」把菜名发到聊天征求意见；饭点有吃饭提醒（概率可调）</div>
-          <div class="lic-li">【存钱罐】存取 + 多个小心愿目标（可请 他 当监督人），25% / 50% / 75% 进度里程碑庆祝，他 碎碎念回应与偷偷塞硬币彩蛋</div>
+          <div class="lic-li">【备忘录】待办管理：置顶 / 截止日期 / 临期排序 / 一键清已完成；添加备忘他会在聊天里回应追问，还能概率催办提醒（开关 + 概率可调，命中后至少隔 2 天一次，不频扰）、偶尔帮你勾掉最旧一条</div>
+          <div class="lic-li">【喝水】今日杯数进度环 + 近 7 天柱状图，目标杯数 / 杯量自定义；他定时催喝水、达标夸奖，战报可发到聊天</div>
+          <div class="lic-li">【吃什么】随机抽菜或转盘抽取，多菜单管理与批量编辑，「问他」把菜名发到聊天征求意见；饭点有吃饭提醒（概率可调）</div>
+          <div class="lic-li">【存钱罐】存取 + 多个小心愿目标（可请他当监督人），25% / 50% / 75% 进度里程碑庆祝，他碎碎念回应与偷偷塞硬币彩蛋</div>
           <div class="lic-li">【番茄钟】专注 / 小憩 / 长休三档计时（时长可调），🍅 今日与累计统计，铃声 / 本地通知，退回桌面有陪伴模式悬浮条</div>
           <div class="lic-li">【记账】支出收入与自定义分类、月 / 周 / 年视角切换、月度预算进度条、收支柱状图、分类占比环形图与 TOP 排行、流水搜索过滤</div>
             </div>
@@ -13989,8 +14000,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">点月历上任意一天＝从那天起按你设的「经期天数」当场记上这次经期（再点一次只开浮层、不动记录；要取消就在浮层顶部那个开关里关掉的保存）；月历首尾补进来的是相邻月的真日子，跨月那几天不用翻月也点得到、照样跟着涂色；每日详情浮层：经量四档、11 种症状多选、基础体温、五档情绪与备注</div>
           <div class="lic-li">取近 6 次周期动态预测下次经期与排卵日，显示波动范围与规律性徽章；PMS 经前指数提示</div>
           <div class="lic-li">统计图表：常见症状 TOP3、周期长度趋势折线、一句话周期洞察，月度报告可一键分享朋友圈</div>
-          <div class="lic-li">本地通知提醒（经前 3 天 / 1 天 / 当天可选 + 经期中每日 + 推迟预警）；他 自动发「经期关心」（每天最多一条，话术可增删开关；发不发还要过 字卡库 →「其他互动功能字卡」那道概率闸，两边是「与」的关系，任一边关掉就一条都不发——被那边拦住时经期页的「提醒设置」里会当场把这句写出来，不再静默）</div>
-          <div class="lic-li">经期中 他 的文字回复有概率附加温柔前缀 / 动作后缀</div>
+          <div class="lic-li">本地通知提醒（经前 3 天 / 1 天 / 当天可选 + 经期中每日 + 推迟预警）；他自动发「经期关心」（每天最多一条，话术可增删开关；发不发还要过 字卡库 →「其他互动功能字卡」那道概率闸，两边是「与」的关系，任一边关掉就一条都不发——被那边拦住时经期页的「提醒设置」里会当场把这句写出来，不再静默）</div>
+          <div class="lic-li">经期中他的文字回复有概率附加温柔前缀 / 动作后缀</div>
             </div>
           </details>
 
@@ -13998,12 +14009,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">17</span><span class="lg-name">此间 · 同频 · 伸手</span><span class="lg-count">8</span></summary>
             <div class="lg-body">
           <div class="lic-li">【此间】每位梦角有自己的世界时间（十二时辰展示：与现实同步 / 快慢偏移 / 独立时间流）与「在场 × 空闲」双状态，随时间自动变化</div>
-          <div class="lic-li">空闲状态共六档：有空（适合交流）/ 有事 / 忙着 / 休息 / 睡着（他 那边已休息，可能不会回）/ 未知；每一档都悬停或长按状态标签可看含义</div>
-          <div class="lic-li">梦角名单管理：添加 / 改名 / 删除，首次打开自动以 他 的名字建档（删光后不复活）</div>
-          <div class="lic-li">「他 的一天」今日时辰轨迹轮播，「去找他」直达聊天（跨桌面时自动先切到 他 所在桌面，切换瞬间会有短暂加载，稍等即可）；「感知此间」给出谁在附近的氛围文字</div>
-          <div class="lic-li">查看各联系人的空闲状态：顶部 chips 切换到某位联系人即可看 他 名下梦角此刻的在场与空闲；点「全部」一次总览所有联系人桌面的梦角状态</div>
-          <div class="lic-li">【同频】「他 此刻」状态字卡定时刷新；长按敲三下暗号，约六成概率得到回应（震动 + 闪光，可发到聊天）</div>
-          <div class="lic-li">【伸手】长按伸手摸摸身边，约五成概率摸到——温热 / 微凉 / 发丝三种触感 + 一句悄悄话；他 偶尔也会反过来轻轻碰你</div>
+          <div class="lic-li">空闲状态共六档：有空（适合交流）/ 有事 / 忙着 / 休息 / 睡着（他那边已休息，可能不会回）/ 未知；每一档都悬停或长按状态标签可看含义</div>
+          <div class="lic-li">梦角名单管理：添加 / 改名 / 删除，首次打开自动以他的名字建档（删光后不复活）</div>
+          <div class="lic-li">「他的一天」今日时辰轨迹轮播，「去找他」直达聊天（跨桌面时自动先切到他所在桌面，切换瞬间会有短暂加载，稍等即可）；「感知此间」给出谁在附近的氛围文字</div>
+          <div class="lic-li">查看各联系人的空闲状态：顶部 chips 切换到某位联系人即可看他名下梦角此刻的在场与空闲；点「全部」一次总览所有联系人桌面的梦角状态</div>
+          <div class="lic-li">【同频】「他此刻」状态字卡定时刷新；长按敲三下暗号，约六成概率得到回应（震动 + 闪光，可发到聊天）</div>
+          <div class="lic-li">【伸手】长按伸手摸摸身边，约五成概率摸到——温热 / 微凉 / 发丝三种触感 + 一句悄悄话；他偶尔也会反过来轻轻碰你</div>
           <div class="lic-li">同频状态与伸手悄悄话均可在字卡库自定义</div>
             </div>
           </details>
@@ -14011,26 +14022,26 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">18</span><span class="lg-name">梦角档案 / 我的档案</span><span class="lg-count">8</span></summary>
             <div class="lg-body">
-          <div class="lic-li">【梦角档案】认识 他：九个分区——他 是谁 / 喜好 / 习惯 / 与我的相处 / 我对 他 的了解 / 位置感 / 物品 / 我们的共同记录 / 当前 IF 世界</div>
+          <div class="lic-li">【梦角档案】认识他：九个分区——他是谁 / 喜好 / 习惯 / 与我的相处 / 我对他的了解 / 位置感 / 物品 / 我们的共同记录 / 当前 IF 世界</div>
           <div class="lic-li">梦角档案不是 AI：本站没有任何 AI 功能，只是手动记录——内容全部由你自己写下</div>
-          <div class="lic-li">发现卡片记录你对 他 的了解（来源标注 + 确定程度圆点），「还不了解」疑问清单可转成发现，理解变化全程留痕</div>
+          <div class="lic-li">发现卡片记录你对他的了解（来源标注 + 确定程度圆点），「还不了解」疑问清单可转成发现，理解变化全程留痕</div>
           <div class="lic-li">共同记录六类 + 时间线视图，相处小事可升格为重要时刻</div>
-          <div class="lic-li">【我的档案】认识自己：写给某位 他 的自我说明——关于我 / 喜好 / 习惯 / 物品 / 我和 他（期望的相处方式）/ 对自己的描述 / IF 世界母档</div>
-          <div class="lic-li">两份档案均按联系人独立分档保存，顶部 chips 切换为哪位 他 维护；没建过档的联系人点一下即建档</div>
+          <div class="lic-li">【我的档案】认识自己：写给某位他的自我说明——关于我 / 喜好 / 习惯 / 物品 / 我和他（期望的相处方式）/ 对自己的描述 / IF 世界母档</div>
+          <div class="lic-li">两份档案均按联系人独立分档保存，顶部 chips 切换为哪位他维护；没建过档的联系人点一下即建档</div>
           <div class="lic-li">我的档案末行桥接梦角档案的共同记录，两边数据互不重复维护</div>
-          <div class="lic-li">IF 世界设定在「我的档案」统一维护（世界 / 我的身份 / 他 的身份 / 关系），梦角档案侧镜像 他 在该世界的样子</div>
+          <div class="lic-li">IF 世界设定在「我的档案」统一维护（世界 / 我的身份 / 他的身份 / 关系），梦角档案侧镜像他在该世界的样子</div>
             </div>
           </details>
 
           <details class="lic-grp">
             <summary><span class="lg-num">19</span><span class="lg-name">房间（双人小屋）</span><span class="lg-count">6</span></summary>
             <div class="lg-body">
-          <div class="lic-li">和 他 共同拥有一个小屋：21 种家具全部可互动（躺床 / 浇绿植 / 点台灯 / 泡热茶…），支持移动 / 翻转 / 收回仓库 / 长按拖动</div>
+          <div class="lic-li">和他共同拥有一个小屋：21 种家具全部可互动（躺床 / 浇绿植 / 点台灯 / 泡热茶…），支持移动 / 翻转 / 收回仓库 / 长按拖动</div>
           <div class="lic-li">小屋 Lv1~5 按舒适度升级，解锁新家具与 9 种墙纸 × 4 种地板装扮</div>
-          <div class="lic-li">屋里的 他 使用当前联系人头像渲染，会在房间走动 / 坐家具 / 看书 / 靠近你，点 他 可靠近 / 打招呼</div>
+          <div class="lic-li">屋里的他使用当前联系人头像渲染，会在房间走动 / 坐家具 / 看书 / 靠近你，点他可靠近 / 打招呼</div>
           <div class="lic-li">点数来源：每日进屋礼 + 使用 / 互动得点数，攒点数兑换解锁新家具；白天夜晚灯光氛围与天气变化</div>
-          <div class="lic-li">点家具窗户冒字卡话术，「感应」查 他 大致方位</div>
-          <div class="lic-li">数据按联系人隔离——每位 他 一个家；桌面第三页与聊天更多功能均可进入</div>
+          <div class="lic-li">点家具窗户冒字卡话术，「感应」查他大致方位</div>
+          <div class="lic-li">数据按联系人隔离——每位他一个家；桌面第三页与聊天更多功能均可进入</div>
             </div>
           </details>
 
@@ -14038,7 +14049,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">20</span><span class="lg-name">群聊</span><span class="lg-count">7</span></summary>
             <div class="lg-body">
           <div class="lic-li">设置开启「群聊模式」后桌面第一页出现群聊入口：所有联系人桌面的成员聚在一个窗口聊天；<b>同一时间桌面占卜图标会收起</b>（第一页留给群聊入口），要占卜走 <b>设置 → 工具 → 占卜</b>，两者不是互斥的功能，关闭群聊模式占卜图标就回来</div>
-          <div class="lic-li">你发言后随机成员回复，@某成员昵称则 他 必定回复；回复内容由公用字卡 + 各自桌面专属字卡 + 默认字卡三层决定</div>
+          <div class="lic-li">你发言后随机成员回复，@某成员昵称则他必定回复；回复内容由公用字卡 + 各自桌面专属字卡 + 默认字卡三层决定</div>
           <div class="lic-li">群聊页底部输入栏那一排有<b>「让对方继续说」</b>按钮（与单聊同位置；开关：回复设置 → 群聊 → 让对方继续说 / 本联系人桌面的聊天栏继续说按钮）：点一下让成员接着当前话题再说一段（输入框 @ 了谁就由谁接着说，没 @ 时随机 1-2 位），不必等你先发言</div>
           <div class="lic-li">成员管理：群成员列表查看，给自己和每位成员设群聊专属昵称 / 头像（覆盖桌面形象，可重置）</div>
           <div class="lic-li">成员回复参数独立可调：回复概率 / 速度 / 条数、拍一拍、表情包、emoji、图片、语音、颜文字、引用、撤回补发（回复设置 → 群聊）</div>
@@ -14050,12 +14061,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">21</span><span class="lg-name">记录统计</span><span class="lg-count">6</span></summary>
             <div class="lg-body">
-          <div class="lic-li">桌面【提问记录】统计历史：他 的询问、他 的小问题、他 的好奇、他 的调侃、我的邀请、问问他</div>
-          <div class="lic-li">桌面【主页】多 tab 统计：联系人换头像、通话记录、每日摸鱼值 / 每日打工值、摸鱼抓包（我抓到 他 / 被 他 抓到 双向记录）、他 的关心（查岗 / 经期 / 喝水 / 吃饭 / 番茄陪伴聚合）、心意币红包 / 赚钱 / 申请记录</div>
+          <div class="lic-li">桌面【提问记录】统计历史：他的询问、他的小问题、他的好奇、他的调侃、我的邀请、问问他</div>
+          <div class="lic-li">桌面【主页】多 tab 统计：联系人换头像、通话记录、每日摸鱼值 / 每日打工值、摸鱼抓包（我抓到他 / 被他抓到 双向记录）、他的关心（查岗 / 经期 / 喝水 / 吃饭 / 番茄陪伴聚合）、心意币红包 / 赚钱 / 申请记录</div>
           <div class="lic-li">联系人今日情话、我的备忘、我的心情的历史可在【日历】里按天切换查看</div>
           <div class="lic-li">桌面【聊天统计】统计：相处记录（第一次聊天时间、最近聊天时间、聊天消息条数、文字数量、收藏记录）、聊天记录（消息比例、最常聊天时间段、最常聊天日期、平均每日消息、最长连续聊天、单日最高消息）、情绪表达（文字字卡 / 情绪 / 心意 / 交流意图使用次数排行）</div>
-          <div class="lic-li">聊天统计含多个流水区块：「我发红包」「他 发红包」（双向摘要）、「他 申请心意币记录」「小游戏记录」，全量保存按时间倒序</div>
-          <div class="lic-li">占卜记录、帮我决定 / 多人决定记录、听歌记录（他 邀请 / 我的）、小游戏战绩与钓鱼图鉴单独留存</div>
+          <div class="lic-li">聊天统计含多个流水区块：「我发红包」「他发红包」（双向摘要）、「他申请心意币记录」「小游戏记录」，全量保存按时间倒序</div>
+          <div class="lic-li">占卜记录、帮我决定 / 多人决定记录、听歌记录（他邀请 / 我的）、小游戏战绩与钓鱼图鉴单独留存</div>
             </div>
           </details>
 
@@ -14082,7 +14093,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">后台保活只是「让这个浏览器网页在后台不被冻结」，没有别的意思：不安装任何东西、不在系统后台常驻、不读取手机里的其他数据、不联网上传、也不会开机自启；关掉开关或关掉页面即彻底结束，不改动手机 / 系统的任何设置</div>
           <div class="lic-li">后台保活会占用手机音频通道：开启时可能影响其他 App 的声音（如听歌），别的 App 出声也会打断保活（属手机与浏览器限制，不是故障）；不需要后台收消息时到 设置 → 系统 关掉即可</div>
           <div class="lic-li">保活音频可换：默认内置静音音频，也可上传自己的音频（白噪音 / 助眠声等，按原音量循环）；若关掉保活后本页仍发出异常声音才是故障</div>
-          <div class="lic-li">离线消息提醒：页面全部关闭后，安卓 PWA 后台同步仍会推送「他 来消息了」（需先添加到桌面，iOS 不支持）</div>
+          <div class="lic-li">离线消息提醒：页面全部关闭后，安卓 PWA 后台同步仍会推送「他来消息了」（需先添加到桌面，iOS 不支持）</div>
           <div class="lic-li">PWA 安装：安装按钮、iOS 引导、已安装隐藏</div>
           <div class="lic-li">版本检测：在线对比版本时间戳，显示新版本提示条，可关闭</div>
           <div class="lic-li">定期备份提醒：距上次导出超 1 天提醒；首次使用引导：无数据时提示可导入备份</div>
@@ -14132,7 +14143,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">两种模式：塔罗（78 张完整牌库：22 大阿卡纳 + 56 小阿卡纳，带正逆位与详细解读）/ 雷诺曼（40 张）</div>
           <div class="lic-li">抽取张数：1 张（运势）/ 3 张（过去 · 现在 · 未来）/ 7 张（完整牌阵）</div>
           <div class="lic-li">洗牌动画 → 牌面滑动 → 抽取 → 翻牌动画，综合解读（一句话总运势 + 问题呼应）</div>
-          <div class="lic-li">历史记录（查看 / 删除 / 清空），可把结果发给 他</div>
+          <div class="lic-li">历史记录（查看 / 删除 / 清空），可把结果发给他</div>
           <div class="lic-li">桌面占卜页入口 + 聊天页半框入口，自动发送开关（每个联系人独立记忆）</div>
           <div class="lic-li"><b>开启群聊模式期间桌面占卜图标会收起</b>（第一页留位给「群聊」入口），改为 <b>设置 → 工具 → 占卜</b> 打开——与点桌面图标完全等效（含历史记录）；关闭群聊模式后桌面图标自动回来</div>
             </div>
@@ -14153,13 +14164,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
           <div class="lic-li">六面板 tab：聊天 / 群聊 / 信箱 / 朋友圈 / 查岗 / 其他，参数按联系人独立保存（群聊面板全局共用）</div>
           <div class="lic-li">聊天：被动回复（回复速度 / 条数 / 已读不回 / 拍一拍 / 表情包 / emoji / 图片 / 语音 / 颜文字 / 引用 / 撤回 / 补发概率）、多字卡回复（触发概率 / 最少最多条数 / 拼接符号池含「换行」）、主动发送（概率 / 间隔 / 条数 / 免打扰 / 标识可换可自定义）</div>
-          <div class="lic-li"><b>主动发送标识</b>：他 主动找你的消息，气泡左上角那个小标识以前固定是爱心，现在可以换、也可以自己加——设置 → 回复设置 → 聊天 → 主动发送（联系人找你）→「标识」。内置五枚都能点亮（爱心 ♥ / 星星 ★ / 月亮 ☾ / 闪光 ✦ / 小爪 🐾），系统自带的只能开关、不能删除；点「＋」可以添加自己的标识，emoji 和文字都可以（最长 4 个字符、最多 8 个），自定义的点本体开关、点「×」删除。点亮一枚＝每条主动消息都用它；点亮多枚＝多出「抽取方式」一行，可选「每次随机」或「按顺序轮换」；关掉「主动发送标识」总开关＝一枚都不显示</div>
+          <div class="lic-li"><b>主动发送标识</b>：他主动找你的消息，气泡左上角那个小标识以前固定是爱心，现在可以换、也可以自己加——设置 → 回复设置 → 聊天 → 主动发送（联系人找你）→「标识」。内置五枚都能点亮（爱心 ♥ / 星星 ★ / 月亮 ☾ / 闪光 ✦ / 小爪 🐾），系统自带的只能开关、不能删除；点「＋」可以添加自己的标识，emoji 和文字都可以（最长 4 个字符、最多 8 个），自定义的点本体开关、点「×」删除。点亮一枚＝每条主动消息都用它；点亮多枚＝多出「抽取方式」一行，可选「每次随机」或「按顺序轮换」；关掉「主动发送标识」总开关＝一枚都不显示</div>
           <div class="lic-li">信箱：信件内容字卡条数、联系人主动写信（每天最多 / 概率 / 最短最长时间）、联系人回信（概率 / 最短最长时间）、写信内容类型、信件拼接随机标点（共用聊天的符号池）</div>
-          <div class="lic-li">朋友圈：互动设置（点赞 / 评论 / 回复概率及速度 / 回赞概率）、回复内容设置（多字卡概率 / 最多字卡数 / 表情包概率 / 拼接随机标点）、他 发朋友圈设置（主动发概率 / 每天最多 / 冷却 / 间隔 / 字卡条数 / 内容类型）、清除所有朋友圈数据</div>
+          <div class="lic-li">朋友圈：互动设置（点赞 / 评论 / 回复概率及速度 / 回赞概率）、回复内容设置（多字卡概率 / 最多字卡数 / 表情包概率 / 拼接随机标点）、他发朋友圈设置（主动发概率 / 每天最多 / 冷却 / 间隔 / 字卡条数 / 内容类型）、清除所有朋友圈数据</div>
           <div class="lic-li">群聊：每个成员回复概率 / 速度 / 条数与各类附加行为概率，独立于主聊天设置</div>
-          <div class="lic-li">查岗：他 主动查岗的开关 / 概率 / 冷却 / 自动弹窗概率</div>
+          <div class="lic-li">查岗：他主动查岗的开关 / 概率 / 冷却 / 自动弹窗概率</div>
           <div class="lic-li">概率的生效链：系统预设字卡走「<b>总档 × 分类档</b>」两级相乘——先乘回复设置里的系统预设字卡总档（默认 100），再乘各分类自己的设定值，任一级为 0 即不触发；总档只作用于系统预设字卡，信箱 / 朋友圈不套总档。设置页里显示的始终是分类自己的存盘值（不显示相乘后的结果），所以总档调到 0 时各分类的数字看起来没变、但都不触发了，属正常。</div>
-          <div class="lic-li">撤回与补发是一对：命中「撤回」的 他 消息先静默落地（不弹通知、不响提示音，未读角标照常 +1），1~3 秒内随机变成「已撤回」（不是秒撤，像真人犹豫一下）；紧接着按「补发」概率决定是否补一条新内容。你收到的通知 / 横幅里已经出现的那句话一定会进聊天（掷签在发通知之前），不会只剩一条墓碑。</div>
+          <div class="lic-li">撤回与补发是一对：命中「撤回」的他消息先静默落地（不弹通知、不响提示音，未读角标照常 +1），1~3 秒内随机变成「已撤回」（不是秒撤，像真人犹豫一下）；紧接着按「补发」概率决定是否补一条新内容。你收到的通知 / 横幅里已经出现的那句话一定会进聊天（掷签在发通知之前），不会只剩一条墓碑。</div>
             </div>
           </details>
 
@@ -14185,7 +14196,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="lic-li">底部 tab：桌面 / 字卡库 / 设置，独立全屏页导航与状态栏隐藏</div>
           <div class="lic-li">安卓返回键：弹层优先关闭 → 回上一页 → 最后退出应用</div>
           <div class="lic-li">IndexedDB 存储：大键值存 IDB，localStorage 缓存，启动时回填；请求持久化存储防清理</div>
-          <div class="lic-li">夜间免打扰模式（原「夜间模式」）：开启后 22:00–7:00 只拦 他 主动的打扰（不再主动发消息、不自动发互动卡 / 换头像换昵称 / 换位送礼 / 朋友圈动态，也不主动打电话，其他桌面不再跨桌面查岗 / 来电）；你自己发的消息与 他 的回复照常，时段外不受影响</div>
+          <div class="lic-li">夜间免打扰模式（原「夜间模式」）：开启后 22:00–7:00 只拦他主动的打扰（不再主动发消息、不自动发互动卡 / 换头像换昵称 / 换位送礼 / 朋友圈动态，也不主动打电话，其他桌面不再跨桌面查岗 / 来电）；你自己发的消息与他的回复照常，时段外不受影响</div>
             </div>
           </details>
 
@@ -14230,13 +14241,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <summary><span class="lg-num">1</span><span class="lg-name">快速开始</span><span class="lg-count">9</span></summary>
             <div class="lg-body">
               <div class="lic-li">全新环境首次打开会<b>自动弹一次「新手引导」3 步</b>：设置「我」和「他」→ 添加字卡 → 开始聊天，每步可一键跳到对应位置；老用户想重看走 <b>设置 → 工具 → 新手引导</b>。</div>
-              <div class="lic-li">先在 <b>设置 → 通用 → 联系人 / 桌面</b> 新建联系人，并设置双方昵称、头像。<b>注意这是「桌面」那一套</b>：聊天里显示的名字 / 头像与它<b>互相独立、不会同步</b>，未设置时聊天里固定显示默认「我」「他」，要去 <b>聊天页右上角 → 聊天设置 → 形象</b> 里的「我的昵称 / 联系人昵称 / 我的头像 / 联系人头像」单独再设一次。换聊天头像和聊天昵称还有一条路：聊天页「更多功能」（输入栏左边的 ⋯）→ 互动类 → <b>头像和昵称互动</b>——头像侧可上传多张头像库、点图即换，昵称侧可存多个文字昵称、点名字即换，两边都能开「他 随机换头像 / 昵称」和「他 主动给我换头像 / 昵称」（每 1-8 小时一次）。</div>
+              <div class="lic-li">先在 <b>设置 → 通用 → 联系人 / 桌面</b> 新建联系人，并设置双方昵称、头像。<b>注意这是「桌面」那一套</b>：聊天里显示的名字 / 头像与它<b>互相独立、不会同步</b>，未设置时聊天里固定显示默认「我」「他」，要去 <b>聊天页右上角 → 聊天设置 → 形象</b> 里的「我的昵称 / 联系人昵称 / 我的头像 / 联系人头像」单独再设一次。换聊天头像和聊天昵称还有一条路：聊天页「更多功能」（输入栏左边的 ⋯）→ 互动类 → <b>头像和昵称互动</b>——头像侧可上传多张头像库、点图即换，昵称侧可存多个文字昵称、点名字即换，两边都能开「他随机换头像 / 昵称」和「他主动给我换头像 / 昵称」（每 1-8 小时一次）。</div>
               <div class="lic-li">添加字卡：底部导航「字卡库」→ 公用字卡 / 专属字卡 里添加；也可以导入 milk 字卡库的 json，或用「自定义字卡·全量导入」。</div>
               <div class="lic-li"><b>导入 milk 字卡库的 json</b>：公用字卡、专属字卡都支持。会一并导入 milk 的【主字卡】+【拍一拍】+【Emoji 库】+【字卡分组】（含分组结构），颜文字 / 表情包等分类也会按类型归位。milk 侧对应位置：<b>设置 → 高级功能 → 自定义回复 → 导入字卡</b>；把导出的 json 存到手机后，再到本站「字卡库 → 导入数据」选它。</div>
               <div class="lic-li"><b>只适配了 milk（传讯）字卡库导出的 json</b>：其他网站的字卡格式不支持，导入会提示格式错误；本站自己的备份 / 星言格式另有识别。</div>
-              <div class="lic-li">发消息：首页点联系人进入聊天，输入后发送。他 的回复、主动消息、互动邀请都是<b>按概率随机触发</b>的。</div>
+              <div class="lic-li">发消息：首页点联系人进入聊天，输入后发送。他的回复、主动消息、互动邀请都是<b>按概率随机触发</b>的。</div>
               <div class="lic-li">手机桌面：左右滑动切换页面，点图标进入聊天 / 字卡 / 查岗 / 日历 / 信箱 / 朋友圈 / 音乐 / 占卜等各功能。</div>
-              <div class="lic-li">想调 他 的话多话少：<b>设置 → 聊天 → 回复设置</b> 调回复速度、概率、条数；单个功能字卡的概率在 <b>字卡库 → 其他互动功能字卡</b> 里调（0 = 不触发）。</div>
+              <div class="lic-li">想调他的话多话少：<b>设置 → 聊天 → 回复设置</b> 调回复速度、概率、条数；单个功能字卡的概率在 <b>字卡库 → 其他互动功能字卡</b> 里调（0 = 不触发）。</div>
               <div class="lic-li">找不到功能：<b>设置 → 聊天 → 功能大全</b>，可搜索全部功能入口。</div>
             </div>
           </details>
@@ -14260,7 +14271,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
               <div class="lic-li"><b>全屏会掉</b>：切到后台再切回、或在浏览器里切换页面，全屏会失效，需手动重新打开。</div>
               <div class="lic-li"><b>方向</b>：iOS 不支持屏幕方向锁定，不会自动锁竖屏，也不会纠正横屏（iPad 横屏是正常姿势，布局会自适应）。</div>
               <div class="lic-li"><b>声音</b>：iOS 要求先与页面互动（点 / 滑一下）才允许播放有声内容，本站已在首次点击时自动解锁；如果全程没有任何操作，定时触发的来电铃声 / 消息音效可能不响。</div>
-              <div class="lic-li"><b>系统通知</b>：iPhone 浏览器内不支持系统通知；「离线消息提醒」（页面全部关闭后仍能收到 他 的消息）只在安卓或电脑上的 Chrome / Edge 且添加到桌面后可用，iPhone / iPad 不支持。</div>
+              <div class="lic-li"><b>系统通知</b>：iPhone 浏览器内不支持系统通知；「离线消息提醒」（页面全部关闭后仍能收到他的消息）只在安卓或电脑上的 Chrome / Edge 且添加到桌面后可用，iPhone / iPad 不支持。</div>
               <div class="lic-li"><b>导出 / 导入</b>：从主屏幕打开时 iPhone 没有下载管理器，导出会走系统「分享」面板，请保存到「文件」App；导入时也会打开系统「文件」App 选备份文件。</div>
               <div class="lic-li"><b>语音</b>：录音格式由系统决定，安卓录制的语音在 iPhone 上可能无法播放；iOS 的「文件」选择器会按类型过滤，导入字卡 / 语音等时个别文件可能灰显、选不中（系统限制）。</div>
               <div class="lic-li"><b>其他</b>：iOS 没有振动反馈；Safari 会忽略网页设置的音量大小；字卡库 / 图片过多时更容易被系统回收内存、导致页面重新加载（用 设置 → 信息诊断 →「卡顿自检 · 一键优化」缓解）。</div>
@@ -14293,8 +14304,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
               <div class="lic-li">底部导航：<b>桌面 / 字卡库 / 设置</b> 三个主入口。</div>
               <div class="lic-li">聊天：首页点联系人进入；右上角是<b>聊天设置</b>；输入框旁「+」展开更多功能面板，分 <b>互动 / 小游戏 / 工具 / 他的提问</b> 四类。</div>
-              <div class="lic-li"><b>互动</b>类：邀请 他、通话、拍一拍、红包、心意集市、心意柜、头像和昵称互动、漂流瓶等。</div>
-              <div class="lic-li"><b>小游戏</b>类：猜拳、Pong、贪吃蛇、打砖块、钓鱼、四子棋、扫雷、记忆翻牌等；<b>工具</b>类：帮我决定、多人决定、问问 他、搜索记录、占卜、寻踪、此间、房间、心情日记等。</div>
+              <div class="lic-li"><b>互动</b>类：邀请他、通话、拍一拍、红包、心意集市、心意柜、头像和昵称互动、漂流瓶等。</div>
+              <div class="lic-li"><b>小游戏</b>类：猜拳、Pong、贪吃蛇、打砖块、钓鱼、四子棋、扫雷、记忆翻牌等；<b>工具</b>类：帮我决定、多人决定、问问他、搜索记录、占卜、寻踪、此间、房间、心情日记等。</div>
                <div class="lic-li">桌面图标：日历、信箱、朋友圈、音乐、占卜、房间、漂流瓶、记账、经期、备忘录、纪念等；左右滑动桌面临换页。</div>
                <div class="lic-li">注意：<b>开启群聊模式期间，桌面占卜图标会收起</b>（第一页留给「群聊」入口），占卜改从 <b>设置 → 工具 → 占卜</b> 打开，效果与点桌面图标一样（含历史记录）；关掉群聊模式图标自动回来。</div>
               <div class="lic-li">完整索引：<b>设置 → 聊天 → 功能大全</b>（可搜索、点条目直达）；群聊在 <b>设置 → 通用 → 开启群聊</b>。</div>
@@ -14313,11 +14324,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
               <div class="lic-li"><b>开了后台保活后，其他声音变小或受影响？</b>保活要在后台一直播放一段音频，手机同一时间通常只允许一路音频占用通道，所以会互相影响（别的 App 出声时保活也会被暂停再自动抢回）。这不是故障，是手机 / 浏览器的限制；不想受影响就到 设置 → 系统 关掉「后台保活」。若关掉后本页仍发出异常声音（电流声 / 嗡鸣）那才是 bug，请带机型 + 浏览器反馈。</div>
               <div class="lic-li"><b>全屏失效？</b>切到后台或切换页面会退出全屏，手动重新打开即可；iPhone 顶部系统状态栏无法隐藏。</div>
               <div class="lic-li"><b>用着卡顿？</b>数据体积过大（图片是内联存储的）是常见原因之一，再叠上后台保活、浏览器标签页过多、系统省电等因素；<b>谁占得最多因人而异</b>，先到 设置 → 工具 →「查看存储」看清你这台手机哪一块最大，再用「卡顿自检 · 一键优化」，并精简超大图片和字卡库。按顺序做的一整套清单见第 11 节「手机卡顿怎么办（安卓 / iPhone）」。</div>
-              <div class="lic-li"><b>他 的回复太少 / 太频繁？</b>设置 → 聊天 → 回复设置 与 字卡库 → 其他互动功能字卡 里调概率（0 = 不触发）。</div>
+              <div class="lic-li"><b>他的回复太少 / 太频繁？</b>设置 → 聊天 → 回复设置 与 字卡库 → 其他互动功能字卡 里调概率（0 = 不触发）。</div>
               <div class="lic-li"><b>系统内置字卡用不了？</b>被「防未成年人 · 内置字卡锁定」锁住了，到开屏公告区那张卡输入二级验证密码解锁。</div>
               <div class="lic-li"><b>忘记应用锁密码？</b>可答安全问题或输暗号关闭应用锁；否则只能清除本站数据重来（会丢数据，务必先导出备份）。暗号／二级验证密码的答案在开屏<b>第一页</b>的章节里（点开开屏<b>第一页</b>顶部的「目录」，「6、当前状态与反馈」那一章写着那串日期）。</div>
               <div class="lic-li"><b>打不开 / 白屏 / 一直是旧版？</b>建议用 Chrome、Edge 等主流浏览器，关掉浏览器重开、用流量多刷新几次再试。<b>如果你开着「后台保活」或「后台通知」，页面不会在后台自动换新版</b>——换新版要重载页面、会把后台运行打断，所以改在你彻底关闭网页重开时换到新版，或到 设置 → 关于 →「检查更新」手动刷（不刷也不影响使用）；这是刻意的设计，不是更新坏了。</div>
-              <div class="lic-li"><b>他 是真人吗 / 算连上梦角了吗？</b>本质都是随机代码运行，是否对应上只有你自己知道；问外人不必要，别人的说法也不一定正确。</div>
+              <div class="lic-li"><b>他是真人吗 / 算连上梦角了吗？</b>本质都是随机代码运行，是否对应上只有你自己知道；问外人不必要，别人的说法也不一定正确。</div>
               <div class="lic-li"><b>能上传云端 / 换个设备同步吗？</b>本站无后端、纯本地，数据不会上传；换设备靠导出备份文件再导入。</div>
             </div>
           </details>
@@ -14326,7 +14337,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
               <div class="lic-li"><b>搜索设置项</b>：设置页顶部搜索框输入关键词，跨「通用 / 聊天 / 系统 / 工具 / 关于」五个分区过滤出行；没搜到时，输入框下方会出现「在功能大全中搜索」入口，一键带词去全量功能索引里找。</div>
               <div class="lic-li"><b>长按任意消息</b>：弹出操作菜单——引用回复 / 收藏 / 复制 / 编辑 / 删除 / 撤回补发等（具体项按消息类型出现）。</div>
-              <div class="lic-li"><b>发图片、表情包</b>：输入栏旁「+」展开更多功能 → 表情包 / 图片。<b>可一次选多张，同一条消息里一起发出</b>；他 也会按「回复设置 → 聊天 → 被动回复」里的「表情包概率」「图片概率」发来<b>一条含两张图</b>的消息（两张概率都命中时＝1 个表情包 + 1 张图片，都取自「字卡库 → 公用/专属字卡 → 表情包 / 图片」）。</div>
+              <div class="lic-li"><b>发图片、表情包</b>：输入栏旁「+」展开更多功能 → 表情包 / 图片。<b>可一次选多张，同一条消息里一起发出</b>；他也会按「回复设置 → 聊天 → 被动回复」里的「表情包概率」「图片概率」发来<b>一条含两张图</b>的消息（两张概率都命中时＝1 个表情包 + 1 张图片，都取自「字卡库 → 公用/专属字卡 → 表情包 / 图片」）。</div>
               <div class="lic-li"><b>发语音</b>：先在 聊天设置 打开「我可发送语音」，输入栏左侧出现「麦克风」按钮，点击录音（最长 60 秒，可试听后发送）；需要允许麦克风权限。</div>
               <div class="lic-li"><b>拍一拍 / 搜索记录</b>：在聊天「+」的更多功能面板里。</div>
               <div class="lic-li"><b>切换联系人 / 桌面</b>：各联系人的数据相互独立；专属字卡、收藏等属于当前联系人。</div>
@@ -14351,20 +14362,20 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">10</span><span class="lg-name">后台弹窗 · 怎么用（安卓 / 电脑）</span><span class="lg-count">16</span></summary>
             <div class="lg-body">
-              <div class="lic-li"><b>它是什么</b>：页面切到后台（锁屏、切到别的应用、回到桌面）时，他 发来新消息就用<b>系统通知</b>弹一条横幅，不用一直守着聊天页；锁屏和下拉通知栏里也能看到内容。开关在 <b>设置 → 系统 →「后台通知」</b>，同一行右边的「测试」可一键体检。</div>
+              <div class="lic-li"><b>它是什么</b>：页面切到后台（锁屏、切到别的应用、回到桌面）时，他发来新消息就用<b>系统通知</b>弹一条横幅，不用一直守着聊天页；锁屏和下拉通知栏里也能看到内容。开关在 <b>设置 → 系统 →「后台通知」</b>，同一行右边的「测试」可一键体检。</div>
               <div class="lic-li"><b>它不是什么</b>：不是真推送。消息是本机按概率随机生成的——「后台弹窗」只负责在页面处于后台时把它弹出来；不联网、不上传任何内容，也不代表对方真实在线。</div>
               <div class="lic-li"><b>前提 1 · 环境</b>：用安卓或电脑上的 <b>Chrome / Edge</b> 打开，并且是 <b>https://</b> 访问（本站 GitHub Pages 地址本身就是 HTTPS）。http:// 访问、或国产手机自带浏览器，多数拿不到通知能力。</div>
               <div class="lic-li"><b>前提 2 · 通知权限</b>：地址栏左侧图标 → 网站设置 → <b>通知 → 允许</b>。第一次打开「后台通知」开关时会请求一次授权，点「允许」即可。<b>若没弹授权框、或被静默拒绝</b>（Chrome 对授权框反复弹过的站会自动挡，多半不是你点了拒绝），就在网站设置里手动改「允许」；列表里没有本站，就在 Chrome 设置 → 网站设置 → 通知 里<b>「添加网站例外」→ 手动输入本站网址</b>（或 地址栏左侧图标 → 权限 → 通知 → 允许）。<b>若改了仍不弹</b>＝Chrome 对本站的自动屏蔽无法解除，换 Edge / 电脑打开本站即可，聊天记录在 设置 → 通用 导出 / 导入 迁移。如果你还没在弹窗里做出选择（弹窗挂着没点、或直接切走了），开关会保持开启并提示你去允许：这时通知还不会来，等你在「网站设置 → 通知」里允许后自动生效，不用再点第二次开关。</div>
-              <div class="lic-li"><b>前提 3 · 后台保活要开着</b>：打开「后台通知」会<b>自动</b>把「后台保活」一起打开。原因：他 的消息由页面定时器产生，页面在后台被系统冻结就没消息可生成，也就无从弹起。若你后来手动关了保活，后台弹窗会静默失效（切回前台时会提示你）。</div>
+              <div class="lic-li"><b>前提 3 · 后台保活要开着</b>：打开「后台通知」会<b>自动</b>把「后台保活」一起打开。原因：他的消息由页面定时器产生，页面在后台被系统冻结就没消息可生成，也就无从弹起。若你后来手动关了保活，后台弹窗会静默失效（切回前台时会提示你）。</div>
               <div class="lic-li"><b>前提 4 · 系统层面允许通知</b>：手机 系统设置 → 应用 → Chrome / Edge → 通知：允许。<b>小米 / 红米（MIUI、HyperOS）等系统</b>还要在「通知类别」里打开「在屏幕上方显示 / 悬浮通知」，否则通知只进下拉栏、不弹横幅。</div>
               <div class="lic-li"><b>前提 5 · 别限制后台</b>：系统省电 / 后台管理里不要把该浏览器设成「限制后台运行」，否则页面会被系统杀掉，保活与通知都会断。建议设为「<b>无限制 / 允许后台活动</b>」；再在<b>最近任务</b>里把本站<b>锁定</b>、<b>别横向划掉</b>；有「自启动 / 后台活动」开关的一并允许。<b>注意</b>：Edge「睡眠标签页」/ Chrome「内存节省程序」只管<b>浏览器标签页</b>，<b>已加到桌面的本站是独立应用，改那两处没有用</b>（详见第 11 节）。另外<b>省电模式常在电量低到 20% 时自动开启</b>，它一开就顺手收紧后台运行——要长时间挂着收消息，充电时最稳。</div>
               <div class="lic-li"><b>挂久了会截断/失效，怎么恢复</b>：① 别的 App <b>刷视频、听歌</b>会占用手机音频通道，把保活音频截停＝保活失效（回本页自动恢复）；② 挂后台太久，系统省电/内存策略会把页面<b>冻结甚至丢弃重载</b>（Edge「睡眠标签页」/Chrome「内存节省程序」约 30 分钟；手机内存紧张时更快——本页越重，几分钟也可能被丢）。这两种情况后台弹窗都跟着停摆（手机/浏览器限制，不是网站坏了）。<b>恢复：彻底关闭网页重新打开，再把「后台保活」「后台通知」开关重新打开</b>。想推迟失效：平时从<b>浏览器标签页</b>打开本站的，可在浏览器设置里把本站加入「永不睡眠 / 始终保持活动」名单；<b>已经加到手机桌面的本站是独立应用，那两处管不到它</b>——要去 <b>系统设置 → 应用 → 本浏览器 → 省电</b>里选「无限制 / 允许后台活动」，并在最近任务里把本站锁定（详见第 11 节）。</div>
               <div class="lic-li"><b>怎么确认通了</b>：点「后台通知」行右边的<b>「测试」</b>。它会先体检（通知权限 / 后台保活 / HTTPS /「主动发送」是否开着 / 本次后台通知的去重统计 / 联系人头像是否存在），再真发一条测试通知；卡在哪一环会直接写在结果里。</div>
               <div class="lic-li"><b>收不到 ① iPhone / iPad</b>：<b>Safari 标签页里没有网页通知能力</b>，所以这个开关在浏览器里开不起来（不是网站坏了）。要 <b>Safari 分享菜单 →「添加到主屏幕」</b>，之后从桌面图标打开本站——那边能授权、能弹系统通知（本机读「通知=已允许」就是这个形态）。装在 iPhone 上也仍要靠「后台保活」把页面撑住：iOS 不给网页推送服务端，应用被系统收回后不保证弹。兜底：<b>设置 → 系统 →「桌面消息弹窗」</b>，不在聊天页时新消息弹应用内横幅，切回应用时还会提示「你不在的时候收到 N 条新消息」。</div>
-              <div class="lic-li"><b>收不到 ② 后台本来就没消息</b>：他 的聊天消息是按 <b>回复设置 → 主动发送</b> 的「间隔 + 概率」随机产生的。关掉「主动发送」、概率调成 0、或开着<b>「免打扰」</b>（那是本应用自己的档位，把主动发送弱化到最长 3 小时一次），后台就没有东西可弹（这与通知权限无关）；开着<b>「夜间免打扰模式」</b>（原「夜间模式」）时 22:00–7:00 整段不主动发消息，<b>后半夜本来就没有可弹的东西</b>——这些都属设定，不是坏了。</div>
-              <div class="lic-li"><b>收不到 ③ 被去重闸门拦了</b>：刚切到后台的 <b>15 秒内</b>不发通知（多半是你刚看完的消息在补触发）；内容上也会去重——与最近 5 分钟聊过、最近 2 分钟弹过、或你刚在前台看过的同一条内容不再重复弹。他 的字卡池重复率高，同一句被吞掉属正常，不是坏了。</div>
+              <div class="lic-li"><b>收不到 ② 后台本来就没消息</b>：他的聊天消息是按 <b>回复设置 → 主动发送</b> 的「间隔 + 概率」随机产生的。关掉「主动发送」、概率调成 0、或开着<b>「免打扰」</b>（那是本应用自己的档位，把主动发送弱化到最长 3 小时一次），后台就没有东西可弹（这与通知权限无关）；开着<b>「夜间免打扰模式」</b>（原「夜间模式」）时 22:00–7:00 整段不主动发消息，<b>后半夜本来就没有可弹的东西</b>——这些都属设定，不是坏了。</div>
+              <div class="lic-li"><b>收不到 ③ 被去重闸门拦了</b>：刚切到后台的 <b>15 秒内</b>不发通知（多半是你刚看完的消息在补触发）；内容上也会去重——与最近 5 分钟聊过、最近 2 分钟弹过、或你刚在前台看过的同一条内容不再重复弹。他的字卡池重复率高，同一句被吞掉属正常，不是坏了。</div>
               <div class="lic-li"><b>收不到 ④ 手机开了「勿扰 / 免打扰」</b>（系统把横幅压住了）：这是最容易漏、也最常命中的一条。手机的<b>勿扰模式</b>（安卓叫「勿扰 / 免打扰」，iPhone / iPad 是<b>「专注模式」</b>里的勿扰·睡眠·驾驶·工作）会把<b>所有应用</b>的通知<b>静默收进通知栏</b>——屏幕上方不弹横幅、不亮屏、不响铃。它整个发生在系统那一层，<b>网页读不到它的状态</b>，所以会出现「测试体检全绿、通知确实发出去了，你屏幕上却什么都没有」——<b>体检绿 + 你没看到，先查这条</b>。两种情形：自己手动开的，或<b>定时 / 自动开着</b>（夜里到早上那一段自动开、白天忘了关）。<b>一步自查</b>：下拉通知栏，看刚才那条测试通知<b>在不在里面</b>——<b>躺在通知栏、只是没在屏幕上方弹</b>＝被系统压住了，不是链路坏了：去 系统设置 → 通知 → 勿扰 / 免打扰 关掉（iPhone：控制中心 → 点掉当前专注模式），或在勿扰设置里把本浏览器（或桌面上的 Mochi）加进<b>「允许的应用 / 例外」</b>。<b>同一族还有三处会压住横幅</b>：① 通知<b>按类别被静音过</b>——长按某条通知选过「静默 / 减少干扰」，部分新系统还会把不常用的应用自动折进「静默通知」，浏览器那一类里的<b>「网站通知」</b>单独关掉＝总开关开着也不弹；② <b>锁屏显示</b>设成「隐藏通知内容 / 不显示」，于是锁屏上看不见、只有解锁后通知栏里才有；③ iPhone 开过<b>「定时推送摘要」</b>，通知会攒到你指定的时间点才一起出现。电脑端同理：Windows 的<b>「请勿打扰 / 专注助手」</b>、macOS 的<b>「专注模式」</b>开着时也不弹横幅。<b>别和本站自己的两个档搞混</b>：回复设置里的「免打扰」与「夜间免打扰模式」管的是<b>有没有消息可弹</b>，本条说的手机系统勿扰管的是<b>有消息也弹不出来</b>——它在手机系统设置里，网页读不到它的状态、也替你关不掉。</div>
-              <div class="lic-li"><b>和「离线消息提醒」的区别</b>：两者完全独立、互不影响。后台弹窗＝<b>页面还在后台运行时</b> 他 发消息弹通知（本开关 + 后台保活 + 通知权限）；离线消息提醒＝<b>页面全部关掉后</b>浏览器隔几小时唤醒一次、随机抽一条想念文案弹通知（仅安卓 / 电脑上的 Chrome、Edge 且添加到主屏幕）。哪个不开都不影响另一个。</div>
+              <div class="lic-li"><b>和「离线消息提醒」的区别</b>：两者完全独立、互不影响。后台弹窗＝<b>页面还在后台运行时</b> 他发消息弹通知（本开关 + 后台保活 + 通知权限）；离线消息提醒＝<b>页面全部关掉后</b>浏览器隔几小时唤醒一次、随机抽一条想念文案弹通知（仅安卓 / 电脑上的 Chrome、Edge 且添加到主屏幕）。哪个不开都不影响另一个。</div>
               <div class="lic-li"><b>代价</b>：开着后台保活＝页面在后台持续运行，比较耗电、也可能发热，不需要时到 设置 → 系统 关掉；通知会在锁屏 / 通知栏显示消息内容，介意就在系统设置里关掉本应用的通知。</div>
               <div class="lic-li"><b>一句话路径</b>：安卓或电脑上的 Chrome / Edge 打开本站 → 允许通知 → 设置 → 系统 打开「后台通知」（自动带上「后台保活」）→ 去系统设置给浏览器开通知、且不限制后台 → 点「测试」看到横幅即成功。</div>
             </div>
@@ -14394,7 +14405,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
               <div class="lic-li"><b>优化 ⑧ 安卓用法</b>：同样的东西，安卓一般不会被系统关掉页面，但数据还是会一直涨，<b>长期用也要定期清</b>（照 ①② 做）。另外别用「桌面版网站」模式，手机版更流畅；识别失手时用 设置 → 系统 →「<b>手机布局（强制）</b>」掰回来（也可用地址栏 <b>?mobile=1 / ?pc=1</b>）。</div>
               <div class="lic-li"><b>优化 ⑨ 保持最新版</b>：更新会自动进行（切后台/重开时生效），也可到 设置 → 关于 →「检查更新」手动刷。</div>
               <div class="lic-li"><b>不是让你少存图</b>：现在上传的字卡图会自动压到<b>最长边 720px</b>（表情包 480、头像 256），比以前的旧图小得多——<b>正常存、正常用完全不用担心</b>。真正拖慢手机的是两类老东西：以前没有压缩标准时存下的<b>老图</b>，和只进不出的<b>历史数据</b>（聊天记录、本地音乐、用不上的大图卡）。把这两类清掉就够了。要铺满屏幕的壁纸会保留大尺寸（最长边 2880px），但一台桌面也就一两张，不会堆起来。</div>
-              <div class="lic-li"><b>还有一类「卡」不是数据多，是手机把网页收回了</b>：表现＝切回来先白一下、「刚才的页面自己重新加载了」、他 的消息和后台弹窗有一截没收到、页面越用越容易被丢。这是系统的<b>省电与后台管控</b>在做主（任何网页都拦不住它），而且<b>这一页越重它越爱收</b>。安卓／鸿蒙照这四步勾：① <b>系统设置 → 应用 →（你用的浏览器，或已加到桌面的「Mochi」图标）→ 省电 / 电池策略 → 选「无限制 / 允许后台活动」</b>，别让它「优化」这个应用；② 在<b>最近任务</b>里把本站<b>上滑锁定 / 点锁头</b>，<b>不要横向划掉它</b>（划掉＝你亲手关掉，回来必然重新加载）；③ 有「<b>自启动 / 后台活动</b>」开关的一并允许；④ 荣耀·华为、小米、OPPO·一加、vivo 的菜单<b>叫法各不相同</b>（省电策略 / 电池优化 / 后台管理 / 关联启动），找不到就在系统设置里直接搜「电池」「省电」「后台」。</div>
+              <div class="lic-li"><b>还有一类「卡」不是数据多，是手机把网页收回了</b>：表现＝切回来先白一下、「刚才的页面自己重新加载了」、他的消息和后台弹窗有一截没收到、页面越用越容易被丢。这是系统的<b>省电与后台管控</b>在做主（任何网页都拦不住它），而且<b>这一页越重它越爱收</b>。安卓／鸿蒙照这四步勾：① <b>系统设置 → 应用 →（你用的浏览器，或已加到桌面的「Mochi」图标）→ 省电 / 电池策略 → 选「无限制 / 允许后台活动」</b>，别让它「优化」这个应用；② 在<b>最近任务</b>里把本站<b>上滑锁定 / 点锁头</b>，<b>不要横向划掉它</b>（划掉＝你亲手关掉，回来必然重新加载）；③ 有「<b>自启动 / 后台活动</b>」开关的一并允许；④ 荣耀·华为、小米、OPPO·一加、vivo 的菜单<b>叫法各不相同</b>（省电策略 / 电池优化 / 后台管理 / 关联启动），找不到就在系统设置里直接搜「电池」「省电」「后台」。</div>
               <div class="lic-li"><b>一个容易白忙活的地方</b>：Edge 的「睡眠标签页」、Chrome 的「内存节省程序」管的是<b>浏览器里的标签页</b>。把本站「添加到主屏幕 / 桌面」之后，它是一个<b>独立应用</b>——<b>去改那两处没有用</b>，该被收回还是被收回。真正管用的是上面那条里的<b>系统省电 / 允许后台活动</b>。</div>
               <div class="lic-li"><b>iPhone 侧对应做两件事</b>：① 用 Safari 把本站「添加到主屏幕」，并<b>从桌面图标打开</b>（不装的话 Apple 的「<b>7 天规则</b>」会把整个站的数据清空，见关于页那条）；② <b>别开「低电量模式」</b>（它把整机帧率锁到一半，滑动、切页、打字全都卡，关掉立刻恢复）。另外<b>页面越轻越不容易被收回</b>：按上面的顺序清掉最大的一项；<b>设置 → 信息诊断</b>里的「被系统回收过 N 次」就是这件事的计数，它一直涨就去勾上面那几条。</div>
               <div class="lic-li"><b>千万别做</b>：<b>不要用「清除本地数据」来治卡顿</b>——它不会修好任何东西，只会把数据全删光（聊天 / 字卡 / 头像 / 壁纸 / 音乐）。真要清，先到「导出数据」备份。</div>
@@ -14446,7 +14457,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lg-body">
               <div class="lic-li"><b>应用锁</b>：设置 → 系统 →「应用锁」开启，设置 4-6 位数字密码；之后每次打开本站需输密码（同一标签解过一次即可，刷新不重锁）。</div>
               <div class="lic-li">建议同时设置「<b>安全问题</b>」：忘记密码时可用它重置密码。</div>
-              <div class="lic-li"><b>二级验证密码（暗号）锁住的是哪些字卡</b>：「防未成年人 · 内置字卡锁定」（开屏公告区那张卡输入密码解锁，也能一键重新上锁）只锁系统预设里的<b>默认聊天字卡、词典（含词典拼字）和其他互动功能字卡</b>——被锁时这些页面的开关「开了却没效果」属正常。<b>不受这把锁影响</b>：聊天情绪字卡、心意字卡、交流意图、聊天回应字卡、他 的心情、今日情话、位置卡、查岗问题库、他 主动提问，未解锁也照常使用。</div>
+              <div class="lic-li"><b>二级验证密码（暗号）锁住的是哪些字卡</b>：「防未成年人 · 内置字卡锁定」（开屏公告区那张卡输入密码解锁，也能一键重新上锁）只锁系统预设里的<b>默认聊天字卡、词典（含词典拼字）和其他互动功能字卡</b>——被锁时这些页面的开关「开了却没效果」属正常。<b>不受这把锁影响</b>：聊天情绪字卡、心意字卡、交流意图、聊天回应字卡、他的心情、今日情话、位置卡、查岗问题库、他主动提问，未解锁也照常使用。</div>
               <div class="lic-li"><b>开屏问答门</b>：设置 → 系统 →「开屏问答门」（默认开启），每次打开（含换浏览器 / 新设备）先答对问答题才放行；可单独使用，不一定要开应用锁。</div>
               <div class="lic-li">锁定界面可输入<b>二级验证密码（暗号）</b>，让本机永久跳过问答层。</div>
               <div class="lic-li"><b>忘记密码怎么办</b>：用安全问题重置；或输暗号直接关闭应用锁；两者都没有时，只能清除本站数据重来（会丢数据，先导出备份）。暗号／二级验证密码的答案在开屏<b>第一页</b>的章节里（点开开屏<b>第一页</b>顶部的「目录」，「6、当前状态与反馈」那一章写着那串日期）。</div>
@@ -14463,7 +14474,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
                    本条只是摘要，完整版在 开屏第一页「免责声明」卡 与 设置 → 关于 →「隐私与法律」，避免三处长文各写一份、改了不同步。
                    lg-count 随之 6→5（verify-guide-help 的 G2「每节 lg-count＝实际条目数」守恒）
                    #1459（2026-09-29）：本条摘要同步 B+C 的措辞与新增条款（紧急情形 110／120、不构成承诺、最大范围内免责、原版唯一入口、停更≠下线、最后更新日期）；**条数不变，lg-count 仍为 5** -->
-              <div class="lic-li"><b>本站禁止未满 18 周岁的未成年人使用。</b>字卡回复与 他 的消息均为随机代码生成、<b>纯属虚构娱乐</b>，不代表任何真实人物，不构成任何承诺、建议或专业意见，也不能替代真实的人际交往与专业心理帮助；如遇紧急或危险情形，请立即拨打 <b>110（报警）／120（急救）</b> 或前往就近医院急诊；本站完全免费，使用后果由使用者本人自行承担、自行负责，<b>在法律法规允许的最大范围内、无论基于何种原因作者均不承担任何责任</b>。<b>完整免责声明</b>（另含心理援助热线 12356、按「现状」提供与无担保、导入素材版权、原版唯一入口与非原版责任、停更后可用性、条款无效不影响其余、本声明最后更新日期）见 <b>开屏第一页「免责声明」卡</b> 与 <b>设置 → 关于 →「隐私与法律」</b>。</div>
+              <div class="lic-li"><b>本站禁止未满 18 周岁的未成年人使用。</b>字卡回复与他的消息均为随机代码生成、<b>纯属虚构娱乐</b>，不代表任何真实人物，不构成任何承诺、建议或专业意见，也不能替代真实的人际交往与专业心理帮助；如遇紧急或危险情形，请立即拨打 <b>110（报警）／120（急救）</b> 或前往就近医院急诊；本站完全免费，使用后果由使用者本人自行承担、自行负责，<b>在法律法规允许的最大范围内、无论基于何种原因作者均不承担任何责任</b>。<b>完整免责声明</b>（另含心理援助热线 12356、按「现状」提供与无担保、导入素材版权、原版唯一入口与非原版责任、停更后可用性、条款无效不影响其余、本声明最后更新日期）见 <b>开屏第一页「免责声明」卡</b> 与 <b>设置 → 关于 →「隐私与法律」</b>。</div>
               <div class="lic-li">开屏公告为本站内容，不可删除或修改。</div>
             </div>
           </details>
@@ -14506,7 +14517,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <button class="fav-tab" data-rp="other">其他</button>
       </div>
       <!-- v3.27.x #218 互动频率引导：进页先讲清「这些都是随机概率、可自行调」，配合聊天页提示条 -->
-      <div class="gs-sub reply-guide-note">以下都是 他 随机行为的触发概率（%）：嫌频繁就把数值调小，调到 0 = 不再触发；开关关掉 = 彻底关闭该行为。修改即时保存生效。</div>
+      <div class="gs-sub reply-guide-note">以下都是他随机行为的触发概率（%）：嫌频繁就把数值调小，调到 0 = 不再触发；开关关掉 = 彻底关闭该行为。修改即时保存生效。</div>
       <!-- #595b：字卡使用状态自检 快捷入口（复用 card-audit.js，#card-audit-back 返回时回本页） -->
       <div class="rps-quick"><button class="rps-quick-btn" id="rps-card-audit" type="button">字卡使用状态自检</button></div>
       <div class="gs-scroll">
@@ -14524,8 +14535,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>回复速度最长（秒）</span><div class="stepper" data-k="rs-max" data-min="2" data-max="6000" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="rs-max-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复条数最少</span><div class="stepper" data-k="reply-min" data-min="1" data-max="10" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="reply-min-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复条数最多</span><div class="stepper" data-k="reply-max" data-min="1" data-max="20" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="reply-max-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub"><b>这两项＝你每发 1 条消息，他 就跟着回你几条（在最少~最多之间随机）。</b>默认 1~2 ＝ 你发一句、他 回一两句。<b>注意：这是「每条消息」的条数，不是 他 一天最多发几条，所以不建议调大</b>——调到 5 ＝ 他 每次都一口气连发 5 条、直接刷屏；你连着发的每句话还会各自触发一批（调到 5、你连发 3 句 ＝ 最多收到 15 条）。嫌 他 话多就把这两项都调成 1；想彻底只回一条，去下方「字卡与概率」组关掉「多字卡回复」（关闭后这里设几条都只回 1 条）。</div>
-            <div class="gs-sub"><b>为什么有时收到的比上面设的还多</b>：这几类消息不占「回复条数」的名额、会额外多发——词典拼字的「多回复逐卡连发」（命中时一次连发数条，默认不受本上限截断，「词典拼字」组的「逐卡连发不受条数限制」默认开，手动关闭后才按本上限截断）、撤回补发、他 的心情分享、红包/心意币/听歌邀请、他 主动发送的消息（一次连发几条由下方「主动发送」组的「发送条数」单独控制）。所以把上面调到 N 只是限定「每发一条消息的基础回复」，不代表 他 一天最多发 N 条。<b>想让上面这些一起被管住，打开本面板下方「总量限流」</b>（只有它能限住 他 发消息的总量）。</div>
+            <div class="gs-sub"><b>这两项＝你每发 1 条消息，他就跟着回你几条（在最少~最多之间随机）。</b>默认 1~2 ＝ 你发一句、他回一两句。<b>注意：这是「每条消息」的条数，不是他一天最多发几条，所以不建议调大</b>——调到 5 ＝ 他每次都一口气连发 5 条、直接刷屏；你连着发的每句话还会各自触发一批（调到 5、你连发 3 句 ＝ 最多收到 15 条）。嫌他话多就把这两项都调成 1；想彻底只回一条，去下方「字卡与概率」组关掉「多字卡回复」（关闭后这里设几条都只回 1 条）。</div>
+            <div class="gs-sub"><b>为什么有时收到的比上面设的还多</b>：这几类消息不占「回复条数」的名额、会额外多发——词典拼字的「多回复逐卡连发」（命中时一次连发数条，默认不受本上限截断，「词典拼字」组的「逐卡连发不受条数限制」默认开，手动关闭后才按本上限截断）、撤回补发、他的心情分享、红包/心意币/听歌邀请、他主动发送的消息（一次连发几条由下方「主动发送」组的「发送条数」单独控制）。所以把上面调到 N 只是限定「每发一条消息的基础回复」，不代表他一天最多发 N 条。<b>想让上面这些一起被管住，打开本面板下方「总量限流」</b>（只有它能限住他发消息的总量）。</div>
             <div class="gs-row"><span>已读不回概率</span><div class="stepper" data-k="rn-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="rn-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-sub">命中已读不回时，本次发送只显示回执、不再回复；但不会拦截之前发送已排入的回复</div>
             <div class="gs-row"><span>拍一拍概率</span><div class="stepper" data-k="touch-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="touch-prob-val" readonly><button class="stp-max">+</button></div></div>
@@ -14538,19 +14549,19 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>撤回后补发消息</span><label class="toggle"><input type="checkbox" id="rc-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>撤回概率</span><div class="stepper" data-k="rc-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="rc-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>撤回补发概率</span><div class="stepper" data-k="rc-refix" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="rc-refix-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub">撤回后补发总开关（默认开）。效果举例：他 发「今晚一起去吃火锅好不好」→ 撤回了一半 → 按「撤回补发概率」再发一条新的（如「明天去逛街吧」）。把本开关关闭＝他 撤回后什么都不再发；开着＝他 撤回后有「撤回补发概率」的机会补一条新消息（这条不计入「回复条数」上限）</div>
+            <div class="gs-sub">撤回后补发总开关（默认开）。效果举例：他发「今晚一起去吃火锅好不好」→ 撤回了一半 → 按「撤回补发概率」再发一条新的（如「明天去逛街吧」）。把本开关关闭＝他撤回后什么都不再发；开着＝他撤回后有「撤回补发概率」的机会补一条新消息（这条不计入「回复条数」上限）</div>
           </div>
           <div class="gs-title">回复机制（默认＝mochi 原机制）</div>
           <div class="set-group glass">
             <div class="gs-row"><span>连发的算一轮（nova 式回复）</span><label class="toggle"><input type="checkbox" id="turn-en"><span class="tk"></span></label></div>
-            <div class="gs-sub"><b>默认关闭＝一切照旧</b>：你每发一条消息，他 各排一批回你几条，并照常受下方「总量限流」计数。打开后换成<b>另一条路</b>：你连着说的那几句并成<b>一轮</b>，一轮只排一次队、骰子只掷一次（已读不回／拍一拍／回几条／引用都掷在这一轮上），回几条不再按你发了几句放大；你每多补一句，把到点往后推 1.5 秒、最多替你多等 8 秒。<b>每个联系人各排各的轮</b>，切去别的联系人发消息不会顶掉这一轮的定时器。已读不回那枚小字在起手 1~4 秒内就出现，不会等满「回复速度最长」才报。开着这一路时，下方「总量限流」<b>整条不再计数也不再拦——不只被动回复，他 主动发送、心情分享、红包／心意币／礼物这些收件一并放行</b>（两条机制各管各的，不叠加）。<b>群聊另有一枚开关</b>：在下方「群聊回复」组里的「连发的算一轮（群聊）」，那一枚是全局的、对所有群聊生效——本开关只管单聊，按联系人各自存。改动即时保存、按联系人独立生效。</div>
+            <div class="gs-sub"><b>默认关闭＝一切照旧</b>：你每发一条消息，他各排一批回你几条，并照常受下方「总量限流」计数。打开后换成<b>另一条路</b>：你连着说的那几句并成<b>一轮</b>，一轮只排一次队、骰子只掷一次（已读不回／拍一拍／回几条／引用都掷在这一轮上），回几条不再按你发了几句放大；你每多补一句，把到点往后推 1.5 秒、最多替你多等 8 秒。<b>每个联系人各排各的轮</b>，切去别的联系人发消息不会顶掉这一轮的定时器。已读不回那枚小字在起手 1~4 秒内就出现，不会等满「回复速度最长」才报。开着这一路时，下方「总量限流」<b>整条不再计数也不再拦——不只被动回复，他主动发送、心情分享、红包／心意币／礼物这些收件一并放行</b>（两条机制各管各的，不叠加）。<b>群聊另有一枚开关</b>：在下方「群聊回复」组里的「连发的算一轮（群聊）」，那一枚是全局的、对所有群聊生效——本开关只管单聊，按联系人各自存。改动即时保存、按联系人独立生效。</div>
           </div>
-          <div class="gs-title">总量限流（管住 他 一共发多少条）</div>
+          <div class="gs-title">总量限流（管住他一共发多少条）</div>
           <div class="set-group glass">
-            <div class="gs-row"><span>他 消息限流</span><label class="toggle"><input type="checkbox" id="rl-en"><span class="tk"></span></label></div>
+            <div class="gs-row"><span>他消息限流</span><label class="toggle"><input type="checkbox" id="rl-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>限流窗口（分钟）</span><div class="stepper" data-k="rl-win" data-min="1" data-max="60" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="rl-win-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>窗口内最多条数</span><div class="stepper" data-k="rl-max" data-min="1" data-max="100" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="rl-max-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub"><b>默认关闭（关闭时一切照旧）。</b>打开后：任意「限流窗口」这段时间里，他 最多发「窗口内最多条数」条消息，超出的那几条直接不再发出，窗口滑过去自动恢复。<b>这是唯一能管住总量的开关</b>——上面「回复条数」只管「你每发 1 条消息 他 回几条」，管不住额外多发的那几类（词典拼字逐卡连发、撤回补发、他 的心情分享、红包/心意币/听歌邀请、他 主动发送）；本限流把它们<b>全部一起计数、一起拦</b>。四类例外：①<b>你当刻操作引发的记录</b>（帮我决定/多人决定的结果、游戏战绩、存钱罐结算、红包的领取与退回）不占额度也不会被拦；②<b>已读回执</b>同此；③<b>你刚说过话</b>——额度满时，你最近 1 分钟内发的那条消息仍保底换来 1 条回应（每一发至多一次，其余照拦），不会只剩一个「已读」。另有两处请知悉：<b>限流只管你当前打开的这个联系人</b>，其他桌面的来消息走跨桌面补投、写进各自的历史，不占这份额度；经期关心/经期预警、音乐互动的系统台词<b>计入额度、也会被拦</b>。④<b>他 在身边的换位播报</b>——「他 自动换位」到点那一发、你点【感知一下】催的那一发、以及你手动发出去的位置卡（含「问 他 一声」他 回的那张），都不占额度也不会被拦（你既然开了【换位发到聊天】，它就该落）；⑤<b>上方「连发的算一轮」（nova 式回复）打开时，本限流整条不计数也不拦</b>——两条机制各管各的。窗口最长 60 分钟、上限最低 1 条——配成 60 分钟/1 条就是「一小时只回你一句」，嫌太狠请把上限调高或把窗口调短。举例：窗口 5 分钟、上限 15 条＝他 一口气发满 15 条后就先安静下来，直到最早那条满 5 分钟才继续。按联系人独立生效，改动即时保存。</div>
+            <div class="gs-sub"><b>默认关闭（关闭时一切照旧）。</b>打开后：任意「限流窗口」这段时间里，他最多发「窗口内最多条数」条消息，超出的那几条直接不再发出，窗口滑过去自动恢复。<b>这是唯一能管住总量的开关</b>——上面「回复条数」只管「你每发 1 条消息他回几条」，管不住额外多发的那几类（词典拼字逐卡连发、撤回补发、他的心情分享、红包/心意币/听歌邀请、他主动发送）；本限流把它们<b>全部一起计数、一起拦</b>。四类例外：①<b>你当刻操作引发的记录</b>（帮我决定/多人决定的结果、游戏战绩、存钱罐结算、红包的领取与退回）不占额度也不会被拦；②<b>已读回执</b>同此；③<b>你刚说过话</b>——额度满时，你最近 1 分钟内发的那条消息仍保底换来 1 条回应（每一发至多一次，其余照拦），不会只剩一个「已读」。另有两处请知悉：<b>限流只管你当前打开的这个联系人</b>，其他桌面的来消息走跨桌面补投、写进各自的历史，不占这份额度；经期关心/经期预警、音乐互动的系统台词<b>计入额度、也会被拦</b>。④<b>他在身边的换位播报</b>——「他自动换位」到点那一发、你点【感知一下】催的那一发、以及你手动发出去的位置卡（含「问他一声」他回的那张），都不占额度也不会被拦（你既然开了【换位发到聊天】，它就该落）；⑤<b>上方「连发的算一轮」（nova 式回复）打开时，本限流整条不计数也不拦</b>——两条机制各管各的。窗口最长 60 分钟、上限最低 1 条——配成 60 分钟/1 条就是「一小时只回你一句」，嫌太狠请把上限调高或把窗口调短。举例：窗口 5 分钟、上限 15 条＝他一口气发满 15 条后就先安静下来，直到最早那条满 5 分钟才继续。按联系人独立生效，改动即时保存。</div>
           </div>
           <div class="gs-title">主动发送（联系人找你）</div>
           <div class="set-group glass">
@@ -14560,7 +14571,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>发送间隔最长（分钟）</span><div class="stepper" data-k="as-max" data-min="1" data-max="60" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="as-max-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>发送条数最少</span><div class="stepper" data-k="as-count-min" data-min="1" data-max="10" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="as-count-min-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>发送条数最多</span><div class="stepper" data-k="as-count-max" data-min="1" data-max="20" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="as-count-max-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub">主动发送是 他 自己找你，与上方「回复条数」无关：一次连发几条由这两项控制（默认 1~2 条），主动消息也不计入「回复条数」上限</div>
+            <div class="gs-sub">主动发送是他自己找你，与上方「回复条数」无关：一次连发几条由这两项控制（默认 1~2 条），主动消息也不计入「回复条数」上限</div>
             <div class="gs-row"><span>免打扰（弱化主动发送）</span><label class="toggle"><input type="checkbox" id="dnd-en"><span class="tk"></span></label></div>
             <!-- v3.6.x：主动发送标识——联系人主动找你的消息气泡左上角小标识（原为固定小爱心）
                  FIX 2026-09-18 #727 用户直派「联系人主动发送的消息，现在是小爱心的标识，
@@ -14589,7 +14600,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="gs-title">回复内容（自定义 vs 默认聊天字卡）</div>
           <div class="set-group glass">
             <div class="gs-row"><span>自定义字卡占比</span><div class="stepper" data-k="csp-cust" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="csp-cust-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub">他 每条纯文字回复里，自定义字卡保留的比例（默认 50）：调高=大多数用你自己建的字卡，偶尔用预设默认聊天字卡；调低=更多用预设默认聊天字卡（见 字卡库→默认聊天字卡 页可逐张开关）；0=尽量用默认聊天字卡，100=全用自定义。默认的聊天字卡本身还受「默认聊天字卡」页的『聊天使用』概率控制。</div>
+            <div class="gs-sub">他每条纯文字回复里，自定义字卡保留的比例（默认 50）：调高=大多数用你自己建的字卡，偶尔用预设默认聊天字卡；调低=更多用预设默认聊天字卡（见 字卡库→默认聊天字卡 页可逐张开关）；0=尽量用默认聊天字卡，100=全用自定义。默认的聊天字卡本身还受「默认聊天字卡」页的『聊天使用』概率控制。</div>
           </div>
           <!-- #518：系统预设字卡·聊天触发概率总览（总档 + 分类档）——用户点名「自定义字卡概率与系统预设字卡的概率…所有聊天字卡的概率需要有一个整体的分类tag可方便调整」。
                分类档全部复用各功能既有键（不新开键，同一语义只能有一个键）；非 dcf 行由 reply-settings.js #518 段绑定（id=dcp-<键>），
@@ -14685,7 +14696,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <!-- #370：词典拼字链路自检——四道闸门（二级锁/词典聊天使用/拼字总开关与概率/抽卡池；#427 移除无 UI 的遗留 dc-cat-dict 闸）
                  任一被关都是零提示零 tag，这行把每道闸实时状态摆出来，任何机型一眼看到卡在哪 -->
             <div class="gs-sub" id="qs-diag" style="color:var(--muted,#888)">链路自检中…</div>
-            <div class="gs-sub">开启后联系人回复按「拼字概率」随机变成拼字：从词典（系统预设字卡→词典，语录/词库/常用词全部分组都可抽，可逐张关闭）抽字卡整卡，效果举例：命中拼字时 他 会连着发几条词典里的短句（如「想你了」「晚安哦」），像打字很快连着发消息一样。<br>发送形态：单气泡拼字为主，「多回复逐卡连发」开着时每次命中另按 20% 小概率变成逐条连发；「多回复逐卡连发」关＝不能连发（只发单气泡拼字）。<br>· 「单气泡拼字」＝几张字卡连着拼成【一条】消息发在一个气泡里（张数＝上方「每次拼字最少/最多张数」两格；卡与卡之间与「回复与主动」组的「拼接随机标点」共用一套符号池——默认空格/，/。/！/？/....../—— 随机抽，关闭＝只用空格，如「今天也要好好爱自己 晚安」），气泡下 tag 是「词典」（全是长句时）或「词典拼字」（含短卡时）；<br>· 「多回复逐卡连发」＝每张字卡单独一条气泡一条一条发出来，每条气泡下 tag 是「词典逐卡连发」；连发张数由本组「每次拼字最少/最多张数」控制（默认跟随上方「每条消息使用多字卡回复」的最少/最多条数，即 2~5 张，见上方实时读数行）；<br>· 「逐卡连发不受条数限制」默认开＝连发条数不受「回复条数最多」约束（想连发 5 条就发 5 条）；关闭＝连发条数按「回复条数最多」截断（默认最多 2 条）。<br>两个形态都受<b>聊天页「多字卡回复」总开关</b>约束（#1236）：它关闭时拼字整体不触发，两种形态一并不生效；两个形态开关都关时兜底发单气泡拼字。开启「混用自定义字卡」时你的字卡库文本也会进抽卡池（可能把你的普通字卡抽去拼字，默认开）。概率 0 = 不触发</div>
+            <div class="gs-sub">开启后联系人回复按「拼字概率」随机变成拼字：从词典（系统预设字卡→词典，语录/词库/常用词全部分组都可抽，可逐张关闭）抽字卡整卡，效果举例：命中拼字时他会连着发几条词典里的短句（如「想你了」「晚安哦」），像打字很快连着发消息一样。<br>发送形态：单气泡拼字为主，「多回复逐卡连发」开着时每次命中另按 20% 小概率变成逐条连发；「多回复逐卡连发」关＝不能连发（只发单气泡拼字）。<br>· 「单气泡拼字」＝几张字卡连着拼成【一条】消息发在一个气泡里（张数＝上方「每次拼字最少/最多张数」两格；卡与卡之间与「回复与主动」组的「拼接随机标点」共用一套符号池——默认空格/，/。/！/？/....../—— 随机抽，关闭＝只用空格，如「今天也要好好爱自己 晚安」），气泡下 tag 是「词典」（全是长句时）或「词典拼字」（含短卡时）；<br>· 「多回复逐卡连发」＝每张字卡单独一条气泡一条一条发出来，每条气泡下 tag 是「词典逐卡连发」；连发张数由本组「每次拼字最少/最多张数」控制（默认跟随上方「每条消息使用多字卡回复」的最少/最多条数，即 2~5 张，见上方实时读数行）；<br>· 「逐卡连发不受条数限制」默认开＝连发条数不受「回复条数最多」约束（想连发 5 条就发 5 条）；关闭＝连发条数按「回复条数最多」截断（默认最多 2 条）。<br>两个形态都受<b>聊天页「多字卡回复」总开关</b>约束（#1236）：它关闭时拼字整体不触发，两种形态一并不生效；两个形态开关都关时兜底发单气泡拼字。开启「混用自定义字卡」时你的字卡库文本也会进抽卡池（可能把你的普通字卡抽去拼字，默认开）。概率 0 = 不触发</div>
           </div>
           <!-- #513 梦角自由造句总开关与混合模式改为默认打开（用户点名「需要默认打开」）：
                DEFAULTS mjf-en/mjf-mix=1 + reply-settings migrateMjfOn 把存量 '0' 一次性收成 '1' -->
@@ -14714,7 +14725,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row" id="mjf-punct-pool-row"><span>可用标点</span><div class="ppy-chips" id="mjf-punct-pool"><span class="tag ppy-chip" data-p="sp">空格</span><span class="tag ppy-chip" data-p="dou">，</span><span class="tag ppy-chip" data-p="per">。</span><span class="tag ppy-chip" data-p="ex">！</span><span class="tag ppy-chip" data-p="q">？</span><span class="tag ppy-chip" data-p="el">......</span><span class="tag ppy-chip" data-p="dash">——</span><span class="tag ppy-chip" data-p="nl">换行</span><span class="tag ppy-chip" data-p="tilde">~</span><span class="tag ppy-chip" data-p="ell">……</span><span class="tag ppy-chip" id="mjfp-add" title="添加自定义句尾标点" style="border-style:dashed">＋</span></div></div>
             <!-- #364 存库概率 / #622 单联系人也生效：0=全专属、100=全公用、其余按概率分流 -->
             <div class="gs-row"><span>存公用库概率（0=全专属/100=全公用）</span><div class="stepper" data-k="mjf-pub" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="mjf-pub-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub"><b>是什么</b>：梦角（联系人）说话时按「触发概率」随机掷一次，命中就把一句语料<b>截字重造句</b>后当作 他 的回复发出来（气泡下带「梦角自由造句」小标签）；命中时若同一条回复也掷中了词典拼字，拼字优先、本次造句让位（同一回复不叠加两种玩法）。概率 0＝不触发。<br>
+            <div class="gs-sub"><b>是什么</b>：梦角（联系人）说话时按「触发概率」随机掷一次，命中就把一句语料<b>截字重造句</b>后当作他的回复发出来（气泡下带「梦角自由造句」小标签）；命中时若同一条回复也掷中了词典拼字，拼字优先、本次造句让位（同一回复不叠加两种玩法）。概率 0＝不触发。<br>
 <b>关掉总开关</b>（#1236）：不再造句，历史气泡下残留的「梦角自由造句」标签也一并不再显示（重新打开即恢复显示，消息本身与标签数据都不删）。<br>
 <b>语料来自四类字卡</b>——造句就是在「自定义字卡＋默认聊天字卡＋词典」这三处字卡里选的（词典＝字卡库→词典，和默认聊天字卡同属系统预设），对应下方三个「语料·」开关，细分四类：<br>
 · ①【自定义字卡·公用字卡】＋ ②【自定义字卡·专属字卡】——由「语料·自定义字卡」一个开关管两个作用域（公用全桌面共享、专属只在本联系人桌面）；字卡库→可自定义字卡 里两个作用域各自的【分组停用】都生效，改/删字卡实时跟新，抽语料时会跳过【其他互动功能字卡】类（鱼塘/吃喝/经期/此间/房间/存钱罐/漂流瓶/互动回应/音乐/这里造的句子本身…）；<br>
@@ -14728,7 +14739,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 · 2 换字卡内容式：截掉一个词、从上面的语料里挑一个词补上 →「今天也要好好看日落」。<br>
 「混合模式」（#414，#513 起默认开）：开启后每次造句先在 0/1/2 三种手法里随机掷一个再出招，三种模式交替出现，上方「造句手法」的固定选择暂不生效；关闭即恢复单一手法（默认撤回式）。<br>
 <b>句尾标点</b>（#953；池的形态 #1396 起与上方「拼接符号」同款）：造出的句子按「可用标点」里<b>点亮</b>的候选随机补一个句尾标点；某个句子本身结尾已经有标点就不重复补。<b>可用标点</b>＝一排药丸，点一下取消、再点一下点亮，至少保留一枚（一枚都不想要请关上方「句尾标点」开关）；系统自带的只能开关、不能删，点「＋」可添加自己的标点（最长 6 个字符、最多 8 个，自定义标点点本体开关、点「×」删除）。<b>候选与聊天上方那套「拼接符号」是同一套</b>：空格 / ， / 。 / ！ / ？ / <code>......</code> / —— / 换行（句尾位置抽到「空格」＝末尾留一格，看起来就是不补；抽到「换行」＝末尾另起一行），另外多两枚句尾常用的 <code>~</code> 与 <code>……</code>。<b>没点过 chip 时</b>沿用老默认池（。 / <code>~</code> / ！ / <code>……</code>，其中句号出现得最多）；<b>一旦点过任意一枚</b>就改按你点亮的那些<b>等概率</b>抽（句号不再偏多）。把「句尾标点」开关关掉＝不补任何标点，出句保持原样（如撤回式截断后的裸句）。<br>
-<b>造出来的句子去哪了</b>：自动存进 字卡库→可自定义字卡→梦角自由造句（可查看/删除）。存哪个库由上方「存公用库概率」决定：0＝全进专属字卡、100＝全进公用字卡、其余按概率分流（默认 80＝80% 公用 / 20% 专属）；单联系人也照此生效（想全留本桌面就把概率设 0）。这些句子只作为 他 的回复展示，不会再被拿去当语料（避免自我循环）。</div>
+<b>造出来的句子去哪了</b>：自动存进 字卡库→可自定义字卡→梦角自由造句（可查看/删除）。存哪个库由上方「存公用库概率」决定：0＝全进专属字卡、100＝全进公用字卡、其余按概率分流（默认 80＝80% 公用 / 20% 专属）；单联系人也照此生效（想全留本桌面就把概率设 0）。这些句子只作为他的回复展示，不会再被拿去当语料（避免自我循环）。</div>
           </div>
           </div>
           </div>
@@ -14743,7 +14754,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>回复速度最长（秒）</span><div class="stepper" data-k="gc-rs-max" data-min="2" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="gc-rs-max-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复条数最少</span><div class="stepper" data-k="gc-reply-min" data-min="1" data-max="10" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="gc-reply-min-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复条数最多</span><div class="stepper" data-k="gc-reply-max" data-min="1" data-max="20" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="gc-reply-max-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-sub"><b>这两项＝你每发 1 条消息，群里每个回你的成员就各回你几条（在最少~最多之间随机）。</b>默认 1~2 条。<b>注意：这是「每条消息、每个成员」的条数，不是 他 一天最多发几条，不建议调大</b>——成员是各算各的（调到 5、3 个人同时回你 ＝ 一屏 15 条），你连着发的每句话还各触发一批。嫌刷屏就把这两项都调成 1；关掉下面的「多字卡回复」总开关也能锁死一条（关闭后这里设几条都只回 1 条）。</div>
+            <div class="gs-sub"><b>这两项＝你每发 1 条消息，群里每个回你的成员就各回你几条（在最少~最多之间随机）。</b>默认 1~2 条。<b>注意：这是「每条消息、每个成员」的条数，不是他一天最多发几条，不建议调大</b>——成员是各算各的（调到 5、3 个人同时回你 ＝ 一屏 15 条），你连着发的每句话还各触发一批。嫌刷屏就把这两项都调成 1；关掉下面的「多字卡回复」总开关也能锁死一条（关闭后这里设几条都只回 1 条）。</div>
             <div class="gs-sub">本上限只管「每发一条消息触发的这批基础回复」，撤回后的补发不占名额、会额外多发，所以实际收到的可能比这里设的条数多。</div>
             <div class="gs-row"><span>拍一拍概率</span><div class="stepper" data-k="gc-touch-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="gc-touch-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>表情包概率</span><div class="stepper" data-k="gc-sticker-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="gc-sticker-prob-val" readonly><button class="stp-max">+</button></div></div>
@@ -14772,7 +14783,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>最多字卡条数</span><div class="stepper" data-k="ml-max-cards" data-min="1" data-max="500" data-step="10"><button class="stp-min">−</button><input class="stp-val" id="ml-max-cards-val" readonly><button class="stp-max">+</button></div></div>
             <!-- #1198 信件正文也走「拼接随机标点」：共用聊天那套符号池（含内置「换行」），自家开关默认关 -->
             <div class="gs-row"><span>信件拼接随机标点</span><label class="toggle"><input type="checkbox" id="ml-punct-en"><span class="tk"></span></label></div>
-            <div class="gs-sub">默认关＝一封信里各张字卡之间只用空格相连（老样子）。打开后每两条字卡中间随机抽一个连接符，抽到「换行」时下一张字卡另起一行，信纸会一段一段分开。符号用的是聊天那一套：回复设置 → 聊天 →「字卡与概率」→「拼接符号」（把「换行」点亮即可，只勾「换行」＋「空格」＝要么换行要么空一格）。表情/图片卡两侧仍固定用空格。本开关只看自己，与聊天页的「多字卡回复／拼接随机标点」互不影响；来信与 他 的回信都用它</div>
+            <div class="gs-sub">默认关＝一封信里各张字卡之间只用空格相连（老样子）。打开后每两条字卡中间随机抽一个连接符，抽到「换行」时下一张字卡另起一行，信纸会一段一段分开。符号用的是聊天那一套：回复设置 → 聊天 →「字卡与概率」→「拼接符号」（把「换行」点亮即可，只勾「换行」＋「空格」＝要么换行要么空一格）。表情/图片卡两侧仍固定用空格。本开关只看自己，与聊天页的「多字卡回复／拼接随机标点」互不影响；来信与他的回信都用它</div>
           </div>
           <div class="gs-title">联系人主动写信</div>
           <div class="set-group glass">
@@ -14794,17 +14805,17 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>来信内容使用 emoji</span><label class="toggle"><input type="checkbox" id="ml-emoji-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>来信内容使用表情包</span><label class="toggle"><input type="checkbox" id="ml-sticker-en"><span class="tk"></span></label></div>
           </div>
-          <!-- #645：每周摸鱼小结寄信开关——关闭后 他 不再寄「本周摸鱼小结」（判定在 src/js/mail.js fishWeekReportFor） -->
+          <!-- #645：每周摸鱼小结寄信开关——关闭后他不再寄「本周摸鱼小结」（判定在 src/js/mail.js fishWeekReportFor） -->
           <div class="gs-title">每周摸鱼小结</div>
           <div class="set-group glass">
             <div class="gs-row"><span>摸鱼小结寄信</span><label class="toggle"><input type="checkbox" id="ml-fish-week-en"><span class="tk"></span></label></div>
-            <div class="gs-sub">开启后每周日 18 点后 他 会把「本周摸鱼小结」寄进信箱（周一~周三会补上周的）；关闭后不再寄，主动来信/回信不受影响</div>
+            <div class="gs-sub">开启后每周日 18 点后他会把「本周摸鱼小结」寄进信箱（周一~周三会补上周的）；关闭后不再寄，主动来信/回信不受影响</div>
           </div>
         </div>
         <div class="gs-panel" data-rpanel="feed" hidden>
           <!-- #534：内容类型总开关——与信箱页「写信内容类型」同款。关闭后该类型在朋友圈
-               （他 发动态 + 他 评论/回复）整体不出现，不论下方概率设为多少；修前只有
-               「他 发布内容类型」概率管得住动态，评论/回复的颜文字/emoji 是写死 15%，
+               （他发动态 + 他评论/回复）整体不出现，不论下方概率设为多少；修前只有
+               「他发布内容类型」概率管得住动态，评论/回复的颜文字/emoji 是写死 15%，
                用户「把颜文字和表情包都禁了还是出现」。 -->
           <div class="gs-title">内容类型开关</div>
           <div class="set-group glass">
@@ -14825,7 +14836,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>回复我的回复概率</span><div class="stepper" data-k="fd-reply-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-reply-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复最快（秒）</span><div class="stepper" data-k="fd-reply-speed-min" data-min="1" data-max="120" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="fd-reply-speed-min-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>回复最慢（秒）</span><div class="stepper" data-k="fd-reply-speed-max" data-min="1" data-max="300" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-reply-speed-max-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-row"><span>我点赞后 他 回赞概率</span><div class="stepper" data-k="fd-likeback-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-likeback-prob-val" readonly><button class="stp-max">+</button></div></div>
+            <div class="gs-row"><span>我点赞后他回赞概率</span><div class="stepper" data-k="fd-likeback-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-likeback-prob-val" readonly><button class="stp-max">+</button></div></div>
           </div>
           <div class="gs-title">回复内容设置</div>
           <div class="set-group glass">
@@ -14834,9 +14845,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>使用表情包概率</span><div class="stepper" data-k="fd-image-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-image-prob-val" readonly><button class="stp-max">+</button></div></div>
             <!-- #1198 朋友圈也走「拼接随机标点」：共用聊天那套符号池（含内置「换行」），自家开关默认关 -->
             <div class="gs-row"><span>拼接随机标点</span><label class="toggle"><input type="checkbox" id="fd-punct-en"><span class="tk"></span></label></div>
-            <div class="gs-sub">默认关＝评论/回复与 他 动态里的各张字卡之间只用空格相连（老样子）。打开后每两条字卡中间随机抽一个连接符，抽到「换行」时下一张字卡另起一行（评论会一条一段）。符号用的是聊天那一套：回复设置 → 聊天 →「字卡与概率」→「拼接符号」（把「换行」点亮即可）。表情包/图片卡两侧仍固定用空格（标点贴进图片网址尾部会让图显示不出来）。本开关只看自己，与聊天页的「多字卡回复／拼接随机标点」互不影响</div>
+            <div class="gs-sub">默认关＝评论/回复与他动态里的各张字卡之间只用空格相连（老样子）。打开后每两条字卡中间随机抽一个连接符，抽到「换行」时下一张字卡另起一行（评论会一条一段）。符号用的是聊天那一套：回复设置 → 聊天 →「字卡与概率」→「拼接符号」（把「换行」点亮即可）。表情包/图片卡两侧仍固定用空格（标点贴进图片网址尾部会让图显示不出来）。本开关只看自己，与聊天页的「多字卡回复／拼接随机标点」互不影响</div>
           </div>
-          <div class="gs-title">他 发朋友圈设置</div>
+          <div class="gs-title">他发朋友圈设置</div>
           <div class="set-group glass">
             <div class="gs-row"><span>联系人主动发朋友圈</span><label class="toggle"><input type="checkbox" id="fd-post-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>主动发朋友圈概率</span><div class="stepper" data-k="fd-post-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-post-prob-val" readonly><button class="stp-max">+</button></div></div>
@@ -14847,7 +14858,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>最少使用字卡条</span><div class="stepper" data-k="fd-min-cards-post" data-min="1" data-max="15" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="fd-min-cards-post-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>最多使用字卡条</span><div class="stepper" data-k="fd-max-cards-post" data-min="1" data-max="30" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="fd-max-cards-post-val" readonly><button class="stp-max">+</button></div></div>
           </div>
-          <div class="gs-title">他 发布内容类型</div>
+          <div class="gs-title">他发布内容类型</div>
           <div class="set-group glass">
             <div class="gs-row"><span>使用颜文字概率</span><div class="stepper" data-k="fd-post-kaomoji" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-post-kaomoji-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>使用 emoji 概率</span><div class="stepper" data-k="fd-post-emoji" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="fd-post-emoji-val" readonly><button class="stp-max">+</button></div></div>
@@ -14862,18 +14873,18 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </div>
           </div>
         </div>
-        <!-- v3.9.x：查岗——他 主动查你的岗：随主动发送按概率发查岗问题卡（聊天互动卡 + 概率弹窗，作答后 他 回应） -->
+        <!-- v3.9.x：查岗——他主动查你的岗：随主动发送按概率发查岗问题卡（聊天互动卡 + 概率弹窗，作答后他回应） -->
         <div class="gs-panel" data-rpanel="ck" hidden>
-          <div class="gs-title">他 主动查岗</div>
+          <div class="gs-title">他主动查岗</div>
           <div class="set-group glass">
-            <div class="gs-row"><span>他 主动查岗</span><label class="toggle"><input type="checkbox" id="ckq-en"><span class="tk"></span></label></div>
+            <div class="gs-row"><span>他主动查岗</span><label class="toggle"><input type="checkbox" id="ckq-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>查岗概率</span><div class="stepper" data-k="ckq-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ckq-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>自动弹窗概率</span><div class="stepper" data-k="ckq-popup-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ckq-popup-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>查岗冷却（分钟）</span><div class="stepper" data-k="ckq-cool" data-min="0" data-max="240" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ckq-cool-val" readonly><button class="stp-max">+</button></div></div>
           </div>
-          <div class="gs-sub" style="padding:0 14px 14px">他 主动找你时按概率来查你的岗：聊天里出现查岗问题卡（单选点击作答、文字题输入作答），作答后 他 会回应；概率命中时直接弹出回答弹窗。冷却内不重复查岗，需开启「主动发送」，各联系人独立保存。查岗题库可在 字卡库 →「他的查岗」里逐条开关或自定义添加。想立刻来一次（不看概率与冷却）：聊天 →「更多功能 → 他的提问 → 查岗」</div>
+          <div class="gs-sub" style="padding:0 14px 14px">他主动找你时按概率来查你的岗：聊天里出现查岗问题卡（单选点击作答、文字题输入作答），作答后他会回应；概率命中时直接弹出回答弹窗。冷却内不重复查岗，需开启「主动发送」，各联系人独立保存。查岗题库可在 字卡库 →「他的查岗」里逐条开关或自定义添加。想立刻来一次（不看概率与冷却）：聊天 →「更多功能 → 他的提问 → 查岗」</div>
         </div>
-        <!-- v3.9.x：其他——联系人主动邀请（猜拳/玩游戏），随 他 主动找你的消息按概率触发 -->
+        <!-- v3.9.x：其他——联系人主动邀请（猜拳/玩游戏），随他主动找你的消息按概率触发 -->
         <div class="gs-panel" data-rpanel="other" hidden>
           <div class="gs-title">联系人主动邀请</div>
           <div class="set-group glass">
@@ -14885,7 +14896,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>游戏邀请概率</span><div class="stepper" data-k="ai-game-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-game-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>主动邀请贴贴</span><label class="toggle"><input type="checkbox" id="ai-cuddle-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>贴贴邀请概率</span><div class="stepper" data-k="ai-cuddle-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-cuddle-prob-val" readonly><button class="stp-max">+</button></div></div>
-            <!-- v3.15.x：他 主动分享你自建的字卡——从字卡库（含公用）抽一张纯文本卡当 他 的话发出来 -->
+            <!-- v3.15.x：他主动分享你自建的字卡——从字卡库（含公用）抽一张纯文本卡当他的话发出来 -->
             <div class="gs-row"><span>主动分享你的字卡</span><label class="toggle"><input type="checkbox" id="ai-cc-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>分享字卡概率</span><div class="stepper" data-k="ai-cc-prob" data-min="0" data-max="100" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="ai-cc-prob-val" readonly><button class="stp-max">+</button></div></div>
             <!-- 2026-10-28：他主动邀你一起听歌 / 一起读书——与猜拳/游戏/贴贴并列的独立门 -->
@@ -14894,14 +14905,14 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>主动邀请读书</span><label class="toggle"><input type="checkbox" id="ai-reading-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>读书邀请概率</span><div class="stepper" data-k="ai-reading-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ai-reading-prob-val" readonly><button class="stp-max">+</button></div></div>
           </div>
-          <div class="gs-sub" style="padding:0 14px 14px">他 主动找你的消息会按概率变成猜拳/游戏/贴贴/听歌/读书邀请（游戏在 Pong、贪吃蛇等六款中随机；贴贴同意后 他 会回应一句；听歌会弹出他的听歌邀请面板，读书同意后打开书架），自动打开对应半框或回应，不想玩直接关掉即可；仅在你在聊天页时触发，需开启「主动发送」。顶部「主动邀请总概率」是这五类共用的总闸，100 = 不打折。邀请话术可在 字卡库 →「他的邀请」里逐句开关或自定义添加；「分享你的字卡」从你在 字卡库 自建的纯文本卡（含公用）里随机抽一张当 他 的悄悄话，冷却 90 分钟。想立刻要一次：聊天 →「更多功能 → 他的提问 → 邀请（猜拳等随机一种）/ 贴贴（一定是贴贴）」</div>
+          <div class="gs-sub" style="padding:0 14px 14px">他主动找你的消息会按概率变成猜拳/游戏/贴贴/听歌/读书邀请（游戏在 Pong、贪吃蛇等六款中随机；贴贴同意后他会回应一句；听歌会弹出他的听歌邀请面板，读书同意后打开书架），自动打开对应半框或回应，不想玩直接关掉即可；仅在你在聊天页时触发，需开启「主动发送」。顶部「主动邀请总概率」是这五类共用的总闸，100 = 不打折。邀请话术可在 字卡库 →「他的邀请」里逐句开关或自定义添加；「分享你的字卡」从你在 字卡库 自建的纯文本卡（含公用）里随机抽一张当他的悄悄话，冷却 90 分钟。想立刻要一次：聊天 →「更多功能 → 他的提问 → 邀请（猜拳等随机一种）/ 贴贴（一定是贴贴）」</div>
           <!-- 2026-10-28：我发出的邀请——TA 的接受/拒绝概率可调（字卡与快捷听歌/读书共用；音乐页邀请不受影响） -->
           <div class="gs-title" style="margin-top:10px">我发出的邀请</div>
           <div class="set-group glass">
             <div class="gs-row"><span>他接受的概率</span><div class="stepper" data-k="invite-accept-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="invite-accept-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>他拒绝的概率</span><div class="stepper" data-k="invite-reject-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="invite-reject-prob-val" readonly><button class="stp-max">+</button></div></div>
           </div>
-          <div class="gs-sub" style="padding:0 14px 2px">两项之和不足 100 的部分＝他不回应；两项之和超过 100 时，未回应按 0 算（拒绝的先按剩余额度收窄）。覆盖「邀请他」字卡与快捷听歌/读书邀请；音乐页的「邀请 他 一起听」有自己的概率，不受这里影响。</div>
+          <div class="gs-sub" style="padding:0 14px 2px">两项之和不足 100 的部分＝他不回应；两项之和超过 100 时，未回应按 0 算（拒绝的先按剩余额度收窄）。覆盖「邀请他」字卡与快捷听歌/读书邀请；音乐页的「邀请他一起听」有自己的概率，不受这里影响。</div>
           <!-- v3.20.x：联系人跨桌面查岗 / 跨桌面来电——其他桌面的联系人按各自概率/冷却主动来查岗、来电 -->
           <div class="gs-title" style="margin-top:6px">联系人跨桌面查岗</div>
           <div class="set-group glass">
@@ -14920,7 +14931,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="gs-row"><span>摸鱼值累计</span><label class="toggle"><input type="checkbox" id="fish-en"><span class="tk"></span></label></div>
             <div class="gs-row"><span>工作值累计</span><label class="toggle"><input type="checkbox" id="work-en"><span class="tk"></span></label></div>
           </div>
-          <div class="gs-sub" style="padding:0 14px 14px">桌面摸鱼小组件两组数值的增长总开关（默认开）。关闭「摸鱼值累计」后：他 的自动摸鱼、你点摸鱼按钮、番茄钟补偿摸鱼、抓包奖励都不再涨摸鱼值；关闭「工作值累计」后：自动打工、专注期间的工作值等不再涨。已有数值保留不清零，重新打开即恢复累计，各联系人独立保存</div>
+          <div class="gs-sub" style="padding:0 14px 14px">桌面摸鱼小组件两组数值的增长总开关（默认开）。关闭「摸鱼值累计」后：他的自动摸鱼、你点摸鱼按钮、番茄钟补偿摸鱼、抓包奖励都不再涨摸鱼值；关闭「工作值累计」后：自动打工、专注期间的工作值等不再涨。已有数值保留不清零，重新打开即恢复累计，各联系人独立保存</div>
         </div>
         <!-- v3.6.x：保存设置按钮——点击把当前所有概率/开关写入本地并提示 -->
         <button class="ta-add-btn gs-save-btn" id="reply-save-btn" style="width:100%;margin:6px 0 10px">
@@ -14950,7 +14961,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="gs-row"><span>拒接概率</span><div class="stepper" data-k="call-reject" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-reject-val" readonly><button class="stp-max">+</button></div></div>
           <div class="gs-row"><span>通话中挂断概率</span><div class="stepper" data-k="call-hangup" data-min="0" data-max="100" data-step="0.01"><button class="stp-min">−</button><input class="stp-val" id="call-hangup-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【来电概率是怎么触发的】有 3 类「机会」，每来一次机会就单独掷一次骰子，命中就打来电话：① 他 每回复你一条消息，掷一次；② 他 每次主动给你发消息，掷一次；③ 应用开着时，后台每 1~2 分钟也会掷一次兜底。两次来电之间至少间隔 5 分钟，设 0 则从不主动来电。<br>【为什么设得不高却感觉来得挺勤】概率是「每次机会」单独算的，不是「每天总共」的概率——你聊天越勤，机会就越多，累积起来自然来电频繁。例如设 15%：和 他 聊 20 句就有约 20 次掷骰机会，来电概率本身没坏，是机会次数多。想让来电变少，直接把数值调小即可，效果大约成比例：调小 10 倍，来电也约少 10 倍。<br>【嫌多又不想设 0】点数值框直接输入小数（如 0.05），不用狂按 +/−。来电概率支持 0.01 粒度，最低可设 0.01（0.05、0.1 等 0.0几 的数值都可以）——设 0.01 时平均每 100 次机会才来电 1 次，基本只是偶尔响一次。<br>【接听 / 忙线 / 拒接概率】你打给 他 时用：按「忙线 → 拒接 → 接听」顺序判定，先命中哪个就是哪种结果；三项都没命中就是「未接通」。默认 15 / 15 / 70 恰好占满 100，不会有未接通；想偶尔出现未接通，把三项合计调到 100 以下。<br>【通话中挂断概率】接通满 3 分钟保护期后，每 60 秒按这个百分比掷一次，命中对方就主动挂断，通话越久累计越容易被挂。它是「每一分钟各掷一次」，不是「整通电话一共这么多」：默认 2% 意味着约每 50 次判定才命中 1 次（判定从第 3 分钟起、每分钟一次），也就是平均通话将近一小时才被挂断一次，接通后 10 分钟内被挂断的概率只有约 15%；觉得太少就把数值调大，效果约成正比（20% ≈ 每 5 次判定命中 1 次）。判定按墙钟走：息屏、切后台、刷新页面都不会让它停摆，回到这一页时若已跨过判定点就补掷一次（不按错过的分钟数成串补）。支持 0.01 粒度，最低可设 0.01；设 0（或开下方「禁止联系人挂断电话」）＝对方永不主动挂断。<br>【改数值】点数值框直接输入（手机会弹数字键盘），或按 +/− 微调；改完立即保存生效。以上概率均按联系人各自保存，互不影响。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【来电概率是怎么触发的】有 3 类「机会」，每来一次机会就单独掷一次骰子，命中就打来电话：① 他每回复你一条消息，掷一次；② 他每次主动给你发消息，掷一次；③ 应用开着时，后台每 1~2 分钟也会掷一次兜底。两次来电之间至少间隔 5 分钟，设 0 则从不主动来电。<br>【为什么设得不高却感觉来得挺勤】概率是「每次机会」单独算的，不是「每天总共」的概率——你聊天越勤，机会就越多，累积起来自然来电频繁。例如设 15%：和他聊 20 句就有约 20 次掷骰机会，来电概率本身没坏，是机会次数多。想让来电变少，直接把数值调小即可，效果大约成比例：调小 10 倍，来电也约少 10 倍。<br>【嫌多又不想设 0】点数值框直接输入小数（如 0.05），不用狂按 +/−。来电概率支持 0.01 粒度，最低可设 0.01（0.05、0.1 等 0.0几 的数值都可以）——设 0.01 时平均每 100 次机会才来电 1 次，基本只是偶尔响一次。<br>【接听 / 忙线 / 拒接概率】你打给他时用：按「忙线 → 拒接 → 接听」顺序判定，先命中哪个就是哪种结果；三项都没命中就是「未接通」。默认 15 / 15 / 70 恰好占满 100，不会有未接通；想偶尔出现未接通，把三项合计调到 100 以下。<br>【通话中挂断概率】接通满 3 分钟保护期后，每 60 秒按这个百分比掷一次，命中对方就主动挂断，通话越久累计越容易被挂。它是「每一分钟各掷一次」，不是「整通电话一共这么多」：默认 2% 意味着约每 50 次判定才命中 1 次（判定从第 3 分钟起、每分钟一次），也就是平均通话将近一小时才被挂断一次，接通后 10 分钟内被挂断的概率只有约 15%；觉得太少就把数值调大，效果约成正比（20% ≈ 每 5 次判定命中 1 次）。判定按墙钟走：息屏、切后台、刷新页面都不会让它停摆，回到这一页时若已跨过判定点就补掷一次（不按错过的分钟数成串补）。支持 0.01 粒度，最低可设 0.01；设 0（或开下方「禁止联系人挂断电话」）＝对方永不主动挂断。<br>【改数值】点数值框直接输入（手机会弹数字键盘），或按 +/− 微调；改完立即保存生效。以上概率均按联系人各自保存，互不影响。</div>
         <div class="gs-title">对方挂断</div>
         <div class="set-group glass">
           <div class="gs-row"><span>禁止联系人挂断电话</span><label class="toggle"><input type="checkbox" id="call-no-hangup"><span class="tk"></span></label></div>
@@ -14962,18 +14973,18 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <div class="sm-set-hint" style="padding:0 16px 8px">开启后，通话接通中刷新页面或意外退出，重新打开时通话面板与计时从接通时刻继续，如同没断过；关闭则刷新算通话中断，主页通话记录里记一条红色「中断」条目。</div>
         <!-- 通话背景 / 通话半框背景已移至聊天设置 → 美化 → 通话（视觉相关设置集中在美化页） -->
-        <!-- 视频通话：他 开摄像头概率 + 他 的画面图池（按联系人各自保存） -->
+        <!-- 视频通话：他开摄像头概率 + 他的画面图池（按联系人各自保存） -->
         <div class="gs-title">视频通话</div>
         <div class="set-group glass">
-          <div class="gs-row"><span>他 来电打视频概率</span><div class="stepper" data-k="call-in-video" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-in-video-val" readonly><button class="stp-max">+</button></div></div>
-          <div class="gs-row"><span>他 开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
+          <div class="gs-row"><span>他来电打视频概率</span><div class="stepper" data-k="call-in-video" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-in-video-val" readonly><button class="stp-max">+</button></div></div>
+          <div class="gs-row"><span>他开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【他 来电打视频概率】他 主动来电时先掷一次：命中就是<b>视频来电</b>（标题写「视频通话」，聊天记录里也是「打来了视频通话」，你接听后直接进视频界面，与你自己点「视频」完全一致）；没命中就是普通语音来电。默认 30%，设 0＝他 只打语音。来电接听之后你依然可以手动切换视频/语音，这里管的是「他 打过来的那一通本身是哪种」。<br>【他 开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里 他 那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他 的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示 他 的头像，和微信里对方关摄像头一样。</div>
-        <div class="gs-title">他 的画面</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【他来电打视频概率】他主动来电时先掷一次：命中就是<b>视频来电</b>（标题写「视频通话」，聊天记录里也是「打来了视频通话」，你接听后直接进视频界面，与你自己点「视频」完全一致）；没命中就是普通语音来电。默认 30%，设 0＝他只打语音。来电接听之后你依然可以手动切换视频/语音，这里管的是「他打过来的那一通本身是哪种」。<br>【他开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里他那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示他的头像，和微信里对方关摄像头一样。</div>
+        <div class="gs-title">他的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
         <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
         <button class="div-draw" id="vt-pool-add" style="margin:0 16px 10px;width:calc(100% - 32px)">＋ 添加画面（最多 8 张）</button>
-        <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「他 那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
+        <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「他那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
         <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口；背景设置已移至聊天设置 → 美化 → 通话 -->
         <div class="gs-title">通话半框</div>
         <div class="set-group glass">
@@ -15015,7 +15026,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-group glass sfx-card">
           <div class="set-row" id="sfx-in-row">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1v16l-6.5-4-6.5 4v-16a1 1 0 011-1z"/><path d="M7.8 9.2v5.6h2.4l3.9 3V6.2l-3.9 3z"/><path d="M15.8 9.7a3 3 0 010 4.6"/><path d="M17.5 7.8a5.2 5.2 0 010 8.4"/></svg></div>
-            <div class="txt">他 发来消息<span class="sub" id="sfx-in-val"></span></div>
+            <div class="txt">他发来消息<span class="sub" id="sfx-in-val"></span></div>
           </div>
           <div class="sfx-presets" id="sfx-in-presets"></div>
           <div class="sfx-tools" id="sfx-in-tools"></div>
@@ -15270,7 +15281,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </span>
         <span class="ch-name">联系人跨桌面查岗</span>
       </div>
-      <div class="sm-set-hint" style="padding:8px 16px 0">说明：联系人跨桌面查岗分两种方向——「联系人对我查岗」是 他 主动来查我、我回答后 他 的回应；「联系人申请我对联系人查岗」是 他 请我去查 他、他 被查时的回应。可逐张开启或关闭。</div>
+      <div class="sm-set-hint" style="padding:8px 16px 0">说明：联系人跨桌面查岗分两种方向——「联系人对我查岗」是他主动来查我、我回答后他的回应；「联系人申请我对联系人查岗」是他请我去查他、他被查时的回应。可逐张开启或关闭。</div>
       <!-- v3.32.x：查岗回应触发概率（dcf-deskcheck，默认 50%） -->
       <div class="set-group glass" id="dcf-prob-box-dk" style="margin:10px 12px 0">
         <div class="gs-row"><span>查岗回应概率</span><div class="stepper" id="dcf-prob-deskcheck" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="dcf-prob-deskcheck-val" readonly><button class="stp-max">+</button></div></div>
@@ -15340,12 +15351,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <div class="dc-toggle glass">
         <div class="dc-toggle-txt">
           <div class="dc-toggle-name">使用心情分享</div>
-          <div class="dc-toggle-sub">开启后，他 在聊天中有概率主动分享自己的心情/近况</div>
+          <div class="dc-toggle-sub">开启后，他在聊天中有概率主动分享自己的心情/近况</div>
         </div>
         <label class="toggle"><input type="checkbox" id="tm-enabled"><span class="tk"></span></label>
       </div>
       <div class="gs-row"><span>分享概率</span><div class="stepper" data-min="5" data-max="30" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="tm-prob-val" readonly><button class="stp-max">+</button></div></div>
-      <div class="sm-set-hint" style="padding:4px 16px 6px">触发后需间隔几条正常聊天才会再次分享；同类心情短时间不会连续出现。分享消息的来源小标有 10% 概率显示为「你的心情」——他 有时发这张卡其实是想问你的心情，小标会随机变化。</div>
+      <div class="sm-set-hint" style="padding:4px 16px 6px">触发后需间隔几条正常聊天才会再次分享；同类心情短时间不会连续出现。分享消息的来源小标有 10% 概率显示为「你的心情」——他有时发这张卡其实是想问你的心情，小标会随机变化。</div>
       <div class="gs-title">心情分组</div>
       <div class="cc-groups-bar" id="tm-groups-bar"></div>
       <div class="card-search glass" id="tm-search">
@@ -15383,7 +15394,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="gs-row"><span>回应字卡使用概率</span><div class="stepper" id="rcard-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="rcard-prob-val" readonly><button class="stp-max">+</button></div></div>
         <div class="gs-row"><span>连接词追加概率</span><div class="stepper" id="cf-prob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="cf-prob-val" readonly><button class="stp-max">+</button></div></div>
       </div>
-      <div class="sm-set-hint" id="rc-prob-hint" style="padding:2px 16px 4px">说明：本页字卡是「逻辑连接词」，他 回话时有两种用法——①按「回应字卡使用概率」整条回复换成一张连接词字卡（默认 30%）；②按「连接词追加概率」在回复末尾再补一句连接词（默认 20%，与回复设置里的连接词概率是同一项，改任意一处都生效）。两个概率都调到 0% 等于不用回应字卡（也可直接用上方总开关）；「连接词追加」另受回复设置里的「多字卡回复」总开关约束——它关闭时这条不再追加（追加＝一条气泡两张字卡）。</div>
+      <div class="sm-set-hint" id="rc-prob-hint" style="padding:2px 16px 4px">说明：本页字卡是「逻辑连接词」，他回话时有两种用法——①按「回应字卡使用概率」整条回复换成一张连接词字卡（默认 30%）；②按「连接词追加概率」在回复末尾再补一句连接词（默认 20%，与回复设置里的连接词概率是同一项，改任意一处都生效）。两个概率都调到 0% 等于不用回应字卡（也可直接用上方总开关）；「连接词追加」另受回复设置里的「多字卡回复」总开关约束——它关闭时这条不再追加（追加＝一条气泡两张字卡）。</div>
       <div class="gs-title">回应字卡分类</div>
       <div class="cc-groups-bar" id="rc-groups-bar"></div>
       <div class="card-search glass" id="rc-search">
@@ -15417,6 +15428,11 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <input type="color" id="modal-color" value="#111111" hidden>
         <button class="modal-custom" id="modal-custom" hidden>自定义颜色</button>
+        <!-- #1603：通用取色弹窗的手输色值入口——部分 WebView / 内置浏览器打不开原生取色器
+             （点「自定义颜色」没反应），手输 #RRGGBB 必须是常驻兜底，而不是探测失败才出现 -->
+        <div class="modal-hexrow" id="modal-hexrow" hidden>
+          <input type="text" class="modal-hex" id="modal-hex" placeholder="手输色值：#RRGGBB（如 #e05555）" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="7">
+        </div>
         <select class="modal-select" id="modal-select" hidden></select>
         <div class="modal-group-chips" id="modal-group-chips" hidden></div>
         <button class="modal-file" id="modal-file" hidden>从文件导入</button>
@@ -15485,7 +15501,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="mood-entry-row"><span class="mood-entry-k" id="mood-entry-ta-label">梦角（心情日记）</span><span class="mood-entry-v" id="mood-entry-ta">今天还没有互动</span></div>
         </div>
 
-        <!-- 他 今天（合并：心情 + 正在 + 留言 + 情话） -->
+        <!-- 他今天（合并：心情 + 正在 + 留言 + 情话） -->
         <div class="cal-card glass" id="cal-ta-card">
           <div class="cal-date-head">
             <span class="cal-date-txt" id="cal-today-date"></span>
@@ -15499,7 +15515,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </div>
           </div>
           <div class="cal-activity">
-            <span class="cal-act-label">他 正在</span>
+            <span class="cal-act-label">他正在</span>
             <span id="cal-activity">—</span>
           </div>
           <div class="cal-sec">
@@ -15968,7 +15984,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <button class="fav-tab" data-htab="coinask">心意币申请记录</button>
         <button class="fav-tab" data-htab="coinrp">心意币红包记录</button>
         <button class="fav-tab" data-htab="care">他的关心</button>
-        <!-- #1435：查岗两类从「他的关心」里搬出来各归一栏——对我查岗＝本桌面 他 发的查岗卡（现算自聊天），
+        <!-- #1435：查岗两类从「他的关心」里搬出来各归一栏——对我查岗＝本桌面他发的查岗卡（现算自聊天），
              跨桌面查岗＝其他桌面来查岗的每一次投递（含错过没点【确认】的那些，那些不进聊天只在这里留痕） -->
         <button class="fav-tab" data-htab="ck">联系人对我查岗</button>
         <button class="fav-tab" data-htab="xck">联系人跨桌面查岗</button>
@@ -16016,7 +16032,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <!-- v3.16.x：联系人的关心（查岗/经期/喝水/吃饭/番茄陪伴） -->
         <div class="cal-card glass" data-hpanel="care" hidden>
-          <div class="cal-card-title">他 的关心记录</div>
+          <div class="cal-card-title">他的关心记录</div>
           <div id="home-care"></div>
         </div>
         <!-- #1435：联系人对我查岗（本桌面查岗卡，现算自聊天，含已回答/待回答） -->
@@ -16029,7 +16045,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="cal-card-title">联系人跨桌面查岗</div>
           <div id="home-xck"></div>
         </div>
-        <!-- #1435：邀请贴贴（他 发起的贴贴邀请，一条邀请一行，结果随回应更新） -->
+        <!-- #1435：邀请贴贴（他发起的贴贴邀请，一条邀请一行，结果随回应更新） -->
         <div class="cal-card glass" data-hpanel="cuddle" hidden>
           <div class="cal-card-title">邀请贴贴记录</div>
           <div id="home-cuddle"></div>
@@ -16169,7 +16185,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <div class="emoji-head">
         <div class="emoji-tabs">
           <button class="emoji-tab" data-etab="public">公用表情包</button>
-          <button class="emoji-tab sel" data-etab="ta">他 的表情包</button>
+          <button class="emoji-tab sel" data-etab="ta">他的表情包</button>
           <button class="emoji-tab" data-etab="mine">我的表情包</button>
         </div>
         <button class="poke-card-close" id="emoji-close">✕</button>
@@ -16277,7 +16293,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </button>
         </span>
       </div>
-      <!-- 通知提醒面板（他 点赞/评论/发布动态的提醒，点击跳转对应动态） -->
+      <!-- 通知提醒面板（他点赞/评论/发布动态的提醒，点击跳转对应动态） -->
       <div class="feed-notice-panel" id="feed-notice-panel" hidden>
         <div class="feed-notice-head">
           <span>通知提醒</span>
@@ -16374,15 +16390,15 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </button>
           </div>
           <div class="ck-location">
-            <span class="ck-label">他 在哪里</span>
+            <span class="ck-label">他在哪里</span>
             <div class="ck-value" id="ck-place">—</div>
           </div>
           <div class="ck-location">
-            <span class="ck-label">他 在做什么</span>
+            <span class="ck-label">他在做什么</span>
             <div class="ck-value" id="ck-action">—</div>
           </div>
           <div class="ck-location">
-            <span class="ck-label">他 想对你说</span>
+            <span class="ck-label">他想对你说</span>
             <div class="ck-value" id="ck-msg">—</div>
           </div>
           <!-- v3.26.x #875：「他在身边」藏在寻踪里是设计（位置面板的唯一入口就是这两处），但它原本是
@@ -16506,7 +16522,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <span class="ch-back" id="chat-back">
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </span>
-        <span class="ch-av" id="chat-partner-av" title="点击查看 他 的日常"></span>
+        <span class="ch-av" id="chat-partner-av" title="点击查看他的日常"></span>
         <span class="ch-name" id="chat-partner-name" title="点击让对方继续说">他</span>
         <span class="ch-settings" id="chat-settings-btn" title="聊天设置">
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
@@ -16639,7 +16655,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="call-panel-row" id="call-view-row" title="打开联系人打给你 / 你打给联系人时的方形通话弹窗（非通话小框）；空闲时是预览，点任意处退出，通话中点击＝展开通话面板">
             <span class="cpr-txt">打开来电弹窗</span><span class="cpr-val">预览</span>
           </div>
-          <div class="call-panel-row" id="call-vt-row" title="接通后点这里打开视频通话（调用手机摄像头；他 那侧开不开由通话设置里的概率决定）">
+          <div class="call-panel-row" id="call-vt-row" title="接通后点这里打开视频通话（调用手机摄像头；他那侧开不开由通话设置里的概率决定）">
             <span class="cpr-txt">视频通话</span><span class="cpr-val" id="call-vt-row-val">开启摄像头</span>
           </div>
           <button class="call-panel-dial" id="call-panel-dial" type="button">
@@ -16685,7 +16701,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 双人贪吃蛇：聊天页底部半框（我 vs 他，滑动/方向键控制，他 带行为池 AI） -->
+      <!-- 双人贪吃蛇：聊天页底部半框（我 vs 他，滑动/方向键控制，他带行为池 AI） -->
       <div class="poke-card" id="chat-snake-panel" hidden>
         <div class="poke-card-head">
           <span>贪吃蛇 · <b id="snake-partner-name">他</b></span>
@@ -16732,7 +16748,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 双人 Pong 小游戏：聊天页底部半框（玩家左挡板 / 他 右挡板 AI） -->
+      <!-- 双人 Pong 小游戏：聊天页底部半框（玩家左挡板 / 他右挡板 AI） -->
       <div class="poke-card" id="chat-pong-panel" hidden>
         <div class="poke-card-head">
           <span>Pong · <b id="pong-partner-name">他</b></span>
@@ -16818,7 +16834,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 双人钓鱼：聊天页底部半框（你与 他 各一根鱼竿，时机收竿 → 今日收获 → 出售心意币 + 图鉴 + 他送礼+陪伴奖励） -->
+      <!-- 双人钓鱼：聊天页底部半框（你与他各一根鱼竿，时机收竿 → 今日收获 → 出售心意币 + 图鉴 + 他送礼+陪伴奖励） -->
       <div class="poke-card" id="chat-fish-panel" hidden>
         <div class="poke-card-head">
           <span>钓鱼 · <b id="fish-partner-name">他</b></span>
@@ -16895,7 +16911,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 合作扫雷：聊天页底部半框（和 他 轮流探索一张雷区，共用 ❤️❤️❤️，踩雷不即死） -->
+      <!-- 合作扫雷：聊天页底部半框（和他轮流探索一张雷区，共用 ❤️❤️❤️，踩雷不即死） -->
       <div class="poke-card" id="chat-ms-panel" hidden>
         <div class="poke-card-head">
           <span>合作扫雷 · <b id="ms-partner-name">他</b></span>
@@ -16926,7 +16942,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 记忆翻牌：聊天页底部半框（双人合作记忆配对，他 由代码控制、按难度概率记牌） -->
+      <!-- 记忆翻牌：聊天页底部半框（双人合作记忆配对，他由代码控制、按难度概率记牌） -->
       <div class="poke-card" id="chat-memory-panel" hidden>
         <div class="poke-card-head">
           <span>记忆翻牌 · <b id="memory-partner-name">他</b></span>
@@ -16959,7 +16975,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
               </div>
             </div>
             <div class="mgm-hint" id="memory-hint"></div>
-            <div class="pong-foot">和 他 轮流翻两张 · 配对成功再来一次 · 一起找完所有牌</div>
+            <div class="pong-foot">和他轮流翻两张 · 配对成功再来一次 · 一起找完所有牌</div>
           </div>
         </div>
       </div>
@@ -17001,7 +17017,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 连连看：聊天页底部半框（和 他 轮流消除同款图案，两折连线规则，合作清完棋盘） -->
+      <!-- 连连看：聊天页底部半框（和他轮流消除同款图案，两折连线规则，合作清完棋盘） -->
       <div class="poke-card" id="chat-linkup-panel" hidden>
         <div class="poke-card-head">
           <span>连连看 · <b id="lk-partner-name">他</b></span>
@@ -17039,7 +17055,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 消消乐：聊天页底部半框（和 他 轮流交换相邻格凑三连，共同冲目标分） -->
+      <!-- 消消乐：聊天页底部半框（和他轮流交换相邻格凑三连，共同冲目标分） -->
       <div class="poke-card" id="chat-match3-panel" hidden>
         <div class="poke-card-head">
           <span>消消乐 · <b id="m3-partner-name">他</b></span>
@@ -17078,7 +17094,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 心意币拍卖会：聊天页底部半框（和 他 轮番举牌竞拍，落槌价真扣心意币，拍品收进🎒） -->
+      <!-- 心意币拍卖会：聊天页底部半框（和他轮番举牌竞拍，落槌价真扣心意币，拍品收进🎒） -->
       <div class="poke-card" id="chat-auction-panel" hidden>
         <div class="poke-card-head">
           <span>心意币拍卖会 · <b id="au-partner-name">他</b></span>
@@ -17109,13 +17125,13 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
                 <div class="au-help-body">
                   <b>①&nbsp;看拍品</b>：每件都有起拍价，先看它值多少。<br>
                   <b>②&nbsp;出价</b>：点一个“出 ¥X”档位＝在当前价上加一档，压上你的价（按钮会直接显示你要出的钱）。<br>
-                  <b>③&nbsp;轮替</b>：你出价后 他 会掂量掂量——跟价或放弃，轮到你时按钮才亮起。<br>
+                  <b>③&nbsp;轮替</b>：你出价后他会掂量掂量——跟价或放弃，轮到你时按钮才亮起。<br>
                   <b>④&nbsp;成交</b>：谁最后是最高价，这件就归谁。<br>
                   <b>·</b> 你是最高价 → 点<b>「落槌」</b>＝按现价买下（真扣心意币，收进 🎒）。<br>
-                  <b>·</b> 他 最高价 → 点<b>「放弃这件」</b>＝这件归 他，不扣你的钱。<br>
+                  <b>·</b> 他最高价 → 点<b>「放弃这件」</b>＝这件归他，不扣你的钱。<br>
                   <b>·</b> 双方都不要 → <b>流拍</b>，收回仓库。<br>
-                  <b>⑤&nbsp;彩蛋</b>：他 拍走的拍品过几天会寄回给你。<br>
-                  <b>⑥&nbsp;暗价</b>：他 每件的心理价位是暗的（志在必得/常规/抠门/虚张声势），猜不准才好玩。<br>
+                  <b>⑤&nbsp;彩蛋</b>：他拍走的拍品过几天会寄回给你。<br>
+                  <b>⑥&nbsp;暗价</b>：他每件的心理价位是暗的（志在必得/常规/抠门/虚张声势），猜不准才好玩。<br>
                   <b>⑦&nbsp;自制拍品</b>：点顶部 ➕ 打开编辑台——选一枚 emoji 或上传一张商品图，填名称/起拍价（还能留一句拍下彩蛋、勾「神秘拍品」蒙面上拍），你们的小宝贝就进奖池；编辑台底部的库条点一下即可改，删除要先确认。
                 </div>
                 <div class="pong-overlay-btns">
@@ -17180,7 +17196,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <!-- #346 余额不足/账本未就绪提示行：出价键静默置灰时告诉用户为什么 -->
             <div class="au-wallet-hint" id="au-wallet-hint" hidden></div>
             <div class="au-status" id="au-status">点击「开场拍卖」</div>
-            <div class="pong-foot">落槌价从心意币里真扣 · 他 的心理价位是暗的 · 拍到的收进 🎒</div>
+            <div class="pong-foot">落槌价从心意币里真扣 · 他的心理价位是暗的 · 拍到的收进 🎒</div>
           </div>
         </div>
       </div>
@@ -17199,7 +17215,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </div>
         </div>
       </div>
-      <!-- 红包：聊天页底部半框（我和 他 互发红包，情侣特殊金额 / 随机 / 七夕特别） -->
+      <!-- 红包：聊天页底部半框（我和他互发红包，情侣特殊金额 / 随机 / 七夕特别） -->
       <div class="poke-card" id="chat-rp-panel" hidden>
         <div class="poke-card-head">
           <span>红包 · <b id="rp-partner-name">他</b></span>
@@ -17208,32 +17224,32 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <button class="poke-card-close" id="chat-rp-close">✕</button>
           </div>
         </div>
-        <!-- v3.29.x：他 自动发红包 / 自动申请心意币设置（原聊天设置页「红包」组移入红包半框，入口=头部「设置」按钮）。
+        <!-- v3.29.x：他自动发红包 / 自动申请心意币设置（原聊天设置页「红包」组移入红包半框，入口=头部「设置」按钮）。
              每联系人独立：发红包概率默认 4%（0-100%）、每日上限默认 5（0=不限）；申请概率默认 4%、申请上限默认 0=不限，
              申请两项（cs-rp-ask-prob / cs-rp-ask-daily-max）由 chat.js trySystemAskMochi 读，未单独设过时回退旧的存钱罐全局根键；
              chat.js trySystemAutoSend 读 cs-rp-auto-prob / cs-rp-daily-max -->
         <div class="rp-settings" id="rp-settings" hidden>
-          <div class="rp-settings-title">他 自动发红包</div>
+          <div class="rp-settings-title">他自动发红包</div>
           <div class="set-row" id="cs-rp-auto-prob">
-            <div class="txt">他 自动发红包概率<span class="sub">联系人有概率主动发个红包给你，每个联系人可单独设置</span></div>
+            <div class="txt">他自动发红包概率<span class="sub">联系人有概率主动发个红包给你，每个联系人可单独设置</span></div>
             <div class="val" id="cs-rp-auto-prob-val">4%</div>
           </div>
           <div class="set-row" id="cs-rp-daily-max">
-            <div class="txt">他 每日发红包上限<span class="sub">联系人每天最多主动发红包的次数，填 0 表示不限制</span></div>
+            <div class="txt">他每日发红包上限<span class="sub">联系人每天最多主动发红包的次数，填 0 表示不限制</span></div>
             <div class="val" id="cs-rp-daily-max-val">5 次</div>
           </div>
-          <div class="rp-settings-title">他 申请心意币</div>
+          <div class="rp-settings-title">他申请心意币</div>
           <div class="set-row" id="cs-rp-ask-prob">
-            <div class="txt">他 申请心意币概率<span class="sub">联系人有概率向 Mochi 申请一笔心意币（记进聊天申请记录），每个联系人可单独设置</span></div>
+            <div class="txt">他申请心意币概率<span class="sub">联系人有概率向 Mochi 申请一笔心意币（记进聊天申请记录），每个联系人可单独设置</span></div>
             <div class="val" id="cs-rp-ask-prob-val">4%</div>
           </div>
           <div class="set-row" id="cs-rp-ask-daily-max">
-            <div class="txt">他 每日申请上限<span class="sub">联系人每天最多申请心意币的次数，填 0 表示不限制</span></div>
+            <div class="txt">他每日申请上限<span class="sub">联系人每天最多申请心意币的次数，填 0 表示不限制</span></div>
             <div class="val" id="cs-rp-ask-daily-max-val">不限</div>
           </div>
-          <div class="rp-settings-title">他 收我的红包</div>
+          <div class="rp-settings-title">他收我的红包</div>
           <div class="set-row" id="cs-rp-reject-prob">
-            <div class="txt">他 拒收红包概率<span class="sub">我发出的红包被联系人拒收并退款给我的概率，每个联系人可单独设置</span></div>
+            <div class="txt">他拒收红包概率<span class="sub">我发出的红包被联系人拒收并退款给我的概率，每个联系人可单独设置</span></div>
             <div class="val" id="cs-rp-reject-prob-val">20%</div>
           </div>
           <button class="rp-send rp-settings-done" id="rp-settings-done" type="button">完成</button>
@@ -17302,7 +17318,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       <!-- 聊天页输入半框（邀请他 / 问问他，露出聊天消息，星言式）
-           v3.26.x：邀请他 模式内置「我的邀请」字卡库（仿我的拍一拍：分组 + 字卡 + 存入/发送），
+           v3.26.x：邀请他模式内置「我的邀请」字卡库（仿我的拍一拍：分组 + 字卡 + 存入/发送），
            点字卡即可重复发送，无需每次手动输入 -->
       <div class="poke-card" id="chat-ask-panel" hidden>
         <div class="poke-card-head">
@@ -17319,12 +17335,12 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             </div>
             <div class="chat-ask-hist-list" id="chat-ask-hist-list" hidden></div>
           </div>
-          <!-- 2026-10-28：听歌 / 读书邀请直达——快捷按钮发送时自带类型，他 同意后直接打开对应模块页 -->
+          <!-- 2026-10-28：听歌 / 读书邀请直达——快捷按钮发送时自带类型，他同意后直接打开对应模块页 -->
           <div class="chat-ask-quick" id="chat-ask-quick" hidden>
             <button type="button" class="cc-tool" id="chat-ask-quick-music">🎵 一起听歌</button>
             <button type="button" class="cc-tool" id="chat-ask-quick-reading">📖 一起读书</button>
           </div>
-          <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>「一起听歌 / 一起读书」邀请，他 同意后会直接打开对应页面；自定义邀请里提到「听歌 / 读书」也算</div>
+          <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>「一起听歌 / 一起读书」邀请，他同意后会直接打开对应页面；自定义邀请里提到「听歌 / 读书」也算</div>
           <div class="invite-list" id="invite-list" hidden></div>
           <div class="dec-inp-wrap chat-ask-inp-wrap"><input type="text" class="chat-ask-input" id="chat-ask-input" placeholder="想邀请他做什么？" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><button type="button" class="dec-inp-clear" data-clear="chat-ask-input" aria-label="清空" title="清空">✕</button></div>
           <button type="button" class="chat-ask-bulk" id="chat-ask-bulk" hidden>批量设置问卷</button>
@@ -17346,9 +17362,9 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <button class="poke-card-close" id="ck-panel-close">✕</button>
         </div>
         <div class="poke-card-scroll" id="ck-panel-body">
-          <div class="ck-location"><span class="ck-label">他 在哪里</span><div class="ck-value" id="ck-p-place">—</div></div>
-          <div class="ck-location"><span class="ck-label">他 在做什么</span><div class="ck-value" id="ck-p-action">—</div></div>
-          <div class="ck-location"><span class="ck-label">他 想对你说</span><div class="ck-value" id="ck-p-msg">—</div></div>
+          <div class="ck-location"><span class="ck-label">他在哪里</span><div class="ck-value" id="ck-p-place">—</div></div>
+          <div class="ck-location"><span class="ck-label">他在做什么</span><div class="ck-value" id="ck-p-action">—</div></div>
+          <div class="ck-location"><span class="ck-label">他想对你说</span><div class="ck-value" id="ck-p-msg">—</div></div>
           <div class="ck-updated" id="ck-p-updated"></div>
           <!-- v3.26.x #875：与桌面寻踪页那颗同款（两入口形态必须一致）——图标＋主副两行＋箭头，
                副标题点出位置面板里到底有什么，用户才知道这是一处独立功能、以及三枚换位开关在哪。 -->
@@ -17414,14 +17430,14 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="avlib-kind" id="avlib-kind-name">昵称</div>
         </div>
         <div class="avlib-tabs">
-          <div class="avlib-tab active" id="avlib-tab-a"><span id="avlib-pool-name">他 的头像库</span><span class="avlib-tab-cnt">（<span id="avlib-count">0</span>）</span></div>
+          <div class="avlib-tab active" id="avlib-tab-a"><span id="avlib-pool-name">他的头像库</span><span class="avlib-tab-cnt">（<span id="avlib-count">0</span>）</span></div>
           <div class="avlib-tab" id="avlib-tab-b"><span id="avlib-me-tab-name">我的头像库</span><span class="avlib-tab-cnt">（<span id="avlib-me-count">0</span>）</span></div>
         </div>
         <div id="avlib-pane-a">
           <div class="avlib-toggle">
             <div class="avlib-toggle-txt">
               <div class="avlib-toggle-name">开启随机更换</div>
-              <div class="avlib-toggle-sub">他 会每隔 1-8 小时随机更换一次头像</div>
+              <div class="avlib-toggle-sub">他会每隔 1-8 小时随机更换一次头像</div>
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-enabled"><span class="tk"></span></label>
           </div>
@@ -17440,8 +17456,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div id="avlib-pane-b" hidden>
           <div class="avlib-toggle">
             <div class="avlib-toggle-txt">
-              <div class="avlib-toggle-name">他 主动给我换头像</div>
-              <div class="avlib-toggle-sub">他 会每隔 1-8 小时主动给你换头像，直接换或弹窗征求你同意</div>
+              <div class="avlib-toggle-name">他主动给我换头像</div>
+              <div class="avlib-toggle-sub">他会每隔 1-8 小时主动给你换头像，直接换或弹窗征求你同意</div>
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-me-enabled"><span class="tk"></span></label>
           </div>
@@ -17461,7 +17477,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="avlib-toggle">
             <div class="avlib-toggle-txt">
               <div class="avlib-toggle-name">开启随机更换</div>
-              <div class="avlib-toggle-sub">他 会每隔 1-8 小时随机更换一次昵称</div>
+              <div class="avlib-toggle-sub">他会每隔 1-8 小时随机更换一次昵称</div>
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-nick-enabled"><span class="tk"></span></label>
           </div>
@@ -17489,8 +17505,8 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div id="avlib-pane-d" hidden>
           <div class="avlib-toggle">
             <div class="avlib-toggle-txt">
-              <div class="avlib-toggle-name">他 主动给我换昵称</div>
-              <div class="avlib-toggle-sub">他 会每隔 1-8 小时主动给你换昵称，直接换或弹窗征求你同意</div>
+              <div class="avlib-toggle-name">他主动给我换昵称</div>
+              <div class="avlib-toggle-sub">他会每隔 1-8 小时主动给你换昵称，直接换或弹窗征求你同意</div>
             </div>
             <label class="toggle"><input type="checkbox" id="avlib-me-nick-enabled"><span class="tk"></span></label>
           </div>
@@ -17846,7 +17862,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <span>删除</span>
         </button>
       </div>
-      <!-- #287：拍一拍面板（点成员消息头像拍 他）——复用聊天页 .poke-card 壳样式，列表 group-chat.js 渲染 -->
+      <!-- #287：拍一拍面板（点成员消息头像拍他）——复用聊天页 .poke-card 壳样式，列表 group-chat.js 渲染 -->
       <div class="poke-card" id="gc-poke-card" hidden>
         <div class="poke-card-head">
           <span>拍一拍 · <b id="gc-poke-name">成员</b></span>
@@ -17888,7 +17904,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <span>多人决定</span>
           </button>
 
-          <button class="more-item" id="more-ask" data-mcat="chat" title="问问他（我向他提问，他 来回答）">
+          <button class="more-item" id="more-ask" data-mcat="chat" title="问问他（我向他提问，他来回答）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 114.8.4c0 1.7-2.4 2.1-2.4 3.3"/><path d="M12 16.7h.01"/></svg></span>
             <span>问问他</span>
           </button>
@@ -17982,7 +17998,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 5.4l6.2 6.2M14.6 3.2l6.2 6.2-2.2 2.2-6.2-6.2z"/><path d="M13.6 9.8l-8.4 8.4"/><path d="M4.2 21h7"/></svg></span>
             <span>拍卖会</span>
           </button>
-          <button class="more-item" id="more-ck" data-mcat="tool" title="寻踪（打开 他 的日常）">
+          <button class="more-item" id="more-ck" data-mcat="tool" title="寻踪（打开他的日常）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M12 3a9 9 0 000 18"/></svg></span>
             <span>寻踪</span>
           </button>
@@ -18014,7 +18030,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           </button>
           <!-- v8.29 #1003：以下三枚是「回复设置里只按概率发生」的主动行为的手动触发口（用户直派
                「点击之后让联系人立即触发」）——贴贴邀请＝回复设置→其他「主动邀请贴贴」、
-               查岗＝回复设置→查岗「他 主动查岗」、跨桌面查岗＝回复设置→其他「联系人跨桌面查岗」 -->
+               查岗＝回复设置→查岗「他主动查岗」、跨桌面查岗＝回复设置→其他「联系人跨桌面查岗」 -->
           <button class="more-item" id="more-cuddle-now" title="让他现在发来一次贴贴邀请（贴贴/抱抱/牵手/靠着，话术来自字卡库「他的邀请」的贴贴分类）">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.2s-7.4-4.8-7.4-9.9A4.6 4.6 0 0112 7.2a4.6 4.6 0 017.4 3.1c0 5.1-7.4 9.9-7.4 9.9z"/><path d="M8.4 11.6c0-1.6 1.3-2.4 2.6-2.4"/></svg></span>
             <span>贴贴</span>
@@ -18045,7 +18061,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="fw-sense" id="fw-sense">
           <div class="fw-title">
             <span class="fw-title-t">方位感知</span>
-            <span class="fw-title-s">不是精确定位 · 是你对 他 的模糊感觉</span>
+            <span class="fw-title-s">不是精确定位 · 是你对他的模糊感觉</span>
           </div>
           <div class="fw-circle" id="fw-circle"></div>
           <div class="fw-detail" id="fw-detail"></div>
@@ -18126,7 +18142,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
       <div class="set-group glass">
         <div class="set-row" id="call-av-edit-row" title="修改联系人头像">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>
-          <div class="txt">联系人头像<span class="sub">打开头像库更换 他 的头像</span></div>
+          <div class="txt">联系人头像<span class="sub">打开头像库更换他的头像</span></div>
           <div class="val" id="call-av-edit-val">点击更换</div>
         </div>
         <div class="set-row" id="call-bg-edit-row" title="设置通话背景图片（作用于接通后的通话小框；来电/去电弹窗没单独设半框背景时也用它）">
@@ -18318,7 +18334,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="them-tab" data-ft="ui">显示</div>
       </div>
       <!-- v3.8.x：聊天专用昵称/头像（与桌面 deco-widget 的 lbl-*/avatar-* 完全独立，
-           桌面只能在桌面改，聊天只能在聊天设置改；未设时聊天页显示默认占位 他/我 + 人形图标） -->
+           桌面只能在桌面改，聊天只能在聊天设置改；未设时聊天页显示默认占位他/我 + 人形图标） -->
       <div class="gs-title" data-tag="profile">昵称与头像（聊天专用 · 与桌面各自独立，互不同步）</div>
       <div class="set-group glass" data-tag="profile">
         <div class="set-row" id="cs-lbl-partner">
@@ -18333,7 +18349,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <div class="set-row" id="cs-avatar-partner">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
-          <div class="txt">联系人头像<span class="sub">「头像和昵称互动」里也能换 他 的头像；开了随机更换后，他 换头像会覆盖这里设置的</span></div>
+          <div class="txt">联系人头像<span class="sub">「头像和昵称互动」里也能换他的头像；开了随机更换后，他换头像会覆盖这里设置的</span></div>
           <div class="val" id="cs-avatar-partner-val"></div>
         </div>
         <div class="set-row" id="cs-avatar-partner-remove" hidden>
@@ -18342,7 +18358,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
         <div class="set-row" id="cs-avatar-user">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></div>
-          <div class="txt">我的头像<span class="sub">「头像和昵称互动」里也能换我的头像；「他 主动给我换头像」触发时会覆盖这里设置的</span></div>
+          <div class="txt">我的头像<span class="sub">「头像和昵称互动」里也能换我的头像；「他主动给我换头像」触发时会覆盖这里设置的</span></div>
           <div class="val" id="cs-avatar-user-val"></div>
         </div>
         <div class="set-row" id="cs-avatar-user-remove" hidden>
@@ -18406,7 +18422,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="val" id="cs-input-order-val">默认排列</div>
         </div>
       </div>
-      <!-- v3.10.x：允许删除联系人消息（默认关闭，每联系人独立）。开启后点击 他 消息弹出的操作菜单里多出「删除」按钮，可永久移除该条 他 消息。
+      <!-- v3.10.x：允许删除联系人消息（默认关闭，每联系人独立）。开启后点击他消息弹出的操作菜单里多出「删除」按钮，可永久移除该条他消息。
            v3.34.x：由「数据」分区搬入「消息」分类（用户反馈：这是消息操作项，不该只在数据页） -->
       <div class="gs-title" data-tag="msg">消息管理</div>
       <div class="set-group glass" data-tag="msg">
@@ -18417,7 +18433,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       <!-- v3.12.x：隐藏联系人的表情包开关（默认关闭，全局生效）。开启后聊天与朋友圈的
-           表情包面板只显示「我的表情包」，不再显示 他 的/公用表情包 -->
+           表情包面板只显示「我的表情包」，不再显示他的/公用表情包 -->
       <div class="gs-title" data-tag="ui">表情包</div>
       <div class="set-group glass" data-tag="ui">
         <div class="set-row" id="cs-hide-ta-sticker-row">
@@ -18516,7 +18532,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   </div>
 </div>
 
-<!-- v3.5.102：桌面新消息横幅（他 主动发消息时，在桌面/其他页面顶部弹出，点击进聊天） -->
+<!-- v3.5.102：桌面新消息横幅（他主动发消息时，在桌面/其他页面顶部弹出，点击进聊天） -->
 <div class="desk-msg" id="desk-msg" hidden>
   <div class="desk-msg-av" id="desk-msg-av"></div>
   <div class="desk-msg-body">
@@ -19542,7 +19558,7 @@ if (!r || !r.ok) { L[remoteIdx] = '远端 version.json：获取失败（离线�
 L[remoteIdx] = '远端 version.json：' + (r.info ? r.info + '，' : '') + 'ts=' + r.ts + '（' + tsStr(r.ts) + '）';
 if (!localTs) { L[cmpIdx] = '比对结论：无法比较（本机无构建时间戳）'; return; }
 L[cmpIdx] = '比对结论：' + (r.ts > localTs
-? '不一致——他 手机上跑的是旧版（落后最新版' + devStr(r.ts - localTs) + '；对方点顶部更新条刷新，或关掉全部标签页重开）'
+? '不一致——他手机上跑的是旧版（落后最新版' + devStr(r.ts - localTs) + '；对方点顶部更新条刷新，或关掉全部标签页重开）'
 : (r.ts === localTs ? '一致（已是最新）' : '远端比本机还旧（差' + devStr(localTs - r.ts) + '，GitHub Pages CDN 延迟？一般可忽略）'));
 }));
 jobs.push(swStateText().then(function (t) { L[swIdx] = 'SW：' + t; }));
@@ -20037,7 +20053,7 @@ out.push('· 库(IDB)直读：' + (info.ambiguous ? '这次读不出值（事务
 out.push('· 库(IDB)直读：' + side(db));
 const sp = Math.max(scr.rp, ls ? ls.rp : 0);
 if (db.rp > sp) out.push('· 判读：库里多 ' + (db.rp - sp) + ' 封带他回信 ⇒ 回信【还在库里】，屏上/LS 那份是旧账（可救回）');
-else if (db.rp === 0 && scr.rp === 0 && (!ls || ls.rp === 0)) out.push('· 判读：三处都没有 他 回信 ⇒ 库里确实没有（从未落地，或被旧账整包写回覆盖）');
+else if (db.rp === 0 && scr.rp === 0 && (!ls || ls.rp === 0)) out.push('· 判读：三处都没有他回信 ⇒ 库里确实没有（从未落地，或被旧账整包写回覆盖）');
 else if (db.n > scr.n) out.push('· 判读：库里比屏上多 ' + (db.n - scr.n) + ' 封 ⇒ 屏上是旧账（同步读口没交出新值）');
 else out.push('· 判读：三处条数/回信数一致（本刻未复现）');
 if (scr.rp > (ls ? ls.rp : 0)) out.push('· 屏上比 LS 多 ' + (scr.rp - (ls ? ls.rp : 0)) + ' 封带他回信 ⇒ 新值只在内存，重开／被系统回收后就看不到（LS 写不进去）');
@@ -21655,9 +21671,9 @@ return out;
 { n: '群聊', app: 'group-chat', page: 'page-group-chat', open: true },   // #1280 「开启群聊」开关只把桌面图标收进组件库、不拦打开（group-chat.js enterGroupChat 无门控，无头实测默认未开启时图标照样开页）：打不开＝真故障照实报 ✗，本行不再给不存在的原因
 { n: '帮我决定', fn: 'openDecision' },
 { n: '多人决定', fn: 'openGroupDecision' },
-{ n: '他 询问', fn: 'openAskReply' },
-{ n: '他 心情', fn: 'openCurious' },
-{ n: '他 调侃', fn: 'openRoast' }
+{ n: '他询问', fn: 'openAskReply' },
+{ n: '他心情', fn: 'openCurious' },
+{ n: '他调侃', fn: 'openRoast' }
 ];
 function fToast(msg) {
 try {
@@ -23505,4 +23521,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvs1ryiy -->
+<!-- __MOCHI_EOF__ mvuqwdgu -->

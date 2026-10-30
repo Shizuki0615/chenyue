@@ -1058,6 +1058,7 @@ var _aFullIH = Math.max(window.innerHeight || 0, Math.round(_aVV.height || 0));
 var _aScrKey = (screen.width || 0) + 'x' + (screen.height || 0);
 var _aVpPin = false;
 var _aShrinkHadFoc = false;
+var _aFocDbg = false;
 var _aVpPinAt = 0;
 var _aFitPend = null;
 var _aFitPin = false;
@@ -1154,11 +1155,17 @@ return;
 var _aInlineHad = !!(_aPhone.style.height || _aPhone.style.alignSelf);
 if (_aInlineHad) {
 var _hNow = Math.round(_aVV.height || 0);
-if (_hNow > 0 && _hNow >= _aH - 12 && (window.innerHeight || 0) >= _aIH - 12) {
+var _ihW = window.innerHeight || 0;
+var _phW = parseInt(_aPhone.style.height, 10);
+var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));
+if (_shortResidue || (_hNow > 0 && _hNow >= _aH - 12 && _ihW >= _aIH - 12)) {
 _aPhone.style.height = '';
 _aPhone.style.alignSelf = '';
 _aPanComp();
 kbUndockPanels();
+if (_shortResidue && _ihW > 0) {
+try { if (_aPhone.getBoundingClientRect().bottom > _ihW + 2) _aPhone.style.height = Math.round(_ihW) + 'px'; } catch (eSR) {}
+}
 }
 }
 try {
@@ -1202,6 +1209,7 @@ prov: !!_aProv,
 closing: !!_aClosing,
 staleVv: !!_aVvStale, // #236：vv 残留读数闩在位（诊断现场用）
 shrinkHadFoc: !!_aShrinkHadFoc, // #479：最近深缩的焦点语境（true=键盘形/#369 语义；false=窗口改尺寸已重锚）
+focNow: !!_aFocDbg, // #1602：最近一拍 syncAndroidKb 是否判出「文本持焦」（区分焦点丢失与读数问题）
 vpPin: !!_aVpPin, // #369：布局视口残留钉高在位（诊断现场用）
 docLocked: false,
 fullInner: Math.round(_aIH),
@@ -1324,6 +1332,7 @@ function syncAndroidKb() {
 if (!_aVV || !_aPhone) return;
 try { syncSafeBottomA(); } catch (eSB) {}
 var h = _aVV.height;
+if (!(h > 0)) return;
 if (_aVV.scale && _aVV.scale < 0.95 && (_aKb || _aProv || _aIsText(_aTextFocused) || _aIsText(document.activeElement))) {
 var _zn = Date.now();
 if (_aZoomFixCnt < 3 && _zn - _aZoomFixAt > 4000) {
@@ -1355,16 +1364,35 @@ if (_aKb && h > _aPrevH && _aPrevH > 0) {
 _aClosing = true;
 }
 _aPrevH = h;
-if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
-if (!_aKb && !_aProv && _aPhone && !_aPhone.style.height && _aPhone.getBoundingClientRect().bottom > (window.innerHeight || 0) + 2) _aPhone.style.height = Math.round(window.innerHeight || 0) + 'px'; // #1537：CSS 高度超出视口（地址栏显隐后 dvh 脏值）才钉，正常贴合不碰
+_aFocDbg = _focNow;
+var _ihNowKb = window.innerHeight || 0;
+var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;
+if (_kbShrink && _aIH > _aH + 60) _aH = _aIH; // 基线已被钳小过 → 按布局基线回补
+if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH; // #1531：基线每拍钳进布局视口（在 open 计算之前）——现场快照环实锤 _aH 卡在 816（地址栏隐）而 innerHeight 恒 690，#1516 的钳制带 !open 前提、会话开着的那几拍恰好被跳过 ⇒ 地址栏显隐被当成键盘弹出/收起，页面在 400px（保底）与 690px（全高）之间翻转＝弹跳闪屏＋空隙
+if (!_aKb && !_aProv && !_aClosing && _aPhone) {
+var _ihPin = Math.round(window.innerHeight || 0);
+if (_ihPin >= _aKbFloorH()) {
+var _phPin = parseInt(_aPhone.style.height, 10);
+if (_aPhone.style.height && (!(_phPin > 0) || _phPin < _ihPin - 120)) {
+_aPhone.style.height = '';
+_aPhone.style.alignSelf = '';
+_aPanComp();
+}
+if (!_aPhone.style.height && _aPhone.getBoundingClientRect().bottom > _ihPin + 2) _aPhone.style.height = _ihPin + 'px'; // #1537：CSS 高度超出视口（地址栏显隐后 dvh 脏值）才钉，正常贴合不碰
+}
+}
 var open = (!_aVvStale && !_aKbMute && h < _aH - 60 && _focNow); // 可视高度明显变小 = 键盘弹出（#236：残留读数闩抑制纯 vv 信号；真键盘不受影响——inner 同缩走原判/交互与回基准解锁；#479：必然伴随文本聚焦）
 if (!open && h > _aH) _aH = Math.min(h, window.innerHeight || h); // #1516：基线钳进布局视口——Edge 工具栏切换会报比 inner 还高的假 vv（实测 690 基线下闯入 816），不钳则正常高度被误判成键盘收缩、会话劫持钉全高
 if (open && !_aKb) { _aClosing = false; _aKb = true; _aVvShrunkSeen = true; _aKbAt = Date.now(); _aKbStableH = 0; _aFullSince = 0; _aHonestSession = 0; _aLowSince = 0; _aVkSeen = 0; _aLowRuns = 0; _aFullReads = 0; _aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil = 0; _aPhone.style.alignSelf = 'flex-start'; kbDockPanels(); _aProvClear(); } _aKbSnapOpen = true; // #1463：本拍钉高落定后留证
+if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {
+_aClosing = false;
+}
 if (_aKb) { if (h < _aH - 60) { if (!_aLowSince) _aLowSince = Date.now(); _aLowRuns++; _aFullReads = 0; } else { if (_aLowRuns >= 2 && _aLowSince && (Date.now() - _aLowSince) > 120) _aHonestSession = 1; _aLowRuns = 0; _aLowSince = 0; } } // #1524：诚实判位＝收缩持续存在（连续≥2拍且跨度>400ms，回全高那拍结算）；单拍瞬时收缩永不判诚实
 if (!open && _aKb) {
 if (h < _aH - 12) {
 _aClosing = true;
-if (_aPhone.style.height !== h + 'px') _aPhone.style.height = h + 'px';
+var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());
+if (_aPhone.style.height !== _hClose + 'px') _aPhone.style.height = _hClose + 'px';
 if (!_focNow && Date.now() - _aVvChgAt > 1200) { _aKbCloseNow('blur-stale'); return; } // #1524：失焦＋视口读数冻结 1.2s＝键盘确已不在场，别再跟陈旧读数（B 型「失焦回位」；诚实内核上 vv 持续回升故不触发）
 return;
 }
@@ -1468,11 +1496,18 @@ _aKbSnap("prov"); // #1463：盲猜停靠也留现场（后续实测尺/对账�
 var _aDockFix = 0;
 function _aHoldNow() { return _aVkHonest ? (_aVkH >= 80 || !_aVkSeen) : !_aHonestSession; } // #1524：实测尺三态——≥80 在场顶住／<80 且本会话实测过＝键盘真收口放行／还没实测到过＝它还没报，等它报（武装当场读到 0 不是收口信号）；非实测尺内核＝诚实判位说了算
 function _aKbGap() { var a = window.__mochiScreenAdj; return a ? Math.max(-240, Math.min(240, Math.round(+a.kbgap || 0))) : 0; } // #1527：与面板量程统一到 ±240（原 ±80，对「键盘完全不报信号、只能按固定比例猜高度」的机型够不着）
+function _aKbFloorH() {
+var _b = Math.min(_aH || 0, _aIH || 0) || (window.innerHeight || 0);
+return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;
+}
 function _aKbFeedH() {
 var cur = Math.round(_aVV.height || 0);
 if (!_aKb || _aClosing) return cur;
 if (_aVkHonest && _aVkH >= 80) { var _mv = Math.round(Math.max(240, Math.min(_aH, window.innerHeight || _aH) - _aVkH)); _aKbStableH = _mv; _aFullSince = 0; return _mv; } // #1484：overlay 会话用 VirtualKeyboard 实测高度
-if (cur < _aH - 60) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+if (cur < _aH - 60) {
+if (cur >= _aKbFloorH()) { _aKbStableH = cur; _aFullSince = 0; _aFullReads = 0; return cur; }
+return Math.round(_aKbStableH) > 0 ? Math.round(_aKbStableH) : _aKbFloorH();
+}
 if (!_aFullSince) _aFullSince = Date.now();
 return Math.round(_aKbStableH) || cur;
 }
