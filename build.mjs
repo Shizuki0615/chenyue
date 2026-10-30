@@ -6896,6 +6896,12 @@ const FIX_SENTINELS = [
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
   { name: '#1604c 最少/最多句数设置行（删＝用户没有调整入口）', file: 'js/music-player.js', needle: 'id="sm-set-lyricmin"' },
   { name: '#1604d 最少/最多联动（删＝可设出 最少>最多 的无效范围）', file: 'js/music-player.js', needle: 'if (key === \'taLyricMin\' && (Number(settings.taLyricMax) || 4) < nv) {' },
+  // ==== 2026-10-30 #1605 我挑歌词支持多选 ====
+  { name: '#1605a 歌词多选状态（删＝又退回单选 sel）', file: 'js/music-player.js', needle: 'selSet: [], loading: false' },
+  { name: '#1605b 多选下标升序取用（删＝发送顺序乱/取不到已选）', file: 'js/music-player.js', needle: 'function lyricSelIndexes() {' },
+  { name: '#1605c 点行加选/再点取消（删＝又变成一选就顶掉上一句）', file: 'js/music-player.js', needle: 'if (at >= 0) arr.splice(at, 1); else arr.push(i);' },
+  { name: '#1605d 发送时多句合并（删＝只发最后选中的一句）', file: 'js/music-player.js', needle: 'const line = lyricSelIndexes().map(function (i) { return lyricState.lines[i].text; }).join(\'\\n\');' },
+  { name: '#1605e 选择条显示已选句数（删＝多选后不知道选了几句）', file: 'js/music-player.js', needle: '\'已选 \' + idxs.length + \' 句：\'' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

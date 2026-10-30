@@ -55,7 +55,7 @@ let lyricStore = {};          // id -> { raw, source, at, parsed? }
 let lyricFetching = {};       // id -> true（同一首歌只允许一发在飞）
 let lyricFetchCbs = {};       // id -> [回调]
 let lyricToken = {};          // id -> 代际号：手动保存/清除/重拉时让在飞的旧请求作废
-let lyricState = { trackId: null, lines: [], synced: false, cur: -1, sel: -1, loading: false, source: '', empty: false, transient: false };
+let lyricState = { trackId: null, lines: [], synced: false, cur: -1, selSet: [], loading: false, source: '', empty: false, transient: false };
 let lyricFrom = 'phone';      // 歌词页返回目标：phone=桌面小框进入 / music=音乐页菜单进入
 let lyricUserScrollAt = 0;
 let lyricAutoScrollAt = 0;    // 程序滚动的保护窗：避免 smooth 滚动的 scroll 事件被当成用户手动翻动
@@ -107,7 +107,7 @@ const parsed = parseLyric(raw);
 lyricState.lines = parsed.lines;
 lyricState.synced = parsed.synced;
 lyricState.cur = -1;
-lyricState.sel = -1;
+lyricState.selSet = [];
 lyricState.loading = false;
 lyricState.source = source || '';
 lyricState.empty = !parsed.lines.length;
@@ -253,7 +253,7 @@ else {
 lyricState.lines = [];
 lyricState.synced = false;
 lyricState.cur = -1;
-lyricState.sel = -1;
+lyricState.selSet = [];
 lyricState.empty = !transient;
 lyricState.transient = !!transient;
 lyricState.source = transient ? 'transient' : 'none';
@@ -312,7 +312,7 @@ function syncLyricTrack(m) {
 const id = m && m.id ? m.id : null;
 if (taLyricSession.trackId !== id) taLyricBegin(id); // 换歌/停止时取消上一首待发的歌词
 if (lyricState.trackId !== id) {
-lyricState = { trackId: id, lines: [], synced: false, cur: -1, sel: -1, loading: false, source: '', empty: false, transient: false };
+lyricState = { trackId: id, lines: [], synced: false, cur: -1, selSet: [], loading: false, source: '', empty: false, transient: false };
 const bar = document.getElementById('lyric-select-bar');
 if (bar) bar.hidden = true;
 renderWidgetLyric();
@@ -362,23 +362,29 @@ lyricAutoScrollAt = Date.now() + 1500;
 try { rows[lyricState.cur].scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { try { rows[lyricState.cur].scrollIntoView(); } catch (e2) {} }
 }
 }
+function lyricSelIndexes() {
+return (lyricState.selSet || []).filter(function (i) { return lyricState.lines[i]; }).sort(function (a, b) { return a - b; });
+}
 function lyricPaintSel() {
 const list = document.getElementById('lyric-list');
+const idxs = lyricSelIndexes();
 if (list) {
 const rows = list.querySelectorAll('.lyric-line');
-for (let i = 0; i < rows.length; i++) rows[i].classList.toggle('sel', i === lyricState.sel);
+for (let i = 0; i < rows.length; i++) rows[i].classList.toggle('sel', idxs.indexOf(i) >= 0);
 }
 const bar = document.getElementById('lyric-select-bar');
 if (!bar) return;
-const sel = lyricState.sel >= 0 && lyricState.lines[lyricState.sel];
-bar.hidden = !sel;
-if (sel) {
+bar.hidden = !idxs.length;
+if (idxs.length) {
 const lineEl = document.getElementById('lyric-select-line');
-if (lineEl) lineEl.textContent = '「' + lyricState.lines[lyricState.sel].text + '」';
+if (lineEl) {
+const texts = idxs.map(function (i) { return '「' + lyricState.lines[i].text + '」'; });
+lineEl.textContent = '已选 ' + idxs.length + ' 句：' + texts.slice(0, 2).join(' ') + (texts.length > 2 ? ' 等' : '');
+}
 }
 }
 function clearLyricSelection() {
-lyricState.sel = -1;
+lyricState.selSet = [];
 lyricPaintSel();
 }
 function renderWidgetLyric() {
@@ -436,7 +442,7 @@ empty.hidden = true;
 if (lyricState.synced && lyricState.cur < 0) lyricState.cur = lyricCalcCur();
 let html = '';
 lyricState.lines.forEach(function (x, i) {
-const cls = 'lyric-line' + (i === lyricState.cur ? ' on' : '') + (i === lyricState.sel ? ' sel' : '');
+const cls = 'lyric-line' + (i === lyricState.cur ? ' on' : '') + ((lyricState.selSet || []).indexOf(i) >= 0 ? ' sel' : '');
 html += '<div class="' + cls + '" data-li="' + i + '">' + esc(x.text) + '</div>';
 });
 list.innerHTML = html;
@@ -493,7 +499,7 @@ if (lyricState.trackId === m.id) {
 lyricState.lines = [];
 lyricState.synced = false;
 lyricState.cur = -1;
-lyricState.sel = -1;
+lyricState.selSet = [];
 lyricState.loading = false;
 lyricState.source = '';
 lyricState.empty = true;
@@ -592,7 +598,7 @@ toast('已清除这首歌的歌词');
 }
 function sendLyricToChat() {
 const m = findTrack(currentId);
-const line = lyricState.sel >= 0 && lyricState.lines[lyricState.sel] ? lyricState.lines[lyricState.sel].text : '';
+const line = lyricSelIndexes().map(function (i) { return lyricState.lines[i].text; }).join('\n');
 if (!m || !line) return;
 if (!window.chatAddLyricCard) { toast('聊天还没准备好，稍后再试'); return; }
 const cover = m.cover && /^https?:\/\//i.test(m.cover) ? m.cover : '';
@@ -603,7 +609,7 @@ clearLyricSelection();
 }
 function sendLyricToFeed() {
 const m = findTrack(currentId);
-const line = lyricState.sel >= 0 && lyricState.lines[lyricState.sel] ? lyricState.lines[lyricState.sel].text : '';
+const line = lyricSelIndexes().map(function (i) { return lyricState.lines[i].text; }).join('\n');
 if (!m || !line) return;
 if (!window.feedAddPost) { toast('朋友圈还没准备好，稍后再试'); return; }
 const song = String(m.name || '');
@@ -5474,7 +5480,9 @@ const row = e.target.closest('.lyric-line');
 if (!row) return;
 const i = Number(row.getAttribute('data-li'));
 if (!lyricState.lines[i]) return;
-lyricState.sel = (lyricState.sel === i) ? -1 : i;
+const arr = lyricState.selSet || (lyricState.selSet = []);
+const at = arr.indexOf(i);
+if (at >= 0) arr.splice(at, 1); else arr.push(i);
 lyricPaintSel();
 });
 const lyricScroll = document.getElementById('lyric-scroll');
