@@ -16,7 +16,7 @@ let playlists = [];        // {id,name,createdAt}
 let history = [];          // {id,trackId,trackName,triggerType,ts} —— TA 邀请听歌记录
 let myHistory = [];        // {id,trackId,trackName,ts} —— 我的听歌记录（自己点击播放）
 let hisSubTab = 'ta';      // 听歌记录二级子 tab：ta（TA 邀请）/ mine（我的）；默认 ta 与原 tab 语义一致
-const DEF_SETTINGS = { floatEn: true, reqProb: 5, cooldownMs: 600000, widgetCoverMode: 'song', taNextProb: 15, taRandProb: 10, taModeProb: 5, taFavProb: 20, taReserveProb: 6, taPauseProb: 3, taPauseEn: true, taLyricProb: 35 };
+const DEF_SETTINGS = { floatEn: true, reqProb: 5, cooldownMs: 600000, widgetCoverMode: 'song', taNextProb: 15, taRandProb: 10, taModeProb: 5, taFavProb: 20, taReserveProb: 6, taPauseProb: 3, taPauseEn: true, taLyricProb: 35, taLyricMin: 1, taLyricMax: 4 };
 let settings = Object.assign({}, DEF_SETTINGS);
 function probOf(v, def) { const n = (typeof v === 'number' && !isNaN(v)) ? v : def; return Math.max(0, Math.min(100, n)); }
 let currentId = null;
@@ -631,8 +631,10 @@ if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) return; // 纯标点/符号行不发
 if (/未经许可|不得翻唱|版权|制作发行|录音制作者/.test(t)) return;
 pool.push(t);
 });
-if (pool.length < 2) return '';
-const n = Math.min(pool.length, 2 + Math.floor(Math.random() * 2)); // 2~3 句
+if (pool.length < 1) return '';
+const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));
+const maxN = Math.max(minN, Math.min(4, Number(settings.taLyricMax) || 4));
+const n = Math.min(pool.length, minN + Math.floor(Math.random() * (maxN - minN + 1)));
 const start = Math.floor(Math.random() * (pool.length - n + 1));
 return pool.slice(start, start + n).join('\n');
 }
@@ -5220,7 +5222,9 @@ window.openTCPanel('音乐设置', '' +
 '<div class="gs-row"><span>他收藏歌曲概率</span><div class="stepper" id="sm-set-favprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-favprob-val" readonly><button class="stp-max">+</button></div></div>' +
 '<div class="sm-set-hint">你播放歌曲听一会儿后，他有概率把这首歌收进「他的收藏」（音乐页收藏 tab 右边可查看；已收藏过的歌不重复判定，两次收藏间隔至少 90 秒）</div>' +
 '<div class="gs-row"><span>他从歌词挑句发给你概率</span><div class="stepper" id="sm-set-lyricprob" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricprob-val" readonly><button class="stp-max">+</button></div></div>' +
-'<div class="sm-set-hint">播放歌曲时他有概率从这首歌的歌词里随机挑连续 2~3 句发到聊天（左气泡歌词卡，带封面/歌名/歌手，正常消息提醒）；会跳过作词/作曲/编曲等制作信息行。同一遍播放只判定一次，临近结尾不补发，设 0 = 关闭</div>' +
+'<div class="gs-row"><span>每次最少几句</span><div class="stepper" id="sm-set-lyricmin" data-min="1" data-max="4" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricmin-val" readonly><button class="stp-max">+</button></div></div>' +
+'<div class="gs-row"><span>每次最多几句</span><div class="stepper" id="sm-set-lyricmax" data-min="1" data-max="4" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="sm-set-lyricmax-val" readonly><button class="stp-max">+</button></div></div>' +
+'<div class="sm-set-hint">播放歌曲时他有概率从这首歌的歌词里随机挑一段连续句子发到聊天（左气泡歌词卡，带封面/歌名/歌手，正常消息提醒）；句数按上面「最少 ~ 最多」随机（默认 1~4 句），会跳过作词/作曲/编曲等制作信息行。同一遍播放只判定一次，临近结尾不补发，概率设 0 = 关闭</div>' +
 '<div class="sm-set-row"><span>本地音频缓存</span><span id="sm-storage-use" style="color:var(--muted);font-size:12px">计算中…</span></div>' +
 '<div class="mail-actions"><button class="cc-tool" id="sm-diag-req">诊断邀请</button><button class="cc-tool" id="sm-clear-cache">清理本地音频缓存</button><button class="cc-tool" id="sm-set-close">关闭</button></div>');
 document.getElementById('sm-set-close').addEventListener('click', () => { document.getElementById('tc-mask').hidden = true; });
@@ -5271,6 +5275,33 @@ bindProbStep('sm-set-modep', 'taModeProb', 5, 100);
 bindProbStep('sm-set-pauseprob', 'taPauseProb', 3, 100);
 bindProbStep('sm-set-favprob', 'taFavProb', 20, 100);
 bindProbStep('sm-set-lyricprob', 'taLyricProb', 35, 100);
+const bindLyricCountStep = (id, key, def) => {
+const valEl = document.getElementById(id + '-val');
+const box = document.getElementById(id);
+if (!valEl || !box) return;
+const norm = (v) => Math.max(1, Math.min(4, parseInt(v, 10) || def));
+valEl.value = norm(settings[key]);
+const set = (nv) => {
+nv = norm(nv);
+settings[key] = nv;
+if (key === 'taLyricMin' && (Number(settings.taLyricMax) || 4) < nv) {
+settings.taLyricMax = nv;
+const mx = document.getElementById('sm-set-lyricmax-val');
+if (mx) mx.value = nv;
+}
+if (key === 'taLyricMax' && (Number(settings.taLyricMin) || 1) > nv) {
+settings.taLyricMin = nv;
+const mn = document.getElementById('sm-set-lyricmin-val');
+if (mn) mn.value = nv;
+}
+valEl.value = nv;
+saveSettings();
+};
+box.querySelector('.stp-min').addEventListener('click', () => set((parseInt(valEl.value, 10) || def) - 1));
+box.querySelector('.stp-max').addEventListener('click', () => set((parseInt(valEl.value, 10) || def) + 1));
+};
+bindLyricCountStep('sm-set-lyricmin', 'taLyricMin', 1);
+bindLyricCountStep('sm-set-lyricmax', 'taLyricMax', 4);
 const syncPauseEn = function () {
 const box = document.getElementById('sm-set-pauseprob');
 if (box) box.style.opacity = settings.taPauseEn ? '' : '0.4';

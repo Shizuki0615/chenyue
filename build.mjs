@@ -6891,6 +6891,11 @@ const FIX_SENTINELS = [
   { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
   { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
   { name: '#1603e 旧 index 缓存时 js 现场补建手输行（删＝新版 js 配旧模板完全没有手输入口，P2 看不到）', file: 'js/personalize.js', needle: 'if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);' },
+  // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
+  { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
+  { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
+  { name: '#1604c 最少/最多句数设置行（删＝用户没有调整入口）', file: 'js/music-player.js', needle: 'id="sm-set-lyricmin"' },
+  { name: '#1604d 最少/最多联动（删＝可设出 最少>最多 的无效范围）', file: 'js/music-player.js', needle: 'if (key === \'taLyricMin\' && (Number(settings.taLyricMax) || 4) < nv) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
