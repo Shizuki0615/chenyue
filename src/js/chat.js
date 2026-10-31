@@ -12004,11 +12004,12 @@ if (segs.length <= 1) return false;
 return segs.indexOf(o) >= 0;
 }
 window.mochiAnswerHits = mochiAnswerHits;
-// v3.26.x #809：问问TA「思考时间（秒）」——同帮我决定/多人决定的 stepper（1~10 秒），
+// v3.26.x #809：问问TA「思考时间（秒）」——同帮我决定/多人决定的 stepper（下限 1 秒），
 // per-cid 持久化（store 即当前桌面命名空间），默认 3 秒＝原随机 1.5~4 秒的常用档；
 // 只在 ask（问问TA）模式显示，invite（邀请TA）模式隐藏（.gs-row[hidden] 已有 #727 兜底）。
+// 2026-10-31：上限 10 秒已去掉（用户直派）——只保留「至少 1 秒」的下限，脏值/0/负数回退 3。
 function askThinkSecsLoad() {
-try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1 && n <= 10) ? n : 3; } catch (e) { return 3; }
+try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1) ? n : 3; } catch (e) { return 3; }
 }
 function ensureChatAskThinkRow() {
 if (!chatAskPanel) return;
@@ -12018,13 +12019,15 @@ let row = chatAskPanel.querySelector('.chat-ask-think-row');
 if (!row) {
 row = document.createElement('div');
 row.className = 'gs-row chat-ask-think-row';
-row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-max="10" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
+// 2026-10-31：不设 data-max＝无上限（原 10 秒封顶已去掉），仍保留下限 1
+row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
 const actions = askBody.querySelector('.chat-ask-actions');
 if (actions) askBody.insertBefore(row, actions); else askBody.appendChild(row);
 const val = row.querySelector('.stp-val');
 const clampSave = () => {
 let n = parseInt(val.value, 10);
-if (!(n >= 1 && n <= 10)) n = 3;
+// 2026-10-31：只夹下限——用户可以把思考时间设到 10 秒以上（不设上限）
+if (!(n >= 1)) n = 3;
 val.value = n;
 store.set('ask-think-secs', String(n));
 };
