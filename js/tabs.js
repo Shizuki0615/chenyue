@@ -105,25 +105,64 @@ setPage.hidden = false;
 }
 })();
 (function () {
-const inPwa = window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
-if (!inPwa) return;
-const PAGES = Array.from(document.querySelectorAll('.page'));
-function visiblePage() { return PAGES.find(p => !p.hidden); }
+const inPwa = !!(window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
+const MAIN_PAGES = { 'page-phone': 1, 'page-chat': 1, 'page-chatcard': 1, 'page-setting': 1 };
+function visiblePage() {
+const live = document.querySelectorAll('.page');
+for (let i = 0; i < live.length; i++) if (!live[i].hidden) return live[i];
+return null;
+}
 const first = visiblePage();
-if (first) history.replaceState({ page: first.id }, '');
-let stack = [];
+if (inPwa && first) history.replaceState({ page: first.id }, '');
+const stack = [];
 if (first) stack.push(first.id);
-const mo = new MutationObserver(() => {
+function currentId() {
 const v = visiblePage();
+return v ? v.id : '';
+}
+function show(id) {
+const t = id ? document.getElementById(id) : null;
+if (!t) return false;
+try { if (window.__mochiLeaveSnap) window.__mochiLeaveSnap('switch'); } catch (e) {}
+document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== id; });
+try { if (window.exitDecor) window.exitDecor(); } catch (e) {}
+return true;
+}
+let recordTimer = 0;
+function recordNow() {
+recordTimer = 0;
+const v = currentId();
 if (!v) return;
-const last = stack.length ? stack[stack.length - 1] : null;
-if (last !== v.id) {
-stack.push(v.id);
-history.pushState({ page: v.id }, '');
+if (stack.length && stack[stack.length - 1] === v) return;
+if (inPwa) { try { history.pushState({ page: v }, ''); } catch (e) {} }
+stack.push(v);
+if (stack.length > 60) stack.splice(0, stack.length - 60);
+}
+const mo = new MutationObserver((muts) => {
+for (let i = 0; i < muts.length; i++) {
+const t = muts[i].target;
+if (t && t.classList && t.classList.contains('page') && muts[i].attributeName === 'hidden') {
+if (!recordTimer) recordTimer = setTimeout(recordNow, 0);
+return;
+}
 }
 });
-PAGES.forEach(p => mo.observe(p, { attributes: true, attributeFilter: ['hidden'] }));
-window.addEventListener('popstate', () => {
+mo.observe(document.body, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+function goBack(fallback) {
+const cur = currentId();
+if (cur && (!stack.length || stack[stack.length - 1] !== cur)) stack.push(cur);
+if (stack.length > 1) stack.pop();
+else { stack.length = 0; stack.push(fallback || 'page-phone'); }
+const target = stack[stack.length - 1] || fallback || 'page-phone';
+if (!show(target)) {
+if (cur) { stack.length = 0; stack.push(cur); }
+return cur;
+}
+if (inPwa) { try { history.pushState({ page: target }, ''); } catch (e) {} }
+return target;
+}
+window.mochiGoBack = goBack;
+function closeLayers() {
 const layers = ['img-view-mask', 'modal-mask', 'qa-mask', 'tc-mask', 'poke-card', 'emoji-panel',
 'chat-more-panel', 'chat-search', 'chat-decision-panel', 'chat-divine-panel', 'chat-snake-panel',
 'avlib-card', 'ck-panel', 'feed-notice-panel', 'desk-msg', 'chat-ask-panel', 'msg-actions',
@@ -131,29 +170,72 @@ const layers = ['img-view-mask', 'modal-mask', 'qa-mask', 'tc-mask', 'poke-card'
 'screen-adj-panel'];
 for (const id of layers) {
 const el = document.getElementById(id);
-if (el && !el.hidden) { el.hidden = true; return; }
+if (!el || el.hidden) continue;
+if (id === 'modal-mask') {
+const cancel = document.getElementById('modal-cancel');
+if (cancel) { try { cancel.click(); return true; } catch (e) {} }
+}
+el.hidden = true;
+return true;
 }
 const mg = document.querySelector('.mg-mask:not([hidden])');
-if (mg) { mg.hidden = true; return; }
+if (mg) { mg.hidden = true; return true; }
 const callMask = document.getElementById('call-mask');
 if (callMask && !callMask.hidden) {
 const reject = document.getElementById('call-reject-btn');
-if (reject && !reject.hidden) { reject.click(); return; }
+if (reject && !reject.hidden) { reject.click(); return true; }
 const hang = document.getElementById('call-hang-btn');
-if (hang && !hang.hidden) { hang.click(); return; }
+if (hang && !hang.hidden) { hang.click(); return true; }
 callMask.hidden = true;
+return true;
+}
+return false;
+}
+function kbOpen() {
+try { const k = window.__mochiAndroidKb && window.__mochiAndroidKb(); if (k && k.kbActive) return true; } catch (e) {}
+const ae = document.activeElement;
+const phone = document.querySelector('.phone');
+return !!(ae && phone && phone.contains(ae) &&
+(ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable));
+}
+function dismissKb() {
+if (!kbOpen()) return false;
+try { if (window.mochiKbDismiss) { window.mochiKbDismiss(); return true; } } catch (e) {}
+try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+return true;
+}
+function initPlusBack() {
+if (!window.plus || !window.plus.key || window.__mochiPlusBackBound) return;
+window.__mochiPlusBackBound = true;
+window.plus.key.addEventListener('backbutton', function () {
+if (dismissKb()) return;
+if (closeLayers()) return;
+const cur = currentId();
+if (MAIN_PAGES[cur]) {
+if (cur !== 'page-phone') {
+stack.length = 0;
+stack.push('page-phone');
+show('page-phone');
 return;
 }
+try { if (window.plus.runtime && window.plus.runtime.quit) window.plus.runtime.quit(); } catch (e) {}
+return;
+}
+goBack('page-phone');
+}, false);
+}
+if (window.plus) { try { initPlusBack(); } catch (e) {} }
+document.addEventListener('plusready', function () { try { initPlusBack(); } catch (e) {} }, false);
+if (inPwa) {
+window.addEventListener('popstate', function () {
+if (closeLayers()) return;
 if (stack.length <= 1) return;
 stack.pop();
 const target = stack[stack.length - 1];
-try { if (window.__mochiLeaveSnap) window.__mochiLeaveSnap('switch'); } catch (e) {}
-PAGES.forEach(p => { p.hidden = p.id !== target; });
-try {
-if (window.exitDecor) window.exitDecor();
-} catch (e) {}
-history.pushState({ page: target }, '');
+if (target) show(target);
+try { history.pushState({ page: target }, ''); } catch (e) {}
 });
+}
 })();
 if (window.__mochiLoaded) window.__mochiLoaded.push("tabs.js");
 } catch (__e) { if (window.__mochiErrLoaded) window.__mochiErrLoaded.push("tabs.js"); try { console.error("[JS] tabs.js", __e && __e.message || __e); } catch (x) {} if (window.__jsErrors) window.__jsErrors.push("[tabs.js] " + String(__e && __e.message || __e)); } })();

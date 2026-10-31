@@ -798,7 +798,8 @@
       // 以为回信没成功（红米 K80 Chrome 反馈「回了信不显示、重新点也看不到回信」）。
       // 同步先 showPage+selectMailTab 让 page-mail 与目标 tab 可见，再 render() 确保
       // innerHTML 在元素可见时写入（防御个别内核对 hidden 元素 innerHTML 渲染延迟）。
-      showPage('page-mail');
+      // #1608：寄信/回信成功回信箱算「回退」，走页面栈（否则信箱会再入栈，物理返回会退回写信页）
+      if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
       selectMailTab('in');
       render();
       updateBadge();
@@ -1103,7 +1104,8 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     // 内核（红米 K80 Chrome 实测）对 hidden 元素 innerHTML 渲染延迟，寄信后列表空白。
     // 改为 DOM 可见后再渲染，并保留前一次 render() 兜底（双渲染，零副作用）。
     render();
-    showPage('page-mail');
+    // #1608：寄出后回信箱算「回退」，走页面栈（否则物理返回会退回写信页）
+    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
     selectMailTab('out');
     render();
   }
@@ -1664,6 +1666,8 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
   }
   const mailBack = document.getElementById('mail-back');
   if (mailBack) mailBack.addEventListener('click', () => {
+    // #1608：按来源返回——桌面进信箱回桌面，聊天点信件提示进信箱回聊天
+    if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }
     document.querySelectorAll('.page').forEach(p => p.hidden = true);
     const phone = document.getElementById('page-phone');
     if (phone) phone.hidden = false;
@@ -1678,12 +1682,23 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     });
   }
   const mailWriteBack = document.getElementById('mail-write-back');
-  if (mailWriteBack) mailWriteBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); showPage('page-mail'); render(); });
+  if (mailWriteBack) mailWriteBack.addEventListener('click', () => {
+    if (window.closeEmojiPanel) window.closeEmojiPanel();
+    // #1608：写信返回信箱走页面栈（正常栈顶就是信箱），兜底仍信箱
+    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+    render();
+  });
   const mailSend = document.getElementById('mail-send');
   if (mailSend) mailSend.addEventListener('click', sendLetter);
   // 回信页：返回 / 寄出
   const mailReplyBack = document.getElementById('mail-reply-back');
-  if (mailReplyBack) mailReplyBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); viewLetter = null; showPage('page-mail'); render(); });
+  if (mailReplyBack) mailReplyBack.addEventListener('click', () => {
+    if (window.closeEmojiPanel) window.closeEmojiPanel();
+    viewLetter = null;
+    // #1608：回信返回信箱走页面栈（正常栈顶就是信箱），兜底仍信箱
+    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+    render();
+  });
   const mailReplySend = document.getElementById('mail-reply-send');
   if (mailReplySend) mailReplySend.addEventListener('click', submitReply);
   // tab 切换（v3.10.x 抽成函数：寄信成功后自动跳「寄出的信」复用）

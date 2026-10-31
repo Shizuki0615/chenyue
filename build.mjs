@@ -6892,6 +6892,12 @@ const FIX_SENTINELS = [
   { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
   { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
   { name: '#1603e 旧 index 缓存时 js 现场补建手输行（删＝新版 js 配旧模板完全没有手输入口，P2 看不到）', file: 'js/personalize.js', needle: 'if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);' },
+  // ==== 2026-10-31 #1608 套壳 App 智能返回（plus 物理键/侧滑 + 信箱按来源返回）====
+  { name: '#1608a HBuilderX 套壳注册安卓返回键（删＝物理键/侧滑直接退出应用，页面栈与弹窗优先全失效）', file: 'js/tabs.js', needle: "window.plus.key.addEventListener('backbutton', function () {" },
+  { name: '#1608b 桌面再按返回退出整个 App（删＝主页返回键无动作/被系统直接杀进程，用户要求防退出失效）', file: 'js/tabs.js', needle: 'try { if (window.plus.runtime && window.plus.runtime.quit) window.plus.runtime.quit(); } catch (e) {}' },
+  { name: '#1608c 有上一页就回上一页（删＝信箱返回永远回桌面，聊天信件提示进来也回不到聊天）', file: 'js/tabs.js', needle: 'if (stack.length > 1) stack.pop();' },
+  { name: '#1608d 信箱顶栏返回改走页面栈（删＝桌面/聊天进信箱都固定回桌面，用户在聊天的来源丢失）', file: 'js/mail.js', needle: "if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }" },
+  { name: '#1608e 寄信/回信/写信返回都走页面栈（删＝信箱重复入栈，物理返回从信箱退回写信页）', file: 'js/mail.js', needle: "if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

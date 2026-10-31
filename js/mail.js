@@ -523,7 +523,7 @@ replyPendingSave(pending);
 }
 save(list);
 viewLetter = null;
-showPage('page-mail');
+if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
 selectMailTab('in');
 render();
 updateBadge();
@@ -735,7 +735,7 @@ if (input && input.__ceBox) input.__ceBox.textContent = '';
 if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 写了一封信', { mailNotice: true });
 toast('信件已寄出');
 render();
-showPage('page-mail');
+if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
 selectMailTab('out');
 render();
 }
@@ -1143,6 +1143,7 @@ openMailPage();
 }
 const mailBack = document.getElementById('mail-back');
 if (mailBack) mailBack.addEventListener('click', () => {
+if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 const phone = document.getElementById('page-phone');
 if (phone) phone.hidden = false;
@@ -1156,11 +1157,20 @@ showPage('page-mail-write');
 });
 }
 const mailWriteBack = document.getElementById('mail-write-back');
-if (mailWriteBack) mailWriteBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); showPage('page-mail'); render(); });
+if (mailWriteBack) mailWriteBack.addEventListener('click', () => {
+if (window.closeEmojiPanel) window.closeEmojiPanel();
+if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+render();
+});
 const mailSend = document.getElementById('mail-send');
 if (mailSend) mailSend.addEventListener('click', sendLetter);
 const mailReplyBack = document.getElementById('mail-reply-back');
-if (mailReplyBack) mailReplyBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); viewLetter = null; showPage('page-mail'); render(); });
+if (mailReplyBack) mailReplyBack.addEventListener('click', () => {
+if (window.closeEmojiPanel) window.closeEmojiPanel();
+viewLetter = null;
+if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+render();
+});
 const mailReplySend = document.getElementById('mail-reply-send');
 if (mailReplySend) mailReplySend.addEventListener('click', submitReply);
 function selectMailTab(name) {
