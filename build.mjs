@@ -3875,7 +3875,8 @@ const FIX_SENTINELS = [
   // ==== 2026-09-19 #809 问问TA 发单题「思考时间（秒）」可自定义（用户直派「和帮我决定群来决定一样的自定义思考时间，默认就是现在的秒」）——半框注入同款 stepper（1~10 秒，点击即持久化 per-cid 键 ask-think-secs），ask 分支延迟改 askThinkSecsLoad()*1000（默认 3 秒＝原随机 1500+rand*2500 常用档；invite 分支保持随机不变）。行为断言见 tools/verify-ask-think-time.mjs ====
   { name: '#809a 思考时间点击即持久化（删＝关面板重开回默认，设置形同虚设）', file: 'js/chat.js', needle: "store.set('ask-think-secs', String(n));" },
   { name: '#809b 半框思考时间 stepper 行（删＝设置入口消失，功能不可达）', file: 'js/chat.js', needle: 'id="chat-ask-think"' },
-  { name: '#809c ask 回答延迟读设置（改回固定随机＝用户设置不生效，思考时间恒 1.5~4 秒）', file: 'js/chat.js', needle: '}, askThinkSecsLoad() * 1000);' },
+  // 2026-10-31：思考时间改「上限」语义后，延迟由 askThinkDelayMs 读设置并随机；锚点随实现更新
+  { name: '#809c ask 回答延迟读设置（改回固定随机＝用户设置不生效，思考时间恒 1.5~4 秒）', file: 'js/chat.js', needle: '}, askThinkDelayMs());' },
   { name: '#813a 聊天设置头像：武装与激活拆两步（armHead 只武装、headActivate 只激活；删＝回到「arm+click 融合且挂在 onMiss 兜底上」，label 转发成功的内核上选完图静默丢弃）', file: 'js/chat-settings.js', needle: 'function armHead(cb) { headCb = cb; }' },
   { name: '#813b 删除型：旧融合式激活函数不得回流（复活＝label 转发成功的内核永远拿不到回调）', file: 'js/chat-settings.js', needle: 'function pickHead(', absent: true },
   { name: '#811a 头像入口按作者角色进页（删/改回只传 owner＝点我的头像又进联系人个人页，主诉③复发）', file: 'js/feed.js', needle: "openFeedAll(av.dataset.owner, av.dataset.role === 'me' ? 'me' : 'ta');" },
@@ -6906,6 +6907,10 @@ const FIX_SENTINELS = [
   { name: '#1606a 读取只保下限（删＝又夹回 1~10 秒）', file: 'js/chat.js', needle: 'return (n >= 1) ? n : 3;' },
   { name: '#1606b 思考时间 stepper 不设上限（删＝又写回 data-max=10）', file: 'js/chat.js', needle: 'id="chat-ask-think" data-min="1" data-step="1"' },
   { name: '#1606c 保存只夹下限（删＝点 + 超过 10 秒又被顶回 3）', file: 'js/chat.js', needle: 'if (!(n >= 1)) n = 3;' },
+  // ==== 2026-10-31 #1607 问问TA 思考时间＝上限语义＋可手输 ====
+  { name: '#1607a 随机延迟函数（删＝又变成固定等满设定秒数）', file: 'js/chat.js', needle: 'function askThinkDelayMs() {' },
+  { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
+  { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

@@ -12011,6 +12011,13 @@ window.mochiAnswerHits = mochiAnswerHits;
 function askThinkSecsLoad() {
 try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1) ? n : 3; } catch (e) { return 3; }
 }
+// 2026-10-31：设定值＝最长等待，实际回答时间是 1 秒 ~ 上限 之间随机（类似聊天回复的随机延迟）：
+// 设 30 秒也可能 3 秒就答，只是最坏情况等到 30 秒。
+function askThinkDelayMs() {
+const max = askThinkSecsLoad();
+if (max <= 1) return 1000;
+return Math.round((1 + Math.random() * (max - 1)) * 1000);
+}
 function ensureChatAskThinkRow() {
 if (!chatAskPanel) return;
 const askBody = chatAskPanel.querySelector('.chat-ask-body');
@@ -12020,7 +12027,7 @@ if (!row) {
 row = document.createElement('div');
 row.className = 'gs-row chat-ask-think-row';
 // 2026-10-31：不设 data-max＝无上限（原 10 秒封顶已去掉），仍保留下限 1
-row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
+row.innerHTML = '<span>最长思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
 const actions = askBody.querySelector('.chat-ask-actions');
 if (actions) askBody.insertBefore(row, actions); else askBody.appendChild(row);
 const val = row.querySelector('.stp-val');
@@ -12033,6 +12040,17 @@ store.set('ask-think-secs', String(n));
 };
 row.querySelector('.stp-min').addEventListener('click', (e) => { if (e) e.stopPropagation(); val.value = (parseInt(val.value, 10) || 3) - 1; clampSave(); });
 row.querySelector('.stp-max').addEventListener('click', (e) => { if (e) e.stopPropagation(); val.value = (parseInt(val.value, 10) || 3) + 1; clampSave(); });
+// 2026-10-31：点数字可直接输入（设 30 秒不必点 27 次 +）；非法值不保存
+val.addEventListener('click', (e) => {
+if (e) e.stopPropagation();
+if (!window.openModal) return;
+window.openModal('最长思考时间（秒）', String(askThinkSecsLoad()), (v) => {
+const n = parseInt(v, 10);
+if (!(n >= 1)) { toast('请输入 1 以上的整数'); return; }
+val.value = n;
+clampSave();
+}, { inputmode: 'numeric', placeholder: '1 以上的整数' });
+});
 }
 row.hidden = chatAskMode !== 'ask';
 row.querySelector('.stp-val').value = askThinkSecsLoad();
@@ -12327,7 +12345,7 @@ if (window.renderAskRecords) window.renderAskRecords();
 setTimeout(() => { if (!sameCid()) return; maybeFollowupAskCard(); }, 1200);
 }
 applyAskAnswer();
-}, askThinkSecsLoad() * 1000); // #809：思考时间用户可调（1~10 秒），默认 3 秒；原 1500+rand*2500
+}, askThinkDelayMs()); // #809：思考时间用户可调（默认 3 秒）；2026-10-31：改为「上限」语义，1 秒~上限随机
 }
 }
 // 2026-10-28：邀请里点名「听歌 / 读书」→ 他同意后直接把用户带到对应模块页。
