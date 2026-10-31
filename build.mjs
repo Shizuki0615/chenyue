@@ -6902,6 +6902,10 @@ const FIX_SENTINELS = [
   { name: '#1605c 点行加选/再点取消（删＝又变成一选就顶掉上一句）', file: 'js/music-player.js', needle: 'if (at >= 0) arr.splice(at, 1); else arr.push(i);' },
   { name: '#1605d 发送时多句合并（删＝只发最后选中的一句）', file: 'js/music-player.js', needle: 'const line = lyricSelIndexes().map(function (i) { return lyricState.lines[i].text; }).join(\'\\n\');' },
   { name: '#1605e 选择条显示已选句数（删＝多选后不知道选了几句）', file: 'js/music-player.js', needle: '\'已选 \' + idxs.length + \' 句：\'' },
+  // ==== 2026-10-31 #1606 问问TA 思考时间去掉 10 秒上限 ====
+  { name: '#1606a 读取只保下限（删＝又夹回 1~10 秒）', file: 'js/chat.js', needle: 'return (n >= 1) ? n : 3;' },
+  { name: '#1606b 思考时间 stepper 不设上限（删＝又写回 data-max=10）', file: 'js/chat.js', needle: 'id="chat-ask-think" data-min="1" data-step="1"' },
+  { name: '#1606c 保存只夹下限（删＝点 + 超过 10 秒又被顶回 3）', file: 'js/chat.js', needle: 'if (!(n >= 1)) n = 3;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

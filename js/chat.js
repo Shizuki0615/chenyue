@@ -9308,7 +9308,7 @@ return segs.indexOf(o) >= 0;
 }
 window.mochiAnswerHits = mochiAnswerHits;
 function askThinkSecsLoad() {
-try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1 && n <= 10) ? n : 3; } catch (e) { return 3; }
+try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1) ? n : 3; } catch (e) { return 3; }
 }
 function ensureChatAskThinkRow() {
 if (!chatAskPanel) return;
@@ -9318,13 +9318,13 @@ let row = chatAskPanel.querySelector('.chat-ask-think-row');
 if (!row) {
 row = document.createElement('div');
 row.className = 'gs-row chat-ask-think-row';
-row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-max="10" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
+row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
 const actions = askBody.querySelector('.chat-ask-actions');
 if (actions) askBody.insertBefore(row, actions); else askBody.appendChild(row);
 const val = row.querySelector('.stp-val');
 const clampSave = () => {
 let n = parseInt(val.value, 10);
-if (!(n >= 1 && n <= 10)) n = 3;
+if (!(n >= 1)) n = 3;
 val.value = n;
 store.set('ask-think-secs', String(n));
 };
