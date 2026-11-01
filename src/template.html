@@ -51,6 +51,113 @@
 </script>
 </head>
 <body>
+  <!-- ===== 开屏品牌动画（2026-11-01 作者直派：一纸微光 / 每天首次完整版 / 保持隐形加载） =====
+       标题＝辰光玥影，署名＝温溯辰&任姝玥（按要求不使用 @ 符号）。
+       本层只负责启动视觉，不承载公告/年龄/密码；数据闸仍是隐形加载的 #splash。
+       样式在 src/css/base.css「开屏品牌动画」段，时间轴由下方内联脚本控制。
+       为什么内联：开屏必须首帧就位，外置 JS 晚到或失败会造成错帧/空挡；参照头部主题脚本。 -->
+  <div class="intro" id="intro" role="presentation" aria-hidden="true">
+    <div class="intro-stage">
+      <div class="intro-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="intro-heart" pathLength="1" d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0112 6.4a5.3 5.3 0 019.3 5.6c-1.8 4.3-9.3 9-9.3 9z"/></svg>
+      </div>
+      <div class="intro-title">辰光玥影</div>
+      <div class="intro-sign">温溯辰&amp;任姝玥</div>
+    </div>
+    <div class="intro-wait" id="intro-wait">
+      <div class="intro-wait-heart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0112 6.4a5.3 5.3 0 019.3 5.6c-1.8 4.3-9.3 9-9.3 9z"/></svg>
+      </div>
+      <div class="intro-wait-text">正在加载数据</div>
+    </div>
+    <div class="intro-sweep"></div>
+  </div>
+  <script>
+  /* 开屏品牌动画时间轴：只负责完整/轻量、等待态、跳过与退场。
+     放行信号复用 clock.js 给 #splash 加的 .hide（数据就绪）；不改 #splash 任何逻辑。 */
+  (function () {
+    var el = document.getElementById('intro');
+    if (!el) return;
+    var reduce = false;
+    try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    var full = true;
+    try {
+      var d = new Date();
+      var today = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+      full = localStorage.getItem('xy-home-v2:intro-seen-date') !== today;
+      if (full) localStorage.setItem('xy-home-v2:intro-seen-date', today);
+    } catch (e) {}
+    var mode = reduce ? 'lite' : (full ? 'full' : 'lite');
+    el.className = 'intro intro-' + mode + (reduce ? ' intro-reduce' : '');
+    el.classList.add('intro-pre');
+
+    var t0 = Date.now();
+    var minOut = reduce ? 80 : (full ? 1050 : 320);
+    var waitAt = reduce ? 500 : (full ? 1400 : 700);
+    var outDur = reduce ? 180 : (full ? 330 : 180);
+    var ready = false, out = false, waiting = false, skipped = false;
+    var outTimer = null, waitTimer = null, pollTimer = null, stopTimer = null;
+
+    function clearTimers() {
+      if (outTimer) { clearTimeout(outTimer); outTimer = null; }
+      if (waitTimer) { clearTimeout(waitTimer); waitTimer = null; }
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
+    }
+    function beginOut() {
+      if (out) return;
+      out = true;
+      clearTimers();
+      el.classList.remove('is-waiting');
+      el.classList.add('is-out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, outDur + 40);
+    }
+    function splashReady() {
+      var s = document.getElementById('splash');
+      if (s) return !s.parentNode || s.classList.contains('hide');
+      return document.readyState !== 'loading';
+    }
+    function onReady() {
+      if (ready || out) return;
+      ready = true;
+      clearTimers();
+      if (skipped) { beginOut(); return; }
+      var elapsed = Date.now() - t0;
+      if (elapsed >= minOut) beginOut();
+      else outTimer = setTimeout(beginOut, minOut - elapsed);
+    }
+    function showWait() {
+      if (out || waiting || ready) return;
+      waiting = true;
+      el.classList.add('is-waiting');
+    }
+    function kick() {
+      if (el.classList.contains('is-in')) return;
+      el.classList.remove('intro-pre');
+      el.classList.add('is-in');
+    }
+    if (window.requestAnimationFrame) {
+      requestAnimationFrame(function () { requestAnimationFrame(kick); });
+    } else {
+      setTimeout(kick, 30);
+    }
+    setTimeout(kick, 160);
+    waitTimer = setTimeout(showWait, waitAt);
+    if (splashReady()) onReady();
+    else {
+      pollTimer = setInterval(function () { if (splashReady()) onReady(); }, 200);
+      stopTimer = setTimeout(function () { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }, 9000);
+    }
+    var evt = window.PointerEvent ? 'pointerdown' : 'touchstart';
+    el.addEventListener(evt, function (e) {
+      e.preventDefault();
+      if (out) return;
+      skipped = true;
+      if (ready) beginOut();
+      else showWait();
+    }, window.PointerEvent ? { passive: false } : false);
+  })();
+  </script>
   <!-- 开屏加载动画 -->
   <div class="splash" id="splash">
     <div class="splash-box" id="splash-box">
