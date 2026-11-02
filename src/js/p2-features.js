@@ -2024,6 +2024,16 @@ if (ckRefresh) {
     const panel = document.getElementById('loc-panel');
     const nameEl = document.getElementById('loc-name');
     if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
+    // #1612：全屏面板不再盖住顶部状态栏——量出状态栏底边到手机壳顶的距离，
+    // 面板从这条线往下铺，Mochi/时间/电量常驻可见（桌面壳顶 padding 也一并算进去）。
+    try {
+      const ph = document.querySelector('.phone');
+      const sb = document.querySelector('.phone > .statusbar');
+      if (ph && sb) {
+        const h = Math.round(sb.getBoundingClientRect().bottom - ph.getBoundingClientRect().top);
+        if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');
+      }
+    } catch (e) {}
     if (panel) panel.classList.add('loc-full');
     // v3.13.x：刷新方位感知（含漂移检查）+ 渲染感知圆
     if (window.refreshSense) window.refreshSense();

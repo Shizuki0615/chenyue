@@ -1715,6 +1715,14 @@ function openLocPanel() {
 const panel = document.getElementById('loc-panel');
 const nameEl = document.getElementById('loc-name');
 if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
+try {
+const ph = document.querySelector('.phone');
+const sb = document.querySelector('.phone > .statusbar');
+if (ph && sb) {
+const h = Math.round(sb.getBoundingClientRect().bottom - ph.getBoundingClientRect().top);
+if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');
+}
+} catch (e) {}
 if (panel) panel.classList.add('loc-full');
 if (window.refreshSense) window.refreshSense();
 renderLocPanel();

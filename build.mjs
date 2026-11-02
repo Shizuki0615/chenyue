@@ -6908,6 +6908,11 @@ const FIX_SENTINELS = [
   { name: '#1611a 桌面壳顶部留白变量（删＝全屏页恢复 padding:0，桌面模拟器下状态栏上移 16px）', file: 'css/base.css', needle: '--phone-top-pad:16px;' },
   { name: '#1611b 全屏页按桌面顶部留白补回（删＝Mochi/时间/电量进应用后仍比桌面高 16px）', file: 'css/tabbar.css', needle: '.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }' },
   { name: '#1611c 全屏页状态栏左右 22px 对齐桌面（删＝全屏页状态栏比桌面左移 4px）', file: 'css/tabbar.css', needle: 'padding-left: calc(22px + var(--mochi-side-adj,0px));' },
+  // ==== 2026-11-02 #1612 位置面板全屏时顶部状态栏常驻 ====
+  { name: '#1612a 打开位置面板时实测状态栏底边（删＝面板从壳顶铺，Mochi/时间/电量被整块盖住）', file: 'js/p2-features.js', needle: "if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');" },
+  { name: '#1612b 全屏位置面板顶边下移到状态栏底边（删＝面板盖住顶栏，用户实报「这个页面没有顶栏」）', file: 'css/chat-pages.css', needle: 'top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;' },
+  { name: '#1612c 桌面壳形态面板顶边叠加壳顶偏移（删＝桌面模拟器里面板顶边比状态栏高 24px+）', file: 'css/chat-pages.css', needle: 'top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px));' },
+  { name: '#1612d 面板头部不再重复 safe-area 留白（删＝状态栏已占位后头部再空一截）', file: 'css/chat-pages.css', needle: '.loc-panel.loc-full .loc-head { padding:12px 16px; }' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
