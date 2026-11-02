@@ -6956,6 +6956,8 @@ const FIX_SENTINELS = [
   // ==== 2026-11-02 #1609 底栏选中块内缩 + 阴影收紧 ====
   { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区；内缩量 2/5，原 4/8 缩得过小）', file: 'css/tabbar.css', needle: 'top:2px; bottom:2px; left:5px; right:5px;' },
   { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },
+  // ==== 2026-11-02 #1610 已摸鱼「天」与今日情话首行对齐 ====
+  { name: '#1610a 已摸鱼正文上移 1px（删＝「天」比「我想陪着你」低 1px）', file: 'css/home.css', needle: 'height:45px; line-height:15px; margin-top:7px; overflow:hidden;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

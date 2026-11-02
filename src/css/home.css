@@ -200,8 +200,10 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    垂直居中，但情话正文高 45px、已摸鱼正文仅单行，内容总高不一致导致各自居中后
    两卡的「标题行 / 正文行」水平错位。给已摸鱼正文区同 45px 固定高 + 顶对齐，
    与情话卡结构一致，标题与正文首行即完全对齐。 */
+/* 2026-11-02：与「今日情话」首行严格对齐——实测「天」比「我想陪着你」低 1px
+   （16px 数字把整行基线拉低了 1px），上移 1px 消差。 */
 .mini-card[data-card-bg="fish"] .mc-b {
-  height:45px; line-height:15px; margin-top:8px; overflow:hidden;
+  height:45px; line-height:15px; margin-top:7px; overflow:hidden;
 }
 .mini-card[data-card-bg="fish"] .mc-b b { line-height:inherit; }
 
