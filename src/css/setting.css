@@ -91,6 +91,9 @@
   text-align:center; font-size:11px; color:#c0c0c0; letter-spacing:1px;
   padding:6px 0 2px;
 }
+/* #1617e：设置页底部防骗声明已按用户要求删除；旧 clock.js（缓存未换过来时）仍可能
+   动态回填 .set-alert，这里兜底隐藏，避免部分缓存下又看到它 */
+#page-setting .set-alert { display:none !important; }
 
 /* v3.6.x：设置页底部留白——.page 直接滚动（无 gs-scroll 容器），
    滚动到底最后一行设置项距底部导航栏仅 14px（page padding 4px + tabbar margin 10px），
