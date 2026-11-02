@@ -178,7 +178,9 @@ html { margin:0; padding:0; }
   opacity:0; pointer-events:none;
   transform:translateX(-40%) rotate(10deg);
 }
-.intro-full.is-in .intro-sweep { animation:intro-sweep .3s ease .7s both; }
+/* 2026-11-02 作者要求「扫光慢一些」：0.3s → 0.5s；延迟同步提前到 0.55s，
+   让扫光在 1.05s 退场开始前完整走完（0.55 + 0.5 = 1.05），不拖长开屏总时长 */
+.intro-full.is-in .intro-sweep { animation:intro-sweep .5s ease .55s both; }
 @keyframes intro-sweep {
   0% { opacity:0; transform:translateX(-40%) rotate(10deg); }
   22% { opacity:1; }
