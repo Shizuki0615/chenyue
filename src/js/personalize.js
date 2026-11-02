@@ -3086,14 +3086,8 @@ try {
         const tip = document.createElement('div');
         tip.style.cssText = 'font-size:10.5px;color:var(--muted,#999);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap';
         const tipTx = document.createElement('span');
-        tipTx.textContent = '正在调「' + item.label + '」，点色块即时生效';
-        const hexBtn = document.createElement('button');
-        hexBtn.textContent = '手输色值';
-        hexBtn.style.cssText = 'font-size:11px;padding:3px 8px;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);cursor:pointer';
-        hexBtn.addEventListener('click', () => {
-          openHexColorModal('输入' + item.label + '色值', item.curGet() || '#111111', (c) => { item.curSet(c); toast(item.label + '已设为 ' + String(c).toUpperCase()); });
-        });
-        tip.appendChild(tipTx); tip.appendChild(hexBtn);
+        tipTx.textContent = '正在调「' + item.label + '」，点色块或下方手输即时生效';
+        tip.appendChild(tipTx);
         paletteHost.appendChild(tip);
         // #1603：六个颜色行（主题色/边框/按钮文字/组件背景/按钮/爱心外框）都再给一格直接手输，
         // 不用多开一层弹窗——色值合法即生效，非法只提示不覆盖当前色。
