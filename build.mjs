@@ -6927,6 +6927,7 @@ const FIX_SENTINELS = [
   { name: '#1614d 信箱直达入口 openMailLetter（删＝没有按 id 开门的方法）', file: 'js/mail.js', needle: 'window.openMailLetter = openMailLetter;' },
   { name: '#1614e 信箱每次重画后补定位（删＝数据 ready/回信落地重画后高亮丢失）', file: 'js/mail.js', needle: 'try { applyMailJump(); } catch (e) {}' },
   { name: '#1614f 目标信件高亮样式（删＝定位到了但用户看不出是哪封）', file: 'css/chat-pages.css', needle: '.mail-item.mail-jump-hit' },
+  { name: '#1614i 信件高亮色跟随主题色（删＝又写死暖橙，用户要求高亮与主题色同步）', file: 'css/chat-pages.css', needle: 'color-mix(in srgb, var(--btn-bg, #111111) 22%, transparent)' },
   { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
   { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
