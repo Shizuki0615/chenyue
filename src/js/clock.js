@@ -13,7 +13,8 @@
 
 // ===== v3.26.x：防骗+署名禁倒卖声明「运行时回填」——删掉源码/产物里的字也没用 =====
 // template.html 里放的两条置顶声明是静态兜底；这里再用 JS 常量 + 官方远程源强制回填。
-// 只要元素缺失（被删）或文案被改，加载时就会重新写回「开屏顶部两条 + 设置页底部」。
+// 只要元素缺失（被删）或文案被改，加载时就会重新写回「开屏顶部两条」；设置页底部那条
+// 已按用户 #1617d 要求下线（不再回填，见 run() 注释）。
 // 想彻底去掉必须连这段逻辑一起删——等于改代码本身；有网时再从作者官方站点取权威文案
 // 覆盖本地（二传者自己部署的副本也会向官方域名拉取），防二改者连 JS 里的字一起改。
 // （本机制 f7a8b5c 首建、0965278 清理时被整块移除，现按防倒卖需求恢复并扩展双条。）
@@ -75,24 +76,6 @@
     }
     return box;
   }
-  // 设置页底部块（#page-setting 版本行下方）：防骗+署名禁倒卖 合并为一段
-  function ensureSettings() {
-    const page = document.getElementById('page-setting');
-    if (!page) return;
-    let box = page.querySelector('.set-alert');
-    const st = box ? (box.textContent || '') : '';
-    if (box && MARK_KEY && st.indexOf(MARK_KEY) > -1 && st.indexOf('免费') > -1 && st.indexOf('倒卖') > -1) return;
-    if (!box) {
-      box = document.createElement('div');
-      const anchor = page.querySelector('.ver-credit') || null;
-      page.insertBefore(box, anchor ? anchor.nextSibling : null);
-    }
-    box.className = 'set-alert';
-    box.setAttribute('data-anti-scam', 's');
-    box.innerHTML = '<b></b>';
-    box.querySelector('b').textContent = texts['alert'];
-    box.appendChild(document.createTextNode(' ' + texts['alert2']));
-  }
   // 远程时效公告（可选）：官方 notice.json 下发 { bulletin: { text, until } }，until=epoch 毫秒（缺省/过期自动摘除）。
   // 用途：临时插播场景（如发现倒卖，对所有联网副本含二传远程挂横幅）；notice.json 不带 bulletin 字段 = 完全不显示，零开销。
   let bulletin = null;
@@ -121,8 +104,7 @@
   function run() {
     // [开屏精简批 2026-10-15 退役] 静态「免费 · 署名 · 防倒卖」置顶卡已随作者直派的「开屏内容大规模删减」
     // 一并移除，故不再回填——原 #613/#621 的 ensureBar(BARS[0], null) 会在卡缺失时把它重建回必读区最顶。
-    // ensureSettings() 保留：设置页底部那条声明不属开屏、未删；ensureBulletin() 保留：notice.json 无 bulletin 字段时 inert。
-    ensureSettings();
+    // #1617d：设置页底部防骗声明按用户要求下线，不再回填；ensureBulletin() 保留：notice.json 无 bulletin 字段时 inert。
     ensureBulletin();
     setupCardLockCard();
     setupCardLockRow();

@@ -56,23 +56,6 @@ box.querySelector('p').textContent = barText(bar);
 }
 return box;
 }
-function ensureSettings() {
-const page = document.getElementById('page-setting');
-if (!page) return;
-let box = page.querySelector('.set-alert');
-const st = box ? (box.textContent || '') : '';
-if (box && MARK_KEY && st.indexOf(MARK_KEY) > -1 && st.indexOf('免费') > -1 && st.indexOf('倒卖') > -1) return;
-if (!box) {
-box = document.createElement('div');
-const anchor = page.querySelector('.ver-credit') || null;
-page.insertBefore(box, anchor ? anchor.nextSibling : null);
-}
-box.className = 'set-alert';
-box.setAttribute('data-anti-scam', 's');
-box.innerHTML = '<b></b>';
-box.querySelector('b').textContent = texts['alert'];
-box.appendChild(document.createTextNode(' ' + texts['alert2']));
-}
 let bulletin = null;
 function ensureBulletin() {
 const host = splashHost(); // #976：与置顶声明卡同一宿主（必读卡组，回退公告卡）
@@ -97,7 +80,6 @@ box.querySelector('p').textContent = want;
 }
 }
 function run() {
-ensureSettings();
 ensureBulletin();
 setupCardLockCard();
 setupCardLockRow();

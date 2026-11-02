@@ -6944,6 +6944,7 @@ const FIX_SENTINELS = [
   { name: '#1617a 设置页版本行改名辰光玥影（删＝又回 Mochi 字卡传讯）', file: 'template.html', needle: '<div class="ver">辰光玥影 ' },
   { name: '#1617b 设置页底部署名行不得回流（用户直派删除）', file: 'template.html', needle: 'class="ver-credit"', absent: true },
   { name: '#1617c 设置页底部防骗声明不得回流（用户直派删除；开屏/关于页口径仍在）', file: 'template.html', needle: 'class="set-alert"', absent: true },
+  { name: '#1617d 时钟看门狗也不再往设置页回填防骗声明（删掉的静态块被 ensureSettings 复活过；回流即报警）', file: 'js/clock.js', needle: 'function ensureSettings() {', absent: true },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
