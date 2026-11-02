@@ -6952,6 +6952,7 @@ const FIX_SENTINELS = [
   { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 2px 7px rgba(' },
   { name: '#1608b 浅色线条自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
   { name: '#1608c 选中背景块同色跟随（删＝阴影带色而背景块仍是灰的）', file: 'js/personalize.js', needle: 'background:rgba(\' + _shR' },
+  { name: '#1608d 选中背景块保持很淡（删＝又回到 0.08/0.07，底块偏深）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.055 : 0.06;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
