@@ -6954,7 +6954,7 @@ const FIX_SENTINELS = [
   { name: '#1608c 选中背景块用线条色本身（删＝背景块又被压暗成灰粉色）', file: 'js/personalize.js', needle: 'background:rgba(\' + _inkR + \',\' + _inkG' },
   { name: '#1608d 选中背景块保持可见（删＝内缩后几乎看不见，只剩白底）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.13 : 0.10;' },
   // ==== 2026-11-02 #1609 底栏选中块内缩 + 阴影收紧 ====
-  { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区，块显大）', file: 'css/tabbar.css', needle: 'top:4px; bottom:4px; left:8px; right:8px;' },
+  { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区；内缩量 2/5，原 4/8 缩得过小）', file: 'css/tabbar.css', needle: 'top:2px; bottom:2px; left:5px; right:5px;' },
   { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },
 ];
 try {

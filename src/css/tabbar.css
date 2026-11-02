@@ -30,11 +30,11 @@
   /* #769 整栏透明度的图标层（personalize.js 已算好 12% 下限，见 applyTabbarStyle） */
   opacity:var(--tabbar-ico-a, 1);
 }
-/* 2026-11-02：选中块改为内缩伪元素（上下 4px / 左右 8px），阴影一并收紧——
-   旧写法背景铺满整个 tab 热区，块显得偏大。过渡改在伪元素上。 */
+/* 2026-11-02：选中块改为内缩伪元素（上下 2px / 左右 5px）——4/8 那档缩得过小，回调一档。
+   过渡改在伪元素上。 */
 .tabbar .tab::before {
   content:''; position:absolute;
-  top:4px; bottom:4px; left:8px; right:8px;
+  top:2px; bottom:2px; left:5px; right:5px;
   border-radius:13px; background:transparent; box-shadow:none;
   transition:background .18s ease, box-shadow .18s ease;
   z-index:0; pointer-events:none;
