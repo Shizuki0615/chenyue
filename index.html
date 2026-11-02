@@ -79,6 +79,7 @@ html { margin:0; padding:0; }
 --in-glow:rgba(17,17,17,.045);
 --in-sweep:rgba(17,17,17,.05);
 --in-shadow:rgba(0,0,0,.05);
+--in-accent-ink:var(--in-ink);
 position:fixed; inset:0; z-index:1000;
 display:flex; align-items:center; justify-content:center;
 overflow:hidden;
@@ -118,7 +119,7 @@ color:var(--in-ink);
 transition:opacity .5s ease .06s, transform .55s cubic-bezier(.2,.7,.2,1) .06s;
 }
 .intro-logo svg { width:40px; height:40px; display:block; }
-.intro-heart { stroke-dasharray:1; stroke-dashoffset:0; transition:stroke-dashoffset .55s ease .1s; }
+.intro-heart { color:var(--in-accent-ink); stroke-dasharray:1; stroke-dashoffset:0; transition:stroke-dashoffset .55s ease .1s; }
 .intro-title {
 font-size:21px; font-weight:800; line-height:1.3;
 letter-spacing:4px; padding-left:4px;
@@ -168,7 +169,7 @@ opacity:0; pointer-events:none;
 transition:opacity .25s ease;
 }
 .intro.is-waiting .intro-wait { opacity:1; }
-.intro-wait-heart { width:26px; height:26px; color:var(--in-ink); opacity:.75; }
+.intro-wait-heart { width:26px; height:26px; color:var(--in-accent-ink); opacity:.75; }
 .intro-wait-heart svg { width:26px; height:26px; display:block; }
 .intro-wait-text { margin-top:12px; font-size:12px; letter-spacing:1px; color:var(--in-muted); }
 .intro-wait-text::after {
@@ -11360,6 +11361,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   <!-- ===== 开屏品牌动画（2026-11-01 作者直派：一纸微光 / 每天首次完整版 / 保持隐形加载） =====
        标题＝辰光玥影，署名＝温溯辰&任姝玥（按要求不使用 @ 符号）。
        本层只负责启动视觉，不承载公告/年龄/密码；数据闸仍是隐形加载的 #splash。
+       爱心/光晕/扫光跟随设置里的主题色（内联脚本提前读 xy-home-v2:accent-color），标题/署名保持墨色。
        样式在 src/css/base.css「开屏品牌动画」段，时间轴由下方内联脚本控制。
        为什么内联：开屏必须首帧就位，外置 JS 晚到或失败会造成错帧/空挡；参照头部主题脚本。 -->
   <div class="intro" id="intro" role="presentation" aria-hidden="true">
@@ -11384,6 +11386,29 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
   (function () {
     var el = document.getElementById('intro');
     if (!el) return;
+    /* 主题色提前落位：personalize.js 后加载，这里先读同一键，避免开屏先黑后变。
+       只染爱心/光晕/扫光；标题与署名保持墨色。亮度夹到可读区间，浅色/深色都不丢对比。 */
+    var accent = '';
+    try { accent = localStorage.getItem('xy-home-v2:accent-color') || ''; } catch (e) {}
+    if (/^#[0-9a-fA-F]{6}$/.test(accent)) {
+      var ac = [parseInt(accent.slice(1, 3), 16), parseInt(accent.slice(3, 5), 16), parseInt(accent.slice(5, 7), 16)];
+      var rawLum = (0.299 * ac[0] + 0.587 * ac[1] + 0.114 * ac[2]) / 255;
+      var darkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+      var target = darkTheme ? 0.5 : 0.46;
+      var ar = ac[0], ag = ac[1], ab = ac[2];
+      if (darkTheme && rawLum < target) {
+        var kw = (target - rawLum) / (1 - rawLum);
+        ar += (255 - ar) * kw; ag += (255 - ag) * kw; ab += (255 - ab) * kw;
+      } else if (!darkTheme && rawLum > target) {
+        var kb = target / rawLum;
+        ar *= kb; ag *= kb; ab *= kb;
+      }
+      var hx = function (v) { var s = Math.round(v).toString(16); return s.length < 2 ? '0' + s : s; };
+      var accentInk = '#' + hx(ar) + hx(ag) + hx(ab);
+      el.style.setProperty('--in-accent-ink', accentInk);
+      el.style.setProperty('--in-glow', 'rgba(' + Math.round(ar) + ',' + Math.round(ag) + ',' + Math.round(ab) + ',' + (darkTheme ? 0.07 : 0.055) + ')');
+      el.style.setProperty('--in-sweep', 'rgba(' + Math.round(ar) + ',' + Math.round(ag) + ',' + Math.round(ab) + ',' + (darkTheme ? 0.08 : 0.06) + ')');
+    }
     var reduce = false;
     try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
     var full = true;
@@ -11800,7 +11825,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793539562287" data-version="v8.64.2">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793583730519" data-version="v8.64.3">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13383,7 +13408,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.64.2</div>
+          <div class="val" id="about-ver-val">v8.64.3</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13502,7 +13527,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.64.2</div>
+      <div class="ver">Mochi 字卡传讯 v8.64.3</div>
       <div class="ver-credit">原版小红书@言序（1842523578）</div>
       <!-- v3.27.x：设置页底部防骗声明 -->
       <div class="set-alert">
@@ -13917,7 +13942,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.64.2</span>
+              <span class="lic-ver">v8.64.3</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -23733,4 +23758,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvxv5b8v -->
+<!-- __MOCHI_EOF__ mvylfzo7 -->

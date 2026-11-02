@@ -86,7 +86,10 @@ html { margin:0; padding:0; }
 /* 一纸微光：主题底 + 顶部柔光 + 爱心描边 + 标题揭开 + 一次扫光。
    入场只用 transition，不用 keyframe——body.mochi-bg-pause 会暂停所有 animation
    （#1182 白屏教训），transition 不受影响；扫光只是装饰，暂停不影响可用性。
-   完整/轻量由 template.html 内联脚本按「每天首次」切换，本段只管两套节奏的样式。 */
+   完整/轻量由 template.html 内联脚本按「每天首次」切换，本段只管两套节奏的样式。
+   主题色：爱心/光晕/扫光跟随设置里的 xy-home-v2:accent-color；因为 personalize.js
+   是后加载的，色值由 template 内联脚本提前读取并压成可读亮度（--in-accent-ink），
+   避免先黑后变；标题/署名保持墨色，保证浅色主题色下的可读性。 */
 .intro {
   --in-bg:#ffffff;
   --in-ink:#111111;
@@ -95,6 +98,7 @@ html { margin:0; padding:0; }
   --in-glow:rgba(17,17,17,.045);
   --in-sweep:rgba(17,17,17,.05);
   --in-shadow:rgba(0,0,0,.05);
+  --in-accent-ink:var(--in-ink);
   position:fixed; inset:0; z-index:1000;
   display:flex; align-items:center; justify-content:center;
   overflow:hidden;
@@ -135,7 +139,7 @@ html { margin:0; padding:0; }
   transition:opacity .5s ease .06s, transform .55s cubic-bezier(.2,.7,.2,1) .06s;
 }
 .intro-logo svg { width:40px; height:40px; display:block; }
-.intro-heart { stroke-dasharray:1; stroke-dashoffset:0; transition:stroke-dashoffset .55s ease .1s; }
+.intro-heart { color:var(--in-accent-ink); stroke-dasharray:1; stroke-dashoffset:0; transition:stroke-dashoffset .55s ease .1s; }
 .intro-title {
   font-size:21px; font-weight:800; line-height:1.3;
   letter-spacing:4px; padding-left:4px;
@@ -189,7 +193,7 @@ html { margin:0; padding:0; }
   transition:opacity .25s ease;
 }
 .intro.is-waiting .intro-wait { opacity:1; }
-.intro-wait-heart { width:26px; height:26px; color:var(--in-ink); opacity:.75; }
+.intro-wait-heart { width:26px; height:26px; color:var(--in-accent-ink); opacity:.75; }
 .intro-wait-heart svg { width:26px; height:26px; display:block; }
 .intro-wait-text { margin-top:12px; font-size:12px; letter-spacing:1px; color:var(--in-muted); }
 .intro-wait-text::after {
