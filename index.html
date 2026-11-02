@@ -8802,16 +8802,6 @@ border:none; outline:none; font-family:inherit; padding:0; min-width:110px;
 text-align:center; font-size:11px; color:#c0c0c0; letter-spacing:1px;
 padding:6px 0 2px;
 }
-.ver-credit {
-text-align:center; font-size:10px; color:#d4d4d4; letter-spacing:1px;
-padding:0 0 8px;
-}
-.set-alert {
-padding:10px 18px 18px; margin:0 14px 6px; border-radius:10px;
-background:#f2f2f2; text-align:center;
-font-size:11.5px; line-height:1.7; color:#555;
-}
-.set-alert b { color:#111; }
 #page-setting { padding-bottom:20px; }
 .gs-scroll { flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;
 padding-bottom:20px; }
@@ -9141,9 +9131,6 @@ html.tablet .tabbar .tab { padding:14px 8px; border-radius:16px; }
 [data-theme="dark"] .set-row .arrow svg { stroke:#666; }
 [data-theme="dark"] .set-row.sub .txt { color:#ccc; }
 [data-theme="dark"] .ver { color:#666; }
-[data-theme="dark"] .ver-credit { color:#777; }
-[data-theme="dark"] .set-alert { background:#232323; color:#aaa; }
-[data-theme="dark"] .set-alert b { color:#eee; }
 [data-theme="dark"] .gs-row { border-bottom-color:rgba(255,255,255,.05); }
 [data-theme="dark"] .stp-min,
 [data-theme="dark"] .stp-max { background:var(--dark-hover); color:#aaa; }
@@ -11813,7 +11800,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793623583271" data-version="v8.66.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793624969217" data-version="v8.66.7">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13396,7 +13383,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.66.4</div>
+          <div class="val" id="about-ver-val">v8.66.7</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13515,12 +13502,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.66.4</div>
-      <div class="ver-credit">原版小红书@言序（1842523578）</div>
-      <!-- v3.27.x：设置页底部防骗声明 -->
-      <div class="set-alert">
-        <b>Mochi字卡网站免费。</b>作者只有两个账号：小红书@言序（1842523578）和抖音@言序（58334080131）；作者不玩抖音、不回消息，是看到有人想花钱求网站才开的号，仅用于发布本站链接。本站不收取任何费用，如有出现任何收费情况，均为诈骗，注意防止被骗。二传、分享本站链接必须标注作者署名：小红书 @言序（1842523578），禁止删除或修改；严禁收费倒卖本站链接、安装包——如果你是花钱买来的链接：你被骗了，请拒付退款并举报卖家。
-      </div>
+      <div class="ver">辰光玥影 v8.66.7</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -13933,7 +13915,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.66.4</span>
+              <span class="lic-ver">v8.66.7</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -23749,4 +23731,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mvz96693 -->
+<!-- __MOCHI_EOF__ mvz9zvnl -->

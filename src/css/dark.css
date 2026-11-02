@@ -67,9 +67,6 @@
 [data-theme="dark"] .set-row .arrow svg { stroke:#666; }
 [data-theme="dark"] .set-row.sub .txt { color:#ccc; }
 [data-theme="dark"] .ver { color:#666; }
-[data-theme="dark"] .ver-credit { color:#777; }
-[data-theme="dark"] .set-alert { background:#232323; color:#aaa; }
-[data-theme="dark"] .set-alert b { color:#eee; }
 [data-theme="dark"] .gs-row { border-bottom-color:rgba(255,255,255,.05); }
 [data-theme="dark"] .stp-min,
 [data-theme="dark"] .stp-max { background:var(--dark-hover); color:#aaa; }

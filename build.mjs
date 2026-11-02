@@ -4754,7 +4754,8 @@ const FIX_SENTINELS = [
   { name: '#1449c 第四条正文·在线权威源', file: 'pwa/notice.json', needle: '二传二改但禁止以盈利为目的。Mochi字卡网站完全免费。' },
   { name: '#1449d 「关于云存储」章·离线兜底静态 DOM', file: 'template.html', needle: '关于云存储（本站没有云存储，二改请不要公开云存储）</p>' }, // #1500 目录统一编号：needle 去标签前缀＝对编号不敏感,
   { name: '#1449e 二传二改说明标题升为四点·离线兜底', file: 'template.html', needle: '「二传与二改说明」卡' },
-  { name: '#1449f 第四条·离线兜底（开屏章内）', file: 'template.html', needle: '作者只有两个账号：小红书@言序' },
+  // #1449f 退役：用户直派删除设置页底部防骗声明（该锚点原本只落在这一段，开屏/在线公告/关于页的免费与署名口径仍在 #613/#1449c/#1449g）；保留同名 absent 防止这段回流
+  { name: '#1449f 第四条·离线兜底（开屏章内）', file: 'template.html', needle: '作者只有两个账号：小红书@言序', absent: true },
   { name: '#1449g 第四条·设置 → 关于「二传与二改说明」卡', file: 'template.html', needle: '四、二改可以自加云存储，但请不要公开云存储</b>——这个网站的存储都是保存在个人设备本地的' },
   { name: '#1373a 停更时间线卡在第二页最顶（删＝作者停更口径与「两页都写着」那句指路同时失去落点）', file: 'index.html', needle: 'id="splash-mandatory-timeline"' },
   { name: '#1373b 停更后的使用建议卡在（删＝作者定稿那段建议从产物里消失）', file: 'index.html', needle: 'id="splash-mandatory-usage-advice"' },
@@ -6939,6 +6940,10 @@ const FIX_SENTINELS = [
   { name: '#1616d 书架左上角返回逐层消化（删＝导入/边看边调/菜单/分组开着也直接退桌面）', file: 'js/reading.js', needle: "if (el.closest('#rd-shelf-back')) {" },
   { name: '#1616e 阅读层从高到低只关一层（删＝返回把所有阅读弹层一次关光）', file: 'js/reading.js', needle: "['rd-live-drawer', rdCloseLiveDrawer]," },
   { name: '#1616f 阅读器关到书架而不是桌面（删＝返回直接 rdClose 回桌面）', file: 'js/reading.js', needle: 'if (reader && !reader.hidden) { rdShowShelf(); return true; }' },
+  // ==== 2026-11-02 #1617 设置页底部清理（用户直派：删署名/防骗声明，版本行改辰光玥影）====
+  { name: '#1617a 设置页版本行改名辰光玥影（删＝又回 Mochi 字卡传讯）', file: 'template.html', needle: '<div class="ver">辰光玥影 ' },
+  { name: '#1617b 设置页底部署名行不得回流（用户直派删除）', file: 'template.html', needle: 'class="ver-credit"', absent: true },
+  { name: '#1617c 设置页底部防骗声明不得回流（用户直派删除；开屏/关于页口径仍在）', file: 'template.html', needle: 'class="set-alert"', absent: true },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
