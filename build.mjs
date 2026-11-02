@@ -6948,6 +6948,10 @@ const FIX_SENTINELS = [
   { name: '#1607a 随机延迟函数（删＝又变成固定等满设定秒数）', file: 'js/chat.js', needle: 'function askThinkDelayMs() {' },
   { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
   { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
+  // ==== 2026-11-02 #1608 底栏选中阴影/背景块跟随图标线条色 ====
+  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 2px 7px rgba(' },
+  { name: '#1608b 浅色线条自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
+  { name: '#1608c 选中背景块同色跟随（删＝阴影带色而背景块仍是灰的）', file: 'js/personalize.js', needle: 'background:rgba(\' + _shR' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

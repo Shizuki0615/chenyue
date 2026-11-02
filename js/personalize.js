@@ -3093,9 +3093,17 @@ if (iconInkVal) iconInkVal.textContent = c ? c.toUpperCase() : '默认';
 if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) return;
 const st = document.createElement('style');
 st.id = 'icon-ink-color-style';
+const _inkN = parseInt(c.slice(1), 16);
+const _inkR = (_inkN >> 16) & 255, _inkG = (_inkN >> 8) & 255, _inkB = _inkN & 255;
+const _inkLum = (0.299 * _inkR + 0.587 * _inkG + 0.114 * _inkB) / 255;
+const _inkLight = _inkLum > 0.72;
+const _shR = _inkLight ? Math.round(_inkR * 0.55) : _inkR;
+const _shG = _inkLight ? Math.round(_inkG * 0.55) : _inkG;
+const _shB = _inkLight ? Math.round(_inkB * 0.55) : _inkB;
+const _bgA = _inkLight ? 0.07 : 0.08;
 st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
 + '.tabbar .tab{color:' + c + ' !important;}'
-+ '.tabbar .tab.active{color:' + c + ' !important;}'
++ '.tabbar .tab.active{color:' + c + ' !important;background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 2px 7px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
 + '.tabbar .tab svg{stroke-opacity:.55;}'
 + '.tabbar .tab.active svg{stroke-opacity:1;}';
 document.head.appendChild(st);

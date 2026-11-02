@@ -3916,9 +3916,20 @@ try {
     if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) return;
     const st = document.createElement('style');
     st.id = 'icon-ink-color-style';
+    // 2026-11-02：选中态阴影与浅色背景块自动跟随线条色——同色低透明度。
+    // 线条色偏浅（白/浅灰）时先把颜色压暗再降透明度，避免阴影在浅色桌面上淡到看不见；
+    // 深色模式同一条规则生效（!important 覆盖 dark.css 的黑色阴影）。
+    const _inkN = parseInt(c.slice(1), 16);
+    const _inkR = (_inkN >> 16) & 255, _inkG = (_inkN >> 8) & 255, _inkB = _inkN & 255;
+    const _inkLum = (0.299 * _inkR + 0.587 * _inkG + 0.114 * _inkB) / 255;
+    const _inkLight = _inkLum > 0.72;
+    const _shR = _inkLight ? Math.round(_inkR * 0.55) : _inkR;
+    const _shG = _inkLight ? Math.round(_inkG * 0.55) : _inkG;
+    const _shB = _inkLight ? Math.round(_inkB * 0.55) : _inkB;
+    const _bgA = _inkLight ? 0.07 : 0.08;
     st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
       + '.tabbar .tab{color:' + c + ' !important;}'
-      + '.tabbar .tab.active{color:' + c + ' !important;}'
+      + '.tabbar .tab.active{color:' + c + ' !important;background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 2px 7px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
       + '.tabbar .tab svg{stroke-opacity:.55;}'
       + '.tabbar .tab.active svg{stroke-opacity:1;}';
     document.head.appendChild(st);
