@@ -6904,6 +6904,10 @@ const FIX_SENTINELS = [
   { name: '#1609c 主题色只留「从壁纸取色/恢复默认」两粒胶囊（删＝手动输入色值旧入口回归，与手输框重复）', file: 'js/personalize.js', needle: "{ label: '从壁纸取色', value: '__pick_wall__' }," },
   // ==== 2026-11-02 #1610 底部导航栏组只留「基础」tab（原来在 tab 外，两个 tab 同显）====
   { name: '#1610a 底部导航栏组移进基础面板（移回 tab 外＝基础/壁纸与图标两个 tab 又各显一遍，用户实报重复）', file: 'template.html', needle: '2026-11-02 #1610：底部导航栏组从 tab 外移进「基础」面板' },
+  // ==== 2026-11-02 #1611 全屏页状态栏与桌面同位置（Mochi/时间/电量不随进应用上移）====
+  { name: '#1611a 桌面壳顶部留白变量（删＝全屏页恢复 padding:0，桌面模拟器下状态栏上移 16px）', file: 'css/base.css', needle: '--phone-top-pad:16px;' },
+  { name: '#1611b 全屏页按桌面顶部留白补回（删＝Mochi/时间/电量进应用后仍比桌面高 16px）', file: 'css/tabbar.css', needle: '.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }' },
+  { name: '#1611c 全屏页状态栏左右 22px 对齐桌面（删＝全屏页状态栏比桌面左移 4px）', file: 'css/tabbar.css', needle: 'padding-left: calc(22px + var(--mochi-side-adj,0px));' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
