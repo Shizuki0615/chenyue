@@ -773,8 +773,7 @@
 [data-theme="dark"] .ck-location { border-bottom-color:rgba(255,255,255,.06); }
 [data-theme="dark"] .ck-loc-entry { border-color:rgba(255,255,255,.22); background:var(--static-bg); }
 [data-theme="dark"] .ck-loc-entry:active { background:var(--dark-hover); }
-[data-theme="dark"] .loc-panel { background:var(--dark-card-97); }
-[data-theme="dark"] .loc-head,
+[data-theme="dark"] #loc-panel { background:var(--dark-card-97); }
 [data-theme="dark"] .loc-section { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-send-area { border-top-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-ask-btn { color:#111; }
@@ -805,12 +804,9 @@
 [data-theme="dark"] .fw-result { background:rgba(255,180,80,.1); border-color:rgba(255,180,80,.35); }
 [data-theme="dark"] .fw-p-line { color:rgba(255,255,255,.75); }
 [data-theme="dark"] .fw-result .fw-p-line:first-child { color:#ffc97e; }
-/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配 */
-[data-theme="dark"] .loc-panel.loc-full { background:var(--dark-card-97); }
-[data-theme="dark"] .loc-head { background:rgba(30,30,30,.96); }
-[data-theme="dark"] .loc-back { border-color:rgba(255,255,255,.14); background:rgba(255,255,255,.06); }
-[data-theme="dark"] .loc-back svg { stroke:#f0f0f0; }
-[data-theme="dark"] .loc-back:active { background:rgba(255,255,255,.12); }
+/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配
+   #1613：已改为真正的 .page，页面背景由 #loc-panel 承接，旧 .loc-full 选择器下线；
+   #1613g：顶栏统一用全站 .chat-head（暗色由 .chat-head 既有规则承接），旧 loc-head/loc-back 下线 */
 [data-theme="dark"] .loc-section { background:var(--dark-card-92); border-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-item { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-tag { background:var(--dark-hover); }

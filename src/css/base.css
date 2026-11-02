@@ -82,6 +82,128 @@ body { height:100vh; padding:24px; box-sizing:border-box; margin:0; }
 @supports (height: 100dvh) { body { height:100dvh; } }
 html { margin:0; padding:0; }
 
+/* ===== 开屏品牌动画（#intro，2026-11-01） ===== */
+/* 一纸微光：主题底 + 顶部柔光 + 爱心描边 + 标题揭开 + 一次扫光。
+   入场只用 transition，不用 keyframe——body.mochi-bg-pause 会暂停所有 animation
+   （#1182 白屏教训），transition 不受影响；扫光只是装饰，暂停不影响可用性。
+   完整/轻量由 template.html 内联脚本按「每天首次」切换，本段只管两套节奏的样式。
+   主题色：爱心/光晕/扫光跟随设置里的 xy-home-v2:accent-color；因为 personalize.js
+   是后加载的，色值由 template 内联脚本提前读取并压成可读亮度（--in-accent-ink），
+   避免先黑后变；标题/署名保持墨色，保证浅色主题色下的可读性。 */
+.intro {
+  --in-bg:#ffffff;
+  --in-ink:#111111;
+  --in-muted:#8a8a8a;
+  --in-line:rgba(17,17,17,.08);
+  --in-glow:rgba(17,17,17,.045);
+  --in-sweep:rgba(17,17,17,.05);
+  --in-shadow:rgba(0,0,0,.05);
+  --in-accent-ink:var(--in-ink);
+  position:fixed; inset:0; z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  background:radial-gradient(130% 42% at 50% 0%, var(--in-glow) 0%, transparent 72%), var(--in-bg);
+  color:var(--in-ink);
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+  transition:opacity .33s ease;
+  /* JS 万一没执行：8s 后自动淡出，绝不把应用永久挡在动画后面 */
+  animation:intro-failsafe .01s linear 8s forwards;
+}
+[data-theme="dark"] .intro {
+  --in-bg:#0c0c0c;
+  --in-ink:#f0f0f0;
+  --in-muted:#8a8a8a;
+  --in-line:rgba(255,255,255,.12);
+  --in-glow:rgba(255,255,255,.05);
+  --in-sweep:rgba(255,255,255,.06);
+  --in-shadow:rgba(0,0,0,.4);
+}
+.intro.is-out { opacity:0; pointer-events:none; }
+.intro-lite.is-out, .intro-reduce.is-out { transition-duration:.18s; }
+.intro-stage {
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; padding:0 24px;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.intro.is-waiting .intro-stage { opacity:0; transform:translateY(-10px); }
+.intro-logo {
+  width:84px; height:84px; border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:22px;
+  background:var(--in-bg);
+  border:1px solid var(--in-line);
+  box-shadow:0 10px 30px var(--in-shadow);
+  color:var(--in-ink);
+  transition:opacity .5s ease .06s, transform .55s cubic-bezier(.2,.7,.2,1) .06s;
+}
+.intro-logo svg { width:40px; height:40px; display:block; }
+.intro-heart { color:var(--in-accent-ink); stroke-dasharray:1; stroke-dashoffset:0; transition:stroke-dashoffset .55s ease .1s; }
+.intro-title {
+  font-size:21px; font-weight:800; line-height:1.3;
+  letter-spacing:4px; padding-left:4px;
+  color:var(--in-ink);
+  clip-path:inset(0 0 0 0);
+  transition:opacity .5s ease .2s, transform .5s cubic-bezier(.2,.7,.2,1) .2s, clip-path .55s cubic-bezier(.2,.7,.2,1) .2s;
+}
+.intro-sign {
+  margin-top:12px; font-size:11px; letter-spacing:1.6px; padding-left:1.6px;
+  color:var(--in-muted);
+  transition:opacity .45s ease .34s, transform .45s ease .34s;
+}
+.intro-pre .intro-logo { opacity:0; transform:scale(.92); }
+.intro-pre .intro-heart { stroke-dashoffset:1; }
+.intro-pre .intro-title { opacity:0; transform:translateY(8px); clip-path:inset(0 100% 0 0); }
+.intro-pre .intro-sign { opacity:0; transform:translateY(6px); }
+/* 轻量版：去掉描边/位移/揭开，只留一轮淡入淡出（0.15s 级） */
+.intro-lite .intro-logo, .intro-lite .intro-title, .intro-lite .intro-sign { transition:opacity .18s ease; }
+.intro-lite .intro-pre .intro-logo { transform:none; }
+.intro-lite .intro-pre .intro-heart { stroke-dashoffset:0; transition:none; }
+.intro-lite .intro-pre .intro-title { transform:none; clip-path:none; }
+.intro-lite .intro-pre .intro-sign { transform:none; }
+.intro-lite .intro-sweep { display:none; }
+/* 减少动画：与轻量版同形，再快一档，系统级偏好优先 */
+.intro-reduce .intro-logo, .intro-reduce .intro-title, .intro-reduce .intro-sign { transition:opacity .16s ease; }
+.intro-reduce .intro-pre .intro-logo { transform:none; }
+.intro-reduce .intro-pre .intro-heart { stroke-dashoffset:0; transition:none; }
+.intro-reduce .intro-pre .intro-title { transform:none; clip-path:none; }
+.intro-reduce .intro-pre .intro-sign { transform:none; }
+.intro-reduce .intro-sweep { display:none; }
+@media (prefers-reduced-motion: reduce) { .intro-sweep { display:none; } }
+/* 一次低透明度扫光（只走 transform/opacity，不做模糊） */
+.intro-sweep {
+  position:absolute; top:-20%; left:-35%; width:70%; height:140%;
+  background:linear-gradient(100deg, transparent 0%, var(--in-sweep) 45%, transparent 100%);
+  opacity:0; pointer-events:none;
+  transform:translateX(-40%) rotate(10deg);
+}
+/* 2026-11-02 作者要求「扫光慢一些」：0.3s → 0.5s；延迟同步提前到 0.55s，
+   让扫光在 1.05s 退场开始前完整走完（0.55 + 0.5 = 1.05），不拖长开屏总时长 */
+.intro-full.is-in .intro-sweep { animation:intro-sweep .5s ease .55s both; }
+@keyframes intro-sweep {
+  0% { opacity:0; transform:translateX(-40%) rotate(10deg); }
+  22% { opacity:1; }
+  78% { opacity:1; }
+  100% { opacity:0; transform:translateX(180%) rotate(10deg); }
+}
+/* 数据未就绪时收起品牌层，只留一颗小爱心 + 加载文案 */
+.intro-wait {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+}
+.intro.is-waiting .intro-wait { opacity:1; }
+.intro-wait-heart { width:26px; height:26px; color:var(--in-accent-ink); opacity:.75; }
+.intro-wait-heart svg { width:26px; height:26px; display:block; }
+.intro-wait-text { margin-top:12px; font-size:12px; letter-spacing:1px; color:var(--in-muted); }
+.intro-wait-text::after {
+  content:'···'; display:inline-block; width:0; overflow:hidden; vertical-align:bottom;
+  text-align:left; letter-spacing:1px; animation:splashDots 1.2s steps(3,end) infinite;
+}
+@keyframes intro-failsafe { to { opacity:0; visibility:hidden; } }
+
 /* ===== 开屏加载动画 ===== */
 .splash {
   position:fixed; inset:0; z-index:999;
@@ -551,6 +673,10 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
      /#762 的退化阶梯套路）。 */
   min-height:min(120px, 18vh);
   min-height:min(120px, 18dvh);
+  /* #1611：桌面模拟器的顶部壳内边距。全屏页（.phone.no-statusbar）原本把 padding 全清 0，
+     Mochi/时间/电量那一行会比桌面高 16px；改用这个变量补回顶部，移动/平板/全屏形态各自
+     覆盖为 0（它们本来就无顶部 padding，行为不变）。 */
+  --phone-top-pad:16px;
   border-radius:44px; padding:16px calc(18px + var(--mochi-side-adj,0px)) 18px;
   display:flex; flex-direction:column;
   /* v3.26.x #399：整壳是【永不滚动】的裁剪框——overflow:clip 让 .phone 不再是滚动
@@ -603,6 +729,7 @@ input.mochi-pick-surface::-webkit-file-upload-button { display:none; }
     box-sizing:border-box;
     width:100vw; height:100vh;
     border-radius:0; box-shadow:none;
+    --phone-top-pad:0px; /* #1611：手机全屏形态本来就无顶部 padding */
     padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
   }
   /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
@@ -635,6 +762,7 @@ html.force-mobile .phone {
   box-sizing:border-box;
   width:100vw; height:100vh;
   border-radius:0; box-shadow:none;
+  --phone-top-pad:0px; /* #1611：UA 桌面伪装的手机全屏形态同样无顶部 padding */
   padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 }
 /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
@@ -675,6 +803,7 @@ html.force-mobile .mail-item { -webkit-tap-highlight-color:transparent; }
 .fs-active .phone, .fs-css-active .phone {
   width:100vw; height:100vh;
   max-width:none; border-radius:0; box-shadow:none;
+  --phone-top-pad:0px; /* #1611：全屏形态桌面页也无顶部 padding */
   padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 }
 /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
@@ -683,6 +812,7 @@ html.force-mobile .mail-item { -webkit-tap-highlight-color:transparent; }
   .phone {
     width:100vw; height:100vh;
     max-width:none; border-radius:0; box-shadow:none;
+    --phone-top-pad:0px; /* #1611：display_override 全屏同样无顶部 padding */
     padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
   }
   /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上） */
@@ -964,7 +1094,7 @@ html.tablet.ios-pwa-standalone.ios-fs-active .phone .statusbar { display:none; }
    自动退出并改走此模式：保持竖屏布局 + 顶部安全区，观感与原生全屏一致。
    仅真实手机窄屏生效，桌面模拟器外壳不受影响。 */
 @media (max-width: 900px) {
-  .fs-css-active .phone { padding-top: max(env(safe-area-inset-top, 0px), 12px); }
+  .fs-css-active .phone { --phone-top-pad:max(env(safe-area-inset-top, 0px), 12px); padding-top: max(env(safe-area-inset-top, 0px), 12px); }
 }
 
 /* ===== v3.7.x：平板（iPad）适配 =====
@@ -985,6 +1115,7 @@ html.tablet .phone {
   width:100vw; max-width:none; flex-shrink:0;
   height:100vh;
   border-radius:0; box-shadow:none;
+  --phone-top-pad:0px; /* #1611：平板全宽形态无顶部 padding */
   padding:0 calc(18px + var(--mochi-side-adj,0px)) 18px;
 }
 /* #853：svh/dvh 收进 @supports（老 WebKit 计算期作废机制，见上）——iOS<15.4 平板落

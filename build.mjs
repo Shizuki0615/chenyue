@@ -854,7 +854,8 @@ const FIX_SENTINELS = [
   { name: '通话昵称与聊天域解耦（cs-lbl-partner 优先，回退名片名，不读桌面键）', file: 'js/call.js', needle: "window.contactNameFor ? window.contactNameFor(currentCall.cid) : '')" },
   { name: 'migrateLegacy def/root 提升函数顶部（修启动 ReferenceError 中断迁移）', file: 'js/contacts.js', needle: 'const root = window.xyStore(G);' },
   { name: 'iOS Edge 视口事件盲区兜底（window resize/工具条显隐 + 1s 轮询并进自愈，修输入栏下空一大块/页面上移残留）', file: 'js/mobile-adapt.js', needle: "addEventListener('orientationchange', onIosVvEvent)" },
-  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;' },
+  // #1613g 退役：位置页顶栏统一用全站 .ch-back，旧 .loc-back 私有样式整段下线（返回按钮由 .ch-back 承接，不得回流）
+  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;', absent: true },
   { name: '夜宵提醒专属字卡（nightcap 窗口抽「夜宵提醒/夜宵关心」池，不再复用"按时吃饭"文案）', file: 'js/p2-features.js', needle: 'DEF_EAT_REMIND_NIGHT' },
   { name: '房间放置/移动横幅取消钮能真正隐藏（.r-banner[hidden] 补 display:none，修「取消」弹窗一直不消失）', file: 'index.html', needle: '.r-banner[hidden] { display: none; }' },
   { name: '桌面「已摸鱼」卡与「今日情话」卡文字水平对齐（.mini-card fish .mc-b 与情话等高，修两卡标题/正文错位）', file: 'css/home.css', needle: '.mini-card[data-card-bg="fish"] .mc-b' },
@@ -2166,11 +2167,8 @@ const FIX_SENTINELS = [
   { name: '#427 打砖块全屏同族抗内联残留（删则同 #427 在打砖块复发）', file: 'css/chat-pages.css', needle: '#chat-brick-panel.brick-fs { position:fixed !important;' },
   { name: '#427 贪吃蛇全屏同族抗内联残留（删则同 #427 在贪吃蛇复发）', file: 'css/chat-pages.css', needle: '#chat-snake-panel.snake-fs { position:fixed !important;' },
   { name: '#427 五子棋兄弟互斥只认真可见面板（hidden=false 但零渲染盒＝残留态不触发误关；删则残留兄弟把刚打开的棋盘反复自动关掉＝「打开就消失回聊天、刷新才恢复」）', file: 'js/gomoku.js', needle: 'getClientRects().length > 0) { closePanel(); break; }' },
-  // ==== 2026-09-13 #428 寻踪「看看TA在哪」全屏位置面板抬到提醒条之上（vivo S60 等多机型报「点看看ta在哪
-  //      页面卡死，只能退出刷新」：面板 z-78 低于顶部提醒条 z-998，备份提醒显形期间（距上次导出超 1 天即弹、
-  //      #355 收短后极常见）正好压住头部返回按钮＝面板关不掉+body 滚动锁＝整页像卡死；z 抬 9999，
-  //      仍低于 modal-mask 99999 / 应用锁 999999）====
-  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;' },
+  // ==== #428 退役：#1613 起位置面板改成真正的 .page（不再 fixed/z-9999 浮层）——旧浮层不得回流 ====
+  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;', absent: true },
   // #1455 退役：live 版 #416/#998 已在位（needle "return chatScrollMax() - cb.scrollTop <= 8;"）；本条 #416 为旧底（原 needle "return cb.scrollHeight - cb.scrollTop - cb.clientHeight <= 8;" 已从 src/js/chat.js 消失），按 #1447 先例只留一条活锚
   { name: '#416 群聊解除接管只认真的贴到底（gcAtBottom 同 ≤8px 口径；删则旧 150px 容差让滚动手势第一个 scroll 事件就清掉接管、下一条成员回复把历史阅读拽回最底复发）', file: 'js/group-chat.js', needle: 'return body.scrollHeight - body.scrollTop - body.clientHeight <= 8;' },
   { name: '#416 群聊滚回贴底检测必须停稳（gcScrollTimer 120ms 防手势中第一个 scroll 事件误清接管；删则「每次点滑动被拽回最底」随下一条回复复发）', file: 'js/group-chat.js', needle: 'gcScrollTimer = setTimeout(() => {' },
@@ -6558,7 +6556,7 @@ const FIX_SENTINELS = [
   { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
   { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
   // #1547q 已于 2026-10-28 随用户要求删除「更多 → 互动」读书入口而退场（桌面图标仍是主要入口，见 #1591a 回流哨兵）
-  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings'];" },
+  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings', 'loc-panel'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
   { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },
@@ -6892,6 +6890,45 @@ const FIX_SENTINELS = [
   { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
   { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
   { name: '#1603e 旧 index 缓存时 js 现场补建手输行（删＝新版 js 配旧模板完全没有手输入口，P2 看不到）', file: 'js/personalize.js', needle: 'if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);' },
+  // ==== 2026-10-31 #1608 套壳 App 智能返回（plus 物理键/侧滑 + 信箱按来源返回）====
+  { name: '#1608a HBuilderX 套壳注册安卓返回键（删＝物理键/侧滑直接退出应用，页面栈与弹窗优先全失效）', file: 'js/tabs.js', needle: "window.plus.key.addEventListener('backbutton', function () {" },
+  { name: '#1608b 桌面再按返回退出整个 App（删＝主页返回键无动作/被系统直接杀进程，用户要求防退出失效）', file: 'js/tabs.js', needle: 'try { if (window.plus.runtime && window.plus.runtime.quit) window.plus.runtime.quit(); } catch (e) {}' },
+  { name: '#1608c 有上一页就回上一页（删＝信箱返回永远回桌面，聊天信件提示进来也回不到聊天）', file: 'js/tabs.js', needle: 'if (stack.length > 1) stack.pop();' },
+  { name: '#1608d 信箱顶栏返回改走页面栈（删＝桌面/聊天进信箱都固定回桌面，用户在聊天的来源丢失）', file: 'js/mail.js', needle: "if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }" },
+  { name: '#1608e 寄信/回信/写信返回都走页面栈（删＝信箱重复入栈，物理返回从信箱退回写信页）', file: 'js/mail.js', needle: "if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');" },
+  // ==== 2026-11-02 #1609 取色弹窗入口统一（原生取色器下线，手输框唯一自定义入口）====
+  { name: '#1609a 原生取色器入口全站隐藏（删＝App 内置 WebView 里「自定义颜色」死入口回归，且与下方手输框重复）', file: 'js/personalize.js', needle: 'customBtn.hidden = true;' },
+  { name: '#1609b 主题色说明缩成一行（删＝又变回五行的系统取色器解释，弹窗重新被文字占满）', file: 'js/personalize.js', needle: "staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。'," },
+  { name: '#1609c 主题色只留「从壁纸取色/恢复默认」两粒胶囊（删＝手动输入色值旧入口回归，与手输框重复）', file: 'js/personalize.js', needle: "{ label: '从壁纸取色', value: '__pick_wall__' }," },
+  // ==== 2026-11-02 #1610 底部导航栏组只留「基础」tab（原来在 tab 外，两个 tab 同显）====
+  { name: '#1610a 底部导航栏组移进基础面板（移回 tab 外＝基础/壁纸与图标两个 tab 又各显一遍，用户实报重复）', file: 'template.html', needle: '2026-11-02 #1610：底部导航栏组从 tab 外移进「基础」面板' },
+  // ==== 2026-11-02 #1611 全屏页状态栏与桌面同位置（Mochi/时间/电量不随进应用上移）====
+  { name: '#1611a 桌面壳顶部留白变量（删＝全屏页恢复 padding:0，桌面模拟器下状态栏上移 16px）', file: 'css/base.css', needle: '--phone-top-pad:16px;' },
+  { name: '#1611b 全屏页按桌面顶部留白补回（删＝Mochi/时间/电量进应用后仍比桌面高 16px）', file: 'css/tabbar.css', needle: '.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }' },
+  { name: '#1611c 全屏页状态栏左右 22px 对齐桌面（删＝全屏页状态栏比桌面左移 4px）', file: 'css/tabbar.css', needle: 'padding-left: calc(22px + var(--mochi-side-adj,0px));' },
+  // ==== 2026-11-02 #1612 位置面板全屏时顶部状态栏常驻（#1613 改页面后退役：状态栏在页面外天然常驻，
+  //      旧的 fixed 面板/--mochi-sb-h 测量不得回流）====
+  { name: '#1612a 打开位置面板时实测状态栏底边（删＝面板从壳顶铺，Mochi/时间/电量被整块盖住）', file: 'js/p2-features.js', needle: "if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');", absent: true },
+  { name: '#1612b 全屏位置面板顶边下移到状态栏底边（删＝面板盖住顶栏，用户实报「这个页面没有顶栏」）', file: 'css/chat-pages.css', needle: 'top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;', absent: true },
+  { name: '#1612c 桌面壳形态面板顶边叠加壳顶偏移（删＝桌面模拟器里面板顶边比状态栏高 24px+）', file: 'css/chat-pages.css', needle: 'top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px));', absent: true },
+  { name: '#1612d 面板头部不再重复 safe-area 留白（删＝状态栏已占位后头部再空一截）', file: 'css/chat-pages.css', needle: '.loc-panel.loc-full .loc-head { padding:12px 16px; }', absent: true },
+  // ==== 2026-11-02 #1613 位置面板改成真正的页面（不再 fixed 浮层）====
+  { name: '#1613a 位置面板改为 .page（删＝回到 fixed 浮层，用户明确不要浮层）', file: 'template.html', needle: '<div class="page" id="loc-panel" hidden>' },
+  { name: '#1613b 位置页页面样式（删＝位置页按浮层样式渲染，fixed/滚动全乱）', file: 'css/chat-pages.css', needle: 'padding:0; background:var(--card-bg-97,#fff);' },
+  { name: '#1613c 打开位置页走页面显隐（删＝打开还是弹浮层/其它页不隐藏）', file: 'js/p2-features.js', needle: "document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });" },
+  { name: '#1613d 位置页返回走页面栈（删＝左上角返回固定回桌面，聊天/寻踪来源丢失）', file: 'js/p2-features.js', needle: 'const go = window.mochiGoBack;' },
+  { name: '#1613e 位置页登记全屏页（删＝tabbar 常驻遮住底部内容）', file: 'js/tabs.js', needle: ", 'loc-panel'];" },
+  { name: '#1613f 位置页不再登记浮层滚动锁（删＝页面被当成浮层锁滚，内部 loc-scroll 可能划不动）', file: 'js/mobile-adapt.js', needle: "'#loc-panel'", absent: true },
+  { name: '#1613g 位置页顶栏统一用全站 chat-head（删＝又回自定义 loc-head，用户要求顶栏与其他界面一致）', file: 'template.html', needle: '<span class="ch-back" id="loc-back" aria-label="返回">' },
+  // ==== 2026-11-02 #1614 聊天信件通知直达对应信件（用户「有好几封信时得一封封找才知道他回的是哪封」）====
+  { name: '#1614a 回信通知带原信标题（删＝通知又回到通用文案，用户点前认不出是哪封）', file: 'js/mail.js', needle: "targetTitle ? '：《' + targetTitle + '》' : ''" },
+  { name: '#1614b 信件通知透传 mailId（删＝聊天记录里没有信件 id，点进去只能回列表一封封找）', file: 'js/mail.js', needle: 'mailId: opts && opts.mailId' },
+  { name: '#1614c 聊天信件通知按 id 直达（删＝仍统一 openMailPage 打开列表）', file: 'js/chat.js', needle: 'if (rec.mailId && window.openMailLetter)' },
+  { name: '#1614d 信箱直达入口 openMailLetter（删＝没有按 id 开门的方法）', file: 'js/mail.js', needle: 'window.openMailLetter = openMailLetter;' },
+  { name: '#1614e 信箱每次重画后补定位（删＝数据 ready/回信落地重画后高亮丢失）', file: 'js/mail.js', needle: 'try { applyMailJump(); } catch (e) {}' },
+  { name: '#1614f 目标信件高亮样式（删＝定位到了但用户看不出是哪封）', file: 'css/chat-pages.css', needle: '.mail-item.mail-jump-hit' },
+  { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
+  { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
@@ -6911,6 +6948,10 @@ const FIX_SENTINELS = [
   { name: '#1607a 随机延迟函数（删＝又变成固定等满设定秒数）', file: 'js/chat.js', needle: 'function askThinkDelayMs() {' },
   { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
   { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
+  // ==== 2026-11-02 #1608 底栏选中阴影/背景块跟随图标线条色 ====
+  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 2px 7px rgba(' },
+  { name: '#1608b 浅色线条自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
+  { name: '#1608c 选中背景块同色跟随（删＝阴影带色而背景块仍是灰的）', file: 'js/personalize.js', needle: 'background:rgba(\' + _shR' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

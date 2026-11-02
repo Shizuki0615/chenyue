@@ -1712,19 +1712,20 @@ const nextBtn = document.getElementById('loc-day-next');
 if (nextBtn) nextBtn.addEventListener('click', () => { if (dayIdx > 0) { locViewDate = days[dayIdx - 1]; renderLocPanel(); } });
 }
 function openLocPanel() {
-const panel = document.getElementById('loc-panel');
 const nameEl = document.getElementById('loc-name');
 if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
-if (panel) panel.classList.add('loc-full');
+try { if (window.mochiKbDismiss) window.mochiKbDismiss(); } catch (e) {}
+try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });
 if (window.refreshSense) window.refreshSense();
 renderLocPanel();
-if (panel) panel.hidden = false;
 const ck = document.getElementById('ck-panel');
 if (ck) ck.hidden = true;
 }
 function closeLocPanel() {
-const panel = document.getElementById('loc-panel');
-if (panel) { panel.hidden = true; panel.classList.remove('loc-full'); }
+const go = window.mochiGoBack;
+if (go) { go('page-phone'); return; }
+document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'page-phone'); });
 }
 const entry = document.getElementById('ck-loc-entry');
 if (entry) entry.addEventListener('click', () => openLocPanel());
@@ -2047,7 +2048,9 @@ passiveHint();
 }, 30000);
 document.addEventListener('contact-switched', function () {
 const panel = document.getElementById('loc-panel');
-if (panel) panel.hidden = true;
+if (!panel || panel.hidden) return;
+if (window.mochiGoBack) window.mochiGoBack('page-phone');
+else document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'page-phone'); });
 });
 })();
 (function () {
