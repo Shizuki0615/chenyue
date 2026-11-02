@@ -6898,6 +6898,10 @@ const FIX_SENTINELS = [
   { name: '#1608c 有上一页就回上一页（删＝信箱返回永远回桌面，聊天信件提示进来也回不到聊天）', file: 'js/tabs.js', needle: 'if (stack.length > 1) stack.pop();' },
   { name: '#1608d 信箱顶栏返回改走页面栈（删＝桌面/聊天进信箱都固定回桌面，用户在聊天的来源丢失）', file: 'js/mail.js', needle: "if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }" },
   { name: '#1608e 寄信/回信/写信返回都走页面栈（删＝信箱重复入栈，物理返回从信箱退回写信页）', file: 'js/mail.js', needle: "if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');" },
+  // ==== 2026-11-02 #1609 取色弹窗入口统一（原生取色器下线，手输框唯一自定义入口）====
+  { name: '#1609a 原生取色器入口全站隐藏（删＝App 内置 WebView 里「自定义颜色」死入口回归，且与下方手输框重复）', file: 'js/personalize.js', needle: 'customBtn.hidden = true;' },
+  { name: '#1609b 主题色说明缩成一行（删＝又变回五行的系统取色器解释，弹窗重新被文字占满）', file: 'js/personalize.js', needle: "staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。'," },
+  { name: '#1609c 主题色只留「从壁纸取色/恢复默认」两粒胶囊（删＝手动输入色值旧入口回归，与手输框重复）', file: 'js/personalize.js', needle: "{ label: '从壁纸取色', value: '__pick_wall__' }," },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

@@ -428,7 +428,7 @@ swatches.appendChild(s);
 });
 }
 buildPills(opts.pills, opts.pill);
-customBtn.hidden = !opts.colorPicker;
+customBtn.hidden = true;
 customBtn.classList.remove('on');
 if (opts.colorPicker && opts.pick === -2) customBtn.classList.add('on');
 if (opts.color) colorInput.value = opts.color;
@@ -4693,7 +4693,7 @@ const src = store.get('phone-bg') || store.get('cs-bg'); // 优先桌面壁纸�
 if (!src) { toast('请先在桌面美化或聊天美化里设置一张壁纸'); return; }
 toast('正在从壁纸取色…');
 sampleWallpaperColor(src).then((c) => {
-if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用「手动输入色值」'); return; }
+if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用下方手输色值'); return; }
 try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
 applyAccentColor(c);
 toast('已从壁纸取色 ' + c.toUpperCase() + '（不满意可再点色块微调）');
@@ -4735,14 +4735,6 @@ const current = getAccentColor();
 window.openModal('主题色', '', (v) => {
 if (v === '__reset__') { try { localStorage.removeItem(ACCENT_KEY); } catch (e) {} applyAccentColor(''); return; }
 if (v === '__pick_wall__') { applyAccentFromWallpaper(); return; }
-if (v === '__hex__') {
-openHexColorModal('手动输入主题色', current || '#e05555', (c) => {
-try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
-applyAccentColor(c);
-toast('主题色已设置 ' + c.toUpperCase());
-});
-return;
-}
 const color = (typeof v === 'number' && ACCENT_PRESETS[v]) ? ACCENT_PRESETS[v].color : v;
 if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
 try { localStorage.setItem(ACCENT_KEY, color); } catch (e) {}
@@ -4752,10 +4744,9 @@ noInput: true,
 colorPicker: true,
 color: current,
 swatches: ACCENT_PRESETS,
-staticText: '点色块=一键选用，最简单可靠。「从壁纸取色」自动挑壁纸主色配成主题色。「自定义颜色」调起手机系统取色器，部分手机（内置浏览器/APP内打开）不支持、点了没反应——请改用「手动输入色值」，填 6 位色值如 #e05555（网上搜「颜色代码」可查任意颜色的色值）。',
+staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。',
 pills: [
 { label: '从壁纸取色', value: '__pick_wall__' },
-{ label: '手动输入色值', value: '__hex__' },
 { label: '恢复默认', value: '__reset__' },
 ],
 });

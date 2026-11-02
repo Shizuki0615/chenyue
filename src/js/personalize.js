@@ -622,7 +622,9 @@ try {
       // 选项胶囊（pills）——构建逻辑抽到 buildPills（ctl.pills 阶段切换共用）
       buildPills(opts.pills, opts.pill);
       // 自定义取色（简约按钮）
-      customBtn.hidden = !opts.colorPicker;
+      // #1609：原生取色器入口全站下线——所有 colorPicker 弹窗统一用下方手输框；
+      // 内置 WebView/浏览器里原「自定义颜色」常常点了没反应，留着只会制造死入口。
+      customBtn.hidden = true;
       customBtn.classList.remove('on');
       if (opts.colorPicker && opts.pick === -2) customBtn.classList.add('on');
       if (opts.color) colorInput.value = opts.color;
@@ -5761,7 +5763,7 @@ try {
     if (!src) { toast('请先在桌面美化或聊天美化里设置一张壁纸'); return; }
     toast('正在从壁纸取色…');
     sampleWallpaperColor(src).then((c) => {
-      if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用「手动输入色值」'); return; }
+      if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用下方手输色值'); return; }
       try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
       applyAccentColor(c);
       toast('已从壁纸取色 ' + c.toUpperCase() + '（不满意可再点色块微调）');
@@ -5804,15 +5806,6 @@ try {
         if (v === '__reset__') { try { localStorage.removeItem(ACCENT_KEY); } catch (e) {} applyAccentColor(''); return; }
         // v3.27.x 优化③：从壁纸取主色一键应用（先桌面壁纸，其次聊天壁纸）
         if (v === '__pick_wall__') { applyAccentFromWallpaper(); return; }
-        // v3.27.x：手输色值入口——二级弹窗输入 #RRGGBB（取色器打不开的手机靠这个）
-        if (v === '__hex__') {
-          openHexColorModal('手动输入主题色', current || '#e05555', (c) => {
-            try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
-            applyAccentColor(c);
-            toast('主题色已设置 ' + c.toUpperCase());
-          });
-          return;
-        }
         const color = (typeof v === 'number' && ACCENT_PRESETS[v]) ? ACCENT_PRESETS[v].color : v;
         if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
         try { localStorage.setItem(ACCENT_KEY, color); } catch (e) {}
@@ -5822,11 +5815,9 @@ try {
         colorPicker: true,
         color: current,
         swatches: ACCENT_PRESETS,
-        // v3.27.x：详细说明——预置色块任何手机都能用；系统取色器部分手机弹不出来
-        staticText: '点色块=一键选用，最简单可靠。「从壁纸取色」自动挑壁纸主色配成主题色。「自定义颜色」调起手机系统取色器，部分手机（内置浏览器/APP内打开）不支持、点了没反应——请改用「手动输入色值」，填 6 位色值如 #e05555（网上搜「颜色代码」可查任意颜色的色值）。',
+        staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。',
         pills: [
           { label: '从壁纸取色', value: '__pick_wall__' },
-          { label: '手动输入色值', value: '__hex__' },
           { label: '恢复默认', value: '__reset__' },
         ],
       });
