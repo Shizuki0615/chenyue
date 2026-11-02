@@ -6949,10 +6949,10 @@ const FIX_SENTINELS = [
   { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
   { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
   // ==== 2026-11-02 #1608 底栏选中阴影/背景块跟随图标线条色 ====
-  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 1px 5px rgba(' },
-  { name: '#1608b 浅色线条自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
-  { name: '#1608c 选中背景块同色跟随（删＝阴影带色而背景块仍是灰的）', file: 'js/personalize.js', needle: 'background:rgba(\' + _shR' },
-  { name: '#1608d 选中背景块保持很淡（删＝又回到 0.08/0.07，底块偏深）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.055 : 0.06;' },
+  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 1px 6px rgba(' },
+  { name: '#1608b 浅色线条阴影自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
+  { name: '#1608c 选中背景块用线条色本身（删＝背景块又被压暗成灰粉色）', file: 'js/personalize.js', needle: 'background:rgba(\' + _inkR + \',\' + _inkG' },
+  { name: '#1608d 选中背景块保持可见（删＝内缩后几乎看不见，只剩白底）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.13 : 0.10;' },
   // ==== 2026-11-02 #1609 底栏选中块内缩 + 阴影收紧 ====
   { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区，块显大）', file: 'css/tabbar.css', needle: 'top:4px; bottom:4px; left:8px; right:8px;' },
   { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },

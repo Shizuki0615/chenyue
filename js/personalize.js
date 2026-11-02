@@ -3100,11 +3100,11 @@ const _inkLight = _inkLum > 0.72;
 const _shR = _inkLight ? Math.round(_inkR * 0.55) : _inkR;
 const _shG = _inkLight ? Math.round(_inkG * 0.55) : _inkG;
 const _shB = _inkLight ? Math.round(_inkB * 0.55) : _inkB;
-const _bgA = _inkLight ? 0.055 : 0.06;
+const _bgA = _inkLight ? 0.13 : 0.10;
 st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
 + '.tabbar .tab{color:' + c + ' !important;}'
 + '.tabbar .tab.active{color:' + c + ' !important;}'
-+ '.tabbar .tab.active::before{background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 1px 5px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
++ '.tabbar .tab.active::before{background:rgba(' + _inkR + ',' + _inkG + ',' + _inkB + ',' + _bgA + ') !important;box-shadow:0 1px 6px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.14) !important;}'
 + '.tabbar .tab svg{stroke-opacity:.55;}'
 + '.tabbar .tab.active svg{stroke-opacity:1;}';
 document.head.appendChild(st);
