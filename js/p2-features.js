@@ -1714,6 +1714,8 @@ if (nextBtn) nextBtn.addEventListener('click', () => { if (dayIdx > 0) { locView
 function openLocPanel() {
 const nameEl = document.getElementById('loc-name');
 if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
+try { if (window.mochiKbDismiss) window.mochiKbDismiss(); } catch (e) {}
+try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
 document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });
 if (window.refreshSense) window.refreshSense();
 renderLocPanel();

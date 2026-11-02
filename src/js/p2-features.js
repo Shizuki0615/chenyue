@@ -2023,6 +2023,9 @@ if (ckRefresh) {
   function openLocPanel() {
     const nameEl = document.getElementById('loc-name');
     if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
+    // #1613：进位置页前先收键盘/焦点，避免物理返回第一下被上一页残留的输入框吞掉
+    try { if (window.mochiKbDismiss) window.mochiKbDismiss(); } catch (e) {}
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
     // #1613：位置面板改成真正的页面——与全站页面同一套显隐；页面栈自动记录来源，
     // 聊天进来按返回回聊天、寻踪进来回寻踪，物理返回同理。
     document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });
