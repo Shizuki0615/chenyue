@@ -3100,7 +3100,7 @@ const _inkLight = _inkLum > 0.72;
 const _shR = _inkLight ? Math.round(_inkR * 0.55) : _inkR;
 const _shG = _inkLight ? Math.round(_inkG * 0.55) : _inkG;
 const _shB = _inkLight ? Math.round(_inkB * 0.55) : _inkB;
-const _bgA = _inkLight ? 0.07 : 0.08;
+const _bgA = _inkLight ? 0.055 : 0.06;
 st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
 + '.tabbar .tab{color:' + c + ' !important;}'
 + '.tabbar .tab.active{color:' + c + ' !important;background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 2px 7px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
