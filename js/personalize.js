@@ -796,11 +796,16 @@ function brandText() {
 const v = gStore.get('desk-brand');
 return (v && v.trim()) ? v : 'Mochi';
 }
+window.mochiBrandText = brandText;
+window.mochiCoinBrand = function () {
+try { return brandText(); } catch (e) { return 'Mochi'; }
+};
 function paintDeskBrand() {
 const el = document.getElementById('desk-brand');
 if (el) el.textContent = brandText();
 const val = document.getElementById('desk-brand-val');
 if (val) val.textContent = gStore.get('desk-brand') || '默认（Mochi）';
+try { if (window.mochiRefreshCoinBrand) window.mochiRefreshCoinBrand(); } catch (e) {}
 }
 function bindDeskBrand() {
 const row = document.getElementById('row-desk-brand');

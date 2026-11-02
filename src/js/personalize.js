@@ -1113,11 +1113,18 @@ try {
     const v = gStore.get('desk-brand');
     return (v && v.trim()) ? v : 'Mochi';
   }
+  // #1618：把状态栏左上角的可自定义文字暴露给心意币等文案统一使用（默认 Mochi）
+  window.mochiBrandText = brandText;
+  window.mochiCoinBrand = function () {
+    try { return brandText(); } catch (e) { return 'Mochi'; }
+  };
   function paintDeskBrand() {
     const el = document.getElementById('desk-brand');
     if (el) el.textContent = brandText();
     const val = document.getElementById('desk-brand-val');
     if (val) val.textContent = gStore.get('desk-brand') || '默认（Mochi）';
+    // #1618：品牌名变了，聊天里已渲染的「申请心意币」回执卡就地同步
+    try { if (window.mochiRefreshCoinBrand) window.mochiRefreshCoinBrand(); } catch (e) {}
   }
   function bindDeskBrand() {
     const row = document.getElementById('row-desk-brand');

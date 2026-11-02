@@ -156,6 +156,11 @@
       String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
   }
   const escH = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  // #1618：心意币文案里的品牌名——与状态栏左上角可自定义文字同步（默认 Mochi）
+  function coinBrandNow() {
+    try { if (window.mochiCoinBrand) return window.mochiCoinBrand(); } catch (e) {}
+    return 'Mochi';
+  }
   function statsBarSection(icon, title, countMap, topLabel, emptyText) {
     const entries = [];
     for (const k in countMap) if (countMap.hasOwnProperty(k)) entries.push({ name: k, count: countMap[k] });
@@ -386,7 +391,7 @@
               main: '+¥' + (Number(m.askFen || 0) / 100).toFixed(2),
               sub: fmtMDHM(m.askTs || m.ts)
             })),
-            escH(name) + ' 还没有向 Mochi 申请过', 'askcoin') +
+            escH(name) + ' 还没有向 ' + escH(coinBrandNow()) + ' 申请过', 'askcoin') +
           // v3.16.x：小游戏记录（更多功能→小游戏 7 款对局 + 联系人主动邀请玩游戏，全部汇总）
           (function () {
             const GAME_SPECIAL = { brick: '双人打砖块', pong: '乒乓', snake: '贪吃蛇', memory: '记忆翻牌', rps: '猜拳', c4: '四子棋', ms: '合作扫雷' };

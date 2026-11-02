@@ -6946,6 +6946,13 @@ const FIX_SENTINELS = [
   { name: '#1617c 设置页底部防骗声明不得回流（用户直派删除；开屏/关于页口径仍在）', file: 'template.html', needle: 'class="set-alert"', absent: true },
   { name: '#1617d 时钟看门狗也不再往设置页回填防骗声明（删掉的静态块被 ensureSettings 复活过；回流即报警）', file: 'js/clock.js', needle: 'function ensureSettings() {', absent: true },
   { name: '#1617e 旧 clock.js 缓存回填的 .set-alert 在设置页兜底隐藏（删＝部分缓存下又看到那段声明）', file: 'css/setting.css', needle: '#page-setting .set-alert { display:none !important; }' },
+  // ==== 2026-11-02 #1618 心意币文案品牌名与状态栏左上角可自定义文字同步（用户直派）====
+  { name: '#1618a 状态栏可自定义文字统一出口（删＝心意币文案又写死 Mochi）', file: 'js/personalize.js', needle: 'window.mochiCoinBrand = function () {' },
+  { name: '#1618b 申请回执卡按品牌名渲染并留刷新标记（删＝聊天里又写死 Mochi）', file: 'js/chat.js', needle: "m.dataset.askcoin = '1';" },
+  { name: '#1618c 改品牌名后就地刷新已渲染的回执卡（删＝改名后旧卡仍显示旧名）', file: 'js/chat.js', needle: 'window.mochiRefreshCoinBrand = function () {' },
+  { name: '#1618d 钱包余额行/申请弹窗/toast 同源品牌名（删＝集市与聊天口吻不一致）', file: 'js/gift-shop.js', needle: "· 向 ' + coinBrandNow() + ' 申请心意币" },
+  { name: '#1618e 主页申请流水空态与旧记录来源同源品牌名（删＝记录页仍写 Mochi）', file: 'js/records.js', needle: '暂无申请记录（可点心意币余额行向 ' },
+  { name: '#1618f 聊天统计申请记录空态同源品牌名（删＝统计页仍写 Mochi）', file: 'js/p2-features.js', needle: "还没有向 ' + escH(coinBrandNow())" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
