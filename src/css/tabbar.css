@@ -23,22 +23,35 @@
    面积只有一条窄栏，与 #562 抽屉「刻意不加 backdrop-filter」的整屏卡顿红线不冲突 */
 .tabbar.tabbar-blur-on { -webkit-backdrop-filter:blur(var(--tabbar-blur, 10px)); backdrop-filter:blur(var(--tabbar-blur, 10px)); }
 .tabbar .tab {
+  position:relative;
   display:flex; align-items:center; justify-content:center; flex:1;
   color:var(--muted); cursor:pointer; padding:12px 6px; border-radius:16px;
-  transition:color .18s ease, background .18s ease, box-shadow .18s ease, opacity .18s ease;
+  transition:color .18s ease, opacity .18s ease;
   /* #769 整栏透明度的图标层（personalize.js 已算好 12% 下限，见 applyTabbarStyle） */
   opacity:var(--tabbar-ico-a, 1);
 }
-/* 当前分区：浅色块 + 软阴影，切 tab 时随 background/box-shadow 过渡（深色模式见 dark.css） */
+/* 2026-11-02：选中块改为内缩伪元素（上下 4px / 左右 8px），阴影一并收紧——
+   旧写法背景铺满整个 tab 热区，块显得偏大。过渡改在伪元素上。 */
+.tabbar .tab::before {
+  content:''; position:absolute;
+  top:4px; bottom:4px; left:8px; right:8px;
+  border-radius:13px; background:transparent; box-shadow:none;
+  transition:background .18s ease, box-shadow .18s ease;
+  z-index:0; pointer-events:none;
+}
+/* 当前分区：浅色块 + 软阴影（深色模式见 dark.css） */
 .tabbar .tab.active {
   color:var(--ink);
-  background:var(--tabbar-active-bg, rgba(0,0,0,.05));
-  box-shadow:var(--tabbar-active-shadow, 0 2px 7px rgba(0,0,0,.055));
+  background:transparent; box-shadow:none;
 }
-.tabbar .tab svg { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); }
+.tabbar .tab.active::before {
+  background:var(--tabbar-active-bg, rgba(0,0,0,.05));
+  box-shadow:var(--tabbar-active-shadow, 0 1px 5px rgba(0,0,0,.055));
+}
+.tabbar .tab svg { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); position:relative; z-index:1; }
 /* #769 上传的按钮图片：与默认 SVG 同尺寸同槽位（svg 隐藏、img 顶上，见 paintTabIcon），
    圆角随尺寸等比缩放（23px 档 ≈ 7px，与桌面图标观感一致） */
-.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); }
+.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); position:relative; z-index:1; }
 /* #769 触摸显形（防「栏消失找不回」设计缺陷）：任一透明度 < 50% 时挂 tabbar-faint，
    按压瞬间描边显形 + 图标全可见——看不见也知道那里有导航、能点 */
 .tabbar.tabbar-faint:active { border-color:rgba(120,120,120,.85); }

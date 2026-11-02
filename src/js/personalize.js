@@ -3930,7 +3930,9 @@ try {
     const _bgA = _inkLight ? 0.055 : 0.06;
     st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
       + '.tabbar .tab{color:' + c + ' !important;}'
-      + '.tabbar .tab.active{color:' + c + ' !important;background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 2px 7px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
+      + '.tabbar .tab.active{color:' + c + ' !important;}'
+      // 2026-11-02：背景块与阴影改落到内缩伪元素（上下 4 / 左右 8），阴影范围同步收紧
+      + '.tabbar .tab.active::before{background:rgba(' + _shR + ',' + _shG + ',' + _shB + ',' + _bgA + ') !important;box-shadow:0 1px 5px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.12) !important;}'
       + '.tabbar .tab svg{stroke-opacity:.55;}'
       + '.tabbar .tab.active svg{stroke-opacity:1;}';
     document.head.appendChild(st);
