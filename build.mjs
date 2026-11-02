@@ -3809,7 +3809,7 @@ const FIX_SENTINELS = [
   // CSS needle 按 minifyCss 产物形态逐字写（剥注释/行首缩进、保行内空格与分号）
   { name: '#769j 底栏底色走 color-mix 透明度链（删回纯色 background＝「背景透明度」滑杆整条失效）', file: 'css/tabbar.css', needle: 'background:color-mix(in srgb, var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff)) calc(var(--tabbar-bg-a, 1) * 100%), transparent);' },
   { name: '#769k 图标层透明度吃变量（改回无 opacity＝整栏透明度失效）', file: 'css/tabbar.css', needle: 'opacity:var(--tabbar-ico-a, 1);' },
-  { name: '#769l 上传按钮图片渲染规则（删＝img 裸尺寸/无裁切，图标大小与圆角滑杆失效）', file: 'css/tabbar.css', needle: '.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); }' },
+  { name: '#769l 上传按钮图片渲染规则（删＝img 裸尺寸/无裁切，图标大小与圆角滑杆失效）', file: 'css/tabbar.css', needle: '.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); position:relative; z-index:1; }' },
   { name: '#769m 触摸显形（删＝低透明度下按压无任何反馈，「看不见也知道那里有导航」防线失效）', file: 'css/tabbar.css', needle: '.tabbar.tabbar-faint:active .tab { opacity:1; }' },
   { name: '#769n 深色模式喂底色变量而非盖死 background（改回直接覆盖＝深色下透明度滑杆失效，#769j 链在深色断掉）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar { --tabbar-base-bg:var(--dark-card-92); border-color:var(--dark-border-12); }' },
   { name: '#769o 设置页「底部栏美化」行锚（整行删＝设置页入口消失，抽屉分区成唯一入口）', file: 'template.html', needle: '<div class="set-row" id="row-tabbar-beauty">' },
@@ -6792,7 +6792,7 @@ const FIX_SENTINELS = [
   { name: '#1587f 漫游曲目清退时连带清歌词缓存（删＝换一批 FM 歌就留下无主歌词键）', file: 'js/music-player.js', needle: 'removed.forEach(id => {' },
   // ==== 2026-10-28 #1588 底栏当前分区阴影块 ====
   { name: '#1588a 底栏当前分区阴影块（删＝选中 tab 退回透明背景，分区不可见）', file: 'css/tabbar.css', needle: 'background:var(--tabbar-active-bg, rgba(0,0,0,.05));' },
-  { name: '#1588b 深色底栏选中块阴影（删＝深色下只剩纯色块，没有阴影层次）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); box-shadow:0 2px 10px rgba(0,0,0,.35); }' },
+  { name: '#1588b 深色底栏选中块阴影（删＝深色下只剩纯色块，没有阴影层次）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar .tab.active::before { background:var(--dark-hover); box-shadow:0 1px 7px rgba(0,0,0,.32); }' },
   // ==== 2026-10-28 #1589 桌面小组件 / 图标自定义 CSS ====
   { name: '#1589a 小组件 CSS 入口（删＝桌面小组件没有自定义样式入口）', file: 'template.html', needle: 'id="row-widget-css"' },
   { name: '#1589b 图标 CSS 入口（删＝桌面图标没有自定义样式入口）', file: 'template.html', needle: 'id="row-icon-css"' },
@@ -6949,10 +6949,13 @@ const FIX_SENTINELS = [
   { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
   { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
   // ==== 2026-11-02 #1608 底栏选中阴影/背景块跟随图标线条色 ====
-  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 2px 7px rgba(' },
+  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 1px 5px rgba(' },
   { name: '#1608b 浅色线条自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
   { name: '#1608c 选中背景块同色跟随（删＝阴影带色而背景块仍是灰的）', file: 'js/personalize.js', needle: 'background:rgba(\' + _shR' },
   { name: '#1608d 选中背景块保持很淡（删＝又回到 0.08/0.07，底块偏深）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.055 : 0.06;' },
+  // ==== 2026-11-02 #1609 底栏选中块内缩 + 阴影收紧 ====
+  { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区，块显大）', file: 'css/tabbar.css', needle: 'top:4px; bottom:4px; left:8px; right:8px;' },
+  { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
