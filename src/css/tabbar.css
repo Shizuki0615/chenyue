@@ -35,7 +35,9 @@
 .tabbar .tab::before {
   content:''; position:absolute;
   top:2px; bottom:2px; left:5px; right:5px;
-  border-radius:13px; background:transparent; box-shadow:none;
+  /* 2026-11-02：选中块圆角跟随底栏圆角（--tabbar-radius，默认 22px）同步——
+     按同心圆口径取「外圆角 − 上下内缩 2px」，默认落到 20px；用户改底栏圆角时块一起变。 */
+  border-radius:calc(var(--tabbar-radius, 22px) - 2px); background:transparent; box-shadow:none;
   transition:background .18s ease, box-shadow .18s ease;
   z-index:0; pointer-events:none;
 }

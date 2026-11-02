@@ -6928,6 +6928,8 @@ const FIX_SENTINELS = [
   { name: '#1614e 信箱每次重画后补定位（删＝数据 ready/回信落地重画后高亮丢失）', file: 'js/mail.js', needle: 'try { applyMailJump(); } catch (e) {}' },
   { name: '#1614f 目标信件高亮样式（删＝定位到了但用户看不出是哪封）', file: 'css/chat-pages.css', needle: '.mail-item.mail-jump-hit' },
   { name: '#1614i 信件高亮色跟随主题色（删＝又写死暖橙，用户要求高亮与主题色同步）', file: 'css/chat-pages.css', needle: 'color-mix(in srgb, var(--btn-bg, #111111) 22%, transparent)' },
+  // ==== 2026-11-02 #1615 底栏选中块圆角跟随底栏圆角 ====
+  { name: '#1615a 选中块圆角跟随 --tabbar-radius（删＝又写死 13px，改底栏圆角时块不跟）', file: 'css/tabbar.css', needle: 'border-radius:calc(var(--tabbar-radius, 22px) - 2px)' },
   { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
   { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
