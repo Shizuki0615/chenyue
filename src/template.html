@@ -6983,11 +6983,11 @@
          #1613：改成真正的 .page（不再是 fixed 浮层）——与全站页面同一套显隐/状态栏/物理返回；
          页面栈会记录来源，聊天进来返回聊天、寻踪进来返回寻踪。 -->
     <div class="page" id="loc-panel" hidden>
-      <div class="loc-head">
-        <button class="loc-back" id="loc-back" aria-label="返回">
+      <div class="chat-head">
+        <span class="ch-back" id="loc-back" aria-label="返回">
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span class="loc-title">他在身边 · <b id="loc-name">他</b> 的位置</span>
+        </span>
+        <span class="ch-name">他在身边 · <b id="loc-name">他</b> 的位置</span>
       </div>
       <div class="loc-scroll">
         <!-- 方位感知（v3.13.x：模糊感知，不是精确定位） -->

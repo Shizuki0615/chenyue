@@ -854,7 +854,8 @@ const FIX_SENTINELS = [
   { name: '通话昵称与聊天域解耦（cs-lbl-partner 优先，回退名片名，不读桌面键）', file: 'js/call.js', needle: "window.contactNameFor ? window.contactNameFor(currentCall.cid) : '')" },
   { name: 'migrateLegacy def/root 提升函数顶部（修启动 ReferenceError 中断迁移）', file: 'js/contacts.js', needle: 'const root = window.xyStore(G);' },
   { name: 'iOS Edge 视口事件盲区兜底（window resize/工具条显隐 + 1s 轮询并进自愈，修输入栏下空一大块/页面上移残留）', file: 'js/mobile-adapt.js', needle: "addEventListener('orientationchange', onIosVvEvent)" },
-  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;' },
+  // #1613g 退役：位置页顶栏统一用全站 .ch-back，旧 .loc-back 私有样式整段下线（返回按钮由 .ch-back 承接，不得回流）
+  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;', absent: true },
   { name: '夜宵提醒专属字卡（nightcap 窗口抽「夜宵提醒/夜宵关心」池，不再复用"按时吃饭"文案）', file: 'js/p2-features.js', needle: 'DEF_EAT_REMIND_NIGHT' },
   { name: '房间放置/移动横幅取消钮能真正隐藏（.r-banner[hidden] 补 display:none，修「取消」弹窗一直不消失）', file: 'index.html', needle: '.r-banner[hidden] { display: none; }' },
   { name: '桌面「已摸鱼」卡与「今日情话」卡文字水平对齐（.mini-card fish .mc-b 与情话等高，修两卡标题/正文错位）', file: 'css/home.css', needle: '.mini-card[data-card-bg="fish"] .mc-b' },
@@ -6918,6 +6919,7 @@ const FIX_SENTINELS = [
   { name: '#1613d 位置页返回走页面栈（删＝左上角返回固定回桌面，聊天/寻踪来源丢失）', file: 'js/p2-features.js', needle: 'const go = window.mochiGoBack;' },
   { name: '#1613e 位置页登记全屏页（删＝tabbar 常驻遮住底部内容）', file: 'js/tabs.js', needle: ", 'loc-panel'];" },
   { name: '#1613f 位置页不再登记浮层滚动锁（删＝页面被当成浮层锁滚，内部 loc-scroll 可能划不动）', file: 'js/mobile-adapt.js', needle: "'#loc-panel'", absent: true },
+  { name: '#1613g 位置页顶栏统一用全站 chat-head（删＝又回自定义 loc-head，用户要求顶栏与其他界面一致）', file: 'template.html', needle: '<span class="ch-back" id="loc-back" aria-label="返回">' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
