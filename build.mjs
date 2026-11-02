@@ -6920,6 +6920,15 @@ const FIX_SENTINELS = [
   { name: '#1613e 位置页登记全屏页（删＝tabbar 常驻遮住底部内容）', file: 'js/tabs.js', needle: ", 'loc-panel'];" },
   { name: '#1613f 位置页不再登记浮层滚动锁（删＝页面被当成浮层锁滚，内部 loc-scroll 可能划不动）', file: 'js/mobile-adapt.js', needle: "'#loc-panel'", absent: true },
   { name: '#1613g 位置页顶栏统一用全站 chat-head（删＝又回自定义 loc-head，用户要求顶栏与其他界面一致）', file: 'template.html', needle: '<span class="ch-back" id="loc-back" aria-label="返回">' },
+  // ==== 2026-11-02 #1614 聊天信件通知直达对应信件（用户「有好几封信时得一封封找才知道他回的是哪封」）====
+  { name: '#1614a 回信通知带原信标题（删＝通知又回到通用文案，用户点前认不出是哪封）', file: 'js/mail.js', needle: "targetTitle ? '：《' + targetTitle + '》' : ''" },
+  { name: '#1614b 信件通知透传 mailId（删＝聊天记录里没有信件 id，点进去只能回列表一封封找）', file: 'js/mail.js', needle: 'mailId: opts && opts.mailId' },
+  { name: '#1614c 聊天信件通知按 id 直达（删＝仍统一 openMailPage 打开列表）', file: 'js/chat.js', needle: 'if (rec.mailId && window.openMailLetter)' },
+  { name: '#1614d 信箱直达入口 openMailLetter（删＝没有按 id 开门的方法）', file: 'js/mail.js', needle: 'window.openMailLetter = openMailLetter;' },
+  { name: '#1614e 信箱每次重画后补定位（删＝数据 ready/回信落地重画后高亮丢失）', file: 'js/mail.js', needle: 'try { applyMailJump(); } catch (e) {}' },
+  { name: '#1614f 目标信件高亮样式（删＝定位到了但用户看不出是哪封）', file: 'css/chat-pages.css', needle: '.mail-item.mail-jump-hit' },
+  { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
+  { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
