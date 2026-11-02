@@ -6902,6 +6902,8 @@ const FIX_SENTINELS = [
   { name: '#1609a 原生取色器入口全站隐藏（删＝App 内置 WebView 里「自定义颜色」死入口回归，且与下方手输框重复）', file: 'js/personalize.js', needle: 'customBtn.hidden = true;' },
   { name: '#1609b 主题色说明缩成一行（删＝又变回五行的系统取色器解释，弹窗重新被文字占满）', file: 'js/personalize.js', needle: "staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。'," },
   { name: '#1609c 主题色只留「从壁纸取色/恢复默认」两粒胶囊（删＝手动输入色值旧入口回归，与手输框重复）', file: 'js/personalize.js', needle: "{ label: '从壁纸取色', value: '__pick_wall__' }," },
+  // ==== 2026-11-02 #1610 底部导航栏组只留「基础」tab（原来在 tab 外，两个 tab 同显）====
+  { name: '#1610a 底部导航栏组移进基础面板（移回 tab 外＝基础/壁纸与图标两个 tab 又各显一遍，用户实报重复）', file: 'template.html', needle: '2026-11-02 #1610：底部导航栏组从 tab 外移进「基础」面板' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
