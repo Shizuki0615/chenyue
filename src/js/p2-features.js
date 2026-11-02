@@ -2021,30 +2021,22 @@ if (ckRefresh) {
   // v3.26.x：两入口（聊天寻踪半框 / 桌面寻踪页）统一全屏打开——用户反馈聊天入口半屏不理想，
   // 与桌面寻踪页入口（.loc-full 全屏）保持一致
   function openLocPanel() {
-    const panel = document.getElementById('loc-panel');
     const nameEl = document.getElementById('loc-name');
     if (nameEl) nameEl.textContent = store.get('lbl-partner') || '他';
-    // #1612：全屏面板不再盖住顶部状态栏——量出状态栏底边到手机壳顶的距离，
-    // 面板从这条线往下铺，Mochi/时间/电量常驻可见（桌面壳顶 padding 也一并算进去）。
-    try {
-      const ph = document.querySelector('.phone');
-      const sb = document.querySelector('.phone > .statusbar');
-      if (ph && sb) {
-        const h = Math.round(sb.getBoundingClientRect().bottom - ph.getBoundingClientRect().top);
-        if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');
-      }
-    } catch (e) {}
-    if (panel) panel.classList.add('loc-full');
+    // #1613：位置面板改成真正的页面——与全站页面同一套显隐；页面栈自动记录来源，
+    // 聊天进来按返回回聊天、寻踪进来回寻踪，物理返回同理。
+    document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });
     // v3.13.x：刷新方位感知（含漂移检查）+ 渲染感知圆
     if (window.refreshSense) window.refreshSense();
     renderLocPanel();
-    if (panel) panel.hidden = false;
     const ck = document.getElementById('ck-panel');
     if (ck) ck.hidden = true;
   }
   function closeLocPanel() {
-    const panel = document.getElementById('loc-panel');
-    if (panel) { panel.hidden = true; panel.classList.remove('loc-full'); }
+    // #1613：按页面栈返回来源页；兜底桌面
+    const go = window.mochiGoBack;
+    if (go) { go('page-phone'); return; }
+    document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'page-phone'); });
   }
 
   const entry = document.getElementById('ck-loc-entry');
@@ -2428,7 +2420,10 @@ if (ckRefresh) {
   // 切联系人关闭弹层
   document.addEventListener('contact-switched', function () {
     const panel = document.getElementById('loc-panel');
-    if (panel) panel.hidden = true;
+    if (!panel || panel.hidden) return;
+    // #1613：位置页正在显示时切了联系人——按页面栈退回来源页；兜底桌面
+    if (window.mochiGoBack) window.mochiGoBack('page-phone');
+    else document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'page-phone'); });
   });
 })();
 

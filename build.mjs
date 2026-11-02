@@ -2166,11 +2166,8 @@ const FIX_SENTINELS = [
   { name: '#427 打砖块全屏同族抗内联残留（删则同 #427 在打砖块复发）', file: 'css/chat-pages.css', needle: '#chat-brick-panel.brick-fs { position:fixed !important;' },
   { name: '#427 贪吃蛇全屏同族抗内联残留（删则同 #427 在贪吃蛇复发）', file: 'css/chat-pages.css', needle: '#chat-snake-panel.snake-fs { position:fixed !important;' },
   { name: '#427 五子棋兄弟互斥只认真可见面板（hidden=false 但零渲染盒＝残留态不触发误关；删则残留兄弟把刚打开的棋盘反复自动关掉＝「打开就消失回聊天、刷新才恢复」）', file: 'js/gomoku.js', needle: 'getClientRects().length > 0) { closePanel(); break; }' },
-  // ==== 2026-09-13 #428 寻踪「看看TA在哪」全屏位置面板抬到提醒条之上（vivo S60 等多机型报「点看看ta在哪
-  //      页面卡死，只能退出刷新」：面板 z-78 低于顶部提醒条 z-998，备份提醒显形期间（距上次导出超 1 天即弹、
-  //      #355 收短后极常见）正好压住头部返回按钮＝面板关不掉+body 滚动锁＝整页像卡死；z 抬 9999，
-  //      仍低于 modal-mask 99999 / 应用锁 999999）====
-  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;' },
+  // ==== #428 退役：#1613 起位置面板改成真正的 .page（不再 fixed/z-9999 浮层）——旧浮层不得回流 ====
+  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;', absent: true },
   // #1455 退役：live 版 #416/#998 已在位（needle "return chatScrollMax() - cb.scrollTop <= 8;"）；本条 #416 为旧底（原 needle "return cb.scrollHeight - cb.scrollTop - cb.clientHeight <= 8;" 已从 src/js/chat.js 消失），按 #1447 先例只留一条活锚
   { name: '#416 群聊解除接管只认真的贴到底（gcAtBottom 同 ≤8px 口径；删则旧 150px 容差让滚动手势第一个 scroll 事件就清掉接管、下一条成员回复把历史阅读拽回最底复发）', file: 'js/group-chat.js', needle: 'return body.scrollHeight - body.scrollTop - body.clientHeight <= 8;' },
   { name: '#416 群聊滚回贴底检测必须停稳（gcScrollTimer 120ms 防手势中第一个 scroll 事件误清接管；删则「每次点滑动被拽回最底」随下一条回复复发）', file: 'js/group-chat.js', needle: 'gcScrollTimer = setTimeout(() => {' },
@@ -6558,7 +6555,7 @@ const FIX_SENTINELS = [
   { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
   { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
   // #1547q 已于 2026-10-28 随用户要求删除「更多 → 互动」读书入口而退场（桌面图标仍是主要入口，见 #1591a 回流哨兵）
-  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings'];" },
+  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings', 'loc-panel'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
   { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },
@@ -6908,11 +6905,19 @@ const FIX_SENTINELS = [
   { name: '#1611a 桌面壳顶部留白变量（删＝全屏页恢复 padding:0，桌面模拟器下状态栏上移 16px）', file: 'css/base.css', needle: '--phone-top-pad:16px;' },
   { name: '#1611b 全屏页按桌面顶部留白补回（删＝Mochi/时间/电量进应用后仍比桌面高 16px）', file: 'css/tabbar.css', needle: '.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }' },
   { name: '#1611c 全屏页状态栏左右 22px 对齐桌面（删＝全屏页状态栏比桌面左移 4px）', file: 'css/tabbar.css', needle: 'padding-left: calc(22px + var(--mochi-side-adj,0px));' },
-  // ==== 2026-11-02 #1612 位置面板全屏时顶部状态栏常驻 ====
-  { name: '#1612a 打开位置面板时实测状态栏底边（删＝面板从壳顶铺，Mochi/时间/电量被整块盖住）', file: 'js/p2-features.js', needle: "if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');" },
-  { name: '#1612b 全屏位置面板顶边下移到状态栏底边（删＝面板盖住顶栏，用户实报「这个页面没有顶栏」）', file: 'css/chat-pages.css', needle: 'top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;' },
-  { name: '#1612c 桌面壳形态面板顶边叠加壳顶偏移（删＝桌面模拟器里面板顶边比状态栏高 24px+）', file: 'css/chat-pages.css', needle: 'top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px));' },
-  { name: '#1612d 面板头部不再重复 safe-area 留白（删＝状态栏已占位后头部再空一截）', file: 'css/chat-pages.css', needle: '.loc-panel.loc-full .loc-head { padding:12px 16px; }' },
+  // ==== 2026-11-02 #1612 位置面板全屏时顶部状态栏常驻（#1613 改页面后退役：状态栏在页面外天然常驻，
+  //      旧的 fixed 面板/--mochi-sb-h 测量不得回流）====
+  { name: '#1612a 打开位置面板时实测状态栏底边（删＝面板从壳顶铺，Mochi/时间/电量被整块盖住）', file: 'js/p2-features.js', needle: "if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');", absent: true },
+  { name: '#1612b 全屏位置面板顶边下移到状态栏底边（删＝面板盖住顶栏，用户实报「这个页面没有顶栏」）', file: 'css/chat-pages.css', needle: 'top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;', absent: true },
+  { name: '#1612c 桌面壳形态面板顶边叠加壳顶偏移（删＝桌面模拟器里面板顶边比状态栏高 24px+）', file: 'css/chat-pages.css', needle: 'top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px));', absent: true },
+  { name: '#1612d 面板头部不再重复 safe-area 留白（删＝状态栏已占位后头部再空一截）', file: 'css/chat-pages.css', needle: '.loc-panel.loc-full .loc-head { padding:12px 16px; }', absent: true },
+  // ==== 2026-11-02 #1613 位置面板改成真正的页面（不再 fixed 浮层）====
+  { name: '#1613a 位置面板改为 .page（删＝回到 fixed 浮层，用户明确不要浮层）', file: 'template.html', needle: '<div class="page" id="loc-panel" hidden>' },
+  { name: '#1613b 位置页页面样式（删＝位置页按浮层样式渲染，fixed/滚动全乱）', file: 'css/chat-pages.css', needle: 'padding:0; background:var(--card-bg-97,#fff);' },
+  { name: '#1613c 打开位置页走页面显隐（删＝打开还是弹浮层/其它页不隐藏）', file: 'js/p2-features.js', needle: "document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });" },
+  { name: '#1613d 位置页返回走页面栈（删＝左上角返回固定回桌面，聊天/寻踪来源丢失）', file: 'js/p2-features.js', needle: 'const go = window.mochiGoBack;' },
+  { name: '#1613e 位置页登记全屏页（删＝tabbar 常驻遮住底部内容）', file: 'js/tabs.js', needle: ", 'loc-panel'];" },
+  { name: '#1613f 位置页不再登记浮层滚动锁（删＝页面被当成浮层锁滚，内部 loc-scroll 可能划不动）', file: 'js/mobile-adapt.js', needle: "'#loc-panel'", absent: true },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

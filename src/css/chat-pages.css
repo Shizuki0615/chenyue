@@ -1619,36 +1619,21 @@
 .ck-loc-s { font-size:11px; font-weight:500; color:var(--muted); line-height:1.35; }
 .ck-loc-arrow { flex-shrink:0; display:flex; color:var(--muted); }
 .ck-loc-arrow svg { width:15px; height:15px; }
-.loc-panel {
-  position:fixed; left:0; right:0; bottom:0; z-index:78;
-  max-height:90vh; display:flex; flex-direction:column;
-  background:rgba(255,255,255,.98); border-radius:18px 18px 0 0;
-  box-shadow:0 -6px 28px rgba(0,0,0,.18); animation:locSlideUp .25s ease;
+/* #1613：位置面板改成真正的 .page，不再用 fixed 浮层——与全站页面共用状态栏/显隐/
+   物理返回；页面内部只滚 .loc-scroll，头部固定。旧 .loc-panel 的 fixed/z-9999 整段下线。 */
+#loc-panel {
+  display:flex; flex-direction:column; overflow:hidden;
+  padding:0; background:var(--card-bg-97,#fff);
 }
-.loc-panel[hidden] { display:none; }
-@keyframes locSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-/* v3.26.x：全屏模式（聊天寻踪半框 / 桌面寻踪页「TA在身边 · 看看 TA 在哪」两入口统一全屏）
-   #428 抬层：本面板原 z-78，低于全局顶部提醒条（ver-update-bar/backup-remind-bar，z-998、
-   body 直挂子）——提醒条显形期间（距上次导出备份超 2 天即弹，#355 收短后极常见）正好压住
-   全屏面板头部的「返回」按钮，点击落在提醒条上、面板关不掉 + body 滚动锁，用户视角＝
-   「点看看TA在哪后页面卡死，只能退出刷新」（vivo S60 等多机型同报，与机型无关）。
-   z-9999 抬到提醒条之上（仍低于 modal-mask 99999 / 应用锁 999999）；inset 改四长手兼容老内核。 */
-.loc-panel.loc-full {
-  /* #1612：全屏面板顶边下移到状态栏底边（--mochi-sb-h 由 openLocPanel 实测写入），
-     顶部 Mochi/时间/电量常驻，不再被面板整块盖住；状态栏隐藏的形态变量为 0 = 原行为 */
-  top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;
-  background:#fff; z-index:9999;
-  animation:locFadeIn .22s ease;
-}
-@keyframes locFadeIn { from { opacity:0; transform:scale(.985); } to { opacity:1; transform:none; } }
+#loc-panel[hidden] { display:none; }
 /* 头部 */
 .loc-head {
   display:flex; align-items:center; gap:6px; flex-shrink:0;
   padding:12px 14px; border-bottom:1px solid rgba(0,0,0,.06);
   background:rgba(255,255,255,.96);
 }
-/* #1612：状态栏已经在面板上方占位，头部不再重复加 safe-area 顶部留白（否则会双倍空一截） */
-.loc-panel.loc-full .loc-head { padding:12px 16px; }
+/* #1613：状态栏已在页面外常驻，头部不再叠 safe-area 顶部留白 */
+#loc-panel .loc-head { padding:12px 16px; }
 /* v3.26.x：返回按钮（点击 closeLocPanel 关闭面板） */
 .loc-back {
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
@@ -1670,7 +1655,7 @@
 .loc-body {
   padding:14px 16px calc(18px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));
 }
-.loc-panel.loc-full .loc-body { padding-top:2px; }
+#loc-panel .loc-body { padding-top:2px; }
 
 /* 内容卡片 */
 .loc-section {
@@ -1768,7 +1753,7 @@
     radial-gradient(120% 100% at 50% 0%, rgba(255,214,150,.26) 0%, rgba(255,255,255,0) 62%),
     rgba(255,255,255,.6);
 }
-.loc-panel.loc-full .fw-sense { border-bottom:none; }
+#loc-panel .fw-sense { border-bottom:none; }
 .fw-title { display:flex; align-items:baseline; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .fw-title-t { font-size:15px; font-weight:800; color:var(--ink); letter-spacing:1px; }
 .fw-title-s { font-size:11px; color:var(--muted); }
@@ -2944,8 +2929,6 @@ body.mail-emoji-mode #emoji-panel { bottom: calc(64px + var(--mochi-safe-bottom,
    loc-full 四长手（同 #428 老内核兼容口径）。≤900px 手机不进查询、行为不变。 */
 @media (min-width: 901px) {
   html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .cc-manage-bar { left: calc(50% - 177px); right: calc(50% - 177px); bottom: calc(max(24px, 50vh - 422px) + 18px); }
-  html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .loc-panel { left: calc(50% - 195px); right: calc(50% - 195px); bottom: max(24px, 50vh - 422px); }
-  html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .loc-panel.loc-full { top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px)); right: calc(50% - 195px); bottom: max(24px, 50vh - 422px); left: calc(50% - 195px); }
   html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .music-batch-bar { left: calc(50% - 195px); right: calc(50% - 195px); bottom: max(24px, 50vh - 422px); }
   html:not(.force-mobile):not(.tablet):not(.fs-active):not(.fs-css-active) .sm-float { left: calc(50% - 183px); top: calc(max(24px, 50vh - 422px) + 80px); }
 }

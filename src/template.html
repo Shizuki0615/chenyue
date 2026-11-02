@@ -6979,10 +6979,10 @@
         </div>
       </div>
 
-    <!-- 他在身边·位置面板（聊天寻踪半框 / 桌面寻踪页「他在身边」入口共用，必须放在所有 .page 之外——
-         position:fixed 弹层若嵌在 .page 内，页面切换时会被父级 hidden 隐藏，桌面寻踪页点开就会"跑到聊天页"；
-         v3.26.x：两入口统一 .loc-full 全屏打开） -->
-    <div class="loc-panel" id="loc-panel" hidden>
+    <!-- 他在身边·位置面板（聊天寻踪半框 / 桌面寻踪页「他在身边」入口共用）
+         #1613：改成真正的 .page（不再是 fixed 浮层）——与全站页面同一套显隐/状态栏/物理返回；
+         页面栈会记录来源，聊天进来返回聊天、寻踪进来返回寻踪。 -->
+    <div class="page" id="loc-panel" hidden>
       <div class="loc-head">
         <button class="loc-back" id="loc-back" aria-label="返回">
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
