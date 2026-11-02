@@ -6932,6 +6932,13 @@ const FIX_SENTINELS = [
   { name: '#1615a 选中块圆角跟随 --tabbar-radius（删＝又写死 13px，改底栏圆角时块不跟）', file: 'css/tabbar.css', needle: 'border-radius:calc(var(--tabbar-radius, 22px) - 2px)' },
   { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
   { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
+  // ==== 2026-11-02 #1616 读书模块一层一层返回（用户：页面跳转有问题，要求逐层退出）====
+  { name: '#1616a 读书逐层返回入口（删＝物理返回越过阅读器/书架直接回桌面）', file: 'js/reading.js', needle: 'window.mochiReadingBack = rdBackOne;' },
+  { name: '#1616b 物理/PWA 返回先走读书层（删＝closeLayers 不认阅读器/目录/批注层，返回跳层）', file: 'js/tabs.js', needle: 'try { if (window.mochiReadingBack && window.mochiReadingBack()) return true; } catch (e) {}' },
+  { name: '#1616c 阅读器左上角返回逐层消化（删＝目录/他在哪/批注层开着时也直接退到书架）', file: 'js/reading.js', needle: "if (el.closest('#rd-reader-back')) {" },
+  { name: '#1616d 书架左上角返回逐层消化（删＝导入/边看边调/菜单/分组开着也直接退桌面）', file: 'js/reading.js', needle: "if (el.closest('#rd-shelf-back')) {" },
+  { name: '#1616e 阅读层从高到低只关一层（删＝返回把所有阅读弹层一次关光）', file: 'js/reading.js', needle: "['rd-live-drawer', rdCloseLiveDrawer]," },
+  { name: '#1616f 阅读器关到书架而不是桌面（删＝返回直接 rdClose 回桌面）', file: 'js/reading.js', needle: 'if (reader && !reader.hidden) { rdShowShelf(); return true; }' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

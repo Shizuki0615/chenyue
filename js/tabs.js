@@ -189,6 +189,7 @@ if (hang && !hang.hidden) { hang.click(); return true; }
 callMask.hidden = true;
 return true;
 }
+try { if (window.mochiReadingBack && window.mochiReadingBack()) return true; } catch (e) {}
 return false;
 }
 function kbOpen() {
