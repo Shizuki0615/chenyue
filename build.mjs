@@ -6989,6 +6989,7 @@ const FIX_SENTINELS = [
   { name: '#1623d 开桌/同步/可见性触发重叠体检（删＝只在首次 boot 查一次，切页/回桌面后重叠不修）', file: 'js/personalize.js', needle: "scheduleDeskGridV2Heal('boot');" },
   // ==== 2026-11-03 #1624 桌面网格行高必须纯 auto（minmax(86px,auto) 在桌面 Chrome 压成 86px）====
   { name: '#1624a 网格行高纯 auto（删＝桌面 Chrome 把所有行压成 86px，卡片溢出压卡片/压图标并留大空隙）', file: 'css/desk-grid-v2.css', needle: 'grid-auto-rows: auto;' },
+  { name: '#1624b 运行时行高兜底（删＝旧 index 被缓存时仍用旧 minmax 行高，卡片照样重叠）', file: 'js/personalize.js', needle: 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:auto!important}' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

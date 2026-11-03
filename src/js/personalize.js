@@ -7631,6 +7631,17 @@ try {
     'memo-row': 2, 'desk-period': 2, 'desk-clock': 2, 'desk-calendar': 2,
     'desk-timer': 2, 'desk-anniv': 2
   };
+  // #1624：桌面 Chrome 实测 minmax(86px, auto) 会把所有行压成 86px，固定高度卡片溢出压下一行。
+  // 除了样式文件改成纯 auto，这里再运行时补一条 !important：即使用户拿到的是被缓存的旧 index，
+  // 只要新 JS 到了，行高也会按内容真实高度生长，不再出现卡片压卡片/压图标和大空隙。
+  try {
+    if (!document.getElementById('dgr-row-autofix')) {
+      const st = document.createElement('style');
+      st.id = 'dgr-row-autofix';
+      st.textContent = 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:auto!important}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+  } catch (e) {}
   let deskGridV2GridOn = false;
   let deskGridV2Editing = false;
   let deskGridV2Booted = false;

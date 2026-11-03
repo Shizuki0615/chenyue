@@ -6192,6 +6192,14 @@ deco: 2, 'quote-row': 2, checkin: 1, music: 2, week: 2, weekend: 2,
 'memo-row': 2, 'desk-period': 2, 'desk-clock': 2, 'desk-calendar': 2,
 'desk-timer': 2, 'desk-anniv': 2
 };
+try {
+if (!document.getElementById('dgr-row-autofix')) {
+const st = document.createElement('style');
+st.id = 'dgr-row-autofix';
+st.textContent = 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:auto!important}';
+(document.head || document.documentElement).appendChild(st);
+}
+} catch (e) {}
 let deskGridV2GridOn = false;
 let deskGridV2Editing = false;
 let deskGridV2Booted = false;
