@@ -7036,6 +7036,12 @@ const FIX_SENTINELS = [
   { name: '#1628m 焦点浮层隐藏编辑工具条（删＝调焦点时仍看到减号/页缩略图/编辑条叠在暗层下）', file: 'css/home.css', needle: 'html.dpf-crop-open #dgr-editbar,' },
   // ==== 2026-11-03 #1629 分页圆点下移 ====
   { name: '#1629a 分页圆点下移 4px（删＝圆点离底部导航条又变远）', file: 'css/home.css', needle: 'position:absolute; left:0; right:0; bottom:2px;' },
+  // ==== 2026-11-03 #1630 拍立得相框接入「小组件 CSS」====
+  { name: '#1630a 组件列表含拍立得相框（删＝小组件 CSS 选不到相框）', file: 'js/personalize.js', needle: "{ type: 'photo-frame', name: '拍立得相框', sel: '.desk-photo-frame' }," },
+  { name: '#1630b 相框专属选择器插入（删＝选相框仍插入 [data-card-bg]，规则不命中）', file: 'js/personalize.js', needle: "const sel = (item && item.sel) ? item.sel : '[data-card-bg=\"' + type + '\"]';" },
+  { name: '#1630c 相纸底色变量（删＝CSS 里改 --photo-frame-paper 无效）', file: 'css/home.css', needle: 'background:var(--photo-frame-paper,#fffaf0);' },
+  { name: '#1630d 相框小字颜色变量（删＝CSS 里改 --photo-frame-ink 无效）', file: 'css/home.css', needle: 'color:var(--photo-frame-ink,#7b6a58);' },
+  { name: '#1630e CSS 面板说明相框变量（删＝用户不知道相框可以用哪几个变量）', file: 'js/personalize.js', needle: '--photo-frame-paper</code>、小字颜色 <code>--photo-frame-ink</code>、胶带颜色 <code>--photo-frame-tape</code>' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

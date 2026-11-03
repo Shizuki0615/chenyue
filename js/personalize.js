@@ -3174,6 +3174,7 @@ const DESK_CSS_WIDGETS = [
 { type: 'desk-timer', name: '倒计时' },
 { type: 'desk-anniv', name: '倒数日' },
 { type: 'desk-period', name: '经期' },
+{ type: 'photo-frame', name: '拍立得相框', sel: '.desk-photo-frame' },
 ];
 const deskDeclsImportant = (decl) => String(decl || '').split(';').map(function (part) {
 const s = part.trim();
@@ -3308,7 +3309,8 @@ try { ta.setSelectionRange(pos, pos); } catch (e) {}
 }
 function insertDeskWidgetSelector(ta, type) {
 if (!ta || !type) return;
-const sel = '[data-card-bg="' + type + '"]';
+const item = DESK_CSS_WIDGETS.find(function (w) { return w && w.type === type; });
+const sel = (item && item.sel) ? item.sel : '[data-card-bg="' + type + '"]';
 const cur = deskCssReadVal(ta);
 if (cur.indexOf(sel + ' {') >= 0) {
 const s = cur.lastIndexOf(sel + ' {');
@@ -3395,7 +3397,7 @@ inputId: 'desk-widget-css-input',
 clearId: 'desk-widget-css-clear',
 okId: 'desk-widget-css-ok',
 title: '小组件 CSS',
-hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.12)</code>（自动应用到所有带背景的桌面小组件卡片）<br>· 或写选择器，如 <code>.music-widget{...}</code>、<code>[data-card-bg=&quot;week&quot;]{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。',
+hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.12)</code>（自动应用到所有带背景的桌面小组件卡片）<br>· 或写选择器，如 <code>.music-widget{...}</code>、<code>[data-card-bg=&quot;week&quot;]{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。<br>· 拍立得相框：选「拍立得相框」插入 <code>.desk-photo-frame{...}</code>；相纸底色 <code>--photo-frame-paper</code>、小字颜色 <code>--photo-frame-ink</code>、胶带颜色 <code>--photo-frame-tape</code> 也可直接覆盖。',
 placeholder: 'border-radius: 24px;&#10;box-shadow: 0 8px 24px rgba(0,0,0,.12);',
 picker: true,
 apply: applyDeskWidgetCss,

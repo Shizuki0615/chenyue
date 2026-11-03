@@ -668,10 +668,13 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
 .desk-countdown-widget .dcd-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-countdown-widget .dcd-date { font-size:12px; color:var(--muted,#666); }
 .desk-image-widget img { width:100%; display:block; border-radius:inherit; }
-/* #1628 拍立得相框：复用图片组件上传/存储，2×2 默认尺寸（网格版），奶油相纸+主题色胶带 */
+/* #1628 拍立得相框：复用图片组件上传/存储，2×2 默认尺寸（网格版），奶油相纸+主题色胶带
+   #1630 颜色入口：--photo-frame-paper 相纸底色 / --photo-frame-ink 小字颜色 /
+   --photo-frame-tape 胶带颜色（未改时胶带跟主题色）。「小组件 CSS」选「拍立得相框」
+   会自动插入 .desk-photo-frame { ... }。 */
 .desk-photo-frame {
   position:relative; margin:14px 0; padding:8px 8px 0;
-  background:#fffaf0; border-radius:10px; overflow:visible;
+  background:var(--photo-frame-paper,#fffaf0); border-radius:10px; overflow:visible;
   box-shadow:0 6px 18px rgba(0,0,0,.10), inset 0 0 0 1px rgba(255,255,255,.75);
 }
 .desk-photo-frame::before {
@@ -687,7 +690,7 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
 }
 .desk-photo-frame .dpf-cap {
   height:27px; line-height:27px; padding:0 2px;
-  font-size:11px; color:#7b6a58; text-align:center;
+  font-size:11px; color:var(--photo-frame-ink,#7b6a58); text-align:center;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   letter-spacing:.02em;
 }
