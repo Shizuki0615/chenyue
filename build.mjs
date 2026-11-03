@@ -7034,6 +7034,8 @@ const FIX_SENTINELS = [
   { name: '#1628k 相框胶带跟随主题色（删＝胶带固定米色，不跟主题）', file: 'js/personalize.js', needle: "document.documentElement.style.setProperty('--photo-frame-tape', color);" },
   { name: '#1628l 焦点浮层物理返回取消（删＝安卓返回键越过浮层，直接退页面/App）', file: 'js/tabs.js', needle: 'try { if (window.mochiPhotoCropBack && window.mochiPhotoCropBack()) return true; } catch (e) {}' },
   { name: '#1628m 焦点浮层隐藏编辑工具条（删＝调焦点时仍看到减号/页缩略图/编辑条叠在暗层下）', file: 'css/home.css', needle: 'html.dpf-crop-open #dgr-editbar,' },
+  // ==== 2026-11-03 #1629 分页圆点下移 ====
+  { name: '#1629a 分页圆点下移 4px（删＝圆点离底部导航条又变远）', file: 'css/home.css', needle: 'position:absolute; left:0; right:0; bottom:2px;' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
