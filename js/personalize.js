@@ -6303,7 +6303,9 @@ let best = null, bestD = 1e9;
 for (let r = start; r <= maxRow + 2; r++) {
 for (let c = 0; c <= DESK_GRID_V2_COLS - w; c++) {
 if (!deskGridV2FitAt(occ, c, r, w, h)) continue;
-const d = Math.abs(c - wantCol) * 2 + Math.abs(r - wantRow);
+const dr = Math.abs(r - wantRow);
+const dc = Math.abs(c - wantCol);
+const d = dr * 10 + dc;
 if (d < bestD) { bestD = d; best = { col: c, row: r }; if (d === 0) return best; }
 }
 }
@@ -6324,26 +6326,41 @@ const occ = Object.create(null);
 let maxRow = 0;
 const mark = (it) => {
 for (let r = it.row; r < it.row + it.h; r++) {
-for (let c = it.col; c < it.col + it.w; c++) occ[r + ',' + c] = 1;
+for (let c = it.col; c < it.col + it.w; c++) {
+const k = r + ',' + c;
+occ[k] = (occ[k] || 0) + 1;
+}
 }
 maxRow = Math.max(maxRow, it.row + it.h);
 };
+const unmark = (it) => {
+for (let r = it.row; r < it.row + it.h; r++) {
+for (let c = it.col; c < it.col + it.w; c++) {
+const k = r + ',' + c;
+if (occ[k]) occ[k]--;
+}
+}
+};
 let pinned = null;
 if (pinnedKey) pinned = items.find(it => it && it.key === pinnedKey) || null;
-if (pinned) {
-const s = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
-pinned.w = s.w; pinned.h = s.h;
-mark(pinned);
-}
 const rest = items.filter(it => it && it !== pinned)
 .sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
 let changed = false;
+if (pinned) {
+const sp = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
+pinned.w = sp.w; pinned.h = sp.h;
+mark(pinned);
+}
 rest.forEach(it => {
 const s = deskGridV2ClampSize(it, it.w, it.h);
 if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; it.sz = 1; changed = true; }
+mark(it);
+});
+rest.forEach(it => {
+unmark(it);
 if (deskGridV2FitAt(occ, it.col, it.row, it.w, it.h)) { mark(it); return; }
-const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, Math.max(0, it.row));
-if (!free) return;
+const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, 0);
+if (!free) { mark(it); return; }
 if (free.col !== it.col || free.row !== it.row) { it.col = free.col; it.row = free.row; changed = true; }
 mark(it);
 });

@@ -7749,7 +7749,11 @@ try {
     for (let r = start; r <= maxRow + 2; r++) {
       for (let c = 0; c <= DESK_GRID_V2_COLS - w; c++) {
         if (!deskGridV2FitAt(occ, c, r, w, h)) continue;
-        const d = Math.abs(c - wantCol) * 2 + Math.abs(r - wantRow);
+        const dr = Math.abs(r - wantRow);
+        const dc = Math.abs(c - wantCol);
+        // #1627 全方向回流：优先同一排的左右空位，其次上下排；
+        // 旧写法只从原行往下搜，所以被挤开的图标永远只会往下挪。
+        const d = dr * 10 + dc;
         if (d < bestD) { bestD = d; best = { col: c, row: r }; if (d === 0) return best; }
       }
     }
@@ -7764,7 +7768,8 @@ try {
     return deskGridV2FindFreeIn(occ, maxRow, w, h, wantCol, wantRow, minRow);
   };
   // #1625 挤压回流：钉住正在拖动/改大小的项，其余项能保持原位就保持，
-  // 被压到的按原顺序逐个移到最近的空位（优先往下让），绝不让两个矩形重叠。
+  // #1627 被压到的按原顺序找整页最近空位：同一排左右优先，其次上下，
+  // 不再强制往下堆，拖动项留下的洞也会被自然填回。
   const deskGridV2ReflowPage = (page, pinnedKey) => {
     if (!page || !Array.isArray(page.items)) return false;
     const items = page.items;
@@ -7772,26 +7777,43 @@ try {
     let maxRow = 0;
     const mark = (it) => {
       for (let r = it.row; r < it.row + it.h; r++) {
-        for (let c = it.col; c < it.col + it.w; c++) occ[r + ',' + c] = 1;
+        for (let c = it.col; c < it.col + it.w; c++) {
+          const k = r + ',' + c;
+          occ[k] = (occ[k] || 0) + 1;
+        }
       }
       maxRow = Math.max(maxRow, it.row + it.h);
     };
+    const unmark = (it) => {
+      for (let r = it.row; r < it.row + it.h; r++) {
+        for (let c = it.col; c < it.col + it.w; c++) {
+          const k = r + ',' + c;
+          if (occ[k]) occ[k]--;
+        }
+      }
+    };
     let pinned = null;
     if (pinnedKey) pinned = items.find(it => it && it.key === pinnedKey) || null;
-    if (pinned) {
-      const s = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
-      pinned.w = s.w; pinned.h = s.h;
-      mark(pinned);
-    }
     const rest = items.filter(it => it && it !== pinned)
       .sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
     let changed = false;
+    // 先按新尺寸把所有未固定项的原位置全部占住：这样被挤开的项只会去真正的空洞，
+    // 不会先抢走下面卡片的位置再把它连锁推走。
+    if (pinned) {
+      const sp = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
+      pinned.w = sp.w; pinned.h = sp.h;
+      mark(pinned);
+    }
     rest.forEach(it => {
       const s = deskGridV2ClampSize(it, it.w, it.h);
       if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; it.sz = 1; changed = true; }
+      mark(it);
+    });
+    rest.forEach(it => {
+      unmark(it);
       if (deskGridV2FitAt(occ, it.col, it.row, it.w, it.h)) { mark(it); return; }
-      const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, Math.max(0, it.row));
-      if (!free) return;
+      const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, 0);
+      if (!free) { mark(it); return; }
       if (free.col !== it.col || free.row !== it.row) { it.col = free.col; it.row = free.row; changed = true; }
       mark(it);
     });
