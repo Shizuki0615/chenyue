@@ -16,8 +16,10 @@ html.desk-grid-v2 .page-slide.dgr-page {
   display: grid !important;
   flex-direction: unset !important;
   grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
-  /* 行高自适应：图标行最低 86px，卡片行按自身高度长（避免固定行高把卡片上下留出大空白） */
-  grid-auto-rows: minmax(var(--dgr-row, 86px), auto);
+  /* #1624：必须用纯 auto。实测 minmax(86px, auto) / max-content 在桌面 Chrome 下会把所有行
+     压成 86px，卡片固定高度溢出到下一行 → 卡片压卡片、卡片压图标、还被撑出大空隙。
+     纯 auto 让每行按该行最高项真实高度生长（190/92/80…），图标行也不会塌。 */
+  grid-auto-rows: auto;
   gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
   align-content: start;
   justify-items: stretch;
