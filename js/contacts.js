@@ -5,6 +5,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'fish-log', 'fish-log-global-migrated',
 'age-confirmed', 'storage-guide-shown',
 'incoming-requests', 'desk-checkin-en', 'desk-call-en', 'desk-freq-mode', 'call-hold',
+'desk-grid-v2-enabled',
 'night-mode-en',
 'group-chat-msgs',
 'bg-keepalive', 'bg-notify', 'bg-notify-nodedup',

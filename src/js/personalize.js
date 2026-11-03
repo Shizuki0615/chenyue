@@ -7304,6 +7304,8 @@ try {
         try {
           store.remove('desk-layout');
           store.set('desk-page-count', '2');
+          // #1620：恢复默认时新版网格数据一并作废——页面重建后由影子同步重新生成
+          try { store.remove('desk-grid-v2'); } catch (e) {}
           document.querySelectorAll('.app-grid').forEach(function (g) {
             if (g.dataset.app) store.remove('app-icon-order-' + g.dataset.app);
           });
@@ -7316,6 +7318,7 @@ try {
             const P = (window.activePrefix ? window.activePrefix() : 'xy-home-v2:default');
             dels.push(window.idbDelete(P + ':desk-layout'));
             dels.push(window.idbDelete(P + ':hidden-icons'));
+            dels.push(window.idbDelete(P + ':desk-grid-v2'));
             document.querySelectorAll('.app-grid').forEach(function (g) {
               if (g.dataset.app) dels.push(window.idbDelete(P + ':app-icon-order-' + g.dataset.app));
             });
@@ -7372,6 +7375,304 @@ try {
   setupDeskCountdownClick();
   document.addEventListener('contact-switched', renderDeskTexts);
   document.addEventListener('contact-switched', renderDeskCountdowns);
+
+  // ===== 2026-11-03 #1620 桌面网格 v2 · 第一期地基（影子数据 + 迁移备份 + 测试开关）=====
+  // 旧模型：图标只在 app-icon-order-<grid> 里排先后；卡片只在 desk-layout 里按页排上下；
+  // 页面按索引存背景。新模型：每页稳定 pageId + 每项 {key,type,col,row,w,h}，为第二期
+  // 「长按直接拖 + 全网格占位」提供数据底座。
+  // 第一期只【生成新版数据】，不换渲染/交互：现有桌面外观与旧操作完全不变；开关默认关闭，
+  // 旧版逻辑不受影响。开启时先备份旧布局（旧键本身不删），关闭即回旧版。
+  const DESK_GRID_V2_KEY = 'desk-grid-v2';
+  const DESK_GRID_V2_BACKUP_KEY = 'desk-grid-v2-backup';
+  const DESK_GRID_V2_FLAG_KEY = 'desk-grid-v2-enabled';
+  const DESK_GRID_V2_COLS = 4;
+  const DESK_GRID_V2_VERSION = 2;
+  const DESK_GRID_V2_ITEM_TYPES = { icon: 1, widget: 1, image: 1, text: 1, countdown: 1 };
+  const deskGridV2FlagOn = () => {
+    try { return gStore.get(DESK_GRID_V2_FLAG_KEY) === '1'; } catch (e) { return false; }
+  };
+  let deskGridV2PageSeq = 0;
+  const deskGridV2NewPageId = () => 'pg_' + Date.now().toString(36) + '_' + (++deskGridV2PageSeq) + Math.random().toString(36).slice(2, 6);
+  // 模型完整性校验：页数界、页 id/项目 key 唯一、坐标在 4 列内、项目之间不重叠。
+  // 校验不过一律按「没有新模型」处理，绝不把坏数据落盘覆盖上一份。
+  const deskGridV2Validate = (m) => {
+    try {
+      if (!m || m.v !== DESK_GRID_V2_VERSION || !Array.isArray(m.pages)) return false;
+      if (m.pages.length < DESK_PAGE_MIN || m.pages.length > DESK_PAGE_MAX) return false;
+      const ids = Object.create(null), keys = Object.create(null);
+      for (let pi = 0; pi < m.pages.length; pi++) {
+        const page = m.pages[pi];
+        if (!page || typeof page.id !== 'string' || !page.id || ids[page.id]) return false;
+        ids[page.id] = 1;
+        if (!Array.isArray(page.items) || typeof page.bg !== 'string') return false;
+        const occ = Object.create(null);
+        for (let i = 0; i < page.items.length; i++) {
+          const it = page.items[i];
+          if (!it || typeof it.key !== 'string' || !it.key || keys[it.key]) return false;
+          keys[it.key] = 1;
+          if (!DESK_GRID_V2_ITEM_TYPES[it.type]) return false;
+          const col = it.col, row = it.row, w = it.w, h = it.h;
+          if (!Number.isInteger(col) || col < 0 || col >= DESK_GRID_V2_COLS) return false;
+          if (!Number.isInteger(row) || row < 0) return false;
+          if (!Number.isInteger(w) || w < 1 || w > DESK_GRID_V2_COLS || col + w > DESK_GRID_V2_COLS) return false;
+          if (!Number.isInteger(h) || h < 1 || h > 8) return false;
+          for (let r = row; r < row + h; r++) {
+            for (let c = col; c < col + w; c++) {
+              const kk = r + ',' + c;
+              if (occ[kk]) return false;
+              occ[kk] = 1;
+            }
+          }
+        }
+      }
+      return true;
+    } catch (e) { return false; }
+  };
+  const deskGridV2Read = () => {
+    try {
+      const raw = store.get(DESK_GRID_V2_KEY);
+      if (!raw) return null;
+      const m = JSON.parse(raw);
+      return deskGridV2Validate(m) ? m : null;
+    } catch (e) { return null; }
+  };
+  // 迁移前旧布局快照（只存小键：desk-layout/图标顺序/自绘组件元数据；大图本体不复制，
+  // 旧键本身也不删除）。只在首次开启时写一次，重复开关不覆盖最初那份。
+  const deskGridV2BackupOnce = () => {
+    try {
+      if (store.get(DESK_GRID_V2_BACKUP_KEY)) return false;
+      const iconOrders = {};
+      document.querySelectorAll('.app-grid').forEach(g => {
+        if (g.dataset.app) iconOrders[g.dataset.app] = store.get('app-icon-order-' + g.dataset.app) || null;
+      });
+      const bk = {
+        ts: Date.now(),
+        v: 1,
+        note: '新版桌面网格数据生成前的旧布局快照；旧键保留未删，关闭测试开关即回旧版',
+        pageCount: store.get('desk-page-count') || null,
+        layout: store.get('desk-layout') || null,
+        iconOrders,
+        images: store.get('desk-images') || null,
+        texts: store.get('desk-texts') || null,
+        countdowns: store.get('desk-countdowns') || null
+      };
+      store.set(DESK_GRID_V2_BACKUP_KEY, JSON.stringify(bk));
+      return true;
+    } catch (e) { return false; }
+  };
+  // 顺序流 → 网格占位的临时换算：行优先找空位，图标 1×1、卡片整宽 4×1，
+  // 图片按 40/70/100% 粗映射 2/3/4 列。第一期只求「不重叠、可验证、顺序可还原」，
+  // 真正的尺寸档与拖动回流留到第四期。
+  const deskGridV2Place = (occ, st, w, h) => {
+    const fits = (row, col) => {
+      if (col + w > DESK_GRID_V2_COLS) return false;
+      for (let r = row; r < row + h; r++) {
+        for (let c = col; c < col + w; c++) {
+          if (occ[r + ',' + c]) return false;
+        }
+      }
+      return true;
+    };
+    let pos = st.pos, guard = 0;
+    while (guard++ < 100000) {
+      const row = Math.floor(pos / DESK_GRID_V2_COLS);
+      const col = pos % DESK_GRID_V2_COLS;
+      if (fits(row, col)) {
+        for (let r = row; r < row + h; r++) {
+          for (let c = col; c < col + w; c++) occ[r + ',' + c] = 1;
+        }
+        st.pos = (col + w >= DESK_GRID_V2_COLS)
+          ? (row + h) * DESK_GRID_V2_COLS
+          : (row * DESK_GRID_V2_COLS + col + w);
+        return { col, row };
+      }
+      pos++;
+    }
+    return { col: 0, row: 0 };
+  };
+  // 按当前 DOM 顺序扫描一页：图标组展开成逐枚 1×1（g 记录原组名，供后续保留组语义），
+  // 标准卡片/图片/文字/倒计时各算一个占位项。
+  const deskGridV2ScanPage = (slide) => {
+    const items = [];
+    const seen = Object.create(null);
+    const occ = Object.create(null);
+    const st = { pos: 0 };
+    const add = (it) => {
+      if (!it || !it.key || seen[it.key]) return;
+      seen[it.key] = 1;
+      const p = deskGridV2Place(occ, st, it.w, it.h);
+      it.col = p.col;
+      it.row = p.row;
+      items.push(it);
+    };
+    const addIcon = (app) => {
+      const k = app && app.dataset ? app.dataset.app : '';
+      if (!k) return;
+      const grid = app.closest ? app.closest('.app-grid') : null;
+      add({ key: 'app-' + k, type: 'icon', w: 1, h: 1, g: (grid && grid.dataset.app) || '' });
+    };
+    Array.prototype.forEach.call(slide.children, (n) => {
+      if (!n || !n.classList) return;
+      if (n.classList.contains('desk-page-hint') || n.classList.contains('desk-page-add')) return;
+      if (n.classList.contains('app-grid')) {
+        Array.prototype.forEach.call(n.querySelectorAll('.app'), addIcon);
+        return;
+      }
+      if (n.classList.contains('app')) { addIcon(n); return; }
+      if (n.hasAttribute('data-desk-widget')) {
+        add({ key: n.getAttribute('data-desk-widget'), type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
+        return;
+      }
+      if (n.hasAttribute('data-desk-image')) {
+        const pct = parseFloat((n.style && n.style.width) || '');
+        const w = isFinite(pct) && pct > 0 ? (pct <= 45 ? 2 : (pct <= 75 ? 3 : 4)) : DESK_GRID_V2_COLS;
+        add({ key: n.getAttribute('data-desk-image'), type: 'image', w, h: 1 });
+        return;
+      }
+      if (n.hasAttribute('data-desk-text')) {
+        add({ key: n.getAttribute('data-desk-text'), type: 'text', w: DESK_GRID_V2_COLS, h: 1 });
+        return;
+      }
+      if (n.hasAttribute('data-desk-countdown')) {
+        add({ key: n.getAttribute('data-desk-countdown'), type: 'countdown', w: DESK_GRID_V2_COLS, h: 1 });
+      }
+    });
+    return items;
+  };
+  const deskGridV2Summary = (m) => {
+    if (!m || !m.pages) return null;
+    let n = 0;
+    m.pages.forEach(p => { n += (p.items || []).length; });
+    return { pages: m.pages.length, items: n };
+  };
+  const updateDeskGridV2UI = () => {
+    const el = document.getElementById('desk-grid-v2-val');
+    if (!el) return;
+    if (!deskGridV2FlagOn()) { el.textContent = '关闭'; return; }
+    const s = deskGridV2Summary(deskGridV2Read());
+    el.textContent = s ? ('测试中 · ' + s.pages + ' 页 ' + s.items + ' 项') : '测试中 · 待生成';
+  };
+  // 影子同步：把当前 DOM（旧版所有操作的结果）重新投影成新模型。旧操作不用逐处改，
+  // 由 pagesBox 的结构 MutationObserver + 防抖兜住；模型只写不读，零视觉副作用。
+  const syncDeskGridV2 = (reason, manual) => {
+    if (!deskGridV2FlagOn() || !pagesBox) return { ok: false, reason: 'off' };
+    try {
+      const slides = Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide'));
+      if (slides.length < DESK_PAGE_MIN || slides.length > DESK_PAGE_MAX) return { ok: false, reason: 'pages' };
+      const old = deskGridV2Read();
+      const ids = old ? old.pages.map(p => (p && p.id) || '').filter(Boolean) : [];
+      while (ids.length < slides.length) ids.push(deskGridV2NewPageId());
+      ids.length = slides.length;
+      const pages = slides.map((s, i) => {
+        const oldPage = old && old.pages[i] ? old.pages[i] : null;
+        return {
+          id: ids[i],
+          // 背景继续引用旧键（第一期不搬家）；页面排序进入第三期时再按 pageId 迁移
+          bg: (oldPage && typeof oldPage.bg === 'string' && oldPage.bg) ? oldPage.bg : ('page-bg-' + i),
+          items: deskGridV2ScanPage(s)
+        };
+      });
+      const model = { v: DESK_GRID_V2_VERSION, ts: Date.now(), cols: DESK_GRID_V2_COLS, pages };
+      if (!deskGridV2Validate(model)) {
+        try { console.warn('[mochi] desk-grid-v2 校验失败，保留上一份数据：', reason); } catch (e) {}
+        if (manual) toast('新版桌面数据校验失败，已保留旧布局');
+        return { ok: false, reason: 'invalid' };
+      }
+      store.set(DESK_GRID_V2_KEY, JSON.stringify(model));
+      const s = deskGridV2Summary(model);
+      updateDeskGridV2UI();
+      return { ok: true, pages: s.pages, items: s.items };
+    } catch (e) {
+      try { console.warn('[mochi] desk-grid-v2 生成异常：', e); } catch (e2) {}
+      if (manual) toast('新版桌面数据生成失败，已保留旧布局');
+      return { ok: false, reason: 'error' };
+    }
+  };
+  let deskGridV2Timer = null;
+  let deskGridV2QuietUntil = 0;
+  const scheduleDeskGridV2Sync = (reason) => {
+    if (!deskGridV2FlagOn()) return;
+    const delay = Math.max(280, deskGridV2QuietUntil - Date.now() + 80);
+    if (deskGridV2Timer) clearTimeout(deskGridV2Timer);
+    deskGridV2Timer = setTimeout(() => {
+      deskGridV2Timer = null;
+      syncDeskGridV2(reason);
+    }, delay);
+  };
+  const deskGridV2Enable = (manual) => {
+    gStore.set(DESK_GRID_V2_FLAG_KEY, '1');
+    deskGridV2BackupOnce();
+    const r = syncDeskGridV2('enable', manual);
+    updateDeskGridV2UI();
+    if (manual) {
+      if (r.ok) toast('新版桌面数据已生成：' + r.pages + ' 页 ' + r.items + ' 项（旧布局已备份）');
+      else toast('已开启新版桌面数据，稍后会自动生成');
+    }
+    scheduleDeskGridV2Sync('enable-retry');
+    return r;
+  };
+  const deskGridV2Disable = (manual) => {
+    gStore.remove(DESK_GRID_V2_FLAG_KEY);
+    if (deskGridV2Timer) { clearTimeout(deskGridV2Timer); deskGridV2Timer = null; }
+    updateDeskGridV2UI();
+    if (manual) toast('已回到旧版桌面（新版数据保留，可随时再开启）');
+  };
+  // 设置行：开启/关闭测试开关。第一期开启只生成数据，不改界面，所以必须在文案里说清楚。
+  const deskGridV2Row = document.getElementById('row-desk-grid-v2');
+  if (deskGridV2Row) {
+    deskGridV2Row.addEventListener('click', () => {
+      if (!window.openModal) return;
+      window.openModal('新版桌面编辑（测试）', '', (v) => {
+        if (v === 'on') deskGridV2Enable(true);
+        else if (v === 'off') deskGridV2Disable(true);
+      }, {
+        noInput: true,
+        staticText: '第一期只生成新版桌面布局数据（页 id + 每项占位），现有界面与操作暂不改变。\n开启会先备份旧布局，旧数据不删除；关闭即回旧版，可随时再开。',
+        pills: [
+          { label: '开启新版桌面数据', value: 'on' },
+          { label: '关闭，回到旧版', value: 'off' }
+        ]
+      });
+    });
+  }
+  // 旧版任何结构变化（拖图标、移卡片、加删页、导入方案、恢复默认…）都会走到这里：
+  // 防抖后把 DOM 重新投影成新模型。切桌面期间先静默，等 buildDeskPages 完再同步。
+  if (pagesBox && typeof MutationObserver === 'function') {
+    try {
+      const deskGridV2MO = new MutationObserver(() => scheduleDeskGridV2Sync('dom'));
+      deskGridV2MO.observe(pagesBox, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+  document.addEventListener('contact-switched', () => {
+    deskGridV2QuietUntil = Date.now() + 1200;
+    updateDeskGridV2UI();
+    if (deskGridV2FlagOn()) {
+      deskGridV2BackupOnce();
+      scheduleDeskGridV2Sync('contact');
+    }
+  });
+  document.addEventListener('mochi-restore-done', () => {
+    updateDeskGridV2UI();
+    if (deskGridV2FlagOn()) scheduleDeskGridV2Sync('restore');
+  });
+  updateDeskGridV2UI();
+  if (deskGridV2FlagOn()) {
+    deskGridV2BackupOnce();
+    scheduleDeskGridV2Sync('boot');
+  }
+  // 行为验证口：无头测试与后续第二期直接读/写同一份模型
+  window.__deskGridV2 = {
+    read: deskGridV2Read,
+    validate: deskGridV2Validate,
+    sync: syncDeskGridV2,
+    enable: deskGridV2Enable,
+    disable: deskGridV2Disable,
+    summary: () => deskGridV2Summary(deskGridV2Read()),
+    key: DESK_GRID_V2_KEY,
+    backupKey: DESK_GRID_V2_BACKUP_KEY,
+    flagKey: DESK_GRID_V2_FLAG_KEY,
+    cols: DESK_GRID_V2_COLS
+  };
 
   // ===== v3.6.x：卡片自由摆放（装修模式：上移/下移/移除；新增页可添加卡片） =====
   // 组件 id 列表（对应 template.html 中 [data-desk-widget]）；组件节点唯一，

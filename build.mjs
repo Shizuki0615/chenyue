@@ -6958,6 +6958,13 @@ const FIX_SENTINELS = [
   { name: '#1619b 组件库添加图标＝撤销隐藏名单（删＝隐藏过的图标搬到别页仍 display:none，看着像加不上）', file: 'js/personalize.js', needle: 'if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }' },
   { name: '#1619c 整组图标添加时一并恢复组内隐藏项（删＝只有组里动态图标显示，模板四枚仍隐身）', file: 'js/personalize.js', needle: "node.querySelectorAll('.app')).forEach(un)" },
   { name: '#1619d 已在本页但隐身的图标点组件库即恢复（删＝永远只提示「已在本页」，用户无法把图标加回来）', file: 'js/personalize.js', needle: "toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');" },
+  // ==== 2026-11-03 #1620 桌面网格 v2 第一期地基（影子数据 + 迁移备份 + 测试开关）====
+  { name: '#1620a 新版桌面网格模型键（删＝影子数据/迁移全部失效）', file: 'js/personalize.js', needle: "const DESK_GRID_V2_KEY = 'desk-grid-v2';" },
+  { name: '#1620b 模型完整性校验（删＝坏数据可落盘覆盖上一份）', file: 'js/personalize.js', needle: 'const deskGridV2Validate = (m) => {' },
+  { name: '#1620c 迁移前旧布局备份（删＝开启测试先破坏旧布局的退路没了）', file: 'js/personalize.js', needle: 'const deskGridV2BackupOnce = () => {' },
+  { name: '#1620d 旧 DOM 结构变化影子同步（删＝旧操作后新模型不更新）', file: 'js/personalize.js', needle: 'deskGridV2MO.observe(pagesBox, { childList: true, subtree: true });' },
+  { name: '#1620e 测试开关设置行（删＝用户无法开启/回退新版桌面数据）', file: 'template.html', needle: 'id="row-desk-grid-v2"' },
+  { name: '#1620f 测试开关登记为全局根键（删＝migrateLegacy 每次刷新把开关迁进 default 并删根键）', file: 'js/contacts.js', needle: "'desk-grid-v2-enabled'," },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
