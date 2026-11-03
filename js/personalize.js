@@ -5639,7 +5639,9 @@ const n = Math.min(slides.length, deskPageCount());
 for (let i = 0; i < n; i++) {
 const s = slides[i];
 if (!s) continue;
-const bg = sanitizeBg('page-bg-' + i, BG_SAFE_LIMIT);
+let bgKey = 'page-bg-' + i;
+try { if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey) bgKey = window.__deskGridV2PageBgKey(i) || bgKey; } catch (e) {}
+const bg = sanitizeBg(bgKey, BG_SAFE_LIMIT);
 if (bg && typeof bg === 'string' && bg.length > 2) {
 const want = 'url("' + bg + '")';
 if (s.style.backgroundImage === want) continue;
@@ -5647,7 +5649,7 @@ s.style.backgroundImage = want;
 s.style.backgroundSize = 'cover';
 s.style.backgroundPosition = 'center';
 } else {
-if (hydrateDeskBgOnce('page-bg-' + i, s, applyPageBgs)) continue;
+if (hydrateDeskBgOnce(bgKey, s, applyPageBgs)) continue;
 if (!s.style.backgroundImage) continue;
 s.style.backgroundImage = '';
 s.style.backgroundSize = '';
@@ -5831,15 +5833,24 @@ txt.textContent = (i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景图'
 const val = document.createElement('div');
 val.className = 'val';
 val.id = 'page-bg-val-' + i;
+const pageBgKey = () => {
+try {
+if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey) {
+const k = window.__deskGridV2PageBgKey(i);
+if (k) return k;
+}
+} catch (e) {}
+return 'page-bg-' + i;
+};
 const syncRowUI = () => {
-const bg = store.get('page-bg-' + i);
+const bg = store.get(pageBgKey());
 val.textContent = bg ? '已设置' : '';
 };
 syncRowUI();
 row.appendChild(ico); row.appendChild(txt); row.appendChild(val);
 if (window.mochiFilePickSurface) window.mochiFilePickSurface(row, { id: 'page-bg-tap-' + i, accept: 'image/*', owner: 'mochi-page-bg-pick' });
 row.addEventListener('click', () => {
-const bg = store.get('page-bg-' + i);
+const bg = store.get(pageBgKey());
 const pickPageBg = () => {
 window.mochiFilePick({
 id: 'mochi-page-bg-pick', accept: 'image/*',
@@ -5850,7 +5861,7 @@ const reader = new FileReader();
 reader.onload = () => {
 compressImageFit(reader.result, phoneBgMaxSide(), 4.5 * 1024 * 1024).then(data => {
 if (!data) { toast('图片过大或格式不支持，请换一张小图'); return; }
-store.set('page-bg-' + i, data);
+store.set(pageBgKey(), data);
 buildDeskPages();
 syncRowUI();
 toast((i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景已设置');
@@ -5865,7 +5876,7 @@ if (bg && window.openModal) {
 window.openModal((i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景图', '', (v) => {
 if (v === '1') pickPageBg();
 else if (v === '2') {
-store.remove('page-bg-' + i);
+store.remove(pageBgKey());
 buildDeskPages();
 syncRowUI();
 toast('已恢复默认');
@@ -5885,6 +5896,10 @@ const n = deskPageCount();
 if (n >= DESK_PAGE_MAX) { toast('最多 ' + DESK_PAGE_MAX + ' 页'); return; }
 store.set('desk-page-count', String(n + 1));
 buildDeskPages();
+if (window.__deskGridV2GridActive) {
+try { if (window.__deskGridV2SyncNow) window.__deskGridV2SyncNow('page-add'); } catch (e) {}
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+}
 toast('已新增第 ' + (n + 1) + ' 页');
 });
 }
@@ -5892,6 +5907,10 @@ if (delPageRow) {
 delPageRow.addEventListener('click', () => {
 const n = deskPageCount();
 if (n <= DESK_PAGE_MIN) { toast('核心页不可删除'); return; }
+if (window.__deskGridV2GridActive && window.__deskGridV2.deletePage) {
+window.__deskGridV2.deletePage(n - 1);
+return;
+}
 if (window.openModal) {
 window.openModal('删除最后一页？', '', (v) => {
 if (v === 'ok') {
@@ -6311,7 +6330,8 @@ const slides = deskGridV2Slides();
 let changed = false;
 while (m.pages.length > slides.length) { m.pages.pop(); changed = true; }
 for (let i = m.pages.length; i < slides.length; i++) {
-m.pages.push({ id: deskGridV2NewPageId(), bg: 'page-bg-' + i, items: [] });
+const pid = deskGridV2NewPageId();
+m.pages.push({ id: pid, bg: 'page-bg-' + pid, items: [] });
 changed = true;
 }
 return changed;
@@ -6363,7 +6383,10 @@ node.style.gridRow = String(it.row + 1) + ' / span ' + it.h;
 });
 });
 try { applyHiddenIcons(); } catch (e) {}
-if (deskGridV2Editing) deskGridV2RefreshBadges();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2UpdatePageBarActive();
+}
 } catch (e) {
 try { console.warn('[mochi] desk-grid-v2 渲染异常：', e); } catch (e2) {}
 } finally {
@@ -6396,6 +6419,8 @@ if (deskGridV2ReconcilePages(m)) changed = true;
 if (deskGridV2AdoptIcons(m)) changed = true;
 if (changed) deskGridV2SaveModel(m);
 deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+if (deskGridV2Editing) deskGridV2RefreshPageBar();
 const s = deskGridV2Summary(m) || { pages: 0, items: 0 };
 return { ok: true, pages: s.pages, items: s.items };
 };
@@ -6447,6 +6472,7 @@ document.documentElement.classList.add('dgr-editing');
 deskGridV2SuppressClickUntil = Date.now() + 400;
 try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
 deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
 }
 function deskGridV2ExitEdit() {
 if (!deskGridV2Editing) return;
@@ -6454,6 +6480,7 @@ deskGridV2Editing = false;
 document.documentElement.classList.remove('dgr-editing');
 deskGridV2CleanupDrag();
 try { const layer = document.getElementById('dgr-badge-layer'); if (layer) layer.remove(); } catch (e) {}
+try { const pb = document.getElementById('dgr-pagebar'); if (pb) pb.remove(); } catch (e) {}
 deskGridV2SuppressClickUntil = Date.now() + 300;
 }
 function deskGridV2CleanupDrag() {
@@ -6815,6 +6842,7 @@ if (!deskGridV2Editing || dgrBadgeRaf) return;
 dgrBadgeRaf = requestAnimationFrame(() => {
 dgrBadgeRaf = null;
 deskGridV2RefreshBadges();
+deskGridV2UpdatePageBarActive();
 });
 };
 pagesBox.addEventListener('scroll', refreshBadgesSoon, true);
@@ -6951,6 +6979,242 @@ changed = true;
 if (changed) { deskGridV2SaveModel(m); deskGridV2Render(); }
 else scheduleDeskGridV2Render('group-chat');
 }
+const deskGridV2PageBgKeyAt = (i) => {
+const m = deskGridV2Read();
+const p = m && m.pages[i];
+return (p && typeof p.bg === 'string' && p.bg) ? p.bg : ('page-bg-' + i);
+};
+window.__deskGridV2PageBgKey = deskGridV2PageBgKeyAt;
+const deskGridV2RemapMetaPages = (mapFn) => {
+['desk-images', 'desk-texts', 'desk-countdowns'].forEach(key => {
+try {
+const arr = JSON.parse(store.get(key) || '[]');
+if (!Array.isArray(arr)) return;
+let changed = false;
+const out = [];
+arr.forEach(m => {
+if (!m) return;
+if (typeof m.page !== 'number') { out.push(m); return; }
+const np = mapFn(m.page);
+if (np === null || np === undefined) { changed = true; return; }
+if (np !== m.page) { m.page = np; changed = true; }
+out.push(m);
+});
+if (changed) store.set(key, JSON.stringify(out));
+} catch (e) {}
+});
+try { renderDeskImages(); } catch (e) {}
+try { renderDeskTexts(); } catch (e) {}
+try { renderDeskCountdowns(); } catch (e) {}
+};
+let deskGridV2PageDrag = null;
+function deskGridV2UpdatePageBarActive() {
+const bar = document.getElementById('dgr-pagebar');
+if (!bar) return;
+const idx = deskGridV2CurrentIdx();
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), (t) => {
+const on = Number(t.dataset.pageIdx) === idx;
+t.classList.toggle('on', on);
+if (on) { try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
+});
+}
+function deskGridV2RefreshPageBar() {
+if (!deskGridV2GridOn) return;
+const phone = document.getElementById('page-phone');
+if (!phone) return;
+let bar = document.getElementById('dgr-pagebar');
+if (!deskGridV2Editing) { if (bar) bar.remove(); return; }
+const m = deskGridV2Read();
+if (!m) return;
+if (!bar) {
+bar = document.createElement('div');
+bar.id = 'dgr-pagebar';
+phone.appendChild(bar);
+}
+bar.innerHTML = '';
+const cur = deskGridV2CurrentIdx();
+const n = m.pages.length;
+m.pages.forEach((page, i) => {
+const t = document.createElement('div');
+t.className = 'dgr-page-thumb' + (i === cur ? ' on' : '');
+t.dataset.pageIdx = String(i);
+const mini = document.createElement('div');
+mini.className = 'dgr-thumb-mini';
+const count = Math.min(10, (page.items || []).length);
+for (let k = 0; k < count; k++) {
+const b = document.createElement('span');
+if (page.items[k] && page.items[k].type !== 'icon') b.className = 'card';
+mini.appendChild(b);
+}
+const num = document.createElement('span');
+num.className = 'dgr-thumb-num';
+num.textContent = String(i + 1);
+t.appendChild(mini);
+t.appendChild(num);
+if (n > DESK_PAGE_MIN) {
+const del = document.createElement('button');
+del.type = 'button';
+del.className = 'dgr-page-del';
+del.textContent = '−';
+del.addEventListener('pointerdown', (e) => e.stopPropagation());
+del.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2DeletePage(i);
+});
+t.appendChild(del);
+}
+bar.appendChild(t);
+});
+if (n < DESK_PAGE_MAX) {
+const add = document.createElement('button');
+add.type = 'button';
+add.className = 'dgr-page-add-thumb';
+add.textContent = '+';
+add.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2AddPage();
+});
+bar.appendChild(add);
+}
+if (!bar.__dgrPageBound) {
+bar.__dgrPageBound = true;
+bar.addEventListener('pointerdown', (e) => {
+if (e.target.closest('.dgr-page-del, .dgr-page-add-thumb')) return;
+const t = e.target.closest('.dgr-page-thumb');
+if (!t) return;
+const from = Number(t.dataset.pageIdx);
+if (!isFinite(from)) return;
+deskGridV2PageDrag = { from: from, startX: e.clientX, moved: false, target: from, pointerId: e.pointerId };
+try { bar.setPointerCapture(e.pointerId); } catch (er) {}
+});
+bar.addEventListener('pointermove', (e) => {
+const d = deskGridV2PageDrag;
+if (!d || e.pointerId !== d.pointerId) return;
+if (Math.abs(e.clientX - d.startX) > 6) d.moved = true;
+if (!d.moved) return;
+try { e.preventDefault(); } catch (er) {}
+let best = 1e9, target = d.from;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), (t, i) => {
+const r = t.getBoundingClientRect();
+const dist = Math.abs(e.clientX - (r.left + r.right) / 2);
+t.classList.toggle('dgr-page-drop', false);
+if (dist < best) { best = dist; target = i; }
+});
+d.target = target;
+const tt = bar.querySelectorAll('.dgr-page-thumb')[target];
+if (tt) tt.classList.add('dgr-page-drop');
+});
+bar.addEventListener('pointerup', (e) => {
+const d = deskGridV2PageDrag;
+if (!d || e.pointerId !== d.pointerId) return;
+deskGridV2PageDrag = null;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), t => t.classList.remove('dgr-page-drop'));
+try {
+if (bar.hasPointerCapture && bar.hasPointerCapture(e.pointerId)) bar.releasePointerCapture(e.pointerId);
+} catch (er) {}
+if (d.moved) {
+deskGridV2ReorderPages(d.from, d.target);
+} else {
+try { if (window.deskGo) window.deskGo(d.from); } catch (er) {}
+}
+});
+bar.addEventListener('pointercancel', () => {
+deskGridV2PageDrag = null;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), t => t.classList.remove('dgr-page-drop'));
+});
+}
+deskGridV2UpdatePageBarActive();
+}
+function deskGridV2AddPage() {
+const n = deskPageCount();
+if (n >= DESK_PAGE_MAX) { toast('最多 ' + DESK_PAGE_MAX + ' 页'); return; }
+store.set('desk-page-count', String(n + 1));
+buildDeskPages();
+deskGridV2SyncGridMode('page-add');
+setTimeout(() => {
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+try { if (window.deskGo) window.deskGo(Math.min(n, deskPageCount() - 1)); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+}, 80);
+toast('已新增第 ' + (n + 1) + ' 页');
+}
+function deskGridV2DeletePage(idx) {
+const m = deskGridV2Read();
+if (!m) return;
+if (m.pages.length <= DESK_PAGE_MIN) { toast('至少保留 ' + DESK_PAGE_MIN + ' 页'); return; }
+const n = m.pages.length;
+if (idx < 0 || idx >= n) return;
+if (!window.openModal) return;
+window.openModal('删除第 ' + (idx + 1) + ' 页？', '', (v) => {
+if (v !== 'ok') return;
+try {
+const mm = deskGridV2Read();
+if (!mm || mm.pages.length <= DESK_PAGE_MIN) return;
+const page = mm.pages[idx];
+const slides = deskGridV2Slides();
+const slide = slides[idx];
+if (slide) {
+Array.prototype.forEach.call(slide.children, (node) => {
+if (!node || !node.hasAttribute || !node.hasAttribute('data-dgr-key')) return;
+try { ensureWidgetPool().appendChild(node); } catch (e) {}
+node.style.gridColumn = '';
+node.style.gridRow = '';
+node.dataset.dgrKey = '';
+});
+if (slide.parentNode) slide.parentNode.removeChild(slide);
+}
+mm.pages.splice(idx, 1);
+store.set('desk-page-count', String(mm.pages.length));
+if (page && typeof page.bg === 'string' && page.bg) { try { store.remove(page.bg); } catch (e) {} }
+deskGridV2SaveModel(mm);
+deskGridV2RemapMetaPages(i => (i === idx ? null : (i > idx ? i - 1 : i)));
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+const cur = Math.max(0, Math.min(mm.pages.length - 1, deskGridV2CurrentIdx() >= idx ? deskGridV2CurrentIdx() - 1 : deskGridV2CurrentIdx()));
+try { if (window.deskGo) window.deskGo(cur); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+toast('已删除第 ' + (idx + 1) + ' 页');
+} catch (e) {
+try { console.warn('[mochi] 删除页失败', e); } catch (e2) {}
+}
+}, { noInput: true, staticText: '该页上的图标/卡片会移回隐藏池，可从组件库加回；该页背景图一并移除。' });
+}
+function deskGridV2ReorderPages(from, to) {
+const m = deskGridV2Read();
+if (!m) return;
+const n = m.pages.length;
+if (from < 0 || to < 0 || from >= n || to >= n || from === to) return;
+const curIdx = deskGridV2CurrentIdx();
+const curId = (m.pages[curIdx] && m.pages[curIdx].id) || '';
+const idsBefore = m.pages.map(p => p && p.id);
+const moved = m.pages.splice(from, 1)[0];
+m.pages.splice(to, 0, moved);
+const newIndexById = {};
+m.pages.forEach((p, i) => { if (p && p.id) newIndexById[p.id] = i; });
+const map = idsBefore.map(id => newIndexById[id]);
+const slides = deskGridV2Slides();
+const movedSlide = slides.splice(from, 1)[0];
+slides.splice(to, 0, movedSlide);
+if (pagesBox) slides.forEach(s => { if (s) pagesBox.appendChild(s); });
+deskGridV2SaveModel(m);
+deskGridV2RemapMetaPages(i => (typeof i === 'number' && map[i] !== undefined) ? map[i] : i);
+deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+const newCur = (curId && newIndexById[curId] !== undefined) ? newIndexById[curId] : Math.min(curIdx, m.pages.length - 1);
+try { if (window.deskGo) window.deskGo(newCur); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+toast('页面顺序已更新');
+}
 function deskGridV2Boot() {
 if (deskGridV2Booted) return;
 if (!deskGridV2FlagOn()) return;
@@ -6973,6 +7237,7 @@ deskGridV2BuildEditBar();
 deskGridV2BindEditEvents();
 deskGridV2SyncGridMode('boot');
 deskGridV2ApplyGroupChat();
+try { syncPagesUI(); } catch (e) {}
 } catch (e) {
 try { console.warn('[mochi] desk-grid-v2 启动异常，回退旧版：', e); } catch (e2) {}
 deskGridV2GridOn = false;
@@ -7088,7 +7353,12 @@ addFromLib: deskGridV2AddFromLib,
 removeKey: deskGridV2RemoveKey,
 applyGroupChat: deskGridV2ApplyGroupChat,
 boot: deskGridV2Boot,
-debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, bound: !!window.__dgrEditBound }),
+addPage: deskGridV2AddPage,
+deletePage: deskGridV2DeletePage,
+reorderPages: deskGridV2ReorderPages,
+refreshPageBar: deskGridV2RefreshPageBar,
+pageBgKey: deskGridV2PageBgKeyAt,
+debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, pageDrag: deskGridV2PageDrag ? { from: deskGridV2PageDrag.from, target: deskGridV2PageDrag.target, moved: deskGridV2PageDrag.moved } : null, bound: !!window.__dgrEditBound }),
 key: DESK_GRID_V2_KEY,
 backupKey: DESK_GRID_V2_BACKUP_KEY,
 flagKey: DESK_GRID_V2_FLAG_KEY,

@@ -5380,7 +5380,7 @@ const FIX_SENTINELS = [
   { name: '#1300a 回场动画闸枚举面收在聊天消息列表（chat-body）子树（删回 document.getAnimations()＋body.contains()＝真机 35388 节点上这道闸自己成了回前台一帧的耗时项）', file: 'js/chat.js', needle: 'const sub = body.getAnimations ? body.getAnimations({ subtree: true }) : null;' },
   { name: '#1300b 老内核不认 {subtree:true} 时落回全站枚举（问出空表证不了「窗内确实没有」；删＝静默不修，#1151c/#1181b 的落终态在老内核整块失效）', file: 'js/chat.js', needle: 'all = body.getAnimations && body.getAnimations().length ? sub : document.getAnimations();' },
   { name: '#1300c 卡片背景读空但这一帧还挂着图＝保留最后一帧＋踢一次按需取回，落地回调带 type 重跑本卡片（删回「读空即清内联」＝#1195e 每次切后台放掉大键后卡片背景被拆＝用户口径「背景图要重启才显示」；把回调写成裸 applyCardBg 引用＝落地时以 undefined 调用、cardBgSel 空转，那一帧永远拆不掉＝幽灵帧）', file: 'js/personalize.js', needle: "hydrateDeskBgOnce('card-bg-' + type, el, () => applyCardBg(type))" },
-  { name: '#1300d 整页背景同款闸（页背景同为 >200KB 只存 IDB 的大键；删＝整页背景回前台被拆成默认底色）', file: 'js/personalize.js', needle: "hydrateDeskBgOnce('page-bg-' + i, s, applyPageBgs)" },
+  { name: '#1300d 整页背景同款闸（页背景同为 >200KB 只存 IDB 的大键；删＝整页背景回前台被拆成默认底色）', file: 'js/personalize.js', needle: 'hydrateDeskBgOnce(bgKey, s, applyPageBgs)' },
   { name: '#1300e 回前台双通道主动复核桌面大键背景（visibilitychange→visible ＋ bg-keep 的 mochi-fg-resume，#1270 壁纸那一枪的同族补口；删＝只能等用户走进 refreshDeskVisuals 才发现「图在库里、内存里没了」）', file: 'js/personalize.js', needle: "document.addEventListener('mochi-fg-resume', resumeDeskBgWatch);" },
   { name: '#1300f 取回只由「这一帧还挂着图」触发（删证人判断＝每次回前台对几十个从没设过的背景键各敲一次 IDB＋重跑应用函数，回场那帧被自己拖重）', file: 'js/personalize.js', needle: 'if (!el || !el.style.backgroundImage) return false;' },
   { name: '#1300g 回前台复核经 #695 调度（改成直跑＝用户回前台落在聊天页时照样解码桌面大图，抢走那一帧预算；删掉固定引用作业＝反复切前后台攒出一串待办）', file: 'js/personalize.js', needle: 'whenDeskVisible(resumeDeskBgJob);' },
@@ -6975,6 +6975,13 @@ const FIX_SENTINELS = [
   { name: '#1621g 返回键先退网格编辑态（删＝编辑时按返回直接退页面）', file: 'js/personalize.js', needle: 'window.mochiDeskGridBack = function () {' },
   { name: '#1621h tabs 接入网格编辑返回（删＝物理返回/侧滑绕过编辑态）', file: 'js/tabs.js', needle: 'window.mochiDeskGridBack && window.mochiDeskGridBack()' },
   { name: '#1621i 自适应行高模型标记（删＝固定行高口径复发，卡片行上下留大空白）', file: 'js/personalize.js', needle: "m.rowMode = 'auto';" },
+  // ==== 2026-11-03 #1622 桌面网格 v2 第三期（页缩略图 / 排序 / 加删页 / 页背景跟 pageId）====
+  { name: '#1622a 编辑态页缩略图条（删＝页面无法在桌面内排序/加删）', file: 'css/desk-grid-v2.css', needle: '#dgr-pagebar {' },
+  { name: '#1622b 页面按 pageId 取背景键（删＝页面排序/删除后背景仍按旧索引错位）', file: 'js/personalize.js', needle: 'const deskGridV2PageBgKeyAt = (i) => {' },
+  { name: '#1622c 页背景应用改读 pageId 键（删＝重排后背景跟错页）', file: 'js/personalize.js', needle: 'if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey)' },
+  { name: '#1622d 页面拖动排序（删＝缩略图只能看不能排）', file: 'js/personalize.js', needle: 'function deskGridV2ReorderPages(from, to) {' },
+  { name: '#1622e 桌面内加页/删页（删＝只能在设置页管理，删除只限末页）', file: 'js/personalize.js', needle: 'function deskGridV2DeletePage(idx) {' },
+  { name: '#1622f 页面缩略图重建（删＝加删页后缩略图条不更新）', file: 'js/personalize.js', needle: 'function deskGridV2RefreshPageBar() {' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
