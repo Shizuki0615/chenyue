@@ -7016,6 +7016,8 @@ const FIX_SENTINELS = [
   { name: '#1626m 倒数日列表样式（删＝列表行挤在一起不可读）', file: 'css/home.css', needle: '.desk-anniv .da-list-row {' },
   { name: '#1626n 网格拉高显示倒数日列表（删＝4×2 也看不到接下来 3 个）', file: 'css/desk-grid-v2.css', needle: '> .desk-anniv[data-dgr-h="2"] .da-list,' },
   { name: '#1626o 倒数日卡从组件库加回时刷新内容（删＝先有事件后加卡会显示旧空数据）', file: 'js/personalize.js', needle: "if (wid === 'desk-anniv') { try { renderDeskAnniv(); } catch (e) {} }" },
+  { name: '#1626p 图标名称隐藏 CSS（删＝开关只切类名、桌面仍显示名称）', file: 'css/home.css', needle: 'html.desk-hide-app-names .app .app-name { display:none; }' },
+  { name: '#1626q 网格隐藏名称后图标垂直居中（删＝图标贴格顶、下方空一大截）', file: 'css/home.css', needle: 'html.desk-hide-app-names .app { justify-content:center; }' },
   // ==== 2026-11-03 #1627 被挤开的项全方向找空位 ====
   { name: '#1627a 回流全方向距离评分（删＝图标只会往下挪，不会去左右/上方空位）', file: 'js/personalize.js', needle: 'const d = dr * 10 + dc;' },
   { name: '#1627b 回流不再限制从原行往下（删＝搜索起点回退到原行，上方向空位失效）', file: 'js/personalize.js', needle: 'const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, 0);' },

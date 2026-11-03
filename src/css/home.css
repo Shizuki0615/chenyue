@@ -362,6 +362,11 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    行高 + 省略号后图标块高度恒定（58 图标+8 gap+14 文字=80 ≤ 96 行高），字号多大
    三页都对齐。 */
 .app .app-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:14px; line-height:14px; display:block; }
+/* #1626 图标名称显示开关：personalize.js 在 html 上挂 desk-hide-app-names 时隐藏名称。
+   缺少这条规则＝开关只切换类名、名称仍显示（用户报「之前生效过、后面突然不生效」的根因）。
+   网格版图标格高 92px，隐藏名称后垂直居中，避免图标贴格顶。 */
+html.desk-hide-app-names .app .app-name { display:none; }
+html.desk-hide-app-names .app { justify-content:center; }
 
 /* v3.7.x：单个功能图标移出 app-grid 作为独立组件时居中显示 */
 .page-slide .app[data-desk-widget^="app-"] { align-self:center; margin:8px 0; }
