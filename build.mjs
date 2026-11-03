@@ -7043,6 +7043,12 @@ const FIX_SENTINELS = [
   { name: '#1630c 相纸底色变量（删＝CSS 里改 --photo-frame-paper 无效）', file: 'css/home.css', needle: 'background:var(--photo-frame-paper,#fffaf0);' },
   { name: '#1630d 相框小字颜色变量（删＝CSS 里改 --photo-frame-ink 无效）', file: 'css/home.css', needle: 'color:var(--photo-frame-ink,#7b6a58);' },
   { name: '#1630e CSS 面板说明相框变量（删＝用户不知道相框可以用哪几个变量）', file: 'js/personalize.js', needle: '--photo-frame-paper</code>、小字颜色 <code>--photo-frame-ink</code>、胶带颜色 <code>--photo-frame-tape</code>' },
+  // ==== 2026-11-03 #1633 底部栏上下位置滑杆 ====
+  { name: '#1633a 底栏上下位移变量（删＝滑杆拖动后底栏不动）', file: 'js/personalize.js', needle: "if (y !== 0) rs.setProperty('--tabbar-y', y + 'px');" },
+  { name: '#1633b 底栏 translateY 落地（删＝变量写了也没有视觉位移）', file: 'css/tabbar.css', needle: 'transform:translateY(var(--tabbar-y,0px));' },
+  { name: '#1633c 底部栏美化「上下位置」滑杆（删＝用户没有调整入口）', file: 'js/personalize.js', needle: "mkSlider('上下位置', 'tabbar-y-offset', '', -12, 12, 1, 'px', 0," },
+  { name: '#1633d 恢复底部栏默认清位移键（删＝恢复默认后底栏仍偏移）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'].forEach(k => store.remove(k));" },
+  { name: '#1633e 美化方案导出含位移键（删＝换方案/导入后底栏位置丢失）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'," },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

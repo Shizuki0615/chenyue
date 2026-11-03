@@ -2155,7 +2155,7 @@ try {
     const wholeOp = tabbarNum('tabbar-whole-op', 100, 0, 100);
     const bgA = Math.round(bgOp * wholeOp) / 10000; // 背景＝两根滑杆叠乘
     const icoA = Math.max(wholeOp, 12) / 100;       // 图标层整栏透明度 12% 下限
-    ['--tabbar-bg-a', '--tabbar-ico-a', '--tabbar-bg-color', '--tabbar-radius', '--tabbar-blur', '--tabbar-ico-size'].forEach(p => rs.removeProperty(p));
+    ['--tabbar-bg-a', '--tabbar-ico-a', '--tabbar-bg-color', '--tabbar-radius', '--tabbar-blur', '--tabbar-ico-size', '--tabbar-y'].forEach(p => rs.removeProperty(p));
     if (bgA < 1) rs.setProperty('--tabbar-bg-a', String(bgA));
     if (icoA < 1) rs.setProperty('--tabbar-ico-a', String(icoA));
     const bgc = store.get('tabbar-bg-color');
@@ -2166,6 +2166,9 @@ try {
     if (blur > 0) rs.setProperty('--tabbar-blur', blur + 'px');
     const isz = tabbarNum('tabbar-icon-size', 23, 18, 34);
     if (isz !== 23) rs.setProperty('--tabbar-ico-size', isz + 'px');
+    // #1633 底栏上下位置微调（正值下移、负值上移，0＝默认）
+    const y = tabbarNum('tabbar-y-offset', 0, -12, 12);
+    if (y !== 0) rs.setProperty('--tabbar-y', y + 'px');
     if (!bar) return;
     bar.classList.toggle('tabbar-blur-on', blur > 0);
     bar.classList.toggle('tabbar-faint', bgOp < 50 || wholeOp < 50);
@@ -2248,7 +2251,7 @@ try {
   // 「恢复底部栏默认」：清空整族键 + 清变量 + 重绘（抽屉与将来入口共用）
   const resetTabbarBeauty = () => {
     TABBAR_PAGES.forEach(pk => store.remove('tab-icon-' + pk));
-    ['tab-icon-opacity', 'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size'].forEach(k => store.remove(k));
+    ['tab-icon-opacity', 'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size', 'tabbar-y-offset'].forEach(k => store.remove(k));
     restoreTabbarIcons();
   };
   restoreTabbarIcons();
@@ -3319,6 +3322,11 @@ try {
             if (bar) bar.classList.toggle('tabbar-blur-on', n > 0);
           }, (v) => { const n = parseInt(v, 10); if (n > 0) store.set('tabbar-blur', String(n)); else store.remove('tabbar-blur'); }));
           wrap.appendChild(mkSlider('图标大小', 'tabbar-icon-size', '--tabbar-ico-size', 18, 34, 1, 'px', 23, null, (v) => { const n = parseInt(v, 10); if (n === 23) store.remove('tabbar-icon-size'); else store.set('tabbar-icon-size', String(n)); }));
+          // #1633 底栏上下位置：正值下移、负值上移，0＝默认；只动底栏，分页圆点不受影响
+          wrap.appendChild(mkSlider('上下位置', 'tabbar-y-offset', '', -12, 12, 1, 'px', 0, (v) => {
+            const n = parseInt(v, 10);
+            setBarVar('--tabbar-y', n === 0 ? null : n + 'px');
+          }, (v) => { const n = parseInt(v, 10); if (n === 0) store.remove('tabbar-y-offset'); else store.set('tabbar-y-offset', String(n)); }));
           paletteHost = document.createElement('div');
           const cgrid = document.createElement('div');
           cgrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px';
@@ -3332,7 +3340,7 @@ try {
           wrap.appendChild(rst);
           const nt = document.createElement('div');
           nt.style.cssText = 'font-size:10.5px;color:var(--muted,#999);line-height:1.5';
-          nt.textContent = '「背景透明度」只稀释底色；「整栏透明度」连图标一起淡出——图标保底 12%、按屏下瞬间显形，不会消失找不回。按钮图片点上面三个按钮上传（已传过可选更换/移除）。';
+          nt.textContent = '「背景透明度」只稀释底色；「整栏透明度」连图标一起淡出——图标保底 12%、按屏下瞬间显形，不会消失找不回。按钮图片点上面三个按钮上传（已传过可选更换/移除）。「上下位置」正值下移、负值上移，0 为默认。';
           wrap.appendChild(nt);
           return wrap;
         } }
@@ -4572,7 +4580,7 @@ try {
     // 2026-10-28：图标与底栏线条颜色
     'icon-ink-color',
     // #769：底部导航栏样式键（图片本体 tab-icon-<page> 为动态键，在 collectBeauty 单独收集）
-    'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size',
+    'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size', 'tabbar-y-offset',
     'tab-icon-opacity',
     'desk-layout', 'desk-page-count',
     'desk-images', 'desk-texts', 'desk-countdowns',
