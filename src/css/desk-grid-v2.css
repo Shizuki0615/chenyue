@@ -89,7 +89,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] .mini-card {
   height: 92px !important;
 }
 /* 周末卡的连击角标要探出卡片上沿，保留原 overflow:clip 语义 */
-html.desk-grid-v2 .page-slide.dgr-page > .weekend-box {
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-key] {
   overflow: clip;
   overflow-clip-margin: 16px;
 }
