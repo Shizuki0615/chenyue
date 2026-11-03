@@ -120,7 +120,7 @@ function minifyCss(code) {
 }
 
 // ===== 按顺序拼接样式 / 脚本（顺序即生效顺序） =====
-const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css'];
+const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css', 'desk-grid-v2.css'];
 const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
 
 // ===== PERF-PLAN 阶段 1：JS 外置化（2026-09-18）=====
@@ -6965,6 +6965,16 @@ const FIX_SENTINELS = [
   { name: '#1620d 旧 DOM 结构变化影子同步（删＝旧操作后新模型不更新）', file: 'js/personalize.js', needle: 'deskGridV2MO.observe(pagesBox, { childList: true, subtree: true });' },
   { name: '#1620e 测试开关设置行（删＝用户无法开启/回退新版桌面数据）', file: 'template.html', needle: 'id="row-desk-grid-v2"' },
   { name: '#1620f 测试开关登记为全局根键（删＝migrateLegacy 每次刷新把开关迁进 default 并删根键）', file: 'js/contacts.js', needle: "'desk-grid-v2-enabled'," },
+  // ==== 2026-11-03 #1621 桌面网格 v2 第二期（全网格渲染 + 长按编辑）====
+  { name: '#1621a 网格页样式（删＝页面回退流式布局，拖拽坐标不可视）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page {' },
+  { name: '#1621b 角标独立浮层（删＝绝对定位子项被 CSS Grid 当网格项摆错位置，只剩一个角标可见）', file: 'css/desk-grid-v2.css', needle: '#dgr-badge-layer {' },
+  { name: '#1621c 按模型渲染网格位置（删＝图标/卡片无法落在模型坐标）', file: 'js/personalize.js', needle: 'const deskGridV2Render = () => {' },
+  { name: '#1621d 网格模式启动（删＝开关开启后仍是旧桌面）', file: 'js/personalize.js', needle: 'function deskGridV2Boot() {' },
+  { name: '#1621e 组件库在网格模式按模型落位（删＝加回图标/卡片仍走旧 app-grid）', file: 'js/personalize.js', needle: 'const deskGridV2AddFromLib = (wid, pageIdx) => {' },
+  { name: '#1621f 启动期不覆盖已有网格模型（删＝刷新一次就丢拖动坐标/后加卡片）', file: 'js/personalize.js', needle: 'if (!deskGridV2GridOn && deskGridV2HasGridModel()) return;' },
+  { name: '#1621g 返回键先退网格编辑态（删＝编辑时按返回直接退页面）', file: 'js/personalize.js', needle: 'window.mochiDeskGridBack = function () {' },
+  { name: '#1621h tabs 接入网格编辑返回（删＝物理返回/侧滑绕过编辑态）', file: 'js/tabs.js', needle: 'window.mochiDeskGridBack && window.mochiDeskGridBack()' },
+  { name: '#1621i 自适应行高模型标记（删＝固定行高口径复发，卡片行上下留大空白）', file: 'js/personalize.js', needle: "m.rowMode = 'auto';" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

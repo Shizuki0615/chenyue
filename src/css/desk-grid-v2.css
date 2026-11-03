@@ -1,0 +1,184 @@
+/* ===== 2026-11-03 #1621 桌面网格 v2 · 第二期（长按编辑 / 全网格占位） =====
+   仅在「新版桌面编辑」测试开关开启时由 personalize.js 给 <html> 挂 .desk-grid-v2；
+   开关关闭时本文件全部规则不命中，旧桌面零影响。 */
+
+html.desk-grid-v2 #page-phone {
+  --dgr-cols: 4;
+  --dgr-row: 86px;
+  --dgr-colgap: 8px;
+  --dgr-rowgap: 14px;
+  --dgr-pad-x: 8px;
+  --dgr-pad-y: 14px;
+}
+
+/* 页面：4 列固定行高网格。图标 1×1，卡片按占位跨行；旧的流式/两栏规则全部让位 */
+html.desk-grid-v2 .page-slide.dgr-page {
+  display: grid !important;
+  flex-direction: unset !important;
+  grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
+  /* 行高自适应：图标行最低 86px，卡片行按自身高度长（避免固定行高把卡片上下留出大空白） */
+  grid-auto-rows: minmax(var(--dgr-row, 86px), auto);
+  gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
+  align-content: start;
+  justify-items: stretch;
+  padding: var(--dgr-pad-y, 14px) var(--dgr-pad-x, 8px) 18px;
+  position: relative;
+  overflow-y: auto;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app-grid,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-hint,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-add {
+  display: none !important;
+}
+/* 所有桌面项统一由网格定位：清掉旧流式外边距/宽度，避免同一格内又缩又偏 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key] {
+  margin: 0 !important;
+  min-width: 0;
+  align-self: stretch;
+  position: relative;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app {
+  width: 100%;
+  height: 100%;
+  justify-self: stretch;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-image-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+  width: 100% !important;
+  align-self: stretch !important;
+}
+
+/* 编辑态：轻微抖动。拖动中的项停止抖动并提到最上层 */
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key] {
+  animation: dgr-jiggle .26s infinite alternate ease-in-out;
+  transform-origin: 50% 50%;
+  touch-action: none;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-source {
+  animation: none !important;
+  opacity: .42;
+}
+@keyframes dgr-jiggle {
+  from { transform: rotate(-.35deg); }
+  to { transform: rotate(.35deg); }
+}
+
+/* 拖动替身：克隆体挂在 body，跟手指走；本体留在原位半透明 */
+.dgr-drag-ghost {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  margin: 0 !important;
+  opacity: .96;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.22));
+}
+
+/* 落点占位框：挂在手机壳浮层（不能直接做 grid 子项，否则绝对定位会按网格静态位置摆偏） */
+#dgr-placeholder-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.dgr-placeholder {
+  position: absolute;
+  z-index: 3;
+  border: 1.5px dashed var(--ink, #111111);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--btn-bg, #111111) 8%, transparent);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* 左上角「−」：统一挂在 #page-phone 的浮层里，按视口坐标定位，避免 CSS Grid 把
+   绝对定位子项当成网格项摆到别的格子里 */
+#dgr-badge-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+}
+#dgr-badge-layer .dgr-minus {
+  position: absolute;
+  pointer-events: auto;
+}
+.dgr-minus {
+  z-index: 30;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  transform: translate(-45%, -45%);
+}
+
+/* 编辑条：固定在手机壳底部，不随页面滚动 */
+#dgr-editbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 26px;
+  z-index: 90;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.9);
+  color: var(--ink, #111111);
+  box-shadow: 0 8px 26px rgba(0,0,0,.16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-sizing: border-box;
+}
+html.dgr-editing #dgr-editbar { display: flex; }
+#dgr-editbar .dgr-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#dgr-editbar button {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #111111);
+  background: rgba(255,255,255,.7);
+  cursor: pointer;
+}
+#dgr-editbar button#dgr-add-btn {
+  border-color: transparent;
+  background: var(--btn-bg, #111111);
+  color: var(--btn-ink, #ffffff);
+}
+[data-theme="dark"] #dgr-editbar {
+  background: rgba(30,30,30,.9);
+  color: #f0f0f0;
+  box-shadow: 0 8px 26px rgba(0,0,0,.5);
+}
+[data-theme="dark"] #dgr-editbar button {
+  color: #f0f0f0;
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.12);
+}
+[data-theme="dark"] #dgr-editbar button#dgr-add-btn {
+  background: #f0f0f0;
+  color: #111111;
+}

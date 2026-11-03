@@ -269,6 +269,7 @@
     }
     // #1616：读书模块自己的层（阅读器/目录/他在哪/批注层/导入/书架分组等）逐层消化；
     // 只在该页可见时生效，true＝本次返回已关掉一层，不再退页面
+    try { if (window.mochiDeskGridBack && window.mochiDeskGridBack()) return true; } catch (e) {}
     try { if (window.mochiReadingBack && window.mochiReadingBack()) return true; } catch (e) {}
     return false;
   }

@@ -11309,6 +11309,171 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 .rd-dd-fade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5));pointer-events:none;transition:opacity .18s ease}
+html.desk-grid-v2 #page-phone {
+--dgr-cols: 4;
+--dgr-row: 86px;
+--dgr-colgap: 8px;
+--dgr-rowgap: 14px;
+--dgr-pad-x: 8px;
+--dgr-pad-y: 14px;
+}
+html.desk-grid-v2 .page-slide.dgr-page {
+display: grid !important;
+flex-direction: unset !important;
+grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
+grid-auto-rows: minmax(var(--dgr-row, 86px), auto);
+gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
+align-content: start;
+justify-items: stretch;
+padding: var(--dgr-pad-y, 14px) var(--dgr-pad-x, 8px) 18px;
+position: relative;
+overflow-y: auto;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app-grid,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-hint,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-add {
+display: none !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key] {
+margin: 0 !important;
+min-width: 0;
+align-self: stretch;
+position: relative;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app {
+width: 100%;
+height: 100%;
+justify-self: stretch;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-image-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+width: 100% !important;
+align-self: stretch !important;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key] {
+animation: dgr-jiggle .26s infinite alternate ease-in-out;
+transform-origin: 50% 50%;
+touch-action: none;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-source {
+animation: none !important;
+opacity: .42;
+}
+@keyframes dgr-jiggle {
+from { transform: rotate(-.35deg); }
+to { transform: rotate(.35deg); }
+}
+.dgr-drag-ghost {
+position: fixed;
+z-index: 9998;
+pointer-events: none;
+margin: 0 !important;
+opacity: .96;
+transform-origin: 50% 50%;
+filter: drop-shadow(0 10px 22px rgba(0,0,0,.22));
+}
+#dgr-placeholder-layer {
+position: absolute;
+inset: 0;
+z-index: 40;
+pointer-events: none;
+}
+.dgr-placeholder {
+position: absolute;
+z-index: 3;
+border: 1.5px dashed var(--ink, #111111);
+border-radius: 14px;
+background: color-mix(in srgb, var(--btn-bg, #111111) 8%, transparent);
+pointer-events: none;
+box-sizing: border-box;
+}
+#dgr-badge-layer {
+position: absolute;
+inset: 0;
+z-index: 95;
+pointer-events: none;
+}
+#dgr-badge-layer .dgr-minus {
+position: absolute;
+pointer-events: auto;
+}
+.dgr-minus {
+z-index: 30;
+width: 22px;
+height: 22px;
+padding: 0;
+border: none;
+border-radius: 50%;
+background: #ff3b30;
+color: #fff;
+font-size: 15px;
+line-height: 22px;
+font-weight: 700;
+text-align: center;
+cursor: pointer;
+box-shadow: 0 3px 8px rgba(0,0,0,.25);
+transform: translate(-45%, -45%);
+}
+#dgr-editbar {
+position: absolute;
+left: 12px;
+right: 12px;
+bottom: 26px;
+z-index: 90;
+display: none;
+align-items: center;
+justify-content: space-between;
+gap: 8px;
+padding: 8px 10px;
+border-radius: 16px;
+background: rgba(255,255,255,.9);
+color: var(--ink, #111111);
+box-shadow: 0 8px 26px rgba(0,0,0,.16);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+box-sizing: border-box;
+}
+html.dgr-editing #dgr-editbar { display: flex; }
+#dgr-editbar .dgr-hint {
+flex: 1;
+min-width: 0;
+font-size: 11px;
+color: var(--muted, #888);
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+#dgr-editbar button {
+flex: none;
+padding: 8px 14px;
+border-radius: 12px;
+border: 1px solid rgba(0,0,0,.1);
+font-size: 13px;
+font-weight: 600;
+color: var(--ink, #111111);
+background: rgba(255,255,255,.7);
+cursor: pointer;
+}
+#dgr-editbar button#dgr-add-btn {
+border-color: transparent;
+background: var(--btn-bg, #111111);
+color: var(--btn-ink, #ffffff);
+}
+[data-theme="dark"] #dgr-editbar {
+background: rgba(30,30,30,.9);
+color: #f0f0f0;
+box-shadow: 0 8px 26px rgba(0,0,0,.5);
+}
+[data-theme="dark"] #dgr-editbar button {
+color: #f0f0f0;
+background: rgba(255,255,255,.08);
+border-color: rgba(255,255,255,.12);
+}
+[data-theme="dark"] #dgr-editbar button#dgr-add-btn {
+background: #f0f0f0;
+color: #111111;
+}
 </style>
 <!-- v3.40.0：vConsole 手机端调试面板（腾讯开源 v3.15.1）。
      默认不加载，满足任一条件才启用：
@@ -11801,7 +11966,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793671060514" data-version="v8.67.7">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793675003999" data-version="v8.68.7">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13384,7 +13549,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.67.7</div>
+          <div class="val" id="about-ver-val">v8.68.7</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13503,7 +13668,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.67.7</div>
+      <div class="ver">辰光玥影 v8.68.7</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -13830,10 +13995,10 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">恢复默认桌面<span class="sub">恢复默认布局与页数</span></div>
         </div>
-        <!-- #1620：新版桌面网格数据（第一期只做影子数据/迁移备份，界面与旧操作不变） -->
+        <!-- #1620/#1621：新版桌面网格数据与编辑开关（第二期：网格渲染 + 长按拖动） -->
         <div class="set-row" id="row-desk-grid-v2">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></div>
-          <div class="txt">新版桌面编辑（测试）<span class="sub">测试期只生成新版桌面布局数据，界面与操作暂不变 · 关闭即回旧版，旧布局不删除</span></div>
+          <div class="txt">新版桌面编辑（测试）<span class="sub">开启后桌面改为网格布局：长按图标/卡片即可拖动、跨页、左上角 − 移出 · 切换需刷新桌面 · 关闭回旧版</span></div>
           <div class="val" id="desk-grid-v2-val">关闭</div>
         </div>
       </div>
@@ -13922,7 +14087,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.67.7</span>
+              <span class="lic-ver">v8.68.7</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -23738,4 +23903,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw01frxe -->
+<!-- __MOCHI_EOF__ mw03saqn -->
