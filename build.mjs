@@ -6957,6 +6957,7 @@ const FIX_SENTINELS = [
   { name: '#1619a 模板池快照只记顶层组件（删＝restoreTemplateDesk 把 p3apps 内图标逐个拽出组，第三页整组加不全）', file: 'js/personalize.js', needle: "document.querySelectorAll('#desk-widget-pool > [data-desk-widget]')" },
   { name: '#1619b 组件库添加图标＝撤销隐藏名单（删＝隐藏过的图标搬到别页仍 display:none，看着像加不上）', file: 'js/personalize.js', needle: 'if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }' },
   { name: '#1619c 整组图标添加时一并恢复组内隐藏项（删＝只有组里动态图标显示，模板四枚仍隐身）', file: 'js/personalize.js', needle: "node.querySelectorAll('.app')).forEach(un)" },
+  { name: '#1619d 已在本页但隐身的图标点组件库即恢复（删＝永远只提示「已在本页」，用户无法把图标加回来）', file: 'js/personalize.js', needle: "toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

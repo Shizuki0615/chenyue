@@ -6373,9 +6373,9 @@ iconSearch = search; iconGrid = grid;
 box.appendChild(p);
 panels[g.key] = p;
 });
-const addWidgetToPage = (wid) => {
+const unhideWidget = (wid) => {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
-if (!node) return;
+if (!node) return false;
 try {
 let hidden = getHiddenIcons();
 let changed = false;
@@ -6388,7 +6388,14 @@ if (i >= 0) { hidden.splice(i, 1); changed = true; }
 un(node);
 Array.prototype.slice.call(node.querySelectorAll('.app')).forEach(un);
 if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }
+return changed;
 } catch (e) {}
+return false;
+};
+const addWidgetToPage = (wid) => {
+const node = document.querySelector('[data-desk-widget="' + wid + '"]');
+if (!node) return;
+unhideWidget(wid);
 if (wid.indexOf('app-') === 0) {
 const grid = pageSlide.querySelector('.app-grid');
 if (grid && grid.dataset.app) {
@@ -6444,7 +6451,10 @@ iname.className = 'dli-name';
 iname.textContent = nm.replace(/图标$/, '');
 tile.appendChild(iprev); tile.appendChild(iname);
 tile.addEventListener('click', () => {
-if (curPage === pageIdx) { toast('已在本页'); return; }
+if (curPage === pageIdx) {
+toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');
+return;
+}
 addWidgetToPage(wid);
 });
 iconGrid.appendChild(tile);

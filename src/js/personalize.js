@@ -7959,13 +7959,12 @@ try {
       box.appendChild(p);
       panels[g.key] = p;
     });
-    // 添加逻辑（行按钮 / 图标块共用）：把组件节点移到目标页
-    const addWidgetToPage = (wid) => {
+    // #1619：组件库「添加」＝用户要把这个图标放回桌面——先撤销隐藏名单。
+    // 只搬节点不清 hidden-icons/display:none 时：图标在原页被判「已在本页」点不动，
+    // 搬到其他页又仍隐身＝「移除后怎么加都加不上」。整组图标里的隐藏项一并恢复。
+    const unhideWidget = (wid) => {
       const node = document.querySelector('[data-desk-widget="' + wid + '"]');
-      if (!node) return;
-      // #1619：组件库显式「添加」＝用户要把这个图标放回桌面，先撤销隐藏名单——
-      // 此前只搬节点、不清 hidden-icons/display:none：图标在原页时组件库判「已在本页」
-      // 点不动，搬到其他页又仍被隐藏，＝用户所见「移除后怎么加都加不上」。
+      if (!node) return false;
       try {
         let hidden = getHiddenIcons();
         let changed = false;
@@ -7976,10 +7975,17 @@ try {
           if (i >= 0) { hidden.splice(i, 1); changed = true; }
         };
         un(node);
-        // 整组图标（apps/p2apps/p3apps）里的隐藏项一并恢复
         Array.prototype.slice.call(node.querySelectorAll('.app')).forEach(un);
         if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }
+        return changed;
       } catch (e) {}
+      return false;
+    };
+    // 添加逻辑（行按钮 / 图标块共用）：把组件节点移到目标页
+    const addWidgetToPage = (wid) => {
+      const node = document.querySelector('[data-desk-widget="' + wid + '"]');
+      if (!node) return;
+      unhideWidget(wid);
       // FIX 2026-09-12 #351：功能图标入目标页【网格】排版（4 列横排、可上移/下移/
       // 拖拽定位，重进不丢），不再作为独立组件竖排。同时把该图标从其他页网格的顺序
       // 数组剔除并落盘——否则启动归位时旧页数组把它认领回去（「添加后重进回原位」）。
@@ -8048,7 +8054,12 @@ try {
         iname.textContent = nm.replace(/图标$/, '');
         tile.appendChild(iprev); tile.appendChild(iname);
         tile.addEventListener('click', () => {
-          if (curPage === pageIdx) { toast('已在本页'); return; }
+          // #1619：图标物理上已在目标页、但被「隐藏图标」隐身的——组件库点它
+          // 不再只回一句「已在本页」，直接恢复显示（否则用户永远加不回来）。
+          if (curPage === pageIdx) {
+            toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');
+            return;
+          }
           addWidgetToPage(wid);
         });
         iconGrid.appendChild(tile);
