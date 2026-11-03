@@ -6974,7 +6974,7 @@ const FIX_SENTINELS = [
   { name: '#1621f 启动期不覆盖已有网格模型（删＝刷新一次就丢拖动坐标/后加卡片）', file: 'js/personalize.js', needle: 'if (!deskGridV2GridOn && deskGridV2HasGridModel()) return;' },
   { name: '#1621g 返回键先退网格编辑态（删＝编辑时按返回直接退页面）', file: 'js/personalize.js', needle: 'window.mochiDeskGridBack = function () {' },
   { name: '#1621h tabs 接入网格编辑返回（删＝物理返回/侧滑绕过编辑态）', file: 'js/tabs.js', needle: 'window.mochiDeskGridBack && window.mochiDeskGridBack()' },
-  { name: '#1621i 自适应行高模型标记（删＝固定行高口径复发，卡片行上下留大空白）', file: 'js/personalize.js', needle: "m.rowMode = 'auto';" },
+  { name: '#1621i 自适应行高模型标记（删＝固定行高口径复发，卡片行上下留大空白）', file: 'js/personalize.js', needle: "m.rowMode = 'fixed';" },
   // ==== 2026-11-03 #1622 桌面网格 v2 第三期（页缩略图 / 排序 / 加删页 / 页背景跟 pageId）====
   { name: '#1622a 编辑态页缩略图条（删＝页面无法在桌面内排序/加删）', file: 'css/desk-grid-v2.css', needle: '#dgr-pagebar {' },
   { name: '#1622b 页面按 pageId 取背景键（删＝页面排序/删除后背景仍按旧索引错位）', file: 'js/personalize.js', needle: 'const deskGridV2PageBgKeyAt = (i) => {' },
@@ -6983,13 +6983,23 @@ const FIX_SENTINELS = [
   { name: '#1622e 桌面内加页/删页（删＝只能在设置页管理，删除只限末页）', file: 'js/personalize.js', needle: 'function deskGridV2DeletePage(idx) {' },
   { name: '#1622f 页面缩略图重建（删＝加删页后缩略图条不更新）', file: 'js/personalize.js', needle: 'function deskGridV2RefreshPageBar() {' },
   // ==== 2026-11-03 #1623 开桌重叠兜底（晚到卡片/野节点未入模型被 CSS Grid 自动放置）====
-  { name: '#1623a 页内直接子项也纳入收养（删＝晚到卡片成为自动放置项，和已定位卡片叠住）', file: 'js/personalize.js', needle: "page.items.push({ key: key, type: type, col: free.col, row: free.row, w: w, h: h, g: '' });" },
+  { name: '#1623a 页内直接子项也纳入收养（删＝晚到卡片成为自动放置项，和已定位卡片叠住）', file: 'js/personalize.js', needle: "page.items.push({ key: key, type: type, col: free.col, row: free.row, w: d.w, h: d.h, g: '', sz: 1 });" },
   { name: '#1623b 渲染后模型外的野卡片收回隐藏池（删＝无 data-dgr-key 的卡片留在页面里与网格项重叠）', file: 'js/personalize.js', needle: 'if (!isItem || node.dataset.dgrKey) return;' },
   { name: '#1623c 开桌真实矩形重叠检测并按行重排（删＝模型/晚到节点造成的重叠不自动修复）', file: 'js/personalize.js', needle: 'function deskGridV2HealOverlaps(reason) {' },
   { name: '#1623d 开桌/同步/可见性触发重叠体检（删＝只在首次 boot 查一次，切页/回桌面后重叠不修）', file: 'js/personalize.js', needle: "scheduleDeskGridV2Heal('boot');" },
-  // ==== 2026-11-03 #1624 桌面网格行高必须纯 auto（minmax(86px,auto) 在桌面 Chrome 压成 86px）====
-  { name: '#1624a 网格行高纯 auto（删＝桌面 Chrome 把所有行压成 86px，卡片溢出压卡片/压图标并留大空隙）', file: 'css/desk-grid-v2.css', needle: 'grid-auto-rows: auto;' },
-  { name: '#1624b 运行时行高兜底（删＝旧 index 被缓存时仍用旧 minmax 行高，卡片照样重叠）', file: 'js/personalize.js', needle: 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:auto!important}' },
+  // ==== 2026-11-03 #1624/#1625 桌面网格行高与卡片尺寸档 ====
+  // #1624a/b 名字保留（历史登记不能删），#1625 起行高口径由 auto 升级为固定 92px 档。
+  { name: '#1624a 网格行高纯 auto（删＝桌面 Chrome 把所有行压成 86px，卡片溢出压卡片/压图标并留大空隙）', file: 'css/desk-grid-v2.css', needle: 'grid-auto-rows: var(--dgr-row, 92px);' },
+  { name: '#1624b 运行时行高兜底（删＝旧 index 被缓存时仍用旧 minmax 行高，卡片照样重叠）', file: 'js/personalize.js', needle: 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:var(--dgr-row,92px)!important}' },
+  { name: '#1625c 老模型按类型补卡片尺寸档（删＝旧数据高卡仍 h=1，内容溢出压下一行）', file: 'js/personalize.js', needle: 'const deskGridV2DefaultSize = (node, it) => {' },
+  { name: '#1625d 挤压回流避让（删＝改大小/拖动后卡片之间重叠）', file: 'js/personalize.js', needle: 'const deskGridV2ReflowPage = (page, pinnedKey) => {' },
+  { name: '#1625e 卡片尺寸写入渲染节点（删＝宽度档样式与缩略图读不到实际尺寸）', file: 'js/personalize.js', needle: 'node.dataset.dgrW = String(it.w);' },
+  { name: '#1625f 编辑态右下角改大小把手（删＝只能拖动不能改大小）', file: 'js/personalize.js', needle: "rh.className = 'dgr-resize';" },
+  { name: '#1625g 改大小松手落盘并回流（删＝预览尺寸不保存/被压卡片不避让）', file: 'js/personalize.js', needle: 'function deskGridV2ResizeEnd(e) {' },
+  { name: '#1625h 紧凑档内容适配（删＝卡片缩到 1 行时内容溢出被裁或撑破）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-head { display: none; }' },
+  { name: '#1625i 组件库添加卡片使用默认尺寸档（删＝新加高卡 h=1 溢出压下一行）', file: 'js/personalize.js', needle: "const d = deskGridV2DefaultSize(node, { key: wid, type: 'widget' });" },
+  { name: '#1625j 行为验证口可改大小/读默认尺寸（删＝无头测试无法验证尺寸落盘）', file: 'js/personalize.js', needle: 'resize: deskGridV2SetSize,' },
+  { name: '#1625k 滚出可视区的项不再生成角标（删＝滚动后残留的 −/缩放手把浮在别的卡片上）', file: 'js/personalize.js', needle: 'if (rect.bottom <= sr.top + 2 || rect.top >= sr.bottom - 2) return;' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

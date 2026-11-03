@@ -4,7 +4,10 @@
 
 html.desk-grid-v2 #page-phone {
   --dgr-cols: 4;
-  --dgr-row: 86px;
+  /* #1625：第四期改成固定行高。卡片尺寸档（1~3 行）需要可预测的行几何：
+     92px 正好容下小卡（标题+3 行正文）与图标（58 图标+8 间距+14 文字），
+     高卡默认跨 2 行（92×2+14=198），纪念日/音乐 190px 完整放入。 */
+  --dgr-row: 92px;
   --dgr-colgap: 8px;
   --dgr-rowgap: 14px;
   --dgr-pad-x: 8px;
@@ -16,10 +19,10 @@ html.desk-grid-v2 .page-slide.dgr-page {
   display: grid !important;
   flex-direction: unset !important;
   grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
-  /* #1624：必须用纯 auto。实测 minmax(86px, auto) / max-content 在桌面 Chrome 下会把所有行
-     压成 86px，卡片固定高度溢出到下一行 → 卡片压卡片、卡片压图标、还被撑出大空隙。
-     纯 auto 让每行按该行最高项真实高度生长（190/92/80…），图标行也不会塌。 */
-  grid-auto-rows: auto;
+  /* #1625：固定行高（原 #1624 的 auto 会让卡片跨行高度不可预测，拖拽改大小无处吸附）。
+     高卡默认 h=2（198px），任何卡片都不会再被压到一行后溢出；内容超出时卡内裁切，
+     不会再出现 #1624 那种卡片压卡片/压图标。 */
+  grid-auto-rows: var(--dgr-row, 92px);
   gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
   align-content: start;
   justify-items: stretch;
@@ -39,6 +42,15 @@ html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key] {
   align-self: stretch;
   position: relative;
 }
+/* #1625 卡片尺寸档：非图标项填满所占网格区域（h=1 → 92px，h=2 → 198px）。
+   旧样式里的 height:190/160/92/66 等固定高度全部让位，尺寸改由 h 决定。 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key]:not(.app) {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  align-self: stretch !important;
+  overflow: hidden;
+}
 html.desk-grid-v2 .page-slide.dgr-page > .app {
   width: 100%;
   height: 100%;
@@ -49,6 +61,42 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
 html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
   width: 100% !important;
   align-self: stretch !important;
+}
+/* #1625：尺寸档变高后内容垂直居中，避免卡片底部留一大块空白 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-clock,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+/* 小卡行（今日情话/备忘心情）跨 2 行时改成上下叠放：两张迷你卡各占一行，
+   正好填满 198px，不再把两张卡拉成又高又空的竖条 */
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] {
+  flex-direction: column;
+  gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] .mini-card {
+  height: calc(50% - 7px) !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] {
+  flex-direction: column;
+  gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] .mini-card {
+  height: 92px !important;
+}
+/* 周末卡的连击角标要探出卡片上沿，保留原 overflow:clip 语义 */
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box {
+  overflow: clip;
+  overflow-clip-margin: 16px;
+}
+/* 编辑态底部要留出页缩略图条 + 编辑条的高度：页面内容可滚到它们上方，
+   否则最后一行图标会被页缩略图条盖住、手指落在缩略图上（误触成拖动换页）。 */
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page {
+  padding-bottom: 210px;
 }
 
 /* 编辑态：轻微抖动。拖动中的项停止抖动并提到最上层 */
@@ -64,6 +112,10 @@ html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-sou
 @keyframes dgr-jiggle {
   from { transform: rotate(-.35deg); }
   to { transform: rotate(.35deg); }
+}
+/* #1625 改大小期间停掉抖动，避免指针坐标被旋转矩阵带偏 */
+html.desk-grid-v2.dgr-resizing .page-slide.dgr-page > [data-dgr-key] {
+  animation: none !important;
 }
 
 /* 拖动替身：克隆体挂在 body，跟手指走；本体留在原位半透明 */
@@ -122,6 +174,35 @@ html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-sou
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(0,0,0,.25);
   transform: translate(-45%, -45%);
+}
+
+/* #1625 第四期：右下角改大小把手（图标不显示；卡片/图片/文字/倒计时可拖） */
+#dgr-badge-layer .dgr-resize {
+  position: absolute;
+  pointer-events: auto;
+}
+.dgr-resize {
+  z-index: 31;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 7px;
+  background: var(--btn-bg, #111111);
+  cursor: nwse-resize;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  transform: translate(-45%, -45%);
+  touch-action: none;
+}
+.dgr-resize::before {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
 }
 
 /* ===== #1622 第三期：编辑态页缩略图（点击跳页 / 拖动排序 / 加页 / 删页） ===== */
@@ -293,3 +374,89 @@ html.dgr-editing #dgr-editbar { display: flex; }
   background: #f0f0f0;
   color: #111111;
 }
+
+/* ===== #1625 第四期：卡片尺寸档内容适配 =====
+   1 行 = 92px（紧凑档），2 行 = 198px（默认高卡档）。宽度 2/3 列时同步收窄内边距，
+   让图标能真正放在卡片旁边的空格里，而不是被卡片内容撑破。 */
+
+/* 紧凑档（h=1）：高卡隐藏次要信息，保留核心数字/按钮 */
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatars { gap: 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar { gap: 4px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .ring { width: 44px; height: 44px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-love { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-head { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-artist,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-lyric,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-progress,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-times { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-cover { width: 40px; height: 40px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls { margin-top: 3px; padding: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-play { width: 30px; height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-heart { width: 30px; height: 30px; min-width: 30px; min-height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-queue { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-inner { padding-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-phase,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-bar-wrap { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-label,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-sub { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-days { font-size: 30px; margin: 2px 0; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] { padding: 8px 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-head { margin-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-grid { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-disp { font-size: 22px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-controls { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] .da-days { font-size: 20px; margin: 0; }
+
+/* 窄卡档（w=2/3）：收紧内边距与字号，避免内容横向溢出 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="2"]:not(.app) { padding-left: 10px !important; padding-right: 10px !important; }
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="3"]:not(.app) { padding-left: 12px !important; padding-right: 12px !important; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatars { gap: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .ring { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-heart svg { width: 16px; height: 16px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-love { width: 100%; gap: 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] #love-days { font-size: 16px; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] { padding: 8px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-cover { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-lyric { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-queue { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-heart { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-play { width: 38px; height: 38px; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-w="2"] .dpd-days { font-size: 38px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-sub { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-ta { gap: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-btn { padding: 5px 8px; font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-days { gap: 3px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-day { font-size: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .checkin[data-dgr-w="2"] .ck-btn { padding: 7px 10px; min-height: 34px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mini-card { padding: 10px 8px 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mc-b { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-cell { font-size: 9px; line-height: 18px; height: 18px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-grid { gap: 1px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget[data-dgr-w="2"],
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] { padding: 10px 8px; }
+

@@ -6182,21 +6182,26 @@ if (manual) toast('新版桌面数据生成失败，已保留旧布局');
 return { ok: false, reason: 'error' };
 }
 };
-const DGR_ROW_H = 86;
+const DGR_ROW_H = 92;
 const DGR_ROW_GAP = 14;
 const DGR_COL_GAP = 8;
 const DGR_PAD_X = 8;
 const DGR_PAD_Y = 14;
-const DGR_H_PRESET = {
-deco: 2, 'quote-row': 2, checkin: 1, music: 2, week: 2, weekend: 2,
-'memo-row': 2, 'desk-period': 2, 'desk-clock': 2, 'desk-calendar': 2,
-'desk-timer': 2, 'desk-anniv': 2
+const DGR_MIN_CARD_W = 2;
+const DGR_MAX_CARD_W = DESK_GRID_V2_COLS;
+const DGR_MAX_CARD_H = 3;
+const DGR_DEFAULT_SIZE = {
+deco: { w: 4, h: 2 },
+music: { w: 4, h: 2 },
+'desk-period': { w: 4, h: 2 },
+'desk-calendar': { w: 4, h: 2 },
+'desk-timer': { w: 4, h: 2 }
 };
 try {
 if (!document.getElementById('dgr-row-autofix')) {
 const st = document.createElement('style');
 st.id = 'dgr-row-autofix';
-st.textContent = 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:auto!important}';
+st.textContent = 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:var(--dgr-row,92px)!important}';
 (document.head || document.documentElement).appendChild(st);
 }
 } catch (e) {}
@@ -6210,6 +6215,7 @@ let deskGridV2Press = null;
 let deskGridV2Drag = null;
 let deskGridV2EdgeTimer = null;
 let deskGridV2Placeholder = null;
+let deskGridV2Resize = null;
 const deskGridV2Slides = () => pagesBox ? Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide')) : [];
 const deskGridV2CurrentIdx = () => {
 try {
@@ -6232,9 +6238,23 @@ if (it.type === 'countdown') return document.querySelector('[data-desk-countdown
 } catch (e) {}
 return null;
 };
-const deskGridV2ItemH = (node, it) => {
-if (!it) return 1;
-return 1;
+const deskGridV2DefaultSize = (node, it) => {
+if (!it) return { w: DESK_GRID_V2_COLS, h: 1 };
+if (it.type === 'icon') return { w: 1, h: 1 };
+if (it.type === 'image') {
+const w = Number.isInteger(it.w) ? Math.max(DGR_MIN_CARD_W, Math.min(DGR_MAX_CARD_W, it.w)) : DESK_GRID_V2_COLS;
+return { w: w, h: 2 };
+}
+const d = DGR_DEFAULT_SIZE[it.key];
+if (d) return { w: d.w, h: d.h };
+return { w: DESK_GRID_V2_COLS, h: 1 };
+};
+const deskGridV2ClampSize = (it, w, h) => {
+if (!it || it.type === 'icon') return { w: 1, h: 1 };
+const cw = Math.max(1, Math.min(DGR_MAX_CARD_W, Number.isInteger(w) ? w : DESK_GRID_V2_COLS));
+const dw = Math.max(DGR_MIN_CARD_W, cw);
+const ch = Math.max(1, Math.min(DGR_MAX_CARD_H, Number.isInteger(h) ? h : 1));
+return { w: dw, h: ch };
 };
 const deskGridV2SaveModel = (m) => {
 if (!m || !deskGridV2Validate(m)) {
@@ -6273,23 +6293,59 @@ if (occ[r + ',' + c]) return false;
 }
 return true;
 };
-const deskGridV2FindFree = (page, w, h, ignoreKey, wantCol, wantRow) => {
-const occ = deskGridV2Occ(page, ignoreKey);
-let maxRow = 0;
-((page && page.items) || []).forEach(it => {
-if (it && (!ignoreKey || it.key !== ignoreKey)) maxRow = Math.max(maxRow, it.row + it.h);
-});
+const deskGridV2FindFreeIn = (occ, maxRow, w, h, wantCol, wantRow, minRow) => {
+const start = Math.max(0, minRow || 0);
 let best = null, bestD = 1e9;
-for (let r = 0; r <= maxRow + 2; r++) {
+for (let r = start; r <= maxRow + 2; r++) {
 for (let c = 0; c <= DESK_GRID_V2_COLS - w; c++) {
 if (!deskGridV2FitAt(occ, c, r, w, h)) continue;
 const d = Math.abs(c - wantCol) * 2 + Math.abs(r - wantRow);
 if (d < bestD) { bestD = d; best = { col: c, row: r }; if (d === 0) return best; }
 }
 }
-return best || { col: 0, row: maxRow };
+return best || { col: 0, row: Math.max(start, maxRow) };
 };
-const deskGridV2Resolve = (page, key, wantCol, wantRow, w, h, allowSwap) => {
+const deskGridV2FindFree = (page, w, h, ignoreKey, wantCol, wantRow, minRow) => {
+const occ = deskGridV2Occ(page, ignoreKey);
+let maxRow = 0;
+((page && page.items) || []).forEach(it => {
+if (it && (!ignoreKey || it.key !== ignoreKey)) maxRow = Math.max(maxRow, it.row + it.h);
+});
+return deskGridV2FindFreeIn(occ, maxRow, w, h, wantCol, wantRow, minRow);
+};
+const deskGridV2ReflowPage = (page, pinnedKey) => {
+if (!page || !Array.isArray(page.items)) return false;
+const items = page.items;
+const occ = Object.create(null);
+let maxRow = 0;
+const mark = (it) => {
+for (let r = it.row; r < it.row + it.h; r++) {
+for (let c = it.col; c < it.col + it.w; c++) occ[r + ',' + c] = 1;
+}
+maxRow = Math.max(maxRow, it.row + it.h);
+};
+let pinned = null;
+if (pinnedKey) pinned = items.find(it => it && it.key === pinnedKey) || null;
+if (pinned) {
+const s = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
+pinned.w = s.w; pinned.h = s.h;
+mark(pinned);
+}
+const rest = items.filter(it => it && it !== pinned)
+.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
+let changed = false;
+rest.forEach(it => {
+const s = deskGridV2ClampSize(it, it.w, it.h);
+if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; it.sz = 1; changed = true; }
+if (deskGridV2FitAt(occ, it.col, it.row, it.w, it.h)) { mark(it); return; }
+const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, Math.max(0, it.row));
+if (!free) return;
+if (free.col !== it.col || free.row !== it.row) { it.col = free.col; it.row = free.row; changed = true; }
+mark(it);
+});
+return changed;
+};
+const deskGridV2Resolve = (page, key, wantCol, wantRow, w, h, allowSwap, allowPush) => {
 if (!page) return null;
 const col0 = Math.max(0, Math.min(DESK_GRID_V2_COLS - w, wantCol));
 const row0 = Math.max(0, wantRow);
@@ -6302,6 +6358,7 @@ if (hits.length === 1 && hits[0].w === w && hits[0].h === h) {
 return { col: col0, row: row0, swapWith: hits[0].key };
 }
 }
+if (allowPush) return { col: col0, row: row0, push: true };
 const free = deskGridV2FindFree(page, w, h, key, col0, row0);
 return free ? { col: free.col, row: free.row } : null;
 };
@@ -6314,17 +6371,19 @@ items.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 
 const occ = Object.create(null);
 const st = { pos: 0 };
 items.forEach(it => {
-const node = deskGridV2NodeOf(it);
-it.h = deskGridV2ItemH(node, it);
-if (it.type === 'icon') { it.w = 1; it.h = 1; }
-if (!it.w || it.w < 1 || it.w > DESK_GRID_V2_COLS) it.w = DESK_GRID_V2_COLS;
+if (!it.sz) {
+const d = deskGridV2DefaultSize(deskGridV2NodeOf(it), it);
+it.w = d.w; it.h = d.h; it.sz = 1;
+}
+const s = deskGridV2ClampSize(it, it.w, it.h);
+it.w = s.w; it.h = s.h;
 const p = deskGridV2Place(occ, st, it.w, it.h);
 it.col = p.col;
 it.row = p.row;
 });
 });
 m.mode = 'grid';
-m.rowMode = 'auto';
+m.rowMode = 'fixed';
 m.rowH = DGR_ROW_H;
 m.rowGap = DGR_ROW_GAP;
 m.colGap = DGR_COL_GAP;
@@ -6377,8 +6436,9 @@ type = 'countdown';
 if (!key || deskGridV2Find(m, key)) return;
 const page = m.pages[pi];
 if (!page) return;
-const free = deskGridV2FindFree(page, w, h, null, 0, 0);
-page.items.push({ key: key, type: type, col: free.col, row: free.row, w: w, h: h, g: '' });
+const d = deskGridV2DefaultSize(node, { key: key, type: type, w: w });
+const free = deskGridV2FindFree(page, d.w, d.h, null, 0, 0);
+page.items.push({ key: key, type: type, col: free.col, row: free.row, w: d.w, h: d.h, g: '', sz: 1 });
 changed = true;
 };
 slides.forEach((slide, pi) => {
@@ -6403,6 +6463,29 @@ addItem(app, pi);
 document.querySelectorAll('.app').forEach(addNode);
 return changed;
 };
+const deskGridV2NormalizeSizes = (m) => {
+if (!m || !m.pages) return false;
+let changed = false;
+m.pages.forEach(page => {
+((page && page.items) || []).forEach(it => {
+if (!it) return;
+if (it.type === 'icon') {
+if (it.w !== 1 || it.h !== 1) { it.w = 1; it.h = 1; changed = true; }
+if (!it.sz) { it.sz = 1; changed = true; }
+return;
+}
+if (!it.sz) {
+const d = deskGridV2DefaultSize(deskGridV2NodeOf(it), it);
+it.w = d.w; it.h = d.h; it.sz = 1;
+changed = true;
+}
+const s = deskGridV2ClampSize(it, it.w, it.h);
+if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; changed = true; }
+});
+if (deskGridV2ReflowPage(page, null)) changed = true;
+});
+return changed;
+};
 const deskGridV2Render = () => {
 if (!deskGridV2GridOn || !pagesBox) return;
 if (deskGridV2RenderBusy) return;
@@ -6413,6 +6496,7 @@ try {
 const slides = deskGridV2Slides();
 slides.forEach((slide, pi) => {
 slide.classList.add('dgr-page');
+slide.style.setProperty('--dgr-row', DGR_ROW_H + 'px');
 const page = m.pages[pi];
 if (!page) return;
 (page.items || []).forEach(it => {
@@ -6420,6 +6504,9 @@ const node = deskGridV2NodeOf(it);
 if (!node) return;
 if (node.parentNode !== slide) slide.appendChild(node);
 node.dataset.dgrKey = it.key;
+node.dataset.dgrW = String(it.w);
+node.dataset.dgrH = String(it.h);
+node.dataset.dgrType = it.type;
 node.style.gridColumn = String(it.col + 1) + ' / span ' + it.w;
 node.style.gridRow = String(it.row + 1) + ' / span ' + it.h;
 });
@@ -6497,21 +6584,8 @@ Object.keys(dirty).forEach(k => {
 const pi = Number(k);
 const page = m.pages[pi];
 if (!page) return;
-const items = (page.items || []).slice().sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
-const occ = Object.create(null);
-const st = { pos: 0 };
-items.forEach(it => {
-if (it.type === 'icon') { it.w = 1; it.h = 1; }
-else {
-if (!it.w || it.w < 1 || it.w > DESK_GRID_V2_COLS) it.w = DESK_GRID_V2_COLS;
-it.h = 1;
-}
-const p = deskGridV2Place(occ, st, it.w, it.h);
-if (it.col !== p.col || it.row !== p.row) repaired = true;
-it.col = p.col;
-it.row = p.row;
-});
-page.items = items;
+const changed = deskGridV2ReflowPage(page, null);
+if (changed) repaired = true;
 });
 if (repaired && deskGridV2Validate(m)) {
 deskGridV2SaveModel(m);
@@ -6551,12 +6625,20 @@ m = deskGridV2Read();
 if (!m) return r;
 deskGridV2Repack(m);
 changed = true;
-} else if (m.mode !== 'grid' || m.rowMode !== 'auto') {
+} else if (m.mode !== 'grid') {
 deskGridV2Repack(m);
 changed = true;
 }
 if (deskGridV2ReconcilePages(m)) changed = true;
 if (deskGridV2AdoptIcons(m)) changed = true;
+if (deskGridV2NormalizeSizes(m)) changed = true;
+if (m.rowMode !== 'fixed') {
+m.rowMode = 'fixed';
+m.rowH = DGR_ROW_H;
+m.rowGap = DGR_ROW_GAP;
+m.colGap = DGR_COL_GAP;
+changed = true;
+}
 if (changed) deskGridV2SaveModel(m);
 deskGridV2Render();
 try { applyPageBgs(); } catch (e) {}
@@ -6583,12 +6665,14 @@ layer.innerHTML = '';
 const slide = deskGridV2Slides()[deskGridV2CurrentIdx()];
 if (!slide) return;
 const pr = phone.getBoundingClientRect();
+const sr = slide.getBoundingClientRect();
 Array.prototype.forEach.call(slide.children, (node) => {
 if (!node || !node.hasAttribute || !node.hasAttribute('data-dgr-key')) return;
 if (node.style.display === 'none') return;
 const key = node.getAttribute('data-dgr-key');
 const rect = node.getBoundingClientRect();
 if (!rect.width || !rect.height) return;
+if (rect.bottom <= sr.top + 2 || rect.top >= sr.bottom - 2) return;
 const b = document.createElement('button');
 b.type = 'button';
 b.className = 'dgr-minus';
@@ -6603,6 +6687,21 @@ e.stopPropagation();
 deskGridV2RemoveKey(key);
 });
 layer.appendChild(b);
+if (node.dataset.dgrType && node.dataset.dgrType !== 'icon') {
+const rh = document.createElement('button');
+rh.type = 'button';
+rh.className = 'dgr-resize';
+rh.dataset.dgrKey = key;
+rh.setAttribute('aria-label', '拖动改大小');
+rh.style.left = (rect.right - pr.left) + 'px';
+rh.style.top = (rect.bottom - pr.top) + 'px';
+rh.addEventListener('pointerdown', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2StartResize(key, e);
+});
+layer.appendChild(rh);
+}
 });
 } catch (e) {}
 };
@@ -6620,6 +6719,7 @@ if (!deskGridV2Editing) return;
 deskGridV2Editing = false;
 document.documentElement.classList.remove('dgr-editing');
 deskGridV2CleanupDrag();
+deskGridV2CancelResize();
 try { const layer = document.getElementById('dgr-badge-layer'); if (layer) layer.remove(); } catch (e) {}
 try { const pb = document.getElementById('dgr-pagebar'); if (pb) pb.remove(); } catch (e) {}
 deskGridV2SuppressClickUntil = Date.now() + 300;
@@ -6638,6 +6738,150 @@ pagesBox.releasePointerCapture(d.pointerId);
 }
 deskGridV2Drag = null;
 if (deskGridV2Placeholder) { try { deskGridV2Placeholder.remove(); } catch (e) {} deskGridV2Placeholder = null; }
+}
+function deskGridV2RemoveResizeListeners() {
+try {
+window.removeEventListener('pointermove', deskGridV2ResizeMove, true);
+window.removeEventListener('pointerup', deskGridV2ResizeEnd, true);
+window.removeEventListener('pointercancel', deskGridV2CancelResize, true);
+} catch (e) {}
+}
+function deskGridV2CancelResize() {
+const rs = deskGridV2Resize;
+if (!rs) return;
+deskGridV2Resize = null;
+deskGridV2RemoveResizeListeners();
+document.documentElement.classList.remove('dgr-resizing');
+try {
+if (rs.pointerId != null && pagesBox.hasPointerCapture && pagesBox.hasPointerCapture(rs.pointerId)) {
+pagesBox.releasePointerCapture(rs.pointerId);
+}
+} catch (e) {}
+try {
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, rs.key);
+if (f && rs.node) {
+rs.node.dataset.dgrW = String(f.item.w);
+rs.node.dataset.dgrH = String(f.item.h);
+rs.node.style.gridColumn = String(f.item.col + 1) + ' / span ' + f.item.w;
+rs.node.style.gridRow = String(f.item.row + 1) + ' / span ' + f.item.h;
+}
+} catch (e) {}
+if (rs.raf) { try { cancelAnimationFrame(rs.raf); } catch (e) {} rs.raf = null; }
+if (deskGridV2Editing) deskGridV2RefreshBadges();
+}
+function deskGridV2ResizeMove(e) {
+const rs = deskGridV2Resize;
+if (!rs || e.pointerId !== rs.pointerId) return;
+const slide = deskGridV2Slides()[rs.pageIdx];
+if (!slide) return;
+try { e.preventDefault(); } catch (er) {}
+const cs = getComputedStyle(slide);
+const padL = parseFloat(cs.paddingLeft) || DGR_PAD_X;
+const padR = parseFloat(cs.paddingRight) || DGR_PAD_X;
+const colGap = parseFloat(cs.columnGap) || DGR_COL_GAP;
+const rowGap = parseFloat(cs.rowGap) || DGR_ROW_GAP;
+const rowH = parseFloat(cs.getPropertyValue('--dgr-row')) || DGR_ROW_H;
+const colW = Math.max(10, (slide.clientWidth - padL - padR - colGap * (DESK_GRID_V2_COLS - 1)) / DESK_GRID_V2_COLS);
+const dw = Math.round((e.clientX - rs.startX) / (colW + colGap));
+const dh = Math.round((e.clientY - rs.startY) / (rowH + rowGap));
+const s = deskGridV2ClampSize({ type: rs.type }, rs.startW + dw, rs.startH + dh);
+s.w = Math.max(DGR_MIN_CARD_W, Math.min(s.w, DESK_GRID_V2_COLS - rs.col));
+if (s.w === rs.w && s.h === rs.h) return;
+rs.w = s.w; rs.h = s.h;
+const node = rs.node;
+if (node) {
+node.dataset.dgrW = String(s.w);
+node.dataset.dgrH = String(s.h);
+node.style.gridColumn = String(rs.col + 1) + ' / span ' + s.w;
+node.style.gridRow = String(rs.row + 1) + ' / span ' + s.h;
+}
+if (!rs.raf) {
+rs.raf = requestAnimationFrame(() => {
+rs.raf = null;
+if (deskGridV2Resize === rs && deskGridV2Editing) deskGridV2RefreshBadges();
+});
+}
+}
+function deskGridV2ResizeEnd(e) {
+const rs = deskGridV2Resize;
+if (!rs || e.pointerId !== rs.pointerId) return;
+deskGridV2Resize = null;
+deskGridV2RemoveResizeListeners();
+document.documentElement.classList.remove('dgr-resizing');
+if (rs.raf) { try { cancelAnimationFrame(rs.raf); } catch (er) {} rs.raf = null; }
+try {
+if (pagesBox.hasPointerCapture && pagesBox.hasPointerCapture(rs.pointerId)) pagesBox.releasePointerCapture(rs.pointerId);
+} catch (er) {}
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, rs.key);
+if (m && f && f.item.type !== 'icon') {
+const s = deskGridV2ClampSize(f.item, rs.w, rs.h);
+s.w = Math.max(DGR_MIN_CARD_W, Math.min(s.w, DESK_GRID_V2_COLS - f.item.col));
+if (f.item.w !== s.w || f.item.h !== s.h) {
+f.item.w = s.w;
+f.item.h = s.h;
+f.item.sz = 1;
+deskGridV2ReflowPage(f.page, f.item.key);
+deskGridV2SaveModel(m);
+}
+}
+deskGridV2SuppressClickUntil = Date.now() + 400;
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+}
+function deskGridV2StartResize(key, e) {
+if (!deskGridV2Editing || !key) return;
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, key);
+if (!f || f.item.type === 'icon') return;
+const node = deskGridV2NodeOf(f.item);
+const slide = deskGridV2Slides()[f.pageIdx];
+if (!node || !slide) return;
+const rect = node.getBoundingClientRect();
+if (!rect.width || !rect.height) return;
+deskGridV2CancelResize();
+deskGridV2Resize = {
+key: key,
+type: f.item.type,
+pageIdx: f.pageIdx,
+col: f.item.col,
+row: f.item.row,
+startW: f.item.w,
+startH: f.item.h,
+w: f.item.w,
+h: f.item.h,
+startX: e.clientX,
+startY: e.clientY,
+pointerId: e.pointerId,
+node: node,
+raf: null
+};
+document.documentElement.classList.add('dgr-resizing');
+try { pagesBox.setPointerCapture(e.pointerId); } catch (er) {}
+window.addEventListener('pointermove', deskGridV2ResizeMove, true);
+window.addEventListener('pointerup', deskGridV2ResizeEnd, true);
+window.addEventListener('pointercancel', deskGridV2CancelResize, true);
+}
+function deskGridV2SetSize(key, w, h) {
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, key);
+if (!m || !f || f.item.type === 'icon') return false;
+const s = deskGridV2ClampSize(f.item, w, h);
+if (s.w > DESK_GRID_V2_COLS - f.item.col) {
+f.item.col = Math.max(0, DESK_GRID_V2_COLS - s.w);
+}
+f.item.w = s.w;
+f.item.h = s.h;
+f.item.sz = 1;
+deskGridV2ReflowPage(f.page, f.item.key);
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) deskGridV2RefreshBadges();
+return true;
 }
 function deskGridV2RemoveKey(key) {
 const m = deskGridV2Read();
@@ -6726,47 +6970,17 @@ const padR = parseFloat(cs.paddingRight) || DGR_PAD_X;
 const padT = parseFloat(cs.paddingTop) || DGR_PAD_Y;
 const colGap = parseFloat(cs.columnGap) || DGR_COL_GAP;
 const rowGap = parseFloat(cs.rowGap) || DGR_ROW_GAP;
-const rowMin = parseFloat(cs.getPropertyValue('--dgr-row')) || DGR_ROW_H;
 const colW = Math.max(10, (slide.clientWidth - padL - padR - colGap * (DESK_GRID_V2_COLS - 1)) / DESK_GRID_V2_COLS);
 const xRel = x - rect.left - padL;
 let col = Math.floor((xRel + colGap / 2) / (colW + colGap));
 col = Math.max(0, Math.min(DESK_GRID_V2_COLS - d.item.w, col));
+const rowH = parseFloat(cs.getPropertyValue('--dgr-row')) || DGR_ROW_H;
 const yContent = y - rect.top + slide.scrollTop;
-const rows = [];
-((page.items) || []).forEach(it => {
-if (!it || it.key === d.key) return;
-const n = deskGridV2NodeOf(it);
-if (!n || n.parentNode !== slide) return;
-const nr = n.getBoundingClientRect();
-if (!nr.width || !nr.height) return;
-const top = nr.top - rect.top + slide.scrollTop;
-const bottom = top + nr.height;
-if (!rows[it.row]) rows[it.row] = { top: top, bottom: bottom };
-else {
-rows[it.row].top = Math.min(rows[it.row].top, top);
-rows[it.row].bottom = Math.max(rows[it.row].bottom, bottom);
-}
-});
-let maxRow = -1;
-((page.items) || []).forEach(it => { if (it) maxRow = Math.max(maxRow, it.row); });
-for (let r = 0; r <= maxRow; r++) {
-if (!rows[r]) {
-const prev = rows[r - 1] || null;
-const top = prev ? prev.bottom + rowGap : padT;
-rows[r] = { top: top, bottom: top + rowMin };
-}
-}
-let row = 0, best = Infinity;
-for (let r = 0; r <= maxRow; r++) {
-const rr = rows[r];
-if (!rr) continue;
-const dist = Math.abs(yContent - (rr.top + rr.bottom) / 2);
-if (dist < best) { best = dist; row = r; }
-}
-if (maxRow >= 0 && rows[maxRow] && yContent > rows[maxRow].bottom + rowGap / 2) row = maxRow + 1;
-const t = deskGridV2Resolve(page, d.key, col, row, d.item.w, d.item.h, idx === d.pageIdx);
+let row = Math.round((yContent - padT) / (rowH + rowGap));
+row = Math.max(0, row);
+const t = deskGridV2Resolve(page, d.key, col, row, d.item.w, d.item.h, idx === d.pageIdx, true);
 if (!t) return;
-d.target = { pageIdx: idx, col: t.col, row: t.row, swapWith: t.swapWith || null };
+d.target = { pageIdx: idx, col: t.col, row: t.row, swapWith: t.swapWith || null, push: !!t.push };
 const ph = deskGridV2Placeholder || (deskGridV2Placeholder = document.createElement('div'));
 ph.className = 'dgr-placeholder';
 const phone = document.getElementById('page-phone');
@@ -6779,14 +6993,10 @@ phone.appendChild(layer);
 if (layer) {
 if (ph.parentNode !== layer) layer.appendChild(ph);
 const pr = phone.getBoundingClientRect();
-const rg = rows[t.row] || {
-top: (maxRow >= 0 && rows[maxRow]) ? (rows[maxRow].bottom + rowGap) : padT,
-bottom: (maxRow >= 0 && rows[maxRow]) ? (rows[maxRow].bottom + rowGap + rowMin) : (padT + rowMin)
-};
 ph.style.left = (rect.left - pr.left + padL + t.col * (colW + colGap)) + 'px';
-ph.style.top = (rect.top - pr.top + rg.top - slide.scrollTop) + 'px';
+ph.style.top = (rect.top - pr.top + padT + t.row * (rowH + rowGap) - slide.scrollTop) + 'px';
 ph.style.width = (d.item.w * colW + Math.max(0, d.item.w - 1) * colGap) + 'px';
-ph.style.height = Math.max(rowMin, rg.bottom - rg.top) + 'px';
+ph.style.height = (d.item.h * rowH + Math.max(0, d.item.h - 1) * rowGap) + 'px';
 }
 }
 function deskGridV2MoveDrag(e) {
@@ -6832,6 +7042,7 @@ if (dest) {
 found.item.col = t.col;
 found.item.row = t.row;
 dest.items.push(found.item);
+deskGridV2ReflowPage(dest, found.item.key);
 }
 } else {
 if (t.swapWith) {
@@ -6844,6 +7055,7 @@ other.item.row = oldRow;
 }
 found.item.col = t.col;
 found.item.row = t.row;
+if (t.push) deskGridV2ReflowPage(found.page, found.item.key);
 }
 deskGridV2SaveModel(m);
 deskGridV2Render();
@@ -6859,7 +7071,7 @@ const bar = document.createElement('div');
 bar.id = 'dgr-editbar';
 const hint = document.createElement('span');
 hint.className = 'dgr-hint';
-hint.textContent = '长按拖动图标/卡片 · 点 − 移出';
+hint.textContent = '长按拖动 · 右下角改大小 · 点 − 移出';
 const add = document.createElement('button');
 add.type = 'button';
 add.id = 'dgr-add-btn';
@@ -7011,7 +7223,7 @@ existing.page.items.splice(existing.index, 1);
 }
 const grid = app.closest ? app.closest('.app-grid') : null;
 const free = deskGridV2FindFree(page, 1, 1, key, 0, 0);
-page.items.push({ key: key, type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: (grid && grid.dataset.app) || '' });
+page.items.push({ key: key, type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: (grid && grid.dataset.app) || '', sz: 1 });
 changed = true;
 };
 if (wid.indexOf('app-') === 0) {
@@ -7032,9 +7244,9 @@ if (existing) {
 if (existing.pageIdx === pageIdx) { toast('已在本页'); return true; }
 existing.page.items.splice(existing.index, 1);
 }
-const h = deskGridV2ItemH(node, { key: wid, type: 'widget' });
-const free = deskGridV2FindFree(page, DESK_GRID_V2_COLS, h, wid, 0, 0);
-page.items.push({ key: wid, type: 'widget', col: free.col, row: free.row, w: DESK_GRID_V2_COLS, h: h });
+const d = deskGridV2DefaultSize(node, { key: wid, type: 'widget' });
+const free = deskGridV2FindFree(page, d.w, d.h, wid, 0, 0);
+page.items.push({ key: wid, type: 'widget', col: free.col, row: free.row, w: d.w, h: d.h, sz: 1 });
 changed = true;
 }
 if (changed) {
@@ -7061,10 +7273,9 @@ const page = m.pages[it.page];
 if (!page) return;
 if (deskGridV2Find(m, it.id)) return;
 const type = it.id.indexOf('img_') === 0 ? 'image' : (it.id.indexOf('txt_') === 0 ? 'text' : (it.id.indexOf('cd_') === 0 ? 'countdown' : 'widget'));
-const w = type === 'image' ? DESK_GRID_V2_COLS : DESK_GRID_V2_COLS;
-const h = type === 'image' ? 2 : 1;
-const free = deskGridV2FindFree(page, w, h, null, 0, 0);
-page.items.push({ key: it.id, type: type, col: free.col, row: free.row, w: w, h: h });
+const d = deskGridV2DefaultSize(null, { key: it.id, type: type });
+const free = deskGridV2FindFree(page, d.w, d.h, null, 0, 0);
+page.items.push({ key: it.id, type: type, col: free.col, row: free.row, w: d.w, h: d.h, sz: 1 });
 changed = true;
 });
 if (changed) {
@@ -7097,7 +7308,7 @@ gcNode.style.display = '';
 }
 if (!gcPin && gcNode && !deskGridV2Find(m, 'app-group-chat') && page0) {
 const free = deskGridV2FindFree(page0, 1, 1, null, 0, 0);
-page0.items.push({ key: 'app-group-chat', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main' });
+page0.items.push({ key: 'app-group-chat', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main', sz: 1 });
 changed = true;
 }
 if (!divPin && divNode) {
@@ -7113,7 +7324,7 @@ if (gc) { gc.page.items.splice(gc.index, 1); changed = true; }
 if (gcNode) { try { ensureWidgetPool().appendChild(gcNode); } catch (e) {} }
 if (divNode && !deskGridV2Find(m, 'app-divination') && page0) {
 const free = deskGridV2FindFree(page0, 1, 1, null, 0, 0);
-page0.items.push({ key: 'app-divination', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main' });
+page0.items.push({ key: 'app-divination', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main', sz: 1 });
 changed = true;
 }
 }
@@ -7181,12 +7392,17 @@ t.className = 'dgr-page-thumb' + (i === cur ? ' on' : '');
 t.dataset.pageIdx = String(i);
 const mini = document.createElement('div');
 mini.className = 'dgr-thumb-mini';
-const count = Math.min(10, (page.items || []).length);
-for (let k = 0; k < count; k++) {
+const items = (page.items || []).slice()
+.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)))
+.slice(0, 12);
+items.forEach(it => {
+if (!it) return;
 const b = document.createElement('span');
-if (page.items[k] && page.items[k].type !== 'icon') b.className = 'card';
+if (it.type !== 'icon') b.className = 'card';
+b.style.gridColumn = 'span ' + Math.max(1, Math.min(DESK_GRID_V2_COLS, it.w || 1));
+if (it.h > 1) b.style.gridRow = 'span ' + Math.min(2, it.h);
 mini.appendChild(b);
-}
+});
 const num = document.createElement('span');
 num.className = 'dgr-thumb-num';
 num.textContent = String(i + 1);
@@ -7373,7 +7589,7 @@ if (!m) {
 deskGridV2SyncFromDom('boot');
 m = deskGridV2Read();
 }
-if (m && (m.mode !== 'grid' || m.rowMode !== 'auto')) {
+if (m && m.mode !== 'grid') {
 deskGridV2Repack(m);
 deskGridV2SaveModel(m);
 }
@@ -7497,6 +7713,8 @@ render: deskGridV2Render,
 syncCustom: deskGridV2SyncCustom,
 addFromLib: deskGridV2AddFromLib,
 removeKey: deskGridV2RemoveKey,
+resize: deskGridV2SetSize,
+defaultSize: (it) => deskGridV2DefaultSize(null, it),
 applyGroupChat: deskGridV2ApplyGroupChat,
 boot: deskGridV2Boot,
 addPage: deskGridV2AddPage,
@@ -7506,7 +7724,7 @@ refreshPageBar: deskGridV2RefreshPageBar,
 pageBgKey: deskGridV2PageBgKeyAt,
 findOverlaps: deskGridV2FindOverlaps,
 healOverlaps: deskGridV2HealOverlaps,
-debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, pageDrag: deskGridV2PageDrag ? { from: deskGridV2PageDrag.from, target: deskGridV2PageDrag.target, moved: deskGridV2PageDrag.moved } : null, bound: !!window.__dgrEditBound }),
+debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, resize: deskGridV2Resize ? { key: deskGridV2Resize.key, w: deskGridV2Resize.w, h: deskGridV2Resize.h } : null, pageDrag: deskGridV2PageDrag ? { from: deskGridV2PageDrag.from, target: deskGridV2PageDrag.target, moved: deskGridV2PageDrag.moved } : null, bound: !!window.__dgrEditBound }),
 key: DESK_GRID_V2_KEY,
 backupKey: DESK_GRID_V2_BACKUP_KEY,
 flagKey: DESK_GRID_V2_FLAG_KEY,
