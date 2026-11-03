@@ -3172,7 +3172,7 @@ const DESK_CSS_WIDGETS = [
 { type: 'desk-clock', name: '时钟' },
 { type: 'desk-calendar', name: '日历' },
 { type: 'desk-timer', name: '倒计时' },
-{ type: 'desk-anniv', name: '桌面纪念日' },
+{ type: 'desk-anniv', name: '倒数日' },
 { type: 'desk-period', name: '经期' },
 ];
 const deskDeclsImportant = (decl) => String(decl || '').split(';').map(function (part) {
@@ -5988,6 +5988,7 @@ renderDeskCountdowns();
 setupDeskCountdownClick();
 document.addEventListener('contact-switched', renderDeskTexts);
 document.addEventListener('contact-switched', renderDeskCountdowns);
+document.addEventListener('mochi-restore-done', renderDeskCountdowns);
 const DESK_GRID_V2_KEY = 'desk-grid-v2';
 const DESK_GRID_V2_BACKUP_KEY = 'desk-grid-v2-backup';
 const DESK_GRID_V2_FLAG_KEY = 'desk-grid-v2-enabled';
@@ -6195,7 +6196,9 @@ deco: { w: 4, h: 2 },
 music: { w: 4, h: 2 },
 'desk-period': { w: 4, h: 2 },
 'desk-calendar': { w: 4, h: 2 },
-'desk-timer': { w: 4, h: 2 }
+'desk-timer': { w: 4, h: 2 },
+'quote-card': { w: 2, h: 1 },
+'fish-card': { w: 2, h: 1 }
 };
 try {
 if (!document.getElementById('dgr-row-autofix')) {
@@ -6216,6 +6219,7 @@ let deskGridV2Drag = null;
 let deskGridV2EdgeTimer = null;
 let deskGridV2Placeholder = null;
 let deskGridV2Resize = null;
+let deskGridV2Undo = null;
 const deskGridV2Slides = () => pagesBox ? Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide')) : [];
 const deskGridV2CurrentIdx = () => {
 try {
@@ -6486,6 +6490,87 @@ if (deskGridV2ReflowPage(page, null)) changed = true;
 });
 return changed;
 };
+const deskGridV2SplitQuoteRow = () => {
+if (!pagesBox || !deskGridV2GridOn) return false;
+const wrapper = document.querySelector('.page-slide [data-desk-widget="quote-row"]');
+const wrapperSlide = wrapper ? wrapper.closest('.page-slide') : null;
+const insertRef = wrapper ? wrapper.nextSibling : null;
+let qNode = document.querySelector('[data-desk-widget="quote-card"]');
+let fNode = document.querySelector('[data-desk-widget="fish-card"]');
+if (wrapper) {
+const q = wrapper.querySelector('.mini-card[data-card-bg="quote"]');
+const f = wrapper.querySelector('.mini-card[data-card-bg="fish"]');
+if (q) { q.setAttribute('data-desk-widget', 'quote-card'); qNode = q; }
+if (f) { f.setAttribute('data-desk-widget', 'fish-card'); fNode = f; }
+try { ensureWidgetPool().appendChild(wrapper); } catch (e) {}
+}
+if (!qNode || !fNode) return false;
+const m = deskGridV2Read();
+if (!m) {
+const slide = wrapperSlide || deskGridV2Slides()[0];
+if (slide) {
+if (insertRef && insertRef.parentNode === slide) {
+slide.insertBefore(qNode, insertRef);
+slide.insertBefore(fNode, insertRef);
+} else {
+slide.appendChild(qNode);
+slide.appendChild(fNode);
+}
+}
+return true;
+}
+let changed = false;
+const legacy = deskGridV2Find(m, 'quote-row');
+if (legacy) {
+const old = legacy.item;
+const page = legacy.page;
+page.items.splice(legacy.index, 1);
+const qCol = Math.max(0, Math.min(DESK_GRID_V2_COLS - 2, old.col || 0));
+const qRow = Math.max(0, old.row || 0);
+const q = { key: 'quote-card', type: 'widget', col: qCol, row: qRow, w: 2, h: 1, sz: 1 };
+page.items.push(q);
+const wantF = (qCol + 2 <= DESK_GRID_V2_COLS - 2) ? qCol + 2 : 0;
+const free = deskGridV2FindFree(page, 2, 1, 'fish-card', wantF, qRow, qRow);
+page.items.push({ key: 'fish-card', type: 'widget', col: free.col, row: free.row, w: 2, h: 1, sz: 1 });
+deskGridV2ReflowPage(page, null);
+changed = true;
+}
+const qf = deskGridV2Find(m, 'quote-card');
+const ff = deskGridV2Find(m, 'fish-card');
+const slides = deskGridV2Slides();
+if (qf && slides[qf.pageIdx]) slides[qf.pageIdx].appendChild(qNode);
+else { try { ensureWidgetPool().appendChild(qNode); } catch (e) {} }
+if (ff && slides[ff.pageIdx]) slides[ff.pageIdx].appendChild(fNode);
+else { try { ensureWidgetPool().appendChild(fNode); } catch (e) {} }
+if (changed) deskGridV2SaveModel(m);
+try { if (wrapperSlide) syncPageHint(wrapperSlide); } catch (e) {}
+return changed;
+};
+const deskGridV2AbsorbLegacyCountdowns = (m) => {
+if (!m || !m.pages) return false;
+let first = null;
+let changed = false;
+m.pages.forEach((page, pi) => {
+const keep = [];
+(page.items || []).forEach(it => {
+if (it && it.type === 'countdown') {
+if (!first) first = { pageIdx: pi, item: it };
+changed = true;
+return;
+}
+keep.push(it);
+});
+page.items = keep;
+});
+if (changed && !deskGridV2Find(m, 'desk-anniv') && first) {
+const page = m.pages[first.pageIdx];
+if (page) {
+const free = deskGridV2FindFree(page, 4, 1, null, first.item.col || 0, first.item.row || 0);
+page.items.push({ key: 'desk-anniv', type: 'widget', col: free.col, row: free.row, w: 4, h: 1, sz: 1 });
+}
+}
+return changed;
+};
 const deskGridV2Render = () => {
 if (!deskGridV2GridOn || !pagesBox) return;
 if (deskGridV2RenderBusy) return;
@@ -6631,6 +6716,7 @@ changed = true;
 }
 if (deskGridV2ReconcilePages(m)) changed = true;
 if (deskGridV2AdoptIcons(m)) changed = true;
+if (deskGridV2AbsorbLegacyCountdowns(m)) changed = true;
 if (deskGridV2NormalizeSizes(m)) changed = true;
 if (m.rowMode !== 'fixed') {
 m.rowMode = 'fixed';
@@ -6819,6 +6905,7 @@ if (m && f && f.item.type !== 'icon') {
 const s = deskGridV2ClampSize(f.item, rs.w, rs.h);
 s.w = Math.max(DGR_MIN_CARD_W, Math.min(s.w, DESK_GRID_V2_COLS - f.item.col));
 if (f.item.w !== s.w || f.item.h !== s.h) {
+deskGridV2PushUndo(m);
 f.item.w = s.w;
 f.item.h = s.h;
 f.item.sz = 1;
@@ -6870,6 +6957,7 @@ function deskGridV2SetSize(key, w, h) {
 const m = deskGridV2Read();
 const f = m && deskGridV2Find(m, key);
 if (!m || !f || f.item.type === 'icon') return false;
+deskGridV2PushUndo(m);
 const s = deskGridV2ClampSize(f.item, w, h);
 if (s.w > DESK_GRID_V2_COLS - f.item.col) {
 f.item.col = Math.max(0, DESK_GRID_V2_COLS - s.w);
@@ -6883,6 +6971,48 @@ deskGridV2Render();
 if (deskGridV2Editing) deskGridV2RefreshBadges();
 return true;
 }
+function deskGridV2UpdateUndoBtn() {
+const btn = document.getElementById('dgr-undo-btn');
+if (!btn) return;
+btn.disabled = !deskGridV2Undo;
+}
+function deskGridV2PushUndo(m) {
+try {
+const mm = m || deskGridV2Read();
+if (!mm) return false;
+deskGridV2Undo = {
+model: JSON.stringify(mm),
+hidden: JSON.stringify(getHiddenIcons()),
+ts: Date.now()
+};
+deskGridV2UpdateUndoBtn();
+return true;
+} catch (e) { return false; }
+}
+function deskGridV2ClearUndo() {
+deskGridV2Undo = null;
+deskGridV2UpdateUndoBtn();
+}
+function deskGridV2UndoLast() {
+if (!deskGridV2Undo) return false;
+let m = null;
+try { m = JSON.parse(deskGridV2Undo.model); } catch (e) { m = null; }
+if (!deskGridV2Validate(m)) { deskGridV2ClearUndo(); return false; }
+try {
+const hidden = JSON.parse(deskGridV2Undo.hidden || '[]');
+setHiddenIcons(Array.isArray(hidden) ? hidden : []);
+} catch (e) {}
+deskGridV2Undo = null;
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+deskGridV2UpdateUndoBtn();
+toast('已撤销上一步');
+return true;
+}
 function deskGridV2RemoveKey(key) {
 const m = deskGridV2Read();
 if (!m || !key) return;
@@ -6890,6 +7020,8 @@ const found = deskGridV2Find(m, key);
 if (!found) return;
 const it = found.item;
 const node = deskGridV2NodeOf(it);
+if (it.type === 'icon' || it.type === 'widget') deskGridV2PushUndo(m);
+else deskGridV2ClearUndo();
 if (it.type === 'icon') {
 const raw = key.indexOf('app-') === 0 ? key.slice(4) : key;
 const hidden = getHiddenIcons();
@@ -7034,6 +7166,7 @@ const m = deskGridV2Read();
 const found = m && deskGridV2Find(m, d.key);
 const t = d.target;
 if (m && found && t) {
+deskGridV2PushUndo(m);
 try {
 if (t.pageIdx !== found.pageIdx) {
 found.page.items.splice(found.index, 1);
@@ -7071,7 +7204,12 @@ const bar = document.createElement('div');
 bar.id = 'dgr-editbar';
 const hint = document.createElement('span');
 hint.className = 'dgr-hint';
-hint.textContent = '长按拖动 · 右下角改大小 · 点 − 移出';
+hint.textContent = '拖动 · 右下角改大小 · − 移出';
+const undo = document.createElement('button');
+undo.type = 'button';
+undo.id = 'dgr-undo-btn';
+undo.textContent = '撤销';
+undo.disabled = true;
 const add = document.createElement('button');
 add.type = 'button';
 add.id = 'dgr-add-btn';
@@ -7081,10 +7219,17 @@ done.type = 'button';
 done.id = 'dgr-done-btn';
 done.textContent = '完成';
 bar.appendChild(hint);
+bar.appendChild(undo);
 bar.appendChild(add);
 bar.appendChild(done);
 bar.addEventListener('pointerdown', e => e.stopPropagation());
 bar.addEventListener('click', e => e.stopPropagation());
+undo.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+if (!deskGridV2Editing) return;
+deskGridV2UndoLast();
+});
 add.addEventListener('click', (e) => {
 e.preventDefault();
 e.stopPropagation();
@@ -7206,9 +7351,14 @@ const m = deskGridV2Read();
 const page = m && m.pages[pageIdx];
 if (!m || !page || !wid) return false;
 let changed = false;
+let undoPushed = false;
+const ensureUndo = () => {
+if (!undoPushed) { deskGridV2PushUndo(m); undoPushed = true; }
+};
 const addIconNode = (app) => {
 const raw = app && app.dataset ? app.dataset.app : '';
 if (!raw) return;
+ensureUndo();
 const key = 'app-' + raw;
 const hidden = getHiddenIcons();
 const hi = hidden.indexOf(raw);
@@ -7242,7 +7392,10 @@ if (!node) return false;
 const existing = deskGridV2Find(m, wid);
 if (existing) {
 if (existing.pageIdx === pageIdx) { toast('已在本页'); return true; }
+ensureUndo();
 existing.page.items.splice(existing.index, 1);
+} else {
+ensureUndo();
 }
 const d = deskGridV2DefaultSize(node, { key: wid, type: 'widget' });
 const free = deskGridV2FindFree(page, d.w, d.h, wid, 0, 0);
@@ -7250,6 +7403,7 @@ page.items.push({ key: wid, type: 'widget', col: free.col, row: free.row, w: d.w
 changed = true;
 }
 if (changed) {
+if (wid === 'desk-anniv') { try { renderDeskAnniv(); } catch (e) {} }
 deskGridV2SaveModel(m);
 deskGridV2Render();
 deskGridV2RefreshBadges();
@@ -7485,6 +7639,7 @@ Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), t => t.cla
 deskGridV2UpdatePageBarActive();
 }
 function deskGridV2AddPage() {
+deskGridV2ClearUndo();
 const n = deskPageCount();
 if (n >= DESK_PAGE_MAX) { toast('最多 ' + DESK_PAGE_MAX + ' 页'); return; }
 store.set('desk-page-count', String(n + 1));
@@ -7509,6 +7664,7 @@ if (idx < 0 || idx >= n) return;
 if (!window.openModal) return;
 window.openModal('删除第 ' + (idx + 1) + ' 页？', '', (v) => {
 if (v !== 'ok') return;
+deskGridV2ClearUndo();
 try {
 const mm = deskGridV2Read();
 if (!mm || mm.pages.length <= DESK_PAGE_MIN) return;
@@ -7546,6 +7702,7 @@ try { console.warn('[mochi] 删除页失败', e); } catch (e2) {}
 }, { noInput: true, staticText: '该页上的图标/卡片会移回隐藏池，可从组件库加回；该页背景图一并移除。' });
 }
 function deskGridV2ReorderPages(from, to) {
+deskGridV2ClearUndo();
 const m = deskGridV2Read();
 if (!m) return;
 const n = m.pages.length;
@@ -7584,6 +7741,7 @@ document.documentElement.classList.add('desk-grid-v2');
 window.__deskGridV2GridActive = true;
 deskGridV2GridOn = true;
 deskGridV2BackupOnce();
+try { deskGridV2SplitQuoteRow(); } catch (e) {}
 let m = deskGridV2Read();
 if (!m) {
 deskGridV2SyncFromDom('boot');
@@ -7661,6 +7819,27 @@ pills: [
 });
 });
 }
+const DESK_ICON_NAME_KEY = 'desk-icon-name-hidden';
+const deskIconNameHidden = () => {
+try { return store.get(DESK_ICON_NAME_KEY) === '1'; } catch (e) { return false; }
+};
+const applyDeskIconNameVisibility = () => {
+const hidden = deskIconNameHidden();
+document.documentElement.classList.toggle('desk-hide-app-names', hidden);
+const val = document.getElementById('desk-icon-name-val');
+if (val) val.textContent = hidden ? '隐藏' : '显示';
+};
+const deskIconNameRow = document.getElementById('row-desk-icon-name');
+if (deskIconNameRow) {
+deskIconNameRow.addEventListener('click', () => {
+const next = !deskIconNameHidden();
+try { store.set(DESK_ICON_NAME_KEY, next ? '1' : '0'); } catch (e) {}
+applyDeskIconNameVisibility();
+toast(next ? '已隐藏图标名称' : '已显示图标名称');
+});
+}
+applyDeskIconNameVisibility();
+document.addEventListener('contact-switched', applyDeskIconNameVisibility);
 if (pagesBox && typeof MutationObserver === 'function') {
 try {
 const deskGridV2MO = new MutationObserver((records) => {
@@ -7714,6 +7893,7 @@ syncCustom: deskGridV2SyncCustom,
 addFromLib: deskGridV2AddFromLib,
 removeKey: deskGridV2RemoveKey,
 resize: deskGridV2SetSize,
+undo: deskGridV2UndoLast,
 defaultSize: (it) => deskGridV2DefaultSize(null, it),
 applyGroupChat: deskGridV2ApplyGroupChat,
 boot: deskGridV2Boot,
@@ -7738,16 +7918,16 @@ if (!deskGridV2Editing) return false;
 deskGridV2ExitEdit();
 return true;
 };
-const WIDGET_IDS = ['deco', 'quote-row', 'checkin', 'apps', 'music', 'p2apps', 'memo-row', 'week', 'weekend', 'desk-clock', 'desk-calendar', 'desk-timer', 'desk-anniv', 'desk-period',
-'app-chat', 'app-group-chat', 'app-home', 'app-mail', 'app-feed', 'app-calendar', 'app-memory', 'app-divination', 'app-note', 'app-music', 'app-stats', 'app-interact', 'app-checkin', 'p3apps', 'app-period', 'app-accounting', 'app-tongpin', 'app-shenshou', 'app-water', 'app-eat', 'app-pomo', 'app-cjian', 'app-memo-arc', 'app-my-arc', 'app-room', 'app-piggy', 'app-memo'];
+const WIDGET_IDS = ['deco', 'quote-row', 'quote-card', 'fish-card', 'checkin', 'music', 'memo-row', 'week', 'weekend', 'desk-clock', 'desk-calendar', 'desk-timer', 'desk-anniv', 'desk-period',
+'app-chat', 'app-group-chat', 'app-home', 'app-mail', 'app-feed', 'app-calendar', 'app-memory', 'app-divination', 'app-note', 'app-music', 'app-stats', 'app-interact', 'app-checkin', 'app-period', 'app-accounting', 'app-tongpin', 'app-shenshou', 'app-water', 'app-eat', 'app-pomo', 'app-cjian', 'app-memo-arc', 'app-my-arc', 'app-room', 'app-piggy', 'app-memo'];
 const WIDGET_NAMES = {
-deco: '纪念日卡', 'quote-row': '今日情话 / 已摸鱼', checkin: '打卡横幅', apps: '功能图标(整组)',
-music: '音乐播放器', p2apps: '第二页功能图标(整组)', 'memo-row': '今日备忘 / 心情', week: '本周日常', weekend: '摸鱼倒计时（周末）',
-'desk-clock': '时钟', 'desk-calendar': '月历', 'desk-timer': '计时器', 'desk-anniv': '纪念日倒计时', 'desk-period': '经期倒计时',
+deco: '纪念日卡', 'quote-row': '今日情话 / 已摸鱼', 'quote-card': '今日情话', 'fish-card': '已摸鱼', checkin: '打卡横幅',
+music: '音乐播放器', 'memo-row': '今日备忘 / 心情', week: '本周日常', weekend: '摸鱼倒计时（周末）',
+'desk-clock': '时钟', 'desk-calendar': '月历', 'desk-timer': '计时器', 'desk-anniv': '倒数日（纪念日+自定义）', 'desk-period': '经期倒计时',
 'app-chat': '聊天图标', 'app-group-chat': '群聊图标', 'app-home': '主页图标', 'app-mail': '信箱图标', 'app-feed': '朋友圈图标',
 'app-calendar': '日历图标', 'app-memory': '纪念图标', 'app-divination': '占卜图标', 'app-note': '收藏图标',
 'app-music': '音乐图标', 'app-stats': '聊天统计图标', 'app-interact': '提问记录图标', 'app-checkin': '寻踪图标',
-'p3apps': '第三页功能图标(整组)', 'app-period': '经期记录图标', 'app-accounting': '记账图标', 'app-tongpin': '同频图标', 'app-shenshou': '伸手图标', 'app-water': '喝水图标', 'app-eat': '吃什么图标', 'app-pomo': '番茄钟图标',
+'app-period': '经期记录图标', 'app-accounting': '记账图标', 'app-tongpin': '同频图标', 'app-shenshou': '伸手图标', 'app-water': '喝水图标', 'app-eat': '吃什么图标', 'app-pomo': '番茄钟图标',
 'app-cjian': '此间图标', 'app-memo-arc': '梦角档案图标', 'app-my-arc': '我的档案图标', 'app-room': '房间图标', 'app-piggy': '存钱罐图标', 'app-memo': '备忘录图标',
 };
 const PREV_BOX = 'display:flex;align-items:center;justify-content:center;width:78px;height:58px;border-radius:10px;background:linear-gradient(135deg,#fff,#f6f6f6);border:1px solid rgba(0,0,0,.07);box-shadow:0 1px 3px rgba(0,0,0,.06);flex-shrink:0;overflow:hidden;padding:4px;box-sizing:border-box';
@@ -7769,6 +7949,8 @@ const _appIcos = [
 const WIDGET_PREV_HTML = {
 deco: '<span style="display:flex;gap:3px;align-items:center">' + _av + '<svg width="10" height="10" viewBox="0 0 24 24" fill="#ccc"><path d="M12 21s-7-4.5-9-8.5a4.5 4.5 0 019-3 4.5 4.5 0 019 3c-2 4-9 8.5-9 8.5z"/></svg>' + _av + '</span>',
 'quote-row': '<span style="display:flex;gap:4px">' + _card('情话') + _card('摸鱼') + '</span>',
+'quote-card': _card('情话'),
+'fish-card': _card('摸鱼'),
 checkin: '<span style="display:flex;align-items:center;gap:4px;width:64px;height:22px;padding:0 6px;border-radius:11px;background:#fff;border:1px solid rgba(0,0,0,.07);box-sizing:border-box"><svg width="9" height="9" viewBox="0 0 24 24" fill="#ccc"><path d="M12 21s-7-4.5-9-8.5a4.5 4.5 0 019-3 4.5 4.5 0 019 3c-2 4-9 8.5-9 8.5z"/></svg><span style="flex:1;font-size:6px;color:#999">一起摸鱼</span><span style="font-size:6px;color:#fff;background:#111;padding:1px 5px;border-radius:5px">打卡</span></span>',
 apps: '<span style="display:grid;grid-template-columns:repeat(3,14px);gap:4px">' + _appIcos.map(_ico).join('') + '</span>',
 music: '<span style="display:flex;gap:5px;align-items:center;width:64px"><span style="width:26px;height:26px;border-radius:7px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><span style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="height:3px;border-radius:2px;background:#ccc;width:90%"></span><span style="height:3px;border-radius:2px;background:#eee;width:60%"></span><span style="height:2px;border-radius:1px;background:#111;width:40%"></span></span></span>',
@@ -7779,7 +7961,7 @@ weekend: '<span style="display:flex;flex-direction:column;align-items:center;jus
 'desk-clock': '<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:18px;font-weight:700;color:#222;letter-spacing:1px;font-variant-numeric:tabular-nums">12:30</span><span style="font-size:7px;color:#aaa">星期一 · 8 月 19 日</span></span>',
 'desk-calendar': '<span style="display:grid;grid-template-columns:repeat(7,6px);gap:2px">' + Array.from({ length: 21 }, (_, i) => '<span style="width:6px;height:6px;border-radius:2px;' + (i === 10 ? 'background:#111' : 'background:#eee') + '"></span>').join('') + '</span>',
 'desk-timer': '<span style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:14px;font-weight:700;color:#222;font-variant-numeric:tabular-nums">00:00.0</span><span style="display:flex;gap:3px"><span style="font-size:5px;color:#666;background:#f0f0f0;padding:1px 4px;border-radius:4px">开始</span><span style="font-size:5px;color:#666;background:#f0f0f0;padding:1px 4px;border-radius:4px">重置</span></span></span>',
-'desk-anniv': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:7px;color:#bbb">距下一个纪念日</span><span style="font-size:15px;font-weight:700;color:#333">30 天</span><span style="font-size:6px;color:#999">生日 · 9 月 18 日</span></span>',
+'desk-anniv': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:6px;color:#bbb">最近的倒数日</span><span style="font-size:15px;font-weight:700;color:#333">3 天</span><span style="font-size:6px;color:#999">生日 · 9 月 18 日</span></span>',
 'desk-period': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:7px;color:#e85a8f">距下次经期</span><span style="font-size:15px;font-weight:700;color:#e85a8f">5 天</span><span style="font-size:6px;color:#999">周期第 23 天</span></span>',
 'app-chat': _appIcoPrev('聊天'), 'app-group-chat': _appIcoPrev('群聊'), 'app-home': _appIcoPrev('主页'), 'app-mail': _appIcoPrev('信箱'), 'app-feed': _appIcoPrev('朋友圈'),
 'app-calendar': _appIcoPrev('日历'), 'app-memory': _appIcoPrev('纪念'), 'app-divination': _appIcoPrev('占卜'), 'app-note': _appIcoPrev('收藏'),
@@ -8226,8 +8408,10 @@ if (window.deskRebuild) window.deskRebuild();
 lib.remove();
 toast('已添加到本页');
 };
-const IS_ICON_TILE = (w) => (w.indexOf('app-') === 0 || w === 'apps' || w === 'p2apps' || w === 'p3apps');
-WIDGET_IDS.forEach(wid => {
+const LIB_SPLIT_IDS = { 'quote-card': 1, 'fish-card': 1 };
+const libIds = WIDGET_IDS.filter(wid => deskGridV2GridOn ? wid !== 'quote-row' : !LIB_SPLIT_IDS[wid]);
+const IS_ICON_TILE = (w) => w.indexOf('app-') === 0;
+libIds.forEach(wid => {
 if (IS_ICON_TILE(wid)) {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 const curPage = node && node.closest('.page-slide') ? Array.prototype.indexOf.call(pagesBox.querySelectorAll('.page-slide'), node.closest('.page-slide')) : -1;
@@ -8335,27 +8519,6 @@ textBtn.addEventListener('click', () => { addDeskText(pageIdx); lib.remove(); })
 textMeta.appendChild(textName); textMeta.appendChild(textWhere);
 textItem.appendChild(textPrev); textItem.appendChild(textMeta); textItem.appendChild(textBtn);
 panels.widget.appendChild(textItem);
-const cdItem = document.createElement('div');
-cdItem.className = 'desk-lib-item';
-const cdPrev = document.createElement('div');
-cdPrev.className = 'dl-prev';
-cdPrev.style.cssText = PREV_BOX;
-cdPrev.innerHTML = '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:6px;color:#bbb">距出差</span><span style="font-size:14px;font-weight:700;color:#333">28 天</span><span style="font-size:5px;color:#999">9 月 16 日</span></span>';
-const cdMeta = document.createElement('div');
-cdMeta.className = 'dl-meta';
-const cdName = document.createElement('div');
-cdName.className = 'dl-name';
-cdName.textContent = '倒计时（自定义事件）';
-const cdWhere = document.createElement('div');
-cdWhere.className = 'dl-where';
-cdWhere.textContent = '可多个';
-const cdBtn = document.createElement('button');
-cdBtn.className = 'dl-btn';
-cdBtn.textContent = '添加倒计时';
-cdBtn.addEventListener('click', () => { addDeskCountdown(pageIdx); lib.remove(); });
-cdMeta.appendChild(cdName); cdMeta.appendChild(cdWhere);
-cdItem.appendChild(cdPrev); cdItem.appendChild(cdMeta); cdItem.appendChild(cdBtn);
-panels.widget.appendChild(cdItem);
 const close = document.createElement('button');
 close.textContent = '关闭';
 close.style.cssText = 'width:100%;margin-top:8px;padding:10px;border:1px solid #eee;border-radius:10px;background:#fafafa;font-size:13px;cursor:pointer;font-family:inherit';
@@ -8740,31 +8903,38 @@ function saveDeskCountdownsMeta(arr) { store.set('desk-countdowns', JSON.stringi
 function renderDeskCountdowns() {
 if (!pagesBox) return;
 pagesBox.querySelectorAll('[data-desk-countdown]').forEach(n => n.remove());
-const meta = loadDeskCountdownsMeta();
-const lay = deskLayout();
+try { mergeLegacyDeskCountdowns(); } catch (e) {}
 const slides = pagesBox.querySelectorAll('.page-slide');
-meta.forEach(m => {
-let pageIdx = m.page, pageArr = null;
-if (lay) {
-for (let pi = 0; pi < lay.length; pi++) {
-if (lay[pi] && lay[pi].indexOf(m.id) >= 0) { pageIdx = pi; pageArr = lay[pi]; break; }
-}
-}
-const slide = slides[pageIdx] || slides[m.page];
-if (!slide) return;
-const node = document.createElement('div');
-node.className = 'desk-countdown-widget';
-node.dataset.deskCountdown = m.id;
-const target = new Date(m.date + 'T00:00:00');
-const today = new Date(); today.setHours(0, 0, 0, 0);
-const days = Math.round((target - today) / 86400000);
-node.innerHTML = '<div class="dcd-label">距' + (m.title || '事件') + '</div>' +
-'<div class="dcd-days">' + (days >= 0 ? days : '已过') + (days >= 0 ? ' 天' : '') + '</div>' +
-'<div class="dcd-date">' + m.date + '</div>';
-insertDeskNodeByLayout(slide, node, m.id, pageArr);
-});
 for (let i = 0; i < slides.length; i++) syncPageHint(slides[i]);
-try { if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) window.__deskGridV2.render(); } catch (e) {}
+try { renderDeskAnniv(); } catch (e) {}
+try {
+if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) window.__deskGridV2.render();
+} catch (e) {}
+}
+function mergeLegacyDeskCountdowns() {
+let legacyRaw = '';
+try { legacyRaw = store.get('desk-countdowns') || ''; } catch (e) { return false; }
+if (!legacyRaw) return false;
+let legacy = [];
+try { legacy = JSON.parse(legacyRaw); } catch (e) { legacy = []; }
+if (!Array.isArray(legacy) || !legacy.length) return false;
+const extras = getExtras();
+let added = false;
+legacy.forEach(m => {
+if (!m || !m.title || !m.date) return;
+const date = normDateStr(m.date);
+if (!date) return;
+if (extras.some(x => x && x.name === m.title && x.date === date)) return;
+extras.push({ name: m.title, date: date, type: 'count' });
+added = true;
+});
+if (added) saveExtras(extras);
+try {
+store.set('desk-countdowns-backup', legacyRaw);
+store.set('desk-countdowns', '[]');
+} catch (e) {}
+try { renderExtras(); } catch (e) {}
+return added;
 }
 function addDeskCountdown(pageIdx) {
 if (!window.openModal) return;
@@ -9973,7 +10143,10 @@ syncRelUI();
 function getExtras() {
 try { return JSON.parse(store.get('mem-extras') || '[]'); } catch (e) { return []; }
 }
-function saveExtras(list) { store.set('mem-extras', JSON.stringify(list)); }
+function saveExtras(list) {
+store.set('mem-extras', JSON.stringify(list));
+try { renderDeskAnniv(); } catch (e) {}
+}
 function renderExtras() {
 const list = document.getElementById('mem-extra-list');
 if (!list) return;
@@ -9984,11 +10157,15 @@ const d = document.createElement('div');
 d.className = 'mem-extra';
 const target = new Date(it.date + 'T00:00:00');
 if (isNaN(target.getTime())) return;
-const diff = Math.round((target.getTime() - Date.now()) / 864e5);
-const isCount = it.type === 'count' || diff > 0;
-const label = isCount
-? (diff > 0 ? '还有 ' + diff + ' 天' : '就是今天')
-: '已 ' + Math.abs(diff) + ' 天';
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const diff = Math.round((target.getTime() - today.getTime()) / 864e5);
+let label = '';
+let isCount = false;
+if (diff > 1) { label = '还有 ' + diff + ' 天'; isCount = true; }
+else if (diff === 1) { label = '明天'; isCount = true; }
+else if (diff === 0) { label = '今天'; isCount = true; }
+else { label = '已 ' + Math.abs(diff) + ' 天'; }
 const fmt = it.date.split('-').join('.');
 d.innerHTML =
 '<span class="me-name">' + it.name + '</span>' +
@@ -10169,6 +10346,26 @@ renderExtras();
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 memPage.hidden = false;
 });
+}
+if (pagesBox) {
+pagesBox.addEventListener('click', (e) => {
+const card = e.target.closest('[data-desk-widget="desk-anniv"]');
+if (!card) return;
+if (window.__deskGridV2 && window.__deskGridV2.editing && window.__deskGridV2.editing()) return;
+const phone = document.getElementById('page-phone');
+if (phone && phone.classList.contains('decor-on')) return;
+if (Array.from(document.querySelectorAll('.app-grid')).some(g => g.classList.contains('editing'))) return;
+e.preventDefault();
+e.stopPropagation();
+if (!memApp) return;
+memApp.click();
+setTimeout(function () {
+try {
+const list = document.getElementById('mem-extra-list');
+if (list && list.scrollIntoView) list.scrollIntoView({ block: 'center', behavior: 'smooth' });
+} catch (er) {}
+}, 220);
+}, true);
 }
 const memBack = document.getElementById('mem-back');
 if (memBack) {
@@ -11658,45 +11855,100 @@ disp.textContent = '00:00.0';
 });
 render();
 }
-function renderDeskAnniv() {
-const daysEl = document.getElementById('da-days');
-const nameEl = document.getElementById('da-name');
-if (!daysEl || !nameEl) return;
-const now = new Date();
-const cands = [];
+function countdownDayText(days) {
+if (days === 0) return '今天';
+if (days === 1) return '明天';
+if (days > 1) return days + ' 天';
+return '已过 ' + Math.abs(days) + ' 天';
+}
+function countdownDateText(d) {
+if (!d || isNaN(d.getTime())) return '';
+const y = d.getFullYear();
+const prefix = (y !== new Date().getFullYear()) ? y + ' 年 ' : '';
+return prefix + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+}
+function countdownEvents() {
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const out = [];
+const seen = Object.create(null);
+const push = (name, target, source) => {
+if (!target || isNaN(target.getTime())) return;
+const key = (name || '') + '|' + target.getFullYear() + '-' + (target.getMonth() + 1) + '-' + target.getDate();
+if (seen[key]) return;
+seen[key] = 1;
+out.push({
+name: name || '倒数日',
+target: target,
+days: Math.round((target.getTime() - today.getTime()) / 864e5),
+source: source
+});
+};
+const pushAnnual = (name, d, source) => {
+if (!d || isNaN(d.getTime())) return;
+let t = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+if (t.getTime() < today.getTime()) t = new Date(t.getFullYear() + 1, d.getMonth(), d.getDate());
+push(name, t, source);
+};
 const start = normDateStr(store.get('love-start'));
 if (start) {
 const d = new Date(start + 'T00:00:00');
-if (!isNaN(d.getTime())) {
-let ann = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-if (ann.getTime() < now.getTime()) ann.setFullYear(ann.getFullYear() + 1);
-cands.push({ name: relLabel(), date: ann });
-}
+pushAnnual(relLabel(), d, 'anniv');
 }
 try {
-const extras = JSON.parse(store.get('mem-extras') || '[]');
-extras.forEach(it => {
-if (!it.date) return;
+(getExtras() || []).forEach(it => {
+if (!it || !it.date) return;
 const d = new Date(it.date + 'T00:00:00');
 if (isNaN(d.getTime())) return;
-let dt = new Date(d.getTime());
-if (dt.getTime() < now.getTime()) {
-dt = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-if (dt.getTime() < now.getTime()) dt.setFullYear(dt.getFullYear() + 1);
-}
-cands.push({ name: it.name || '纪念日', date: dt });
+if (it.type === 'count') push(it.name || '倒数日', d, 'count');
+else pushAnnual(it.name || '纪念日', d, 'anniv');
 });
 } catch (e) {}
-if (!cands.length) {
+try {
+(loadDeskCountdownsMeta() || []).forEach(m => {
+if (!m || !m.date) return;
+const d = new Date(m.date + 'T00:00:00');
+if (isNaN(d.getTime())) return;
+push(m.title || '倒数日', d, 'count');
+});
+} catch (e) {}
+const upcoming = out.filter(e => e.days >= 0).sort((a, b) => a.days - b.days);
+const past = out.filter(e => e.days < 0).sort((a, b) => b.days - a.days);
+return upcoming.concat(past);
+}
+function renderDeskAnniv() {
+const daysEl = document.getElementById('da-days');
+const nameEl = document.getElementById('da-name');
+const listEl = document.getElementById('da-list');
+if (!daysEl || !nameEl) return;
+const events = countdownEvents();
+if (!events.length) {
 daysEl.textContent = '—';
+daysEl.classList.remove('past');
 nameEl.textContent = '未设置纪念日';
+if (listEl) listEl.innerHTML = '';
 return;
 }
-cands.sort((a, b) => a.date - b.date);
-const next = cands[0];
-const days = Math.ceil((next.date - now) / 864e5);
-daysEl.textContent = days + ' 天';
-nameEl.textContent = next.name + ' · ' + (next.date.getMonth() + 1) + ' 月 ' + next.date.getDate() + ' 日';
+const primary = events[0];
+daysEl.textContent = countdownDayText(primary.days);
+daysEl.classList.toggle('past', primary.days < 0);
+nameEl.textContent = primary.name + ' · ' + countdownDateText(primary.target);
+if (listEl) {
+listEl.innerHTML = '';
+events.slice(1, 4).forEach(e => {
+const row = document.createElement('div');
+row.className = 'da-list-row';
+const nm = document.createElement('span');
+nm.className = 'da-list-name';
+nm.textContent = e.name;
+const val = document.createElement('span');
+val.className = 'da-list-days';
+val.textContent = countdownDayText(e.days);
+row.appendChild(nm);
+row.appendChild(val);
+listEl.appendChild(row);
+});
+}
 }
 function renderDeskWidgets() {
 try { initDeskClock(); } catch (e) {}

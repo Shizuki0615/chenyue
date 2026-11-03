@@ -72,6 +72,39 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
   flex-direction: column;
   justify-content: center;
 }
+/* #1626 统一倒数日卡：拉高到 2/3 行时显示「接下来」列表 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-list,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-main,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-main {
+  margin-bottom: 6px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-days,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-days {
+  font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-name {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-days {
+  font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-list-row {
+  font-size: 9.5px;
+}
+/* #1626 图标名称显示开关；网格模式下隐藏名称时图标居中，不会顶在上沿 */
+html.desk-hide-app-names .app .app-name { display: none !important; }
+html.desk-hide-app-names.desk-grid-v2 .page-slide.dgr-page > .app { justify-content: center; }
+/* #1626 编辑态撤销按钮的禁用态 */
+#dgr-editbar button:disabled { opacity: .35; cursor: default; }
 /* 小卡行（今日情话/备忘心情）跨 2 行时改成上下叠放：两张迷你卡各占一行，
    正好填满 198px，不再把两张卡拉成又高又空的竖条 */
 html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] {

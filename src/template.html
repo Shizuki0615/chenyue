@@ -778,11 +778,14 @@
             <button class="dt-btn" id="dt-toggle-mode">倒计时</button>
           </div>
         </div>
-        <!-- 纪念日倒计时组件 -->
-        <div class="desk-anniv glass" data-desk-widget="desk-anniv" data-card-bg="desk-anniv">
-          <div class="da-label">距下一个纪念日</div>
-          <div class="da-days" id="da-days">—</div>
-          <div class="da-name" id="da-name">未设置</div>
+        <!-- #1626 统一倒数日卡：自动读纪念日设置 + 自定义倒数日，点卡片进纪念页管理 -->
+        <div class="desk-anniv glass" data-desk-widget="desk-anniv" data-card-bg="desk-anniv" title="点击管理倒数日">
+          <div class="da-main">
+            <div class="da-label">最近的倒数日</div>
+            <div class="da-days" id="da-days">—</div>
+            <div class="da-name" id="da-name">未设置</div>
+          </div>
+          <div class="da-list" id="da-list"></div>
         </div>
 
         <!-- v3.2x：原第三页移除的组件——经期倒计时卡 / 今日备忘·心情行 / 第三页功能图标组，
@@ -2553,6 +2556,12 @@
           <div class="txt">新版桌面编辑（测试）<span class="sub">开启后桌面改为网格布局：长按图标/卡片拖动、跨页，右下角拖拽改大小，左上角 − 移出 · 卡片可缩到半宽，图标能放在卡片旁边的空格 · 关闭回旧版</span></div>
           <div class="val" id="desk-grid-v2-val">关闭</div>
         </div>
+        <!-- #1626 图标名称显示开关：控制桌面图标下方名称文字 -->
+        <div class="set-row" id="row-desk-icon-name">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></div>
+          <div class="txt">显示图标名称<span class="sub">关闭后桌面只显示图标，不显示下方名称文字</span></div>
+          <div class="val" id="desk-icon-name-val">显示</div>
+        </div>
       </div>
       <div class="cg-title">背景与壁纸</div>
       <div class="set-group glass">
@@ -2807,15 +2816,15 @@
           <details class="lic-grp">
             <summary><span class="lg-num">07</span><span class="lg-name">手机桌面</span><span class="lg-count">18</span></summary>
             <div class="lg-body">
-          <div class="lic-li">桌面可添加至 5 页滑动（scroll-snap），指示器圆点点击切换；原第三页的组件（经期卡 / 备忘心情行 / 第三页图标组）已收进装修库，可从组件库随时找回</div>
-          <div class="lic-li">组件隐藏池自由添加：时钟 / 月历 / 计时器 / 纪念日倒计时 / 图片组件 / 文字组件</div>
+          <div class="lic-li">桌面可添加至 5 页滑动（scroll-snap），指示器圆点点击切换；原第三页的组件（经期卡 / 备忘心情行 / 独立功能图标）已收进装修库，可从组件库随时找回</div>
+          <div class="lic-li">组件隐藏池自由添加：时钟 / 月历 / 计时器 / 倒数日（纪念日+自定义） / 图片组件 / 文字组件</div>
           <div class="lic-li">时钟、日历、备忘录、今日心情、离周末还有几天</div>
           <div class="lic-li">桌面组件【今日情话】为联系人每日随机刷新想对你说的话（可在字卡库自定义添加）</div>
           <div class="lic-li">桌面组件【今日备忘】【今天的心情】可简单输入记录</div>
           <div class="lic-li">和他一起摸鱼打卡：摸鱼值 / 工作值双方随机增长，打卡横幅统计摸鱼天数，摸鱼抓包彩蛋涨值翻倍</div>
           <div class="lic-li">第一页图标：聊天、群聊（开启群聊模式后显示）、主页、信箱、朋友圈、日历、纪念、占卜（开启群聊模式期间收起，改用 设置 → 工具 → 占卜 打开）、收藏</div>
           <div class="lic-li">第二页：音乐播放器卡、本周日常、周末倒计时；图标——音乐、聊天统计、提问记录、寻踪、此间、同频、伸手</div>
-          <div class="lic-li">装修库组件：经期倒计时大卡、今日备忘 / 今天的心情、第三页功能图标组（经期记录、记账、梦角档案、我的档案、房间、备忘录、喝水、吃什么、存钱罐、番茄钟）；第三页图标同样动态注入</div>
+          <div class="lic-li">装修库组件：经期倒计时大卡、今日备忘 / 今天的心情、独立功能图标（经期记录、记账、梦角档案、我的档案、房间、备忘录、喝水、吃什么、存钱罐、番茄钟）；图标可逐个添加和摆放</div>
           <div class="lic-li">心意市集 / 心意柜图标成组自动注入桌面</div>
           <div class="lic-li">装修模式：编辑布局、添加卡片、点图标换图、卡片设背景、长按拖拽跨页摆放、恢复图标</div>
           <div class="lic-li">手机桌面美化：主题色、桌面字号、卡片大小、组件圆角、内置壁纸预设、背景模糊遮罩、每页独立背景图</div>

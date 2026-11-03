@@ -588,6 +588,13 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
 .desk-timer .dt-btn { flex:1; font-size:12px; padding:6px 0; border:1px solid rgba(0,0,0,.12); border-radius:8px; background:rgba(0,0,0,.03); color:var(--ink,#111); cursor:pointer; font-family:inherit; }
 .desk-timer .dt-btn:active { background:rgba(0,0,0,.08); }
 .desk-anniv { padding:14px 16px; margin:0 0 14px; text-align:center; }
+/* #1626 统一倒数日卡：主事件居中，下面接「接下来」列表（列表只在网格版拉高后显示） */
+.desk-anniv .da-main { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.desk-anniv .da-list { display:none; margin-top:8px; width:100%; }
+.desk-anniv .da-list-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:10.5px; line-height:1.45; color:var(--muted,#666); }
+.desk-anniv .da-list-name { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.desk-anniv .da-list-days { flex:none; font-weight:600; color:var(--ink,#111); }
+.desk-anniv .da-days.past { font-size:18px; }
 .desk-anniv .da-label { font-size:11px; color:var(--muted,#888); }
 .desk-anniv .da-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-anniv .da-name { font-size:12px; color:var(--muted,#666); }
