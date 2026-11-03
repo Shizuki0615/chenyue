@@ -7051,6 +7051,12 @@ const FIX_SENTINELS = [
   { name: '#1633c 底部栏美化「上下位置」滑杆（删＝用户没有调整入口）', file: 'js/personalize.js', needle: "mkSlider('上下位置', 'tabbar-y-offset', '', -12, 12, 1, 'px', 0," },
   { name: '#1633d 恢复底部栏默认清位移键（删＝恢复默认后底栏仍偏移）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'].forEach(k => store.remove(k));" },
   { name: '#1633e 美化方案导出含位移键（删＝换方案/导入后底栏位置丢失）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'," },
+  // ==== 2026-11-03 #1634 分页圆点显示开关 ====
+  { name: '#1634a 设置页分页圆点开关行（删＝用户没有隐藏/恢复圆点的入口）', file: 'template.html', needle: 'id="row-desk-dots"' },
+  { name: '#1634b 分页圆点开关状态键（删＝开关点了不落库，刷新又显示）', file: 'js/personalize.js', needle: "const DESK_DOTS_KEY = 'desk-dots-hidden';" },
+  { name: '#1634c 分页圆点隐藏类挂载（删＝开关只改状态文字，圆点不消失）', file: 'js/personalize.js', needle: "document.documentElement.classList.toggle('desk-hide-dots', hidden);" },
+  { name: '#1634d 分页圆点隐藏样式（删＝类挂了但圆点仍显示，即本 bug 形态）', file: 'css/home.css', needle: 'html.desk-hide-dots #desktop-dots { display:none; }' },
+  { name: '#1634e 切换桌面重新应用圆点状态（删＝换联系人后圆点显隐不跟随各自设置）', file: 'js/personalize.js', needle: "document.addEventListener('contact-switched', applyDeskDotsVisibility);" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

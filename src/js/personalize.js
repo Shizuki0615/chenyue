@@ -9379,6 +9379,29 @@ try {
   }
   applyDeskIconNameVisibility();
   document.addEventListener('contact-switched', applyDeskIconNameVisibility);
+  // #1634 分页圆点显示开关（按当前联系人保存，切桌面自动应用）——只隐藏视觉，不删 DOM、
+  // 不摘 desktop-slider 的监听，隐藏后左右滑动切页照常工作，想显示时随时打开。
+  const DESK_DOTS_KEY = 'desk-dots-hidden';
+  const deskDotsHidden = () => {
+    try { return store.get(DESK_DOTS_KEY) === '1'; } catch (e) { return false; }
+  };
+  const applyDeskDotsVisibility = () => {
+    const hidden = deskDotsHidden();
+    document.documentElement.classList.toggle('desk-hide-dots', hidden);
+    const val = document.getElementById('desk-dots-val');
+    if (val) val.textContent = hidden ? '隐藏' : '显示';
+  };
+  const deskDotsRow = document.getElementById('row-desk-dots');
+  if (deskDotsRow) {
+    deskDotsRow.addEventListener('click', () => {
+      const next = !deskDotsHidden();
+      try { store.set(DESK_DOTS_KEY, next ? '1' : '0'); } catch (e) {}
+      applyDeskDotsVisibility();
+      toast(next ? '已隐藏分页圆点' : '已显示分页圆点');
+    });
+  }
+  applyDeskDotsVisibility();
+  document.addEventListener('contact-switched', applyDeskDotsVisibility);
   // 网格模式下任何结构变化只做「页数对齐 + 新图标收养 + 重渲染」，绝不重排用户拖好的坐标。
   // 编辑态的 − 角标 / 落点框 / 拖动替身属于临时层，不进同步，避免自触发循环。
   if (pagesBox && typeof MutationObserver === 'function') {

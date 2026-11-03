@@ -7877,6 +7877,27 @@ toast(next ? '已隐藏图标名称' : '已显示图标名称');
 }
 applyDeskIconNameVisibility();
 document.addEventListener('contact-switched', applyDeskIconNameVisibility);
+const DESK_DOTS_KEY = 'desk-dots-hidden';
+const deskDotsHidden = () => {
+try { return store.get(DESK_DOTS_KEY) === '1'; } catch (e) { return false; }
+};
+const applyDeskDotsVisibility = () => {
+const hidden = deskDotsHidden();
+document.documentElement.classList.toggle('desk-hide-dots', hidden);
+const val = document.getElementById('desk-dots-val');
+if (val) val.textContent = hidden ? '隐藏' : '显示';
+};
+const deskDotsRow = document.getElementById('row-desk-dots');
+if (deskDotsRow) {
+deskDotsRow.addEventListener('click', () => {
+const next = !deskDotsHidden();
+try { store.set(DESK_DOTS_KEY, next ? '1' : '0'); } catch (e) {}
+applyDeskDotsVisibility();
+toast(next ? '已隐藏分页圆点' : '已显示分页圆点');
+});
+}
+applyDeskDotsVisibility();
+document.addEventListener('contact-switched', applyDeskDotsVisibility);
 if (pagesBox && typeof MutationObserver === 'function') {
 try {
 const deskGridV2MO = new MutationObserver((records) => {

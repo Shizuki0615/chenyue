@@ -466,6 +466,9 @@ html.desk-hide-app-names .app { justify-content:center; }
   transition:width .16s ease, background .16s ease;
 }
 .dot.active { width:20px; background:var(--ink); }
+/* #1634 分页圆点显示开关：只隐藏视觉，DOM 与 desktop-slider 的监听保留，
+   隐藏后左右滑动切页照常工作，设置里随时可打开恢复。 */
+html.desk-hide-dots #desktop-dots { display:none; }
 /* 桌面内容底部留白：滚动到底时最后一项不被悬浮圆点盖住 */
 .page-slide { padding-bottom:18px; }
 
