@@ -6340,23 +6340,57 @@ const deskGridV2AdoptIcons = (m) => {
 if (!m || !pagesBox) return false;
 const slides = deskGridV2Slides();
 let changed = false;
+const addItem = (node, pi) => {
+if (!node || !node.hasAttribute) return;
+let key = '', type = '', w = DESK_GRID_V2_COLS, h = 1;
+if (node.classList.contains('app')) {
+const raw = node.dataset ? node.dataset.app : '';
+if (!raw) return;
+if (node.style.display === 'none') return;
+key = 'app-' + raw;
+type = 'icon';
+w = 1;
+h = 1;
+} else if (node.hasAttribute('data-desk-widget')) {
+key = node.getAttribute('data-desk-widget');
+type = 'widget';
+} else if (node.hasAttribute('data-desk-image')) {
+key = node.getAttribute('data-desk-image');
+type = 'image';
+const pct = parseFloat((node.style && node.style.width) || '');
+w = isFinite(pct) && pct > 0 ? (pct <= 45 ? 2 : (pct <= 75 ? 3 : 4)) : DESK_GRID_V2_COLS;
+} else if (node.hasAttribute('data-desk-text')) {
+key = node.getAttribute('data-desk-text');
+type = 'text';
+} else if (node.hasAttribute('data-desk-countdown')) {
+key = node.getAttribute('data-desk-countdown');
+type = 'countdown';
+}
+if (!key || deskGridV2Find(m, key)) return;
+const page = m.pages[pi];
+if (!page) return;
+const free = deskGridV2FindFree(page, w, h, null, 0, 0);
+page.items.push({ key: key, type: type, col: free.col, row: free.row, w: w, h: h, g: '' });
+changed = true;
+};
+slides.forEach((slide, pi) => {
+if (!slide) return;
+Array.prototype.forEach.call(slide.children, (node) => {
+if (!node || !node.classList) return;
+if (node.classList.contains('desk-page-hint') || node.classList.contains('desk-page-add') || node.classList.contains('app-grid')) return;
+addItem(node, pi);
+});
+});
 const addNode = (app) => {
 const raw = app && app.dataset ? app.dataset.app : '';
 if (!raw) return;
-const key = 'app-' + raw;
-if (deskGridV2Find(m, key)) return;
-if (app.style.display === 'none') return;
 const grid = app.closest ? app.closest('.app-grid') : null;
 if (grid && grid.closest && grid.closest('#desk-widget-pool')) return;
 const slide = app.closest ? app.closest('.page-slide') : null;
 if (!slide) return;
 const pi = slides.indexOf(slide);
 if (pi < 0) return;
-const page = m.pages[pi];
-if (!page) return;
-const free = deskGridV2FindFree(page, 1, 1, null, 0, 0);
-page.items.push({ key, type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: (grid && grid.dataset.app) || '' });
-changed = true;
+addItem(app, pi);
 };
 document.querySelectorAll('.app').forEach(addNode);
 return changed;
@@ -6382,6 +6416,22 @@ node.style.gridColumn = String(it.col + 1) + ' / span ' + it.w;
 node.style.gridRow = String(it.row + 1) + ' / span ' + it.h;
 });
 });
+let pool = null;
+try { pool = ensureWidgetPool(); } catch (e) {}
+slides.forEach((slide) => {
+Array.prototype.slice.call(slide.children).forEach((node) => {
+if (!node || !node.classList) return;
+if (node.classList.contains('desk-page-hint') || node.classList.contains('desk-page-add') || node.classList.contains('app-grid')) return;
+const isItem = node.classList.contains('app') || node.hasAttribute('data-desk-widget') ||
+node.hasAttribute('data-desk-image') || node.hasAttribute('data-desk-text') || node.hasAttribute('data-desk-countdown');
+if (!isItem || node.dataset.dgrKey) return;
+try {
+if (pool) pool.appendChild(node);
+node.style.gridColumn = '';
+node.style.gridRow = '';
+} catch (e) {}
+});
+});
 try { applyHiddenIcons(); } catch (e) {}
 if (deskGridV2Editing) {
 deskGridV2RefreshBadges();
@@ -6401,6 +6451,88 @@ deskGridV2RenderTimer = null;
 deskGridV2Render();
 }, 120);
 };
+let deskGridV2HealTimer = null;
+function deskGridV2FindOverlaps() {
+const out = [];
+try {
+deskGridV2Slides().forEach((slide, pi) => {
+const nodes = Array.prototype.slice.call(slide.children).filter(n => {
+if (!n || !n.hasAttribute || !n.hasAttribute('data-dgr-key')) return false;
+const st = getComputedStyle(n);
+return st.display !== 'none' && st.visibility !== 'hidden';
+});
+for (let i = 0; i < nodes.length; i++) {
+const a = nodes[i], ra = a.getBoundingClientRect();
+if (!ra.width || !ra.height) continue;
+for (let j = i + 1; j < nodes.length; j++) {
+const b = nodes[j], rb = b.getBoundingClientRect();
+if (!rb.width || !rb.height) continue;
+const ox = Math.max(0, Math.min(ra.left + ra.width, rb.left + rb.width) - Math.max(ra.left, rb.left));
+const oy = Math.max(0, Math.min(ra.top + ra.height, rb.top + rb.height) - Math.max(ra.top, rb.top));
+if (ox > 2 && oy > 2) out.push({ page: pi, a: a.dataset.dgrKey, b: b.dataset.dgrKey, ox: ox, oy: oy });
+}
+}
+});
+} catch (e) {}
+return out;
+}
+function deskGridV2HealOverlaps(reason) {
+if (!deskGridV2GridOn) return { ok: false, count: 0 };
+const overlaps = deskGridV2FindOverlaps();
+if (!overlaps.length) return { ok: true, count: 0, repaired: false };
+const m = deskGridV2Read();
+if (!m) return { ok: false, count: overlaps.length };
+let repaired = false;
+const dirty = {};
+overlaps.forEach(o => { dirty[o.page] = 1; });
+Object.keys(dirty).forEach(k => {
+const pi = Number(k);
+const page = m.pages[pi];
+if (!page) return;
+const items = (page.items || []).slice().sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
+const occ = Object.create(null);
+const st = { pos: 0 };
+items.forEach(it => {
+if (it.type === 'icon') { it.w = 1; it.h = 1; }
+else {
+if (!it.w || it.w < 1 || it.w > DESK_GRID_V2_COLS) it.w = DESK_GRID_V2_COLS;
+it.h = 1;
+}
+const p = deskGridV2Place(occ, st, it.w, it.h);
+if (it.col !== p.col || it.row !== p.row) repaired = true;
+it.col = p.col;
+it.row = p.row;
+});
+page.items = items;
+});
+if (repaired && deskGridV2Validate(m)) {
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+try { console.warn('[mochi] desk-grid-v2 检测到重叠并已重排：', reason, overlaps.slice(0, 6)); } catch (e) {}
+} else if (overlaps.length) {
+try { console.warn('[mochi] desk-grid-v2 仍检测到重叠：', reason, overlaps.slice(0, 6)); } catch (e) {}
+}
+return { ok: true, count: overlaps.length, repaired: repaired };
+}
+function scheduleDeskGridV2Heal(reason) {
+if (!deskGridV2GridOn) return;
+if (deskGridV2HealTimer) clearTimeout(deskGridV2HealTimer);
+deskGridV2HealTimer = setTimeout(() => {
+deskGridV2HealTimer = null;
+try {
+const phone = document.getElementById('page-phone');
+if (phone && phone.hidden) {
+try { whenDeskVisible(function () { scheduleDeskGridV2Heal('visible'); }); } catch (e) {}
+return;
+}
+deskGridV2HealOverlaps(reason);
+} catch (e) {}
+}, 380);
+}
 const deskGridV2SyncGridMode = (reason, manual) => {
 if (!deskGridV2FlagOn() || !pagesBox) return { ok: false, reason: 'off' };
 let m = deskGridV2Read();
@@ -6421,6 +6553,7 @@ if (changed) deskGridV2SaveModel(m);
 deskGridV2Render();
 try { applyPageBgs(); } catch (e) {}
 if (deskGridV2Editing) deskGridV2RefreshPageBar();
+scheduleDeskGridV2Heal('sync');
 const s = deskGridV2Summary(m) || { pages: 0, items: 0 };
 return { ok: true, pages: s.pages, items: s.items };
 };
@@ -7139,6 +7272,7 @@ try { if (window.deskGo) window.deskGo(Math.min(n, deskPageCount() - 1)); } catc
 try { syncPagesUI(); } catch (e) {}
 deskGridV2RefreshPageBar();
 deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-add');
 }, 80);
 toast('已新增第 ' + (n + 1) + ' 页');
 }
@@ -7180,6 +7314,7 @@ const cur = Math.max(0, Math.min(mm.pages.length - 1, deskGridV2CurrentIdx() >= 
 try { if (window.deskGo) window.deskGo(cur); } catch (e) {}
 deskGridV2RefreshPageBar();
 deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-delete');
 toast('已删除第 ' + (idx + 1) + ' 页');
 } catch (e) {
 try { console.warn('[mochi] 删除页失败', e); } catch (e2) {}
@@ -7213,6 +7348,7 @@ try { if (window.deskGo) window.deskGo(newCur); } catch (e) {}
 try { syncPagesUI(); } catch (e) {}
 deskGridV2RefreshPageBar();
 deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-reorder');
 toast('页面顺序已更新');
 }
 function deskGridV2Boot() {
@@ -7238,6 +7374,8 @@ deskGridV2BindEditEvents();
 deskGridV2SyncGridMode('boot');
 deskGridV2ApplyGroupChat();
 try { syncPagesUI(); } catch (e) {}
+scheduleDeskGridV2Heal('boot');
+try { whenDeskVisible(function () { scheduleDeskGridV2Heal('desk-visible'); }); } catch (e) {}
 } catch (e) {
 try { console.warn('[mochi] desk-grid-v2 启动异常，回退旧版：', e); } catch (e2) {}
 deskGridV2GridOn = false;
@@ -7358,6 +7496,8 @@ deletePage: deskGridV2DeletePage,
 reorderPages: deskGridV2ReorderPages,
 refreshPageBar: deskGridV2RefreshPageBar,
 pageBgKey: deskGridV2PageBgKeyAt,
+findOverlaps: deskGridV2FindOverlaps,
+healOverlaps: deskGridV2HealOverlaps,
 debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, pageDrag: deskGridV2PageDrag ? { from: deskGridV2PageDrag.from, target: deskGridV2PageDrag.target, moved: deskGridV2PageDrag.moved } : null, bound: !!window.__dgrEditBound }),
 key: DESK_GRID_V2_KEY,
 backupKey: DESK_GRID_V2_BACKUP_KEY,
