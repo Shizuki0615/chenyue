@@ -443,9 +443,9 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    #page-phone 之外，长按保存图片不受影响。 */
 #page-phone { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 .dots {
-  /* #1629 用户反馈圆点离下方导航条偏远：整体下移 4px（6→2）；#1631 再下移 1px（2→1），
-     只挪一点点，仍留 1px 安全间距 */
-  position:absolute; left:0; right:0; bottom:1px;
+  /* #1629 用户反馈圆点离下方导航条偏远：整体下移 4px（6→2）；#1631 再下移 1px（2→1）；
+     #1632 再下移 2px（1→-1），探出桌面底边 1px，视觉上更贴近导航条 */
+  position:absolute; left:0; right:0; bottom:-1px;
   display:flex; justify-content:center; gap:8px; padding:0;
   /* v3.27.x（#580）：圆点跟随手指改成每帧切换（desktop-slider.js），而 active 是
      「宽度 7px→20px」的变形——width 动画每帧都会触发一次布局。圆点是 #page-phone
