@@ -6953,6 +6953,10 @@ const FIX_SENTINELS = [
   { name: '#1618d 钱包余额行/申请弹窗/toast 同源品牌名（删＝集市与聊天口吻不一致）', file: 'js/gift-shop.js', needle: "· 向 ' + coinBrandNow() + ' 申请心意币" },
   { name: '#1618e 主页申请流水空态与旧记录来源同源品牌名（删＝记录页仍写 Mochi）', file: 'js/records.js', needle: '暂无申请记录（可点心意币余额行向 ' },
   { name: '#1618f 聊天统计申请记录空态同源品牌名（删＝统计页仍写 Mochi）', file: 'js/p2-features.js', needle: "还没有向 ' + escH(coinBrandNow())" },
+  // ==== 2026-11-03 #1619 第三页图标组被拆散 / 隐藏图标加回仍不可见（用户直派）====
+  { name: '#1619a 模板池快照只记顶层组件（删＝restoreTemplateDesk 把 p3apps 内图标逐个拽出组，第三页整组加不全）', file: 'js/personalize.js', needle: "document.querySelectorAll('#desk-widget-pool > [data-desk-widget]')" },
+  { name: '#1619b 组件库添加图标＝撤销隐藏名单（删＝隐藏过的图标搬到别页仍 display:none，看着像加不上）', file: 'js/personalize.js', needle: 'if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }' },
+  { name: '#1619c 整组图标添加时一并恢复组内隐藏项（删＝只有组里动态图标显示，模板四枚仍隐身）', file: 'js/personalize.js', needle: "node.querySelectorAll('.app')).forEach(un)" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

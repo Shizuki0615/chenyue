@@ -6858,7 +6858,11 @@ try {
           if (n.hasAttribute && n.hasAttribute('data-desk-widget')) arr.push({ wid: n.getAttribute('data-desk-widget'), page: pi });
         });
       });
-      document.querySelectorAll('#desk-widget-pool [data-desk-widget]').forEach((n) => {
+      // #1619：只记池里的【顶层】组件——原选择器把 p3apps 内的 app-period/accounting/
+      // memo-arc/my-arc 等嵌套图标也记成池组件，restoreTemplateDesk 会把它们从图标组里
+      // 逐个拽出来当独立组件丢进池：第三页图标组只剩动态注入的几个图标，用户从组件库
+      // 加回整组也永远缺这几枚（「第三页图标加不上」）。嵌套子项随父组件整体进出。
+      document.querySelectorAll('#desk-widget-pool > [data-desk-widget]').forEach((n) => {
         arr.push({ wid: n.getAttribute('data-desk-widget'), pool: true });
       });
     } catch (e) {}
@@ -7959,6 +7963,23 @@ try {
     const addWidgetToPage = (wid) => {
       const node = document.querySelector('[data-desk-widget="' + wid + '"]');
       if (!node) return;
+      // #1619：组件库显式「添加」＝用户要把这个图标放回桌面，先撤销隐藏名单——
+      // 此前只搬节点、不清 hidden-icons/display:none：图标在原页时组件库判「已在本页」
+      // 点不动，搬到其他页又仍被隐藏，＝用户所见「移除后怎么加都加不上」。
+      try {
+        let hidden = getHiddenIcons();
+        let changed = false;
+        const un = (x) => {
+          const k = x && x.dataset ? x.dataset.app : '';
+          if (!k) return;
+          const i = hidden.indexOf(k);
+          if (i >= 0) { hidden.splice(i, 1); changed = true; }
+        };
+        un(node);
+        // 整组图标（apps/p2apps/p3apps）里的隐藏项一并恢复
+        Array.prototype.slice.call(node.querySelectorAll('.app')).forEach(un);
+        if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }
+      } catch (e) {}
       // FIX 2026-09-12 #351：功能图标入目标页【网格】排版（4 列横排、可上移/下移/
       // 拖拽定位，重进不丢），不再作为独立组件竖排。同时把该图标从其他页网格的顺序
       // 数组剔除并落盘——否则启动归位时旧页数组把它认领回去（「添加后重进回原位」）。

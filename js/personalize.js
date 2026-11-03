@@ -5585,7 +5585,7 @@ Array.prototype.forEach.call(s.children, (n) => {
 if (n.hasAttribute && n.hasAttribute('data-desk-widget')) arr.push({ wid: n.getAttribute('data-desk-widget'), page: pi });
 });
 });
-document.querySelectorAll('#desk-widget-pool [data-desk-widget]').forEach((n) => {
+document.querySelectorAll('#desk-widget-pool > [data-desk-widget]').forEach((n) => {
 arr.push({ wid: n.getAttribute('data-desk-widget'), pool: true });
 });
 } catch (e) {}
@@ -6376,6 +6376,19 @@ panels[g.key] = p;
 const addWidgetToPage = (wid) => {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 if (!node) return;
+try {
+let hidden = getHiddenIcons();
+let changed = false;
+const un = (x) => {
+const k = x && x.dataset ? x.dataset.app : '';
+if (!k) return;
+const i = hidden.indexOf(k);
+if (i >= 0) { hidden.splice(i, 1); changed = true; }
+};
+un(node);
+Array.prototype.slice.call(node.querySelectorAll('.app')).forEach(un);
+if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }
+} catch (e) {}
 if (wid.indexOf('app-') === 0) {
 const grid = pageSlide.querySelector('.app-grid');
 if (grid && grid.dataset.app) {
