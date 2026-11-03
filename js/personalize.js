@@ -4729,10 +4729,12 @@ const applyAccentColor = (color) => {
 if (color && /^#[0-9a-fA-F]{6}$/.test(color)) {
 document.documentElement.style.setProperty('--btn-bg', color);
 document.documentElement.style.setProperty('--btn-ink', accentLuminance(color) > 0.55 ? '#111111' : '#ffffff');
+document.documentElement.style.setProperty('--photo-frame-tape', color);
 if (accentVal) accentVal.textContent = color.toUpperCase() === '#111111' ? '默认' : '已设置';
 } else {
 document.documentElement.style.removeProperty('--btn-bg');
 document.documentElement.style.removeProperty('--btn-ink');
+document.documentElement.style.removeProperty('--photo-frame-tape');
 if (accentVal) accentVal.textContent = '默认';
 }
 };
@@ -6246,6 +6248,9 @@ const deskGridV2DefaultSize = (node, it) => {
 if (!it) return { w: DESK_GRID_V2_COLS, h: 1 };
 if (it.type === 'icon') return { w: 1, h: 1 };
 if (it.type === 'image') {
+let frameMeta = null;
+try { frameMeta = loadDeskImagesMeta().find(x => x && x.id === it.key) || null; } catch (e) {}
+if (frameMeta && frameMeta.frame === 'polaroid') return { w: 2, h: 2 };
 const w = Number.isInteger(it.w) ? Math.max(DGR_MIN_CARD_W, Math.min(DGR_MAX_CARD_W, it.w)) : DESK_GRID_V2_COLS;
 return { w: w, h: 2 };
 }
@@ -7337,6 +7342,13 @@ return;
 }
 if (!deskGridV2Editing) return;
 if (e.target.closest('.dgr-minus')) return;
+const frame = e.target.closest('.desk-photo-frame');
+if (frame) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+const pid = frame.dataset.deskImage;
+if (pid) openPhotoFrameMenu(pid);
+return;
+}
 try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
 }, true);
 pagesBox.addEventListener('click', (e) => {
@@ -8515,6 +8527,29 @@ imgBtn.addEventListener('click', () => { addDeskImage(pageIdx); lib.remove(); })
 imgMeta.appendChild(imgName); imgMeta.appendChild(imgWhere);
 imgItem.appendChild(imgPrev); imgItem.appendChild(imgMeta); imgItem.appendChild(imgBtn);
 panels.widget.appendChild(imgItem);
+if (deskGridV2GridOn) {
+const pfItem = document.createElement('div');
+pfItem.className = 'desk-lib-item';
+const pfPrev = document.createElement('div');
+pfPrev.className = 'dl-prev';
+pfPrev.style.cssText = PREV_BOX;
+pfPrev.innerHTML = '<span style="position:relative;width:42px;height:48px;background:#fffaf0;border-radius:4px;padding:3px;display:flex;flex-direction:column;box-shadow:0 3px 8px rgba(0,0,0,.10)"><span style="flex:1;border-radius:2px;background:linear-gradient(135deg,#e8ded0,#cfc2b0)"></span><span style="height:7px;font-size:5px;line-height:7px;color:#8b7a66;text-align:center">2026.11.03</span><span style="position:absolute;top:-3px;left:50%;width:16px;height:6px;border-radius:1px;background:var(--photo-frame-tape,#e7d2aa);transform:translateX(-50%) rotate(-2deg)"></span></span>';
+const pfMeta = document.createElement('div');
+pfMeta.className = 'dl-meta';
+const pfName = document.createElement('div');
+pfName.className = 'dl-name';
+pfName.textContent = '拍立得相框（2×2）';
+const pfWhere = document.createElement('div');
+pfWhere.className = 'dl-where';
+pfWhere.textContent = '可多个 · 可拖动调焦点';
+const pfBtn = document.createElement('button');
+pfBtn.className = 'dl-btn';
+pfBtn.textContent = '选照片并添加';
+pfBtn.addEventListener('click', () => { addDeskPhotoFrame(pageIdx); lib.remove(); });
+pfMeta.appendChild(pfName); pfMeta.appendChild(pfWhere);
+pfItem.appendChild(pfPrev); pfItem.appendChild(pfMeta); pfItem.appendChild(pfBtn);
+panels.widget.appendChild(pfItem);
+}
 const textItem = document.createElement('div');
 textItem.className = 'desk-lib-item';
 const textPrev = document.createElement('div');
@@ -8564,14 +8599,32 @@ if (lay[pi] && lay[pi].indexOf(m.id) >= 0) { pageIdx = pi; pageArr = lay[pi]; br
 const slide = slides[pageIdx] || slides[m.page];
 if (!slide) return;
 const node = document.createElement('div');
-node.className = 'desk-image-widget';
+const isFrame = m.frame === 'polaroid';
+node.className = 'desk-image-widget' + (isFrame ? ' desk-photo-frame' : '');
 node.dataset.deskImage = m.id;
+const img = document.createElement('img');
+if (isFrame) {
+img.className = 'dpf-img';
+const fx = Number.isFinite(Number(m.focusX)) ? Math.max(0, Math.min(1, Number(m.focusX))) : 0.5;
+const fy = Number.isFinite(Number(m.focusY)) ? Math.max(0, Math.min(1, Number(m.focusY))) : 0.5;
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+node.appendChild(img);
+const capText = (m.caption || '').trim();
+if (capText) {
+const cap = document.createElement('div');
+cap.className = 'dpf-cap';
+cap.textContent = capText;
+node.appendChild(cap);
+} else {
+node.classList.add('dpf-no-cap');
+}
+} else {
 const w = DESK_IMG_SIZES.l;
 const wv = (m.w === DESK_IMG_SIZES.s || m.w === DESK_IMG_SIZES.m) ? m.w : w;
 node.style.width = wv + '%';
 if (wv < 100) node.style.alignSelf = m.align === 'c' ? 'center' : (m.align === 'r' ? 'flex-end' : 'flex-start');
-const img = document.createElement('img');
 node.appendChild(img);
+}
 insertDeskNodeByLayout(slide, node, m.id, pageArr);
 const srcKey = window.activePrefix() + ':desk-image-src-' + m.id;
 if (window.idbGet) {
@@ -8655,6 +8708,24 @@ const reader = new FileReader();
 reader.onload = () => {
 compressImage(reader.result, 1280).then(data => {
 if (!data) { toast('图片过大或格式不支持'); return; }
+const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (frameMeta && frameMeta.frame === 'polaroid') {
+openPhotoFrameCrop(data, { focusX: frameMeta.focusX, focusY: frameMeta.focusY }, (focus) => {
+if (!focus) return;
+const srcKey = window.activePrefix() + ':desk-image-src-' + id;
+if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (mm) {
+mm.focusX = focus.focusX;
+mm.focusY = focus.focusY;
+saveDeskImagesMeta(list);
+}
+renderDeskImages();
+toast('已更换照片');
+});
+return;
+}
 const srcKey = window.activePrefix() + ':desk-image-src-' + id;
 if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
 renderDeskImages();
@@ -8664,6 +8735,180 @@ toast('已更换图片');
 reader.onerror = () => toast('图片读取失败，请换一张再试');
 reader.readAsDataURL(f);
 }
+});
+}
+function photoFrameDate() {
+const d = new Date();
+const p = n => (n < 10 ? '0' + n : '' + n);
+return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+function openPhotoFrameCrop(src, focus, cb) {
+const old = document.getElementById('dpf-crop-overlay');
+if (old) { try { old.remove(); } catch (e) {} }
+let fx = Number.isFinite(Number(focus && focus.focusX)) ? Math.max(0, Math.min(1, Number(focus.focusX))) : 0.5;
+let fy = Number.isFinite(Number(focus && focus.focusY)) ? Math.max(0, Math.min(1, Number(focus.focusY))) : 0.5;
+const overlay = document.createElement('div');
+overlay.id = 'dpf-crop-overlay';
+overlay.className = 'dpf-crop-overlay';
+const title = document.createElement('div');
+title.className = 'dpf-crop-title';
+title.textContent = '调整照片位置';
+const box = document.createElement('div');
+box.className = 'dpf-crop-box';
+const img = document.createElement('img');
+img.alt = '';
+img.src = src;
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+box.appendChild(img);
+const tip = document.createElement('div');
+tip.className = 'dpf-crop-tip';
+tip.textContent = '拖动照片，选择相框里露出的部分';
+const actions = document.createElement('div');
+actions.className = 'dpf-crop-actions';
+const cancel = document.createElement('button');
+cancel.type = 'button';
+cancel.className = 'dpf-crop-cancel';
+cancel.textContent = '取消';
+const ok = document.createElement('button');
+ok.type = 'button';
+ok.className = 'dpf-crop-ok';
+ok.textContent = '完成';
+let drag = null;
+let done = false;
+const finish = (save) => {
+if (done) return;
+done = true;
+try { overlay.remove(); } catch (e) {}
+try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+window.mochiPhotoCropBack = null;
+if (cb) cb(save ? { focusX: Math.round(fx * 1000) / 1000, focusY: Math.round(fy * 1000) / 1000 } : null);
+};
+window.mochiPhotoCropBack = () => { finish(false); return true; };
+cancel.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); finish(false); });
+ok.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); finish(true); });
+box.addEventListener('pointerdown', (e) => {
+if (e.button != null && e.button !== 0) return;
+const rect = box.getBoundingClientRect();
+drag = { id: e.pointerId, x: e.clientX, y: e.clientY, fx: fx, fy: fy, w: rect.width, h: rect.height };
+try { box.setPointerCapture(e.pointerId); } catch (er) {}
+try { e.preventDefault(); } catch (er) {}
+});
+box.addEventListener('pointermove', (e) => {
+if (!drag || e.pointerId !== drag.id || !drag.w || !drag.h) return;
+fx = Math.max(0, Math.min(1, drag.fx - (e.clientX - drag.x) / drag.w));
+fy = Math.max(0, Math.min(1, drag.fy - (e.clientY - drag.y) / drag.h));
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+try { e.preventDefault(); } catch (er) {}
+});
+const stopDrag = () => { drag = null; };
+box.addEventListener('pointerup', stopDrag);
+box.addEventListener('pointercancel', stopDrag);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+actions.appendChild(cancel);
+actions.appendChild(ok);
+overlay.appendChild(title);
+overlay.appendChild(box);
+overlay.appendChild(tip);
+overlay.appendChild(actions);
+document.body.appendChild(overlay);
+try { document.documentElement.classList.add('dpf-crop-open'); } catch (e) {}
+actions.addEventListener('pointerdown', (e) => e.stopPropagation());
+}
+function readPhotoFrameSrc(id, cb) {
+const key = window.activePrefix() + ':desk-image-src-' + id;
+const fallback = () => { try { cb(store.get('desk-image-src-' + id) || ''); } catch (e) { cb(''); } };
+if (window.idbGet) {
+window.idbGet(key).then(src => {
+let fallbackSrc = '';
+try { fallbackSrc = store.get('desk-image-src-' + id) || ''; } catch (e) {}
+cb(src || fallbackSrc || '');
+}).catch(fallback);
+} else fallback();
+}
+function addDeskPhotoFrame(pageIdx) {
+window.mochiFilePick({
+id: 'mochi-photo-frame-add-pick', accept: 'image/*',
+onFiles: (files) => {
+const f = files && files[0];
+if (!f) { toast('没有取到照片，请再选一次'); return; }
+const reader = new FileReader();
+reader.onload = () => {
+compressImage(reader.result, 1280).then(data => {
+if (!data) { toast('照片过大或格式不支持，请换一张'); return; }
+openPhotoFrameCrop(data, { focusX: 0.5, focusY: 0.5 }, (focus) => {
+if (!focus) return;
+const id = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+const meta = loadDeskImagesMeta();
+meta.push({
+id: id,
+page: pageIdx,
+addedAt: Date.now(),
+frame: 'polaroid',
+caption: photoFrameDate(),
+focusX: focus.focusX,
+focusY: focus.focusY
+});
+saveDeskImagesMeta(meta);
+syncDeskLayout([{ id: id, page: pageIdx }]);
+const srcKey = window.activePrefix() + ':desk-image-src-' + id;
+if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
+renderDeskImages();
+toast('已添加拍立得相框');
+});
+});
+};
+reader.onerror = () => toast('照片读取失败，请换一张再试');
+reader.readAsDataURL(f);
+}
+});
+}
+function openPhotoFrameMenu(id) {
+const meta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (!meta) return;
+if (!window.openModal) return;
+const openCrop = () => {
+readPhotoFrameSrc(id, (src) => {
+if (!src) { toast('照片还没加载好，请稍后再试'); return; }
+openPhotoFrameCrop(src, { focusX: meta.focusX, focusY: meta.focusY }, (focus) => {
+if (!focus) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+mm.focusX = focus.focusX;
+mm.focusY = focus.focusY;
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast('已调整照片位置');
+});
+});
+};
+const editCaption = () => {
+const cur = loadDeskImagesMeta().find(x => x && x.id === id) || {};
+window.openModal('相框小字', cur.caption || '', (v) => {
+if (v == null) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const txt = String(v).trim().slice(0, 24);
+mm.caption = txt;
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast(txt ? '已更新相框小字' : '已清空相框小字');
+}, { maxlength: 24, placeholder: '留空则不显示' });
+};
+window.openModal('拍立得相框', '', (v) => {
+if (v === 'chg') changeDeskImage(id);
+else if (v === 'focus') openCrop();
+else if (v === 'cap') editCaption();
+else if (v === 'del') removeDeskImage(id);
+}, {
+noInput: true,
+pills: [
+{ label: '更换照片', value: 'chg' },
+{ label: '调整焦点', value: 'focus' },
+{ label: '修改小字', value: 'cap' },
+{ label: '删除相框', value: 'del' }
+]
 });
 }
 function removeDeskImage(id) {
@@ -8694,6 +8939,21 @@ if (!widget) return;
 const id = widget.dataset.deskImage;
 const phone = document.getElementById('page-phone');
 const isDecor = phone && phone.classList.contains('decor-on');
+const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (frameMeta && frameMeta.frame === 'polaroid') {
+if (isDecor) {
+e.stopPropagation();
+openPhotoFrameMenu(id);
+return;
+}
+const img0 = widget.querySelector('img');
+if (!img0 || !img0.src) return;
+setupDeskImageViewerClose();
+const viewer0 = document.getElementById('desk-image-viewer');
+const viewerImg0 = document.getElementById('desk-image-viewer-img');
+if (viewer0 && viewerImg0) { viewerImg0.src = img0.src; viewer0.hidden = false; }
+return;
+}
 if (isDecor) {
 e.stopPropagation();
 if (!window.openModal) return;
