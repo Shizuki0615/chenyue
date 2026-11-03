@@ -4,6 +4,17 @@ const uid = window.activePrefix();
 const store = window.activeStore();
 const gStore = window.xyStore('xy-home-v2'); // v3.9.x：fish-log 全局累计（跨所有联系人按自然日去重）
 const DESK_IMG_SIZES = { s: 40, m: 70, l: 100 };
+const DESK_FRAME_STICKERS = [
+{ id: 'heart', name: '爱心', svg: '<path d="M32 55C19 46 7 35 7 23.5A12.5 12.5 0 0 1 32 17a12.5 12.5 0 0 1 25 6.5C57 35 45 46 32 55z" fill="#e28b8b" stroke="#fff" stroke-width="3.2"/><path d="M18.5 22.5c0-4 2.8-6.7 6-7.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>' },
+{ id: 'star', name: '星星', svg: '<path d="M32 5.5l7.7 16.9 18.3 2-13.7 12.5 3.7 18.1L32 46.3 16 55l3.7-18.1L6 24.4l18.3-2z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><circle cx="25" cy="26" r="2.1" fill="#fff" opacity=".7"/>' },
+{ id: 'flower', name: '小花', svg: '<g fill="#efa8c2" stroke="#fff" stroke-width="2.6"><circle cx="32" cy="14" r="8.2"/><circle cx="47" cy="24" r="8.2"/><circle cx="44" cy="43" r="8.2"/><circle cx="20" cy="43" r="8.2"/><circle cx="17" cy="24" r="8.2"/></g><circle cx="32" cy="31" r="7.2" fill="#f6d76b" stroke="#fff" stroke-width="2.6"/>' },
+{ id: 'bow', name: '蝴蝶结', svg: '<path d="M28 30C20 26 10 20 8 16.5 7 14 9 11.5 12 11c3-.6 6.5 2.5 9.5 5.5L28 23z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M36 30c8-4 18-10 20-13.5 1-2.5-1-5-4-5.5-3-.6-6.5 2.5-9.5 5.5L36 23z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M29 34c-3 2-8 6-9 10-1 4 1 7 5 7 4 0 7-4 9-8z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M35 34c3 2 8 6 9 10 1 4-1 7-5 7-4 0-7-4-9-8z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><circle cx="32" cy="30" r="8" fill="#f3c76b" stroke="#fff" stroke-width="3"/>' },
+{ id: 'cloud', name: '云朵', svg: '<path d="M17 47a10 10 0 0 1-1-19.8A14 14 0 0 1 42 22a9.5 9.5 0 0 1 5 18z" fill="#a9c9e6" stroke="#fff" stroke-width="3"/><circle cx="26" cy="35" r="2.1" fill="#fff" opacity=".85"/><circle cx="36" cy="33" r="2.4" fill="#fff" opacity=".85"/>' },
+{ id: 'moon', name: '月亮', svg: '<path d="M42 7a23 23 0 1 0 12 39A18.5 18.5 0 0 1 42 7z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><path d="M48 13l1.7 3.9 3.9 1.7-3.9 1.7-1.7 3.9-1.7-3.9-3.9-1.7 3.9-1.7z" fill="#fff"/>' },
+{ id: 'leaf', name: '叶子', svg: '<path d="M12 52C12 28 30 12 54 11c1 24-15 42-42 41z" fill="#9ec79a" stroke="#fff" stroke-width="3"/><path d="M17 47C26 34 38 23 49 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>' },
+{ id: 'sparkle', name: '闪光', svg: '<path d="M32 4l4.6 23.4L60 32l-23.4 4.6L32 60l-4.6-23.4L4 32l23.4-4.6z" fill="#f6d76b" stroke="#fff" stroke-width="2.8"/>' },
+{ id: 'bear', name: '小熊', svg: '<circle cx="15" cy="19" r="9" fill="#c99d7b" stroke="#fff" stroke-width="2.8"/><circle cx="49" cy="19" r="9" fill="#c99d7b" stroke="#fff" stroke-width="2.8"/><circle cx="32" cy="36" r="19" fill="#d8ae8a" stroke="#fff" stroke-width="3"/><circle cx="32" cy="41" r="9" fill="#f4e2cf" stroke="#fff" stroke-width="2.2"/><circle cx="25" cy="33" r="2" fill="#5b4636"/><circle cx="39" cy="33" r="2" fill="#5b4636"/><ellipse cx="32" cy="39" rx="2.4" ry="1.6" fill="#5b4636"/><path d="M32 41v3" stroke="#5b4636" stroke-width="1.4"/><path d="M29 45c2 1.6 4 1.6 6 0" fill="none" stroke="#5b4636" stroke-width="1.4" stroke-linecap="round"/>' },
+];
 let viewerBound = false;
 const syncPageHint = (slide) => {
 if (!slide) return;
@@ -8647,6 +8658,20 @@ node.appendChild(cap);
 } else {
 node.classList.add('dpf-no-cap');
 }
+const stk = m.sticker && DESK_FRAME_STICKERS.find(s => s && s.id === m.sticker.id);
+if (stk) {
+const sp = document.createElement('span');
+sp.className = 'dpf-sticker dpf-sticker-' + (m.sticker.size === 's' || m.sticker.size === 'l' ? m.sticker.size : 'm');
+const sx = Number.isFinite(Number(m.sticker.x)) ? Math.max(0, Math.min(1, Number(m.sticker.x))) : 0.5;
+const sy = Number.isFinite(Number(m.sticker.y)) ? Math.max(0, Math.min(1, Number(m.sticker.y))) : 0.5;
+sp.style.left = (sx * 100) + '%';
+sp.style.top = (sy * 100) + '%';
+const si = DESK_FRAME_STICKERS.indexOf(stk);
+sp.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
+sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
+node.appendChild(sp);
+bindPhotoFrameStickerDrag(node, sp, m.id);
+}
 } else {
 const w = DESK_IMG_SIZES.l;
 const wv = (m.w === DESK_IMG_SIZES.s || m.w === DESK_IMG_SIZES.m) ? m.w : w;
@@ -8843,6 +8868,191 @@ document.body.appendChild(overlay);
 try { document.documentElement.classList.add('dpf-crop-open'); } catch (e) {}
 actions.addEventListener('pointerdown', (e) => e.stopPropagation());
 }
+function canEditPhotoFrameSticker() {
+if (document.documentElement.classList.contains('dgr-editing')) return true;
+const phone = document.getElementById('page-phone');
+return !!(phone && phone.classList.contains('decor-on'));
+}
+function writePhotoFrameSticker(id, st) {
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const valid = st && st.id && DESK_FRAME_STICKERS.some(s => s && s.id === st.id);
+if (!valid) { delete mm.sticker; }
+else {
+const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
+const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
+const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
+mm.sticker = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+}
+saveDeskImagesMeta(list);
+renderDeskImages();
+}
+function bindPhotoFrameStickerDrag(frameNode, stickerEl, id) {
+if (!frameNode || !stickerEl) return;
+let drag = null;
+let suppressClick = false;
+stickerEl.addEventListener('pointerdown', (e) => {
+if (!canEditPhotoFrameSticker()) return;
+if (e.button != null && e.button !== 0) return;
+const rect = frameNode.getBoundingClientRect();
+drag = { id: e.pointerId, rect: rect, x: null, y: null };
+try { stickerEl.setPointerCapture(e.pointerId); } catch (er) {}
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+stickerEl.classList.add('dpf-sticker-drag');
+});
+stickerEl.addEventListener('pointermove', (e) => {
+if (!drag || e.pointerId !== drag.id) return;
+const rect = drag.rect;
+if (!rect || !rect.width || !rect.height) return;
+drag.x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+drag.y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+stickerEl.style.left = (drag.x * 100) + '%';
+stickerEl.style.top = (drag.y * 100) + '%';
+try { e.preventDefault(); } catch (er) {}
+});
+const end = (e) => {
+if (!drag || (e && e.pointerId !== drag.id)) return;
+const d = drag; drag = null;
+stickerEl.classList.remove('dpf-sticker-drag');
+try { if (e && e.pointerId != null) stickerEl.releasePointerCapture(e.pointerId); } catch (er) {}
+if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (er) {} }
+if (d.x == null || d.y == null) return;
+suppressClick = true;
+setTimeout(() => { suppressClick = false; }, 400);
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm || !mm.sticker) return;
+mm.sticker.x = Math.round(d.x * 1000) / 1000;
+mm.sticker.y = Math.round(d.y * 1000) / 1000;
+saveDeskImagesMeta(list);
+};
+stickerEl.addEventListener('pointerup', end);
+stickerEl.addEventListener('pointercancel', end);
+stickerEl.addEventListener('click', (e) => {
+if (!canEditPhotoFrameSticker()) return;
+if (suppressClick) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+suppressClick = false;
+}
+});
+}
+function openPhotoFrameStickerPicker(id) {
+const old = document.getElementById('dpf-stk-overlay');
+if (old) { try { old.remove(); } catch (e) {} }
+const meta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (!meta) return;
+const before = meta.sticker ? {
+id: meta.sticker.id,
+x: meta.sticker.x,
+y: meta.sticker.y,
+size: meta.sticker.size
+} : null;
+const draft = {
+id: before ? before.id : '',
+x: (before && Number.isFinite(Number(before.x))) ? Number(before.x) : 0.72,
+y: (before && Number.isFinite(Number(before.y))) ? Number(before.y) : 0.22,
+size: (before && (before.size === 's' || before.size === 'l')) ? before.size : 'm'
+};
+const overlay = document.createElement('div');
+overlay.id = 'dpf-stk-overlay';
+overlay.className = 'dpf-stk-overlay';
+const panel = document.createElement('div');
+panel.className = 'dpf-stk-panel';
+const title = document.createElement('div');
+title.className = 'dpf-stk-title';
+title.textContent = '相框贴纸';
+const grid = document.createElement('div');
+grid.className = 'dpf-stk-grid';
+const sizeRow = document.createElement('div');
+sizeRow.className = 'dpf-stk-sizes';
+const actions = document.createElement('div');
+actions.className = 'dpf-stk-actions';
+const tip = document.createElement('div');
+tip.className = 'dpf-stk-tip';
+tip.textContent = '选好后在装修/编辑态下可直接拖动贴纸；小/中/大三档大小。';
+let closed = false;
+const close = (keep) => {
+if (closed) return;
+closed = true;
+try { overlay.remove(); } catch (e) {}
+try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+window.mochiPhotoCropBack = null;
+if (!keep) writePhotoFrameSticker(id, before);
+};
+const sync = () => {
+Array.prototype.forEach.call(grid.querySelectorAll('.dpf-stk-item'), b => {
+b.classList.toggle('on', !!draft.id && b.dataset.sticker === draft.id);
+});
+Array.prototype.forEach.call(sizeRow.querySelectorAll('.dpf-stk-size'), b => {
+b.classList.toggle('on', b.dataset.size === draft.size);
+});
+removeBtn.hidden = !draft.id;
+};
+let removeBtn;
+DESK_FRAME_STICKERS.forEach((st, si) => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-item';
+b.dataset.sticker = st.id;
+b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + st.svg + '</svg><span>' + st.name + '</span>';
+b.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
+b.addEventListener('click', () => {
+draft.id = st.id;
+writePhotoFrameSticker(id, draft);
+sync();
+});
+grid.appendChild(b);
+});
+[['s', '小'], ['m', '中'], ['l', '大']].forEach(pair => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-size';
+b.dataset.size = pair[0];
+b.textContent = pair[1];
+b.addEventListener('click', () => {
+if (!draft.id) { toast('先选一个贴纸'); return; }
+draft.size = pair[0];
+writePhotoFrameSticker(id, draft);
+sync();
+});
+sizeRow.appendChild(b);
+});
+const cancel = document.createElement('button');
+cancel.type = 'button';
+cancel.className = 'dpf-stk-cancel';
+cancel.textContent = '取消';
+cancel.addEventListener('click', () => close(false));
+removeBtn = document.createElement('button');
+removeBtn.type = 'button';
+removeBtn.className = 'dpf-stk-remove';
+removeBtn.textContent = '移除贴纸';
+removeBtn.addEventListener('click', () => {
+draft.id = '';
+writePhotoFrameSticker(id, null);
+sync();
+});
+const ok = document.createElement('button');
+ok.type = 'button';
+ok.className = 'dpf-stk-ok';
+ok.textContent = '完成';
+ok.addEventListener('click', () => close(true));
+overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+window.mochiPhotoCropBack = () => { close(false); return true; };
+actions.appendChild(cancel);
+actions.appendChild(removeBtn);
+actions.appendChild(ok);
+panel.appendChild(title);
+panel.appendChild(grid);
+panel.appendChild(sizeRow);
+panel.appendChild(tip);
+panel.appendChild(actions);
+overlay.appendChild(panel);
+document.body.appendChild(overlay);
+try { document.documentElement.classList.add('dpf-crop-open'); } catch (e) {}
+sync();
+}
 function readPhotoFrameSrc(id, cb) {
 const key = window.activePrefix() + ':desk-image-src-' + id;
 const fallback = () => { try { cb(store.get('desk-image-src-' + id) || ''); } catch (e) { cb(''); } };
@@ -8927,6 +9137,7 @@ toast(txt ? '已更新相框小字' : '已清空相框小字');
 };
 window.openModal('拍立得相框', '', (v) => {
 if (v === 'chg') changeDeskImage(id);
+else if (v === 'stk') openPhotoFrameStickerPicker(id);
 else if (v === 'focus') openCrop();
 else if (v === 'cap') editCaption();
 else if (v === 'del') removeDeskImage(id);
@@ -8934,6 +9145,7 @@ else if (v === 'del') removeDeskImage(id);
 noInput: true,
 pills: [
 { label: '更换照片', value: 'chg' },
+{ label: '贴纸', value: 'stk' },
 { label: '调整焦点', value: 'focus' },
 { label: '修改小字', value: 'cap' },
 { label: '删除相框', value: 'del' }

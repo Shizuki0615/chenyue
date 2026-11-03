@@ -7057,6 +7057,18 @@ const FIX_SENTINELS = [
   { name: '#1634c 分页圆点隐藏类挂载（删＝开关只改状态文字，圆点不消失）', file: 'js/personalize.js', needle: "document.documentElement.classList.toggle('desk-hide-dots', hidden);" },
   { name: '#1634d 分页圆点隐藏样式（删＝类挂了但圆点仍显示，即本 bug 形态）', file: 'css/home.css', needle: 'html.desk-hide-dots #desktop-dots { display:none; }' },
   { name: '#1634e 切换桌面重新应用圆点状态（删＝换联系人后圆点显隐不跟随各自设置）', file: 'js/personalize.js', needle: "document.addEventListener('contact-switched', applyDeskDotsVisibility);" },
+  // ==== 2026-11-04 #1635 拍立得相框贴纸（手绘 SVG / 自由拖 / 三档大小） ====
+  { name: '#1635a 相框贴纸图案库（删＝贴纸面板变空、已有贴纸也渲染不出来）', file: 'js/personalize.js', needle: 'const DESK_FRAME_STICKERS = [' },
+  { name: '#1635b 相框渲染贴纸层（删＝选了贴纸但相框上看不到）', file: 'js/personalize.js', needle: "const stk = m.sticker && DESK_FRAME_STICKERS.find(s => s && s.id === m.sticker.id);" },
+  { name: '#1635c 贴纸拖动绑定（删＝编辑态拖不动贴纸）', file: 'js/personalize.js', needle: 'bindPhotoFrameStickerDrag(node, sp, m.id);' },
+  { name: '#1635d 贴纸拖动与位置落库（删＝拖动只动画面，刷新后回原位）', file: 'js/personalize.js', needle: 'function bindPhotoFrameStickerDrag(frameNode, stickerEl, id) {' },
+  { name: '#1635e 贴纸选择面板（删＝管理菜单没有贴纸可选）', file: 'js/personalize.js', needle: 'function openPhotoFrameStickerPicker(id) {' },
+  { name: '#1635f 相框菜单贴纸入口（删＝用户进不去贴纸面板）', file: 'js/personalize.js', needle: "{ label: '贴纸', value: 'stk' }," },
+  { name: '#1635g 贴纸位置/大小写入相框元数据（删＝换图/刷新后贴纸丢失）', file: 'js/personalize.js', needle: 'mm.sticker = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };' },
+  { name: '#1635h 贴纸取消恢复原状（删＝取消后仍保留误选的贴纸）', file: 'js/personalize.js', needle: 'if (!keep) writePhotoFrameSticker(id, before);' },
+  { name: '#1635i 贴纸基础样式（删＝贴纸不定位/不缩放/没有贴纸白边）', file: 'css/home.css', needle: '.dpf-sticker {' },
+  { name: '#1635j 编辑态贴纸可拖动（删＝普通状态挡住点照片，或编辑态拖不动）', file: 'css/home.css', needle: '.decor-on .desk-photo-frame .dpf-sticker,' },
+  { name: '#1635k 贴纸选择面板样式（删＝面板内容挤成一列/按钮无样式）', file: 'css/home.css', needle: '.dpf-stk-overlay {' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
