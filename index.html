@@ -1471,6 +1471,51 @@ border-radius:99px; overflow:hidden;
 .dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-handle { margin-bottom:4px; }
 .dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-title { margin-bottom:0; font-size:12px; }
 .dpf-stk-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+.dpf-stk-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.dpf-stk-tab {
+flex:1; padding:7px 0; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111);
+font-size:12px; cursor:pointer;
+}
+.dpf-stk-tab.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
+.dpf-stk-emoji-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+.dpf-stk-emoji-item {
+border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px;
+background:#fff; font-size:24px; line-height:1; padding:9px 0 7px;
+cursor:pointer; color:var(--ink,#111);
+}
+.dpf-stk-emoji-row { display:flex; gap:6px; margin-top:9px; }
+.dpf-stk-emoji-input {
+flex:1; min-width:0; padding:8px 10px; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--card-bg,#fff); color:var(--ink,#111); font-size:13px;
+}
+.dpf-stk-emoji-add {
+flex:none; padding:8px 13px; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--btn-bg,#111); color:var(--btn-ink,#fff); font-size:12px; cursor:pointer;
+}
+.dpf-stk-upload-btn {
+width:100%; padding:9px 0; border:1px dashed rgba(0,0,0,.22); border-radius:10px;
+background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111); font-size:12px; cursor:pointer;
+}
+.dpf-stk-upload-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:8px; }
+.dpf-stk-upload-item {
+height:46px; border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:10px;
+background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+padding:4px; overflow:hidden;
+}
+.dpf-stk-upload-item img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+.dpf-stk-upload-empty { font-size:10.5px; color:var(--muted,#999); padding:4px 0 2px; }
+.dpf-sticker-emoji-svg text, .dpf-sticker-emoji text {
+font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+.dpf-sticker-upload .dpf-sticker-img { width:100%; height:auto; display:block; }
+.dpf-sticker-missing {
+aspect-ratio:1 / 1; min-height:34px; border:1px dashed rgba(0,0,0,.25); border-radius:10px;
+background:rgba(255,255,255,.72); display:flex; align-items:center; justify-content:center;
+}
+.dpf-sticker-missing::after { content:'?'; font-size:16px; color:var(--muted,#999); }
+.dpf-stk-placed-emoji { font-size:20px; line-height:1; }
+.dpf-stk-placed-item img { width:22px; height:22px; object-fit:contain; display:block; }
 .dpf-stk-item {
 border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px; background:#fffaf0;
 padding:7px 2px 4px; display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -12414,7 +12459,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793775068062" data-version="v8.73.2">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793779013263" data-version="v8.73.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -14000,7 +14045,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.73.2</div>
+          <div class="val" id="about-ver-val">v8.73.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14119,7 +14164,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.73.2</div>
+      <div class="ver">辰光玥影 v8.73.5</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14550,7 +14595,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.73.2</span>
+              <span class="lic-ver">v8.73.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -24366,4 +24411,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw1rd0ny -->
+<!-- __MOCHI_EOF__ mw1tpksv -->

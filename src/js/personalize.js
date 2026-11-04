@@ -11,6 +11,11 @@
   // 同样必须放顶部——启动阶段 renderDeskImages 会先于下方声明执行（TDZ）。
   // #1636 多贴纸：一张相框最多 8 张（上限常量供渲染/面板共用）
   const DESK_FRAME_STICKER_MAX = 8;
+  // #1642 emoji 贴纸常用面板 + 自定义上传贴纸库（全局共享，跨相框/跨桌面复用）
+  const DESK_EMOJI_STICKERS = ['😊', '😍', '🥰', '😘', '😎', '😭', '😡', '🥺', '😴', '🤔', '🌸', '🌟', '❤️', '💖', '✨', '🍀', '🎀', '🐱', '🐰', '🐻'];
+  const DESK_STICKER_LIB_KEY = 'desk-sticker-lib';
+  const DESK_STICKER_LIB_MAX = 20;
+  const DESK_STICKER_SRC_PREFIX = 'desk-sticker-src-';
   const DESK_FRAME_STICKERS = [
     { id: 'heart', name: '爱心', svg: '<path d="M32 55C19 46 7 35 7 23.5A12.5 12.5 0 0 1 32 17a12.5 12.5 0 0 1 25 6.5C57 35 45 46 32 55z" fill="#e28b8b" stroke="#fff" stroke-width="3.2"/><path d="M18.5 22.5c0-4 2.8-6.7 6-7.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>' },
     { id: 'star', name: '星星', svg: '<path d="M32 5.5l7.7 16.9 18.3 2-13.7 12.5 3.7 18.1L32 46.3 16 55l3.7-18.1L6 24.4l18.3-2z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><circle cx="25" cy="26" r="2.1" fill="#fff" opacity=".7"/>' },
@@ -10427,8 +10432,6 @@ try {
         // 旧数据是单张 meta.sticker，photoFrameStickersOf 统一读成数组；新数据存 meta.stickers。
         const stickers = photoFrameStickersOf(m);
         stickers.forEach((stickerMeta, si) => {
-          const stk = DESK_FRAME_STICKERS.find(s => s && s.id === stickerMeta.id);
-          if (!stk) return;
           const sp = document.createElement('span');
           sp.className = 'dpf-sticker dpf-sticker-' + (stickerMeta.size === 's' || stickerMeta.size === 'l' ? stickerMeta.size : 'm');
           sp.dataset.dpfStkIdx = String(si);
@@ -10436,7 +10439,7 @@ try {
           sp.style.top = (stickerMeta.y * 100) + '%';
           // #1637 有手动旋转角用 rot，旧数据/新建项回默认小角度
           sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');
-          sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
+          if (!fillPhotoFrameStickerNode(sp, stickerMeta)) return;
           node.appendChild(sp);
           bindPhotoFrameStickerDrag(node, sp, m.id, si);
         });
@@ -10658,7 +10661,10 @@ try {
   }
   // #1637 贴纸默认旋转：沿用旧版的随机小角度（-4°~4°），未手动旋转时用它。
   function photoFrameStickerBaseRot(st, si) {
+    // emoji / 上传贴纸默认不歪；只有手绘图案沿用随机小角度
+    if (!st || st.kind === 'emoji' || st.kind === 'upload') return 0;
     const base = DESK_FRAME_STICKERS.findIndex(s => s && s.id === st.id);
+    if (base < 0) return 0;
     return ((base + si) % 5 - 2) * 2;
   }
   // #1637 读取单张贴纸角度：有 rot 用 rot（钳到 -180~180），旧数据没有则回默认小角度。
@@ -10668,6 +10674,96 @@ try {
     }
     return photoFrameStickerBaseRot(st, si);
   }
+  // #1642 上传贴纸库：元数据全局保存（跨桌面复用），图片本体走 xyStore 大键链路（IDB）
+  function stickerLibOf() {
+    try {
+      const v = JSON.parse(gStore.get(DESK_STICKER_LIB_KEY) || '[]');
+      return Array.isArray(v) ? v.filter(x => x && x.id) : [];
+    } catch (e) { return []; }
+  }
+  function saveStickerLib(arr) {
+    try { gStore.set(DESK_STICKER_LIB_KEY, JSON.stringify(arr)); return true; } catch (e) { return false; }
+  }
+  function deskStickerSrc(ref) {
+    if (!ref) return '';
+    try { return gStore.get(DESK_STICKER_SRC_PREFIX + ref) || ''; } catch (e) { return ''; }
+  }
+  function readDeskStickerSrc(ref, cb) {
+    const cached = deskStickerSrc(ref);
+    if (cached) { try { cb(cached); } catch (e) {} return; }
+    if (window.idbGet && ref) {
+      window.idbGet('xy-home-v2:' + DESK_STICKER_SRC_PREFIX + ref).then(function (src) {
+        if (src) { try { cb(src); } catch (e) {} }
+      }, function () {});
+    }
+  }
+  // #1636/#1642 统一贴纸校验：手绘（旧数据无 kind）/ emoji / 上传图三种
+  function normalizePhotoFrameSticker(st) {
+    if (!st) return null;
+    const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
+    const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
+    const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
+    const item = { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+    if (st.kind === 'emoji') {
+      const e = String(st.emoji || '').trim();
+      if (!e) return null;
+      item.kind = 'emoji';
+      item.emoji = e.slice(0, 16);
+    } else if (st.kind === 'upload') {
+      const ref = String(st.ref || '');
+      if (!ref) return null;
+      item.kind = 'upload';
+      item.ref = ref.slice(0, 48);
+    } else {
+      if (!st.id || !DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) return null;
+      item.id = st.id;
+    }
+    if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+    return item;
+  }
+  // #1642 按类型填充贴纸内容：手绘 SVG / emoji（SVG text 随宽度缩放）/ 上传图片
+  function fillPhotoFrameStickerNode(sp, stickerMeta) {
+    if (!sp || !stickerMeta) return false;
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    sp.classList.add('dpf-sticker-k-' + (stickerMeta.kind || 'draw'));
+    if (stickerMeta.kind === 'emoji') {
+      sp.classList.add('dpf-sticker-emoji');
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 64 64');
+      svg.setAttribute('aria-hidden', 'true');
+      const txt = document.createElementNS(SVG_NS, 'text');
+      txt.setAttribute('x', '32');
+      txt.setAttribute('y', '34');
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dominant-baseline', 'central');
+      txt.setAttribute('font-size', '52');
+      txt.textContent = stickerMeta.emoji;
+      svg.appendChild(txt);
+      sp.appendChild(svg);
+      return true;
+    }
+    if (stickerMeta.kind === 'upload') {
+      sp.classList.add('dpf-sticker-upload');
+      const im = document.createElement('img');
+      im.className = 'dpf-sticker-img';
+      im.alt = '';
+      const apply = (src) => {
+        if (!src || !im || im.parentNode !== sp) return;
+        im.src = src;
+        sp.classList.remove('dpf-sticker-missing');
+      };
+      sp.appendChild(im);
+      const src = deskStickerSrc(stickerMeta.ref);
+      if (src) apply(src);
+      else { sp.classList.add('dpf-sticker-missing'); readDeskStickerSrc(stickerMeta.ref, apply); }
+      return true;
+    }
+    const stk = DESK_FRAME_STICKERS.find(s => s && s.id === stickerMeta.id);
+    if (!stk) return false;
+    sp.classList.add('dpf-sticker-draw');
+    sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
+    return true;
+  }
   // #1636 多贴纸数据：统一把旧单张 meta.sticker 和新 meta.stickers 读成数组。
   // 旧数据不主动改写，只有用户真正增删/拖动/改大小后才落成新格式（关闭面板取消不迁移）。
   function photoFrameStickersOf(meta) {
@@ -10675,15 +10771,8 @@ try {
       : (meta && meta.sticker ? [meta.sticker] : []);
     const out = [];
     for (let i = 0; i < raw.length && out.length < DESK_FRAME_STICKER_MAX; i++) {
-      const st = raw[i];
-      if (!st || !DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) continue;
-      const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
-      const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
-      const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-      const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
-      // #1637 手动旋转角度：仅存有效值，旧数据（没有 rot）保持默认小角度
-      if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
-      out.push(item);
+      const item = normalizePhotoFrameSticker(raw[i]);
+      if (item) out.push(item);
     }
     return out;
   }
@@ -10693,14 +10782,9 @@ try {
     if (!mm) return;
     const clean = [];
     (Array.isArray(arr) ? arr : []).forEach(st => {
-      if (!st || clean.length >= DESK_FRAME_STICKER_MAX) return;
-      if (!DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) return;
-      const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
-      const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
-      const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-      const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
-      if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
-      clean.push(item);
+      if (clean.length >= DESK_FRAME_STICKER_MAX) return;
+      const item = normalizePhotoFrameSticker(st);
+      if (item) clean.push(item);
     });
     // 迁移后清掉旧单张键，避免下次渲染又读回旧贴纸
     delete mm.sticker;
@@ -10794,7 +10878,7 @@ try {
     const meta = loadDeskImagesMeta().find(x => x && x.id === id);
     if (!meta) return;
     const before = photoFrameStickersOf(meta);
-    const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));
+    const draft = before.map(s => Object.assign({}, s));
     let selected = draft.length ? draft.length - 1 : -1;
     let dirty = false;
     const overlay = document.createElement('div');
@@ -10875,6 +10959,116 @@ try {
     window.addEventListener('pointercancel', panelDragEnd);
     const grid = document.createElement('div');
     grid.className = 'dpf-stk-grid';
+    // #1642 三类贴纸共用同一个添加入口：手绘 / emoji / 上传图
+    const addEntry = (entry) => {
+      if (draft.length >= DESK_FRAME_STICKER_MAX) {
+        toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加');
+        return false;
+      }
+      const spot = nextPhotoFrameStickerSpot(draft);
+      const st = Object.assign({ x: spot.x, y: spot.y, size: 'm' }, entry);
+      st.rot = photoFrameStickerBaseRot(st, draft.length);
+      draft.push(st);
+      selected = draft.length - 1;
+      dirty = true;
+      writePhotoFrameStickers(id, draft);
+      sync();
+      return true;
+    };
+    // 分类页签
+    const tabsBar = document.createElement('div');
+    tabsBar.className = 'dpf-stk-tabs';
+    let activeTab = 'draw';
+    const tabBtns = {};
+    [['draw', '手绘'], ['emoji', 'Emoji'], ['upload', '我的上传']].forEach(pair => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dpf-stk-tab';
+      b.textContent = pair[1];
+      b.addEventListener('click', () => { activeTab = pair[0]; sync(); });
+      tabBtns[pair[0]] = b;
+      tabsBar.appendChild(b);
+    });
+    // 手绘页
+    const drawWrap = document.createElement('div');
+    drawWrap.appendChild(grid);
+    // emoji 页：常用面板 + 任意输入
+    const emojiWrap = document.createElement('div');
+    const emojiGrid = document.createElement('div');
+    emojiGrid.className = 'dpf-stk-emoji-grid';
+    DESK_EMOJI_STICKERS.forEach(e => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dpf-stk-emoji-item';
+      b.textContent = e;
+      b.addEventListener('click', () => addEntry({ kind: 'emoji', emoji: e }));
+      emojiGrid.appendChild(b);
+    });
+    const emojiRow = document.createElement('div');
+    emojiRow.className = 'dpf-stk-emoji-row';
+    const emojiInput = document.createElement('input');
+    emojiInput.type = 'text';
+    emojiInput.className = 'dpf-stk-emoji-input';
+    emojiInput.maxLength = 16;
+    emojiInput.placeholder = '粘贴任意 emoji';
+    const emojiAddBtn = document.createElement('button');
+    emojiAddBtn.type = 'button';
+    emojiAddBtn.className = 'dpf-stk-emoji-add';
+    emojiAddBtn.textContent = '添加';
+    const addEmojiInput = () => {
+      const v = String(emojiInput.value || '').trim();
+      if (!v) { toast('先输入或粘贴一个 emoji'); return; }
+      if (addEntry({ kind: 'emoji', emoji: v })) emojiInput.value = '';
+    };
+    emojiAddBtn.addEventListener('click', addEmojiInput);
+    emojiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addEmojiInput(); } });
+    emojiRow.appendChild(emojiInput);
+    emojiRow.appendChild(emojiAddBtn);
+    emojiWrap.appendChild(emojiGrid);
+    emojiWrap.appendChild(emojiRow);
+    // 上传页：上传一次进全局贴纸库，可重复贴到任意相框
+    const uploadWrap = document.createElement('div');
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'dpf-stk-upload-btn';
+    uploadBtn.textContent = '＋ 上传贴纸图片';
+    const uploadGrid = document.createElement('div');
+    uploadGrid.className = 'dpf-stk-upload-grid';
+    const uploadEmpty = document.createElement('div');
+    uploadEmpty.className = 'dpf-stk-upload-empty';
+    uploadEmpty.textContent = '还没有上传贴纸，点上方按钮添加';
+    const uploadSticker = () => {
+      if (!window.mochiFilePick) { toast('相册选择组件没加载上，请刷新页面再试'); return; }
+      window.mochiFilePick({
+        id: 'mochi-desk-sticker-pick', accept: 'image/*',
+        onFiles: (files) => {
+          const f = files && files[0];
+          if (!f) { toast('没有取到图片，请再选一次'); return; }
+          const reader = new FileReader();
+          reader.onload = () => {
+            ingestTo(reader.result, { maxSide: 320, mime: 'image/png', byteLimit: 180 * 1024, tag: 'desk-sticker' }).then(data => {
+              if (!data) { toast('图片过大或格式不支持，请换一张'); return; }
+              const lib = stickerLibOf();
+              if (lib.length >= DESK_STICKER_LIB_MAX) { toast('贴纸库已满（最多 ' + DESK_STICKER_LIB_MAX + ' 张）'); return; }
+              const ref = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+              try { gStore.set(DESK_STICKER_SRC_PREFIX + ref, data); } catch (e) { toast('存储空间不足，贴纸没保存上'); return; }
+              lib.push({ id: ref, name: '贴纸 ' + (lib.length + 1), addedAt: Date.now() });
+              if (!saveStickerLib(lib)) { toast('存储空间不足，贴纸没保存上'); return; }
+              activeTab = 'upload';
+              addEntry({ kind: 'upload', ref: ref });
+              sync();
+              toast('已添加上传贴纸');
+            });
+          };
+          reader.onerror = () => toast('图片读取失败，请重试');
+          reader.readAsDataURL(f);
+        }
+      });
+    };
+    uploadBtn.addEventListener('click', uploadSticker);
+    uploadWrap.appendChild(uploadBtn);
+    uploadWrap.appendChild(uploadEmpty);
+    uploadWrap.appendChild(uploadGrid);
     const placedTitle = document.createElement('div');
     placedTitle.className = 'dpf-stk-subtitle';
     const placedList = document.createElement('div');
@@ -10899,7 +11093,7 @@ try {
     actions.className = 'dpf-stk-actions';
     const tip = document.createElement('div');
     tip.className = 'dpf-stk-tip';
-    tip.textContent = '点上方图案即新增一张（最多 ' + DESK_FRAME_STICKER_MAX + ' 张）；在「已贴」里选中一张后可改大小或删除。装修 / 网格编辑态下可直接拖动贴纸。';
+    tip.textContent = '手绘点图案即新增；Emoji 可点常用或粘贴任意表情；上传贴纸会存进「我的上传」，可重复贴到任意相框。最多 ' + DESK_FRAME_STICKER_MAX + ' 张，选中后可改大小/旋转或删除。';
     let closed = false;
     const close = (keep) => {
       if (closed) return;
@@ -10914,7 +11108,40 @@ try {
       window.mochiPhotoCropBack = null;
       if (!keep && dirty) writePhotoFrameStickers(id, before);
     };
+    // #1642 贴纸名称：手绘用图案名，emoji 只显示图形，上传图用贴纸库名称
+    const stickerLabelOf = (st) => {
+      if (!st) return '';
+      if (st.kind === 'emoji') return '';
+      if (st.kind === 'upload') {
+        const it = stickerLibOf().find(x => x && x.id === st.ref);
+        return it && it.name ? it.name : '上传贴纸';
+      }
+      const d = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
+      return d ? d.name : '';
+    };
     const sync = () => {
+      Object.keys(tabBtns).forEach(k => tabBtns[k].classList.toggle('on', k === activeTab));
+      drawWrap.style.display = activeTab === 'draw' ? '' : 'none';
+      emojiWrap.style.display = activeTab === 'emoji' ? '' : 'none';
+      uploadWrap.style.display = activeTab === 'upload' ? '' : 'none';
+      // 上传贴纸库：全局保存，切页标签时实时重建
+      uploadGrid.innerHTML = '';
+      const lib = stickerLibOf();
+      uploadEmpty.hidden = !!lib.length;
+      lib.forEach(item => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'dpf-stk-upload-item';
+        b.title = item.name || '上传贴纸';
+        const im = document.createElement('img');
+        im.alt = '';
+        const src = deskStickerSrc(item.id);
+        if (src) im.src = src;
+        else readDeskStickerSrc(item.id, (s) => { if (s && im.parentNode === b) im.src = s; });
+        b.appendChild(im);
+        b.addEventListener('click', () => addEntry({ kind: 'upload', ref: item.id }));
+        uploadGrid.appendChild(b);
+      });
       Array.prototype.forEach.call(sizeRow.querySelectorAll('.dpf-stk-size'), b => {
         b.classList.toggle('on', selected >= 0 && draft[selected] && b.dataset.size === draft[selected].size);
       });
@@ -10931,16 +11158,37 @@ try {
       if (!draft.length) {
         const empty = document.createElement('div');
         empty.className = 'dpf-stk-placed-empty';
-        empty.textContent = '还没有贴纸，点上方图案添加';
+        empty.textContent = '还没有贴纸，点上方添加';
         placedList.appendChild(empty);
       } else {
         draft.forEach((st, i) => {
-          const stDef = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
-          if (!stDef) return;
+          let icon = null;
+          if (st.kind === 'emoji') {
+            icon = document.createElement('span');
+            icon.className = 'dpf-stk-placed-emoji';
+            icon.textContent = st.emoji;
+          } else if (st.kind === 'upload') {
+            icon = document.createElement('img');
+            icon.alt = '';
+            const src = deskStickerSrc(st.ref);
+            if (src) icon.src = src;
+            else readDeskStickerSrc(st.ref, (s) => { if (s && icon.parentNode) icon.src = s; });
+          } else {
+            const stDef = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
+            if (!stDef) return;
+            icon = document.createElement('span');
+            icon.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stDef.svg + '</svg>';
+          }
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'dpf-stk-placed-item' + (i === selected ? ' on' : '');
-          b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stDef.svg + '</svg><span>' + stDef.name + '</span>';
+          b.appendChild(icon);
+          const label = stickerLabelOf(st);
+          if (label) {
+            const tx = document.createElement('span');
+            tx.textContent = label;
+            b.appendChild(tx);
+          }
           b.addEventListener('click', () => { selected = i; sync(); });
           placedList.appendChild(b);
         });
@@ -10954,15 +11202,7 @@ try {
       b.dataset.sticker = st.id;
       b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + st.svg + '</svg><span>' + st.name + '</span>';
       b.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
-      b.addEventListener('click', () => {
-        if (draft.length >= DESK_FRAME_STICKER_MAX) { toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加'); return; }
-        const spot = nextPhotoFrameStickerSpot(draft);
-        draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm', rot: photoFrameStickerBaseRot(st, draft.length) });
-        selected = draft.length - 1;
-        dirty = true;
-        writePhotoFrameStickers(id, draft);
-        sync();
-      });
+      b.addEventListener('click', () => addEntry({ id: st.id }));
       grid.appendChild(b);
     });
     [['s', '小'], ['m', '中'], ['l', '大']].forEach(pair => {
@@ -11026,7 +11266,10 @@ try {
     actions.appendChild(ok);
     panel.appendChild(handle);
     panel.appendChild(title);
-    panel.appendChild(grid);
+    panel.appendChild(tabsBar);
+    panel.appendChild(drawWrap);
+    panel.appendChild(emojiWrap);
+    panel.appendChild(uploadWrap);
     panel.appendChild(placedTitle);
     panel.appendChild(placedList);
     panel.appendChild(sizeRow);

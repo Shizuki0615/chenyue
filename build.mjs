@@ -7088,7 +7088,7 @@ const FIX_SENTINELS = [
   { name: '#1637e 松手落库旋转角度（删＝刷新后角度回默认）', file: 'js/personalize.js', needle: 'draft[selected].rot = Math.round(Number(rotInput.value));' },
   { name: '#1637f 旋转角度随贴纸数据存取（删＝导出/导入/拖动后角度丢失）', file: 'js/personalize.js', needle: 'if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));' },
   { name: '#1637g 旋转滑杆样式（删＝滑杆挤成默认丑样式/没有角度数值）', file: 'css/home.css', needle: '.dpf-stk-rotrow {' },
-  { name: '#1637h 面板草稿保留已有角度（删＝打开面板后其他贴纸的原角度被默认值覆盖）', file: 'js/personalize.js', needle: 'const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));' },
+  { name: '#1637h 面板草稿保留已有角度（删＝打开面板后其他贴纸的原角度被默认值覆盖）', file: 'js/personalize.js', needle: 'const draft = before.map(s => Object.assign({}, s));' },
   // ==== 2026-11-04 #1638 贴纸面板可拖动 + 面板开着也能拖贴纸 ====
   { name: '#1638a 遮罩透明且不吃指针（删＝面板一开照片被压暗或拖不到照片上的贴纸）', file: 'css/home.css', needle: 'background:transparent; overscroll-behavior:contain; pointer-events:none;' },
   { name: '#1638b 面板本身可交互（删＝遮罩放行后连面板按钮都点不到）', file: 'css/home.css', needle: 'box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;' },
@@ -7116,6 +7116,19 @@ const FIX_SENTINELS = [
   { name: '#1641e 组件库重新添加时解除移除标记（删＝从库里加回打卡卡后又被收回池）', file: 'js/personalize.js', needle: 'if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }' },
   { name: '#1641f 恢复默认桌面清空移除名单（删＝恢复默认后打卡卡仍回不来）', file: 'js/personalize.js', needle: "store.remove('hidden-widgets');" },
   { name: '#1641g 恢复默认时同时等待 IDB 删除移除名单（删＝IDB 回填把名单又带回来）', file: 'js/personalize.js', needle: "dels.push(window.idbDelete(P + ':hidden-widgets'));" },
+  // ==== 2026-11-04 #1642 emoji 贴纸 + 自定义上传贴纸 ====
+  { name: '#1642a emoji 常用面板数据（删＝Emoji 页签没有常用表情可选）', file: 'js/personalize.js', needle: 'const DESK_EMOJI_STICKERS = [' },
+  { name: '#1642b 上传贴纸库全局键（删＝上传图无法跨相框/跨桌面复用）', file: 'js/personalize.js', needle: "const DESK_STICKER_LIB_KEY = 'desk-sticker-lib';" },
+  { name: '#1642c 贴纸三种类型统一校验（删＝emoji/上传贴纸保存后被清掉）', file: 'js/personalize.js', needle: "if (st.kind === 'emoji') {" },
+  { name: '#1642d 贴纸按类型渲染（删＝emoji/上传贴纸在相框上显示不出来）', file: 'js/personalize.js', needle: 'function fillPhotoFrameStickerNode(sp, stickerMeta) {' },
+  { name: '#1642e 贴纸分类页签（删＝手绘/emoji/上传混在一起没有入口）', file: 'js/personalize.js', needle: "tabsBar.className = 'dpf-stk-tabs';" },
+  { name: '#1642f emoji 任意输入框（删＝只能点常用 emoji，不能粘贴自定义表情）', file: 'js/personalize.js', needle: "emojiInput.className = 'dpf-stk-emoji-input';" },
+  { name: '#1642g 上传贴纸写入全局库（删＝上传后刷新图片丢失）', file: 'js/personalize.js', needle: 'gStore.set(DESK_STICKER_SRC_PREFIX + ref, data);' },
+  { name: '#1642h 我的上传列表（删＝上传过的贴纸看不到、无法复用）', file: 'js/personalize.js', needle: "uploadGrid.className = 'dpf-stk-upload-grid';" },
+  { name: '#1642i 贴纸页签样式（删＝三个页签挤在一起/没有选中态）', file: 'css/home.css', needle: '.dpf-stk-tabs {' },
+  { name: '#1642j 上传贴纸缩略图样式（删＝我的上传变成一列大图/布局塌）', file: 'css/home.css', needle: '.dpf-stk-upload-item {' },
+  { name: '#1642k 上传贴纸本体样式（删＝贴到相框上的图片尺寸失控）', file: 'css/home.css', needle: '.dpf-sticker-upload .dpf-sticker-img {' },
+  { name: '#1642l 上传贴纸先挂节点再取 src（删＝同会话刚上传的贴纸显示空白）', file: 'js/personalize.js', needle: 'const src = deskStickerSrc(stickerMeta.ref);' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
