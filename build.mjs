@@ -7158,6 +7158,10 @@ const FIX_SENTINELS = [
   { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },
   // ==== 2026-11-02 #1610 已摸鱼「天」与今日情话首行对齐 ====
   { name: '#1610a 已摸鱼正文上移 1px（删＝「天」比「我想陪着你」低 1px）', file: 'css/home.css', needle: 'height:45px; line-height:15px; margin-top:7px; overflow:hidden;' },
+  // ==== 2026-11-04 #1611 已答卡留白加固 + 卡片 CSS 左右分开示例 ====
+  { name: '#1611a 已答卡/选择卡心形留白改 ::after 占位（删＝自定义卡片 CSS 写 padding 时心形又压到最后一行字上）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after' },
+  { name: '#1611b 问卷卡详情钮/心形留白改 ::after 占位（删＝改 padding 后详情钮与收藏心形压字）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.msg-survey-card::after' },
+  { name: '#1611c 卡片 CSS 左右分开示例按钮与整套样式（删＝示例入口消失/只剩片段）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex4"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

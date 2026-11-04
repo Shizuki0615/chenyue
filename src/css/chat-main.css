@@ -1839,7 +1839,14 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 #page-chat .msg-ask .msg-choose-card.answered,
 #page-chat .msg-ask .msg-ask-card.answered.has-ask-arrow {
   position: relative;
-  padding-bottom: 44px;
+  /* v8.73.7 加固（用户 2026-11-04 实图：自定义卡片 CSS 写了 padding 后心形压到最后一行字上）：
+     底部留白不再靠 padding-bottom——卡片 CSS 注入会给每条声明加 !important，把 44px 一并顶掉。
+     改用卡内 ::after 占位块，padding 怎么改都不影响这块高度。 */
+  padding-bottom: 0;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
+#page-chat .msg-ask .msg-choose-card.answered::after {
+  content: ''; display: block; height: 44px;
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart {
@@ -1874,8 +1881,6 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
-#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
-#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
 #page-chat .msg-ask .msg-ask-view-arrow {
   right: 8px;
   bottom: 6px;
@@ -1903,10 +1908,14 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
   border-radius: var(--chat-bubble-radius, 18px);
   padding: var(--chat-bubble-pad, 11px 14px);
-  padding-bottom: 44px;
+  padding-bottom: 0;
   box-shadow: 0 4px 14px rgba(0,0,0,.07);
   position: relative;
   text-align: left;
+}
+/* v8.73.7 同款加固：问卷详情钮/收藏心形也在卡底绝对定位，留白改 ::after 占位，不吃 padding。 */
+#page-chat .msg-ask .msg-ask-card.msg-survey-card::after {
+  content: ''; display: block; height: 44px;
 }
 #page-chat .msg-ask .msg-survey-head {
   font-size: calc(var(--chat-font-size, 14px) + 1px);
