@@ -741,6 +741,15 @@ html.dgr-editing .desk-photo-frame .dpf-sticker {
 .dpf-stk-panel-drag .dpf-stk-handle { cursor:grabbing; }
 .dpf-stk-title { font-size:15px; font-weight:700; color:var(--ink,#111); text-align:center; margin-bottom:12px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
 .dpf-stk-panel-drag .dpf-stk-title { cursor:grabbing; }
+/* #1640 往下拖到底＝收成底部小胶囊，只留把手+标题，点一下再展开 */
+.dpf-stk-panel.dpf-stk-panel-mini {
+  width:auto; max-width:80vw; margin:0 auto;
+  padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
+  border-radius:99px; overflow:hidden;
+}
+.dpf-stk-panel.dpf-stk-panel-mini > *:not(.dpf-stk-handle):not(.dpf-stk-title) { display:none; }
+.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-handle { margin-bottom:4px; }
+.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-title { margin-bottom:0; font-size:12px; }
 .dpf-stk-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
 .dpf-stk-item {
   border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px; background:#fffaf0;

@@ -9016,12 +9016,33 @@ const handle = document.createElement('div');
 handle.className = 'dpf-stk-handle';
 let panelOffset = 0;
 let panelDrag = null;
+const applyPanelTransform = (animate) => {
+panel.style.transition = animate ? 'transform .18s ease' : 'none';
+panel.style.transform = panelOffset ? 'translateY(' + (-panelOffset) + 'px)' : '';
+};
+const setPanelMini = (on) => {
+panel.classList.toggle('dpf-stk-panel-mini', on);
+title.textContent = on ? '相框贴纸 · 点此展开' : '相框贴纸';
+if (on) {
+const tb = document.querySelector('.tabbar');
+const tbTop = tb ? tb.getBoundingClientRect().top : 0;
+const lift = tbTop > 0 ? Math.max(8, Math.round(window.innerHeight - tbTop + 8)) : 8;
+panel.style.marginBottom = lift + 'px';
+} else {
+panel.style.marginBottom = '';
+}
+panelOffset = 0;
+applyPanelTransform(false);
+};
 const panelDragMove = (e) => {
 if (!panelDrag || e.pointerId !== panelDrag.id) return;
-const max = Math.max(0, window.innerHeight - panel.offsetHeight - 8);
-const next = Math.max(0, Math.min(max, panelDrag.startOffset - (e.clientY - panelDrag.startY)));
+const dy = e.clientY - panelDrag.startY;
+if (Math.abs(dy) > 6) panelDrag.moved = true;
+const maxUp = Math.max(0, window.innerHeight - panel.offsetHeight - 8);
+const maxDown = Math.max(0, panel.offsetHeight - 54);
+const next = Math.max(-maxDown, Math.min(maxUp, panelDrag.startOffset - dy));
 panelOffset = next;
-panel.style.transform = next ? 'translateY(' + (-next) + 'px)' : '';
+applyPanelTransform(false);
 try { e.preventDefault(); } catch (er) {}
 };
 const panelDragEnd = (e) => {
@@ -9029,11 +9050,22 @@ if (!panelDrag || e.pointerId !== panelDrag.id) return;
 const d = panelDrag; panelDrag = null;
 panel.classList.remove('dpf-stk-panel-drag');
 try { if (d.el && d.el.releasePointerCapture) d.el.releasePointerCapture(e.pointerId); } catch (er) {}
+if (!d.moved) {
+if (panelOffset < 0) { panelOffset = 0; applyPanelTransform(true); }
+return;
+}
+const maxDown = Math.max(1, panel.offsetHeight - 54);
+if (panelOffset < 0) {
+if (-panelOffset > maxDown * 0.45) { setPanelMini(true); return; }
+panelOffset = 0;
+}
+applyPanelTransform(true);
 };
 const bindPanelDrag = (el) => {
 el.addEventListener('pointerdown', (e) => {
 if (e.button != null && e.button !== 0) return;
-panelDrag = { id: e.pointerId, startY: e.clientY, startOffset: panelOffset, el: el };
+if (panel.classList.contains('dpf-stk-panel-mini')) setPanelMini(false);
+panelDrag = { id: e.pointerId, startY: e.clientY, startOffset: panelOffset, moved: false, el: el };
 try { el.setPointerCapture(e.pointerId); } catch (er) {}
 panel.classList.add('dpf-stk-panel-drag');
 try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
