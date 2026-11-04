@@ -9,6 +9,8 @@
   const DESK_IMG_SIZES = { s: 40, m: 70, l: 100 };
   // #1635 拍立得相框贴纸：手绘 SVG 小图案（白色描边＝贴纸裁切边）。
   // 同样必须放顶部——启动阶段 renderDeskImages 会先于下方声明执行（TDZ）。
+  // #1636 多贴纸：一张相框最多 8 张（上限常量供渲染/面板共用）
+  const DESK_FRAME_STICKER_MAX = 8;
   const DESK_FRAME_STICKERS = [
     { id: 'heart', name: '爱心', svg: '<path d="M32 55C19 46 7 35 7 23.5A12.5 12.5 0 0 1 32 17a12.5 12.5 0 0 1 25 6.5C57 35 45 46 32 55z" fill="#e28b8b" stroke="#fff" stroke-width="3.2"/><path d="M18.5 22.5c0-4 2.8-6.7 6-7.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>' },
     { id: 'star', name: '星星', svg: '<path d="M32 5.5l7.7 16.9 18.3 2-13.7 12.5 3.7 18.1L32 46.3 16 55l3.7-18.1L6 24.4l18.3-2z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><circle cx="25" cy="26" r="2.1" fill="#fff" opacity=".7"/>' },
@@ -10390,21 +10392,23 @@ try {
         } else {
           node.classList.add('dpf-no-cap');
         }
-        // #1635 贴纸层：浮在照片上（可压住胶带/照片边角），普通状态不拦截点击
-        const stk = m.sticker && DESK_FRAME_STICKERS.find(s => s && s.id === m.sticker.id);
-        if (stk) {
+        // #1635/#1636 贴纸层：浮在照片上（可压住胶带/照片边角），普通状态不拦截点击。
+        // 旧数据是单张 meta.sticker，photoFrameStickersOf 统一读成数组；新数据存 meta.stickers。
+        const stickers = photoFrameStickersOf(m);
+        stickers.forEach((stickerMeta, si) => {
+          const stk = DESK_FRAME_STICKERS.find(s => s && s.id === stickerMeta.id);
+          if (!stk) return;
           const sp = document.createElement('span');
-          sp.className = 'dpf-sticker dpf-sticker-' + (m.sticker.size === 's' || m.sticker.size === 'l' ? m.sticker.size : 'm');
-          const sx = Number.isFinite(Number(m.sticker.x)) ? Math.max(0, Math.min(1, Number(m.sticker.x))) : 0.5;
-          const sy = Number.isFinite(Number(m.sticker.y)) ? Math.max(0, Math.min(1, Number(m.sticker.y))) : 0.5;
-          sp.style.left = (sx * 100) + '%';
-          sp.style.top = (sy * 100) + '%';
-          const si = DESK_FRAME_STICKERS.indexOf(stk);
-          sp.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
+          sp.className = 'dpf-sticker dpf-sticker-' + (stickerMeta.size === 's' || stickerMeta.size === 'l' ? stickerMeta.size : 'm');
+          sp.dataset.dpfStkIdx = String(si);
+          sp.style.left = (stickerMeta.x * 100) + '%';
+          sp.style.top = (stickerMeta.y * 100) + '%';
+          const rotBase = DESK_FRAME_STICKERS.indexOf(stk);
+          sp.style.setProperty('--stk-rot', (((rotBase + si) % 5 - 2) * 2) + 'deg');
           sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
           node.appendChild(sp);
-          bindPhotoFrameStickerDrag(node, sp, m.id);
-        }
+          bindPhotoFrameStickerDrag(node, sp, m.id, si);
+        });
       } else {
         // v3.6.x：按 meta.w 应用宽度百分比——不同图片可设不同大小（小/中/大）
         const w = DESK_IMG_SIZES.l;
@@ -10621,22 +10625,58 @@ try {
     const phone = document.getElementById('page-phone');
     return !!(phone && phone.classList.contains('decor-on'));
   }
-  function writePhotoFrameSticker(id, st) {
-    const list = loadDeskImagesMeta();
-    const mm = list.find(x => x && x.id === id);
-    if (!mm) return;
-    const valid = st && st.id && DESK_FRAME_STICKERS.some(s => s && s.id === st.id);
-    if (!valid) { delete mm.sticker; }
-    else {
+  // #1636 多贴纸数据：统一把旧单张 meta.sticker 和新 meta.stickers 读成数组。
+  // 旧数据不主动改写，只有用户真正增删/拖动/改大小后才落成新格式（关闭面板取消不迁移）。
+  function photoFrameStickersOf(meta) {
+    const raw = meta && Array.isArray(meta.stickers) ? meta.stickers
+      : (meta && meta.sticker ? [meta.sticker] : []);
+    const out = [];
+    for (let i = 0; i < raw.length && out.length < DESK_FRAME_STICKER_MAX; i++) {
+      const st = raw[i];
+      if (!st || !DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) continue;
       const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
       const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
       const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-      mm.sticker = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+      out.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
     }
+    return out;
+  }
+  function writePhotoFrameStickers(id, arr) {
+    const list = loadDeskImagesMeta();
+    const mm = list.find(x => x && x.id === id);
+    if (!mm) return;
+    const clean = [];
+    (Array.isArray(arr) ? arr : []).forEach(st => {
+      if (!st || clean.length >= DESK_FRAME_STICKER_MAX) return;
+      if (!DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) return;
+      const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
+      const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
+      const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
+      clean.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
+    });
+    // 迁移后清掉旧单张键，避免下次渲染又读回旧贴纸
+    delete mm.sticker;
+    if (clean.length) mm.stickers = clean; else delete mm.stickers;
     saveDeskImagesMeta(list);
     renderDeskImages();
   }
-  function bindPhotoFrameStickerDrag(frameNode, stickerEl, id) {
+  // #1636 新贴纸默认落点：在 8 个候选位里选离已有贴纸最远的一个，尽量不叠在一起
+  function nextPhotoFrameStickerSpot(list) {
+    const spots = [[0.72, 0.22], [0.28, 0.34], [0.74, 0.62], [0.3, 0.7], [0.52, 0.14], [0.16, 0.52], [0.86, 0.46], [0.5, 0.8]];
+    let best = spots[0], bestD = -1;
+    spots.forEach(p => {
+      let min = 1e9;
+      (Array.isArray(list) ? list : []).forEach(st => {
+        const dx = (Number(st.x) || 0) - p[0];
+        const dy = (Number(st.y) || 0) - p[1];
+        const d = dx * dx + dy * dy;
+        if (d < min) min = d;
+      });
+      if (min > bestD) { bestD = min; best = p; }
+    });
+    return { x: best[0], y: best[1] };
+  }
+  function bindPhotoFrameStickerDrag(frameNode, stickerEl, id, idx) {
     if (!frameNode || !stickerEl) return;
     let drag = null;
     let suppressClick = false;
@@ -10671,9 +10711,13 @@ try {
       setTimeout(() => { suppressClick = false; }, 400);
       const list = loadDeskImagesMeta();
       const mm = list.find(x => x && x.id === id);
-      if (!mm || !mm.sticker) return;
-      mm.sticker.x = Math.round(d.x * 1000) / 1000;
-      mm.sticker.y = Math.round(d.y * 1000) / 1000;
+      if (!mm) return;
+      const arr = photoFrameStickersOf(mm);
+      if (!arr[idx]) return;
+      arr[idx].x = Math.round(d.x * 1000) / 1000;
+      arr[idx].y = Math.round(d.y * 1000) / 1000;
+      delete mm.sticker;
+      mm.stickers = arr;
       saveDeskImagesMeta(list);
     };
     stickerEl.addEventListener('pointerup', end);
@@ -10687,24 +10731,17 @@ try {
       }
     });
   }
-  // #1635 贴纸选择面板（底部抽屉）：选图案、调大小、移除；取消恢复打开前的状态
+  // #1635/#1636 贴纸面板（底部抽屉）：点图案即新增一张；下方「已贴」列表选中后可改大小/删除；
+  // 取消恢复打开前的状态。旧单张贴纸由 photoFrameStickersOf 自动兼容。
   function openPhotoFrameStickerPicker(id) {
     const old = document.getElementById('dpf-stk-overlay');
     if (old) { try { old.remove(); } catch (e) {} }
     const meta = loadDeskImagesMeta().find(x => x && x.id === id);
     if (!meta) return;
-    const before = meta.sticker ? {
-      id: meta.sticker.id,
-      x: meta.sticker.x,
-      y: meta.sticker.y,
-      size: meta.sticker.size
-    } : null;
-    const draft = {
-      id: before ? before.id : '',
-      x: (before && Number.isFinite(Number(before.x))) ? Number(before.x) : 0.72,
-      y: (before && Number.isFinite(Number(before.y))) ? Number(before.y) : 0.22,
-      size: (before && (before.size === 's' || before.size === 'l')) ? before.size : 'm'
-    };
+    const before = photoFrameStickersOf(meta);
+    const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size }));
+    let selected = draft.length ? draft.length - 1 : -1;
+    let dirty = false;
     const overlay = document.createElement('div');
     overlay.id = 'dpf-stk-overlay';
     overlay.className = 'dpf-stk-overlay';
@@ -10715,13 +10752,17 @@ try {
     title.textContent = '相框贴纸';
     const grid = document.createElement('div');
     grid.className = 'dpf-stk-grid';
+    const placedTitle = document.createElement('div');
+    placedTitle.className = 'dpf-stk-subtitle';
+    const placedList = document.createElement('div');
+    placedList.className = 'dpf-stk-placed';
     const sizeRow = document.createElement('div');
     sizeRow.className = 'dpf-stk-sizes';
     const actions = document.createElement('div');
     actions.className = 'dpf-stk-actions';
     const tip = document.createElement('div');
     tip.className = 'dpf-stk-tip';
-    tip.textContent = '选好后在装修/编辑态下可直接拖动贴纸；小/中/大三档大小。';
+    tip.textContent = '点上方图案即新增一张（最多 ' + DESK_FRAME_STICKER_MAX + ' 张）；在「已贴」里选中一张后可改大小或删除。装修 / 网格编辑态下可直接拖动贴纸。';
     let closed = false;
     const close = (keep) => {
       if (closed) return;
@@ -10729,16 +10770,32 @@ try {
       try { overlay.remove(); } catch (e) {}
       try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
       window.mochiPhotoCropBack = null;
-      if (!keep) writePhotoFrameSticker(id, before);
+      if (!keep && dirty) writePhotoFrameStickers(id, before);
     };
     const sync = () => {
-      Array.prototype.forEach.call(grid.querySelectorAll('.dpf-stk-item'), b => {
-        b.classList.toggle('on', !!draft.id && b.dataset.sticker === draft.id);
-      });
       Array.prototype.forEach.call(sizeRow.querySelectorAll('.dpf-stk-size'), b => {
-        b.classList.toggle('on', b.dataset.size === draft.size);
+        b.classList.toggle('on', selected >= 0 && draft[selected] && b.dataset.size === draft[selected].size);
       });
-      removeBtn.hidden = !draft.id;
+      removeBtn.hidden = selected < 0;
+      placedTitle.textContent = '已贴 ' + draft.length + '/' + DESK_FRAME_STICKER_MAX + ' · 选中一张可改大小或删除';
+      placedList.innerHTML = '';
+      if (!draft.length) {
+        const empty = document.createElement('div');
+        empty.className = 'dpf-stk-placed-empty';
+        empty.textContent = '还没有贴纸，点上方图案添加';
+        placedList.appendChild(empty);
+      } else {
+        draft.forEach((st, i) => {
+          const stDef = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
+          if (!stDef) return;
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'dpf-stk-placed-item' + (i === selected ? ' on' : '');
+          b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stDef.svg + '</svg><span>' + stDef.name + '</span>';
+          b.addEventListener('click', () => { selected = i; sync(); });
+          placedList.appendChild(b);
+        });
+      }
     };
     let removeBtn;
     DESK_FRAME_STICKERS.forEach((st, si) => {
@@ -10749,8 +10806,12 @@ try {
       b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + st.svg + '</svg><span>' + st.name + '</span>';
       b.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
       b.addEventListener('click', () => {
-        draft.id = st.id;
-        writePhotoFrameSticker(id, draft);
+        if (draft.length >= DESK_FRAME_STICKER_MAX) { toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加'); return; }
+        const spot = nextPhotoFrameStickerSpot(draft);
+        draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm' });
+        selected = draft.length - 1;
+        dirty = true;
+        writePhotoFrameStickers(id, draft);
         sync();
       });
       grid.appendChild(b);
@@ -10762,9 +10823,10 @@ try {
       b.dataset.size = pair[0];
       b.textContent = pair[1];
       b.addEventListener('click', () => {
-        if (!draft.id) { toast('先选一个贴纸'); return; }
-        draft.size = pair[0];
-        writePhotoFrameSticker(id, draft);
+        if (selected < 0 || !draft[selected]) { toast('先在「已贴」里点选一张贴纸'); return; }
+        draft[selected].size = pair[0];
+        dirty = true;
+        writePhotoFrameStickers(id, draft);
         sync();
       });
       sizeRow.appendChild(b);
@@ -10777,10 +10839,13 @@ try {
     removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'dpf-stk-remove';
-    removeBtn.textContent = '移除贴纸';
+    removeBtn.textContent = '删除选中';
     removeBtn.addEventListener('click', () => {
-      draft.id = '';
-      writePhotoFrameSticker(id, null);
+      if (selected < 0) return;
+      draft.splice(selected, 1);
+      selected = draft.length ? Math.min(selected, draft.length - 1) : -1;
+      dirty = true;
+      writePhotoFrameStickers(id, draft);
       sync();
     });
     const ok = document.createElement('button');
@@ -10796,6 +10861,8 @@ try {
     actions.appendChild(ok);
     panel.appendChild(title);
     panel.appendChild(grid);
+    panel.appendChild(placedTitle);
+    panel.appendChild(placedList);
     panel.appendChild(sizeRow);
     panel.appendChild(tip);
     panel.appendChild(actions);
