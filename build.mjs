@@ -7090,7 +7090,7 @@ const FIX_SENTINELS = [
   { name: '#1637g 旋转滑杆样式（删＝滑杆挤成默认丑样式/没有角度数值）', file: 'css/home.css', needle: '.dpf-stk-rotrow {' },
   { name: '#1637h 面板草稿保留已有角度（删＝打开面板后其他贴纸的原角度被默认值覆盖）', file: 'js/personalize.js', needle: 'const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));' },
   // ==== 2026-11-04 #1638 贴纸面板可拖动 + 面板开着也能拖贴纸 ====
-  { name: '#1638a 遮罩不吃指针（删＝面板打开时拖不到照片上的贴纸）', file: 'css/home.css', needle: 'overscroll-behavior:contain; pointer-events:none;' },
+  { name: '#1638a 遮罩透明且不吃指针（删＝面板一开照片被压暗或拖不到照片上的贴纸）', file: 'css/home.css', needle: 'background:transparent; overscroll-behavior:contain; pointer-events:none;' },
   { name: '#1638b 面板本身可交互（删＝遮罩放行后连面板按钮都点不到）', file: 'css/home.css', needle: 'box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;' },
   { name: '#1638c 面板拖动把手（删＝用户不知道面板可以拖/没有抓手）', file: 'js/personalize.js', needle: "handle.className = 'dpf-stk-handle';" },
   { name: '#1638d 面板拖动绑定（删＝把手只是装饰，面板拖不动）', file: 'js/personalize.js', needle: 'const bindPanelDrag = (el) => {' },
@@ -7099,6 +7099,8 @@ const FIX_SENTINELS = [
   { name: '#1638g 面板把手样式（删＝没有可拖的视觉提示）', file: 'css/home.css', needle: '.dpf-stk-handle {' },
   { name: '#1638h 面板开着时点照片不叠开相框菜单（删＝拖贴纸时误触会反复弹菜单）', file: 'js/personalize.js', needle: "if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }" },
   { name: '#1638i 面板开着时点贴纸不冒泡开菜单（删＝轻点贴纸会叠出相框菜单）', file: 'js/personalize.js', needle: "const stkPanelOpen = !!document.getElementById('dpf-stk-overlay');" },
+  // ==== 2026-11-04 #1639 网格编辑拖贴纸不带动拍立得 ====
+  { name: '#1639b 网格编辑按贴纸不登记卡片拖动（删＝拖贴纸时整张拍立得被捕获监听一起拖走）', file: 'js/personalize.js', needle: "if (e.target.closest('.dpf-sticker')) return;" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

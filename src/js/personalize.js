@@ -8789,6 +8789,9 @@ try {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (e.target.closest('#dgr-editbar, .dgr-minus, .desk-lib, .decor-bar')) return;
       if (e.target.closest('input, textarea, select, a')) return;
+      // #1639 贴纸有自己的拖动：网格编辑里按在贴纸上时不登记卡片拖动，
+      // 否则 pagesBox 的捕获监听会先把整张拍立得拖走（贴纸跟着跑、位置反而没变）。
+      if (e.target.closest('.dpf-sticker')) return;
       const slide = e.target.closest('.page-slide');
       if (!slide) return;
       const item = e.target.closest('[data-dgr-key]');

@@ -7301,6 +7301,7 @@ if (!deskGridV2GridOn) return;
 if (e.pointerType === 'mouse' && e.button !== 0) return;
 if (e.target.closest('#dgr-editbar, .dgr-minus, .desk-lib, .decor-bar')) return;
 if (e.target.closest('input, textarea, select, a')) return;
+if (e.target.closest('.dpf-sticker')) return;
 const slide = e.target.closest('.page-slide');
 if (!slide) return;
 const item = e.target.closest('[data-dgr-key]');

@@ -723,9 +723,9 @@ html.dgr-editing .desk-photo-frame .dpf-sticker {
 /* #1635 贴纸选择面板（底部抽屉） */
 .dpf-stk-overlay {
   position:fixed; inset:0; z-index:10001; display:flex; align-items:flex-end; justify-content:center;
-  background:rgba(20,16,12,.55); overscroll-behavior:contain; pointer-events:none;
-  /* #1638 面板打开时照片上的贴纸仍可直接拖动：遮罩层不吃指针，只有面板本身拦截；
-     在面板外的空白处点按会落到桌面（取消/完成仍走面板按钮）。 */
+  background:transparent; overscroll-behavior:contain; pointer-events:none;
+  /* #1638/#1639 面板打开时不加暗色遮罩（用户要边看照片边拖贴纸）；遮罩层也不吃指针，
+     只有面板本身拦截。点面板外的照片/贴纸会直接落到桌面。 */
 }
 .dpf-stk-panel {
   box-sizing:border-box; width:min(96vw,430px); max-height:76vh; overflow:auto;
