@@ -10403,8 +10403,8 @@ try {
           sp.dataset.dpfStkIdx = String(si);
           sp.style.left = (stickerMeta.x * 100) + '%';
           sp.style.top = (stickerMeta.y * 100) + '%';
-          const rotBase = DESK_FRAME_STICKERS.indexOf(stk);
-          sp.style.setProperty('--stk-rot', (((rotBase + si) % 5 - 2) * 2) + 'deg');
+          // #1637 有手动旋转角用 rot，旧数据/新建项回默认小角度
+          sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');
           sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
           node.appendChild(sp);
           bindPhotoFrameStickerDrag(node, sp, m.id, si);
@@ -10625,6 +10625,18 @@ try {
     const phone = document.getElementById('page-phone');
     return !!(phone && phone.classList.contains('decor-on'));
   }
+  // #1637 贴纸默认旋转：沿用旧版的随机小角度（-4°~4°），未手动旋转时用它。
+  function photoFrameStickerBaseRot(st, si) {
+    const base = DESK_FRAME_STICKERS.findIndex(s => s && s.id === st.id);
+    return ((base + si) % 5 - 2) * 2;
+  }
+  // #1637 读取单张贴纸角度：有 rot 用 rot（钳到 -180~180），旧数据没有则回默认小角度。
+  function photoFrameStickerRot(st, si) {
+    if (st && st.rot != null && Number.isFinite(Number(st.rot))) {
+      return Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+    }
+    return photoFrameStickerBaseRot(st, si);
+  }
   // #1636 多贴纸数据：统一把旧单张 meta.sticker 和新 meta.stickers 读成数组。
   // 旧数据不主动改写，只有用户真正增删/拖动/改大小后才落成新格式（关闭面板取消不迁移）。
   function photoFrameStickersOf(meta) {
@@ -10637,7 +10649,10 @@ try {
       const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
       const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
       const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-      out.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
+      const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+      // #1637 手动旋转角度：仅存有效值，旧数据（没有 rot）保持默认小角度
+      if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+      out.push(item);
     }
     return out;
   }
@@ -10652,7 +10667,9 @@ try {
       const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
       const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
       const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-      clean.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
+      const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+      if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+      clean.push(item);
     });
     // 迁移后清掉旧单张键，避免下次渲染又读回旧贴纸
     delete mm.sticker;
@@ -10739,7 +10756,7 @@ try {
     const meta = loadDeskImagesMeta().find(x => x && x.id === id);
     if (!meta) return;
     const before = photoFrameStickersOf(meta);
-    const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size }));
+    const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));
     let selected = draft.length ? draft.length - 1 : -1;
     let dirty = false;
     const overlay = document.createElement('div');
@@ -10758,6 +10775,20 @@ try {
     placedList.className = 'dpf-stk-placed';
     const sizeRow = document.createElement('div');
     sizeRow.className = 'dpf-stk-sizes';
+    const rotRow = document.createElement('div');
+    rotRow.className = 'dpf-stk-rotrow';
+    const rotLabel = document.createElement('label');
+    rotLabel.textContent = '旋转';
+    const rotInput = document.createElement('input');
+    rotInput.type = 'range';
+    rotInput.min = '-180';
+    rotInput.max = '180';
+    rotInput.step = '1';
+    const rotVal = document.createElement('span');
+    rotVal.className = 'dpf-stk-rotval';
+    rotRow.appendChild(rotLabel);
+    rotRow.appendChild(rotInput);
+    rotRow.appendChild(rotVal);
     const actions = document.createElement('div');
     actions.className = 'dpf-stk-actions';
     const tip = document.createElement('div');
@@ -10777,6 +10808,13 @@ try {
         b.classList.toggle('on', selected >= 0 && draft[selected] && b.dataset.size === draft[selected].size);
       });
       removeBtn.hidden = selected < 0;
+      const hasSel = selected >= 0 && draft[selected];
+      rotRow.hidden = !hasSel;
+      if (hasSel) {
+        const r = photoFrameStickerRot(draft[selected], selected);
+        rotInput.value = String(r);
+        rotVal.textContent = r + '°';
+      }
       placedTitle.textContent = '已贴 ' + draft.length + '/' + DESK_FRAME_STICKER_MAX + ' · 选中一张可改大小或删除';
       placedList.innerHTML = '';
       if (!draft.length) {
@@ -10808,7 +10846,7 @@ try {
       b.addEventListener('click', () => {
         if (draft.length >= DESK_FRAME_STICKER_MAX) { toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加'); return; }
         const spot = nextPhotoFrameStickerSpot(draft);
-        draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm' });
+        draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm', rot: photoFrameStickerBaseRot(st, draft.length) });
         selected = draft.length - 1;
         dirty = true;
         writePhotoFrameStickers(id, draft);
@@ -10830,6 +10868,22 @@ try {
         sync();
       });
       sizeRow.appendChild(b);
+    });
+    // #1637 旋转滑杆：拖动时只实时预览当前贴纸角度，松手才落库（避免每帧重渲染）
+    rotInput.addEventListener('input', () => {
+      if (selected < 0 || !draft[selected]) return;
+      const v = Math.round(Number(rotInput.value));
+      draft[selected].rot = v;
+      rotVal.textContent = v + '°';
+      const el = document.querySelector('.desk-photo-frame .dpf-sticker[data-dpf-stk-idx="' + selected + '"]');
+      if (el) el.style.setProperty('--stk-rot', v + 'deg');
+    });
+    rotInput.addEventListener('change', () => {
+      if (selected < 0 || !draft[selected]) return;
+      draft[selected].rot = Math.round(Number(rotInput.value));
+      dirty = true;
+      writePhotoFrameStickers(id, draft);
+      sync();
     });
     const cancel = document.createElement('button');
     cancel.type = 'button';
@@ -10864,6 +10918,7 @@ try {
     panel.appendChild(placedTitle);
     panel.appendChild(placedList);
     panel.appendChild(sizeRow);
+    panel.appendChild(rotRow);
     panel.appendChild(tip);
     panel.appendChild(actions);
     overlay.appendChild(panel);

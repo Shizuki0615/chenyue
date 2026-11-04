@@ -8668,8 +8668,7 @@ sp.className = 'dpf-sticker dpf-sticker-' + (stickerMeta.size === 's' || sticker
 sp.dataset.dpfStkIdx = String(si);
 sp.style.left = (stickerMeta.x * 100) + '%';
 sp.style.top = (stickerMeta.y * 100) + '%';
-const rotBase = DESK_FRAME_STICKERS.indexOf(stk);
-sp.style.setProperty('--stk-rot', (((rotBase + si) % 5 - 2) * 2) + 'deg');
+sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');
 sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
 node.appendChild(sp);
 bindPhotoFrameStickerDrag(node, sp, m.id, si);
@@ -8875,6 +8874,16 @@ if (document.documentElement.classList.contains('dgr-editing')) return true;
 const phone = document.getElementById('page-phone');
 return !!(phone && phone.classList.contains('decor-on'));
 }
+function photoFrameStickerBaseRot(st, si) {
+const base = DESK_FRAME_STICKERS.findIndex(s => s && s.id === st.id);
+return ((base + si) % 5 - 2) * 2;
+}
+function photoFrameStickerRot(st, si) {
+if (st && st.rot != null && Number.isFinite(Number(st.rot))) {
+return Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+}
+return photoFrameStickerBaseRot(st, si);
+}
 function photoFrameStickersOf(meta) {
 const raw = meta && Array.isArray(meta.stickers) ? meta.stickers
 : (meta && meta.sticker ? [meta.sticker] : []);
@@ -8885,7 +8894,9 @@ if (!st || !DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) continue;
 const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
 const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
 const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-out.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
+const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+out.push(item);
 }
 return out;
 }
@@ -8900,7 +8911,9 @@ if (!DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) return;
 const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
 const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
 const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
-clean.push({ id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size });
+const item = { id: st.id, x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+clean.push(item);
 });
 delete mm.sticker;
 if (clean.length) mm.stickers = clean; else delete mm.stickers;
@@ -8981,7 +8994,7 @@ if (old) { try { old.remove(); } catch (e) {} }
 const meta = loadDeskImagesMeta().find(x => x && x.id === id);
 if (!meta) return;
 const before = photoFrameStickersOf(meta);
-const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size }));
+const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));
 let selected = draft.length ? draft.length - 1 : -1;
 let dirty = false;
 const overlay = document.createElement('div');
@@ -9000,6 +9013,20 @@ const placedList = document.createElement('div');
 placedList.className = 'dpf-stk-placed';
 const sizeRow = document.createElement('div');
 sizeRow.className = 'dpf-stk-sizes';
+const rotRow = document.createElement('div');
+rotRow.className = 'dpf-stk-rotrow';
+const rotLabel = document.createElement('label');
+rotLabel.textContent = '旋转';
+const rotInput = document.createElement('input');
+rotInput.type = 'range';
+rotInput.min = '-180';
+rotInput.max = '180';
+rotInput.step = '1';
+const rotVal = document.createElement('span');
+rotVal.className = 'dpf-stk-rotval';
+rotRow.appendChild(rotLabel);
+rotRow.appendChild(rotInput);
+rotRow.appendChild(rotVal);
 const actions = document.createElement('div');
 actions.className = 'dpf-stk-actions';
 const tip = document.createElement('div');
@@ -9019,6 +9046,13 @@ Array.prototype.forEach.call(sizeRow.querySelectorAll('.dpf-stk-size'), b => {
 b.classList.toggle('on', selected >= 0 && draft[selected] && b.dataset.size === draft[selected].size);
 });
 removeBtn.hidden = selected < 0;
+const hasSel = selected >= 0 && draft[selected];
+rotRow.hidden = !hasSel;
+if (hasSel) {
+const r = photoFrameStickerRot(draft[selected], selected);
+rotInput.value = String(r);
+rotVal.textContent = r + '°';
+}
 placedTitle.textContent = '已贴 ' + draft.length + '/' + DESK_FRAME_STICKER_MAX + ' · 选中一张可改大小或删除';
 placedList.innerHTML = '';
 if (!draft.length) {
@@ -9050,7 +9084,7 @@ b.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
 b.addEventListener('click', () => {
 if (draft.length >= DESK_FRAME_STICKER_MAX) { toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加'); return; }
 const spot = nextPhotoFrameStickerSpot(draft);
-draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm' });
+draft.push({ id: st.id, x: spot.x, y: spot.y, size: 'm', rot: photoFrameStickerBaseRot(st, draft.length) });
 selected = draft.length - 1;
 dirty = true;
 writePhotoFrameStickers(id, draft);
@@ -9072,6 +9106,21 @@ writePhotoFrameStickers(id, draft);
 sync();
 });
 sizeRow.appendChild(b);
+});
+rotInput.addEventListener('input', () => {
+if (selected < 0 || !draft[selected]) return;
+const v = Math.round(Number(rotInput.value));
+draft[selected].rot = v;
+rotVal.textContent = v + '°';
+const el = document.querySelector('.desk-photo-frame .dpf-sticker[data-dpf-stk-idx="' + selected + '"]');
+if (el) el.style.setProperty('--stk-rot', v + 'deg');
+});
+rotInput.addEventListener('change', () => {
+if (selected < 0 || !draft[selected]) return;
+draft[selected].rot = Math.round(Number(rotInput.value));
+dirty = true;
+writePhotoFrameStickers(id, draft);
+sync();
 });
 const cancel = document.createElement('button');
 cancel.type = 'button';
@@ -9106,6 +9155,7 @@ panel.appendChild(grid);
 panel.appendChild(placedTitle);
 panel.appendChild(placedList);
 panel.appendChild(sizeRow);
+panel.appendChild(rotRow);
 panel.appendChild(tip);
 panel.appendChild(actions);
 overlay.appendChild(panel);

@@ -759,6 +759,12 @@ html.dgr-editing .desk-photo-frame .dpf-sticker {
   font-size:12px; cursor:pointer;
 }
 .dpf-stk-size.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
+/* #1637 单张贴纸旋转滑杆（选中已贴贴纸后出现） */
+.dpf-stk-rotrow { display:flex; align-items:center; gap:8px; margin-top:12px; }
+.dpf-stk-rotrow[hidden] { display:none; }
+.dpf-stk-rotrow label { flex:none; font-size:11.5px; color:var(--muted,#888); }
+.dpf-stk-rotrow input[type=range] { flex:1; min-width:0; }
+.dpf-stk-rotval { flex:none; width:42px; text-align:right; font-size:11px; color:var(--muted,#999); }
 .dpf-stk-tip { margin-top:10px; font-size:10.5px; line-height:1.5; color:var(--muted,#999); text-align:center; }
 .dpf-stk-actions { display:flex; gap:8px; margin-top:12px; }
 .dpf-stk-actions button { flex:1; padding:10px 0; border:none; border-radius:11px; font-size:12.5px; font-weight:600; cursor:pointer; }

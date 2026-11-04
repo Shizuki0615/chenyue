@@ -7080,6 +7080,15 @@ const FIX_SENTINELS = [
   { name: '#1636h 拖动按索引写回数组（删＝拖第 2 张却改到第 1 张）', file: 'js/personalize.js', needle: 'if (!arr[idx]) return;' },
   { name: '#1636i 新格式落库并清旧键（删＝旧单张与新数组两份数据重复渲染）', file: 'js/personalize.js', needle: 'if (clean.length) mm.stickers = clean; else delete mm.stickers;' },
   { name: '#1636j 已贴列表样式（删＝列表项没有选中态/挤成文字堆）', file: 'css/home.css', needle: '.dpf-stk-placed-item {' },
+  // ==== 2026-11-04 #1637 单张贴纸手动旋转（选中后拖 -180~180° 滑杆） ====
+  { name: '#1637a 贴纸角度读取（删＝手动旋转角度不生效/被默认小角度覆盖）', file: 'js/personalize.js', needle: 'function photoFrameStickerRot(st, si) {' },
+  { name: '#1637b 渲染应用手动角度（删＝存了角度但画面不转）', file: 'js/personalize.js', needle: "sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');" },
+  { name: '#1637c 贴纸面板旋转滑杆（删＝用户没有旋转入口）', file: 'js/personalize.js', needle: "rotRow.className = 'dpf-stk-rotrow';" },
+  { name: '#1637d 拖动滑杆实时预览（删＝拖的时候看不到角度变化）', file: 'js/personalize.js', needle: "el.style.setProperty('--stk-rot', v + 'deg');" },
+  { name: '#1637e 松手落库旋转角度（删＝刷新后角度回默认）', file: 'js/personalize.js', needle: 'draft[selected].rot = Math.round(Number(rotInput.value));' },
+  { name: '#1637f 旋转角度随贴纸数据存取（删＝导出/导入/拖动后角度丢失）', file: 'js/personalize.js', needle: 'if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));' },
+  { name: '#1637g 旋转滑杆样式（删＝滑杆挤成默认丑样式/没有角度数值）', file: 'css/home.css', needle: '.dpf-stk-rotrow {' },
+  { name: '#1637h 面板草稿保留已有角度（删＝打开面板后其他贴纸的原角度被默认值覆盖）', file: 'js/personalize.js', needle: 'const draft = before.map(s => ({ id: s.id, x: s.x, y: s.y, size: s.size, rot: s.rot }));' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
