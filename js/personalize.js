@@ -8982,6 +8982,12 @@ stickerEl.addEventListener('pointerup', end);
 stickerEl.addEventListener('pointercancel', end);
 stickerEl.addEventListener('click', (e) => {
 if (!canEditPhotoFrameSticker()) return;
+const stkPanelOpen = !!document.getElementById('dpf-stk-overlay');
+if (stkPanelOpen) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+suppressClick = false;
+return;
+}
 if (suppressClick) {
 try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
 suppressClick = false;
@@ -9005,6 +9011,38 @@ panel.className = 'dpf-stk-panel';
 const title = document.createElement('div');
 title.className = 'dpf-stk-title';
 title.textContent = '相框贴纸';
+const handle = document.createElement('div');
+handle.className = 'dpf-stk-handle';
+let panelOffset = 0;
+let panelDrag = null;
+const panelDragMove = (e) => {
+if (!panelDrag || e.pointerId !== panelDrag.id) return;
+const max = Math.max(0, window.innerHeight - panel.offsetHeight - 8);
+const next = Math.max(0, Math.min(max, panelDrag.startOffset - (e.clientY - panelDrag.startY)));
+panelOffset = next;
+panel.style.transform = next ? 'translateY(' + (-next) + 'px)' : '';
+try { e.preventDefault(); } catch (er) {}
+};
+const panelDragEnd = (e) => {
+if (!panelDrag || e.pointerId !== panelDrag.id) return;
+const d = panelDrag; panelDrag = null;
+panel.classList.remove('dpf-stk-panel-drag');
+try { if (d.el && d.el.releasePointerCapture) d.el.releasePointerCapture(e.pointerId); } catch (er) {}
+};
+const bindPanelDrag = (el) => {
+el.addEventListener('pointerdown', (e) => {
+if (e.button != null && e.button !== 0) return;
+panelDrag = { id: e.pointerId, startY: e.clientY, startOffset: panelOffset, el: el };
+try { el.setPointerCapture(e.pointerId); } catch (er) {}
+panel.classList.add('dpf-stk-panel-drag');
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+});
+};
+bindPanelDrag(handle);
+bindPanelDrag(title);
+window.addEventListener('pointermove', panelDragMove);
+window.addEventListener('pointerup', panelDragEnd);
+window.addEventListener('pointercancel', panelDragEnd);
 const grid = document.createElement('div');
 grid.className = 'dpf-stk-grid';
 const placedTitle = document.createElement('div');
@@ -9038,6 +9076,11 @@ if (closed) return;
 closed = true;
 try { overlay.remove(); } catch (e) {}
 try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+try {
+window.removeEventListener('pointermove', panelDragMove);
+window.removeEventListener('pointerup', panelDragEnd);
+window.removeEventListener('pointercancel', panelDragEnd);
+} catch (e) {}
 window.mochiPhotoCropBack = null;
 if (!keep && dirty) writePhotoFrameStickers(id, before);
 };
@@ -9150,6 +9193,7 @@ window.mochiPhotoCropBack = () => { close(false); return true; };
 actions.appendChild(cancel);
 actions.appendChild(removeBtn);
 actions.appendChild(ok);
+panel.appendChild(handle);
 panel.appendChild(title);
 panel.appendChild(grid);
 panel.appendChild(placedTitle);
@@ -9292,6 +9336,7 @@ const phone = document.getElementById('page-phone');
 const isDecor = phone && phone.classList.contains('decor-on');
 const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
 if (frameMeta && frameMeta.frame === 'polaroid') {
+if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }
 if (isDecor) {
 e.stopPropagation();
 openPhotoFrameMenu(id);

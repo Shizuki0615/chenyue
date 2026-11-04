@@ -723,15 +723,24 @@ html.dgr-editing .desk-photo-frame .dpf-sticker {
 /* #1635 贴纸选择面板（底部抽屉） */
 .dpf-stk-overlay {
   position:fixed; inset:0; z-index:10001; display:flex; align-items:flex-end; justify-content:center;
-  background:rgba(20,16,12,.55); overscroll-behavior:contain;
+  background:rgba(20,16,12,.55); overscroll-behavior:contain; pointer-events:none;
+  /* #1638 面板打开时照片上的贴纸仍可直接拖动：遮罩层不吃指针，只有面板本身拦截；
+     在面板外的空白处点按会落到桌面（取消/完成仍走面板按钮）。 */
 }
 .dpf-stk-panel {
   box-sizing:border-box; width:min(96vw,430px); max-height:76vh; overflow:auto;
   padding:16px 14px calc(14px + env(safe-area-inset-bottom,0px));
   background:var(--card-bg,#fff); border-radius:22px 22px 0 0;
-  box-shadow:0 -10px 30px rgba(0,0,0,.22);
+  box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;
 }
-.dpf-stk-title { font-size:15px; font-weight:700; color:var(--ink,#111); text-align:center; margin-bottom:12px; }
+/* #1638 面板可上下拖动：顶部小把手 + 标题行都能拖，拖高后少挡照片 */
+.dpf-stk-handle {
+  width:38px; height:4px; margin:0 auto 8px; border-radius:99px;
+  background:rgba(0,0,0,.18); touch-action:none; cursor:grab;
+}
+.dpf-stk-panel-drag .dpf-stk-handle { cursor:grabbing; }
+.dpf-stk-title { font-size:15px; font-weight:700; color:var(--ink,#111); text-align:center; margin-bottom:12px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+.dpf-stk-panel-drag .dpf-stk-title { cursor:grabbing; }
 .dpf-stk-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
 .dpf-stk-item {
   border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px; background:#fffaf0;

@@ -10742,6 +10742,13 @@ try {
     // 编辑态下：拖动后不触发相框菜单；单纯点贴纸则让 click 冒泡，照常打开菜单
     stickerEl.addEventListener('click', (e) => {
       if (!canEditPhotoFrameSticker()) return;
+      // #1638 贴纸面板开着时遮罩已放行指针：点贴纸只用于拖动/选中，不再冒泡打开相框菜单
+      const stkPanelOpen = !!document.getElementById('dpf-stk-overlay');
+      if (stkPanelOpen) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+        suppressClick = false;
+        return;
+      }
       if (suppressClick) {
         try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
         suppressClick = false;
@@ -10767,6 +10774,39 @@ try {
     const title = document.createElement('div');
     title.className = 'dpf-stk-title';
     title.textContent = '相框贴纸';
+    // #1638 面板上下拖动：把手 + 标题行都能拖；拖高少挡照片，拖回底部还原
+    const handle = document.createElement('div');
+    handle.className = 'dpf-stk-handle';
+    let panelOffset = 0;
+    let panelDrag = null;
+    const panelDragMove = (e) => {
+      if (!panelDrag || e.pointerId !== panelDrag.id) return;
+      const max = Math.max(0, window.innerHeight - panel.offsetHeight - 8);
+      const next = Math.max(0, Math.min(max, panelDrag.startOffset - (e.clientY - panelDrag.startY)));
+      panelOffset = next;
+      panel.style.transform = next ? 'translateY(' + (-next) + 'px)' : '';
+      try { e.preventDefault(); } catch (er) {}
+    };
+    const panelDragEnd = (e) => {
+      if (!panelDrag || e.pointerId !== panelDrag.id) return;
+      const d = panelDrag; panelDrag = null;
+      panel.classList.remove('dpf-stk-panel-drag');
+      try { if (d.el && d.el.releasePointerCapture) d.el.releasePointerCapture(e.pointerId); } catch (er) {}
+    };
+    const bindPanelDrag = (el) => {
+      el.addEventListener('pointerdown', (e) => {
+        if (e.button != null && e.button !== 0) return;
+        panelDrag = { id: e.pointerId, startY: e.clientY, startOffset: panelOffset, el: el };
+        try { el.setPointerCapture(e.pointerId); } catch (er) {}
+        panel.classList.add('dpf-stk-panel-drag');
+        try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+      });
+    };
+    bindPanelDrag(handle);
+    bindPanelDrag(title);
+    window.addEventListener('pointermove', panelDragMove);
+    window.addEventListener('pointerup', panelDragEnd);
+    window.addEventListener('pointercancel', panelDragEnd);
     const grid = document.createElement('div');
     grid.className = 'dpf-stk-grid';
     const placedTitle = document.createElement('div');
@@ -10800,6 +10840,11 @@ try {
       closed = true;
       try { overlay.remove(); } catch (e) {}
       try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+      try {
+        window.removeEventListener('pointermove', panelDragMove);
+        window.removeEventListener('pointerup', panelDragEnd);
+        window.removeEventListener('pointercancel', panelDragEnd);
+      } catch (e) {}
       window.mochiPhotoCropBack = null;
       if (!keep && dirty) writePhotoFrameStickers(id, before);
     };
@@ -10913,6 +10958,7 @@ try {
     actions.appendChild(cancel);
     actions.appendChild(removeBtn);
     actions.appendChild(ok);
+    panel.appendChild(handle);
     panel.appendChild(title);
     panel.appendChild(grid);
     panel.appendChild(placedTitle);
@@ -11058,6 +11104,8 @@ try {
       const isDecor = phone && phone.classList.contains('decor-on');
       const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
       if (frameMeta && frameMeta.frame === 'polaroid') {
+        // #1638 贴纸面板开着时点照片不再叠开相框菜单（此时照片区域用于拖贴纸）
+        if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }
         // #1628 相框：装修态进管理菜单；平时点开大图
         if (isDecor) {
           e.stopPropagation();
