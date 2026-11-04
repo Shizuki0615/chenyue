@@ -1317,32 +1317,38 @@ const padL = parseFloat(cs.paddingLeft) || 0;
 const padR = parseFloat(cs.paddingRight) || 0;
 const padT = parseFloat(cs.paddingTop) || 0;
 const padB = parseFloat(cs.paddingBottom) || 0;
-const w = Math.max(80, body.clientWidth - padL - padR);
-const h = Math.max(80, body.clientHeight - padT - padB);
+const rect = body.getBoundingClientRect();
+const w = Math.max(80, rect.width - padL - padR);
+const h = Math.max(80, rect.height - padT - padB);
 const fs = parseFloat(cs.fontSize) || 17;
 let lh = parseFloat(cs.lineHeight);
 if (!lh || isNaN(lh)) lh = fs * 1.8;
 const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
 if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
+const pages = paginate(text, w, h, fs, lh, cs);
 RD_PAGE_CACHE[key] = pages;
 const keys = Object.keys(RD_PAGE_CACHE);
 if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
 return pages;
 }
-function paginate(text, w, h, fs, lh, ff) {
+function paginate(text, w, h, fs, lh, cs) {
 const src = String(text == null ? '' : text);
 const n = src.length;
 if (!n) return [{ s: 0, e: 0 }];
 const box = document.createElement('div');
 box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;' +
-'white-space:pre-wrap;word-break:break-word;box-sizing:border-box;width:' + w + 'px;' +
+'white-space:pre-wrap;box-sizing:border-box;width:' + w + 'px;' +
 'font-size:' + fs + 'px;line-height:' + lh + 'px;';
-if (ff) box.style.fontFamily = ff;
+if (cs) {
+if (cs.fontFamily) box.style.fontFamily = cs.fontFamily;
+box.style.wordBreak = cs.wordBreak || 'normal';
+box.style.overflowWrap = cs.overflowWrap || 'normal';
+if (cs.lineBreak) box.style.lineBreak = cs.lineBreak;
+}
 document.body.appendChild(box);
 const indents = Array.from(rdFindParaStarts(src));
 function measure(a, z) {
-if (!indents.length) { box.textContent = src.slice(a, z); return; }
+if (z <= a) { box.innerHTML = ''; return; }
 let lo2 = 0, hi2 = indents.length - 1;
 while (lo2 <= hi2) {
 const m2 = (lo2 + hi2) >> 1;
@@ -1350,10 +1356,10 @@ if (indents[m2] < a) lo2 = m2 + 1; else hi2 = m2 - 1;
 }
 let out = '', cur = a;
 for (let i = lo2; i < indents.length && indents[i] < z; i++) {
-out += src.slice(cur, indents[i]) + RD_INDENT;
+out += rdEsc(src.slice(cur, indents[i])) + '<span class="rd-ind"></span>';
 cur = indents[i];
 }
-box.textContent = out + src.slice(cur, z);
+box.innerHTML = out + rdEsc(src.slice(cur, z));
 }
 const pages = [];
 let s = 0;
@@ -2930,7 +2936,6 @@ try { store.set('reading-device-id', id); } catch (e) {}
 }
 return id;
 }
-const RD_INDENT = '\u3000\u3000';
 function rdFindParaStarts(text) {
 const src = String(text == null ? '' : text);
 const set = new Set();
