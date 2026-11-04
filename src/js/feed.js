@@ -1537,7 +1537,7 @@
         ? '<div class="ta-empty">' + esc(bucket.label) + '还没有动态<br><span style="font-size:12px">点上面那条胶囊翻更早的月份</span></div>'
         : ((feedSyncCold || (window.mochiDataPending && window.mochiDataPending()))
           ? window.mochiLoadingHtml('朋友圈内容')
-          : '<div class="ta-empty">还没有动态，他会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
+          : '<div class="ta-empty">还没有动态，他 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
     feedRenderRangeBar(buckets);
     feedRenderSig = sig;
     const clearBtn = document.getElementById('feed-head-clear');
@@ -2714,9 +2714,7 @@ function submitComment() {
   // v3.7.x：评论回应用「动态所属桌面」TA 的设置/字卡库（不再混当前桌面）
   const pcfg = feedCfgFor(p.owner || 'default');
   const commentText = pickReplyContent(pcfg, p.owner || 'default');
-  // 2026-10-28：记下我这条评论的 ts——TA 稍后回应时按它定位，把回复挂进这一条的楼中楼
-  const myCommentTs = Date.now();
-  p.comments.push(stampAuthor({ content: content, ts: myCommentTs, replies: [] }, activeMe()));
+  p.comments.push(stampAuthor({ content: content, ts: Date.now(), replies: [] }, activeMe()));
   save(list);
   hideCommentBar();
   refreshPostCard(pid);
@@ -2731,18 +2729,7 @@ function submitComment() {
       if (!p2b) return;
       p2b.comments = p2b.comments || [];
       const taText = pickReplyContent(cfg, p2b.owner || 'default');
-      // 2026-10-28：他回应我的评论＝挂进该评论的楼中楼（缩进 + 「他回复 我」），
-      // 不再 push 成一条新的顶级评论——旧写法两条平铺、看不出是我俩在对话。
-      // 按提交时记下的 ts 定点定位（期间可能已有别的评论插进来，不能认「最后一条」）。
-      let myCi = -1;
-      for (let i = p2b.comments.length - 1; i >= 0; i--) {
-        const c0 = p2b.comments[i];
-        if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === 'me') { myCi = i; break; }
-      }
-      if (myCi < 0) return; // 评论已被删/数据被清：宁可静默，也不把回复写成一条无主的顶级评论
-      const myC = p2b.comments[myCi];
-      myC.replies = myC.replies || [];
-      myC.replies.push(stampAuthor({ content: taText, ts: Date.now(), to: myC.authorName || feedUserName() }, taAuthorOf(p2b)));
+      p2b.comments.push(stampAuthor({ content: taText, ts: Date.now(), replies: [] }, taAuthorOf(p2b)));
       save(list2);
       refreshPostCard(pid);
       // v3.11.x：修复「评论联系人的朋友圈，联系人回复没有提醒」——原实现只在
@@ -2750,8 +2737,7 @@ function submitComment() {
       // 改为两种情况都通知：我的动态→「评论了你的动态」；TA 的动态→「回复了你的评论」，
       // 并带上内容预览与定位（点击通知直接闪到那条评论）。
       const taName2 = p2b.taName || taFeedNameFor(p2b.owner || 'default');
-      // 2026-10-28：定位到楼内那条回复（ri），点通知直接闪到具体回复而不是整条评论
-      const loc = { ci: myCi, ri: myC.replies.length - 1 };
+      const loc = { ci: p2b.comments.length - 1 };
       if ((p2b.role || p2.by) === 'me') addNotice('comment', p2b.id, taName2 + ' 评论了你的动态：' + noticeTextClean(taText), p2b.owner || 'default', loc);
       else addNotice('comment', p2b.id, taName2 + ' 回复了你的评论：' + noticeTextClean(taText), p2b.owner || 'default', loc);
       } catch (eC) {} });
@@ -3240,7 +3226,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
           fav.push(Object.assign({ by: 'ta' }, f));
           s.set('fav-msgs', JSON.stringify(fav));
           if (cid === (window.__activeCid || 'default')) {
-            toast(window.taFit ? window.taFit('他收藏了你的朋友圈动态') : '他收藏了你的朋友圈动态');
+            toast(window.taFit ? window.taFit('他 收藏了你的朋友圈动态') : '他 收藏了你的朋友圈动态');
           }
         }, (ccfg.likeSpeedMin + Math.random() * Math.max(1, ccfg.likeSpeedMax - ccfg.likeSpeedMin)) * 1000);
       }
@@ -3832,7 +3818,7 @@ if (comInput) comInput.addEventListener('keydown', (e) => { if (e.key === 'Enter
         const np = document.getElementById('feed-notice-panel');
         if (np && !np.hidden) renderNotices();
         toast('朋友圈数据已全部清除');
-      }, { noInput: true, staticText: '将删除全部动态（我的与他的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
+      }, { noInput: true, staticText: '将删除全部动态（我的与 他 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
     });
   }
   // v3.6.x：朋友圈页顶部「删除全部动态」——可只删我的动态 / 只删联系人的动态 / 全部删除

@@ -219,7 +219,7 @@ function mailRescueClick() {
 if (mailRescueFlight) { toast('正在从本地库读取…'); return; }
 toast('正在从本地库找回…');
 mailRescueRun(undefined, function (r) {
-if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带他回信 ' + r.rp + ' 封）' : ''));
+if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带 他 回信 ' + r.rp + ' 封）' : ''));
 else if (r && r.why === 'absent') toast('本地库里没有这一格（可能从未落地）');
 else if (r && r.why === 'noidb') toast('这台设备没有可用的本地库');
 else toast('本地库这次没读出来（存储正忙）：过几秒再点一次');
@@ -347,9 +347,7 @@ const el = document.getElementById(id);
 return el && !el.hidden;
 });
 }
-let mailJumpId = null, mailJumpAt = 0, mailJumpRetried = false;
-function openMailPage(keepJump) {
-if (keepJump !== true) mailJumpId = null;
+function openMailPage() {
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 const mp = document.getElementById('page-mail');
 if (mp) mp.hidden = false;
@@ -358,22 +356,6 @@ render();
 updateBadge();
 }
 window.openMailPage = openMailPage;
-function openMailLetter(id) {
-if (!id) { openMailPage(); return; }
-mailJumpId = String(id);
-mailJumpAt = Date.now();
-mailJumpRetried = false;
-try {
-const l = load().find(x => x.id === mailJumpId);
-if (l) {
-selectMailTab(l.type === 'sent' ? 'out' : 'in');
-const mk = jumpFoldKey(l);
-if (mk) mailFoldOpen[mk] = true;
-}
-} catch (e) {}
-openMailPage(true);
-}
-window.openMailLetter = openMailLetter;
 function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function renderBody(content, fit) {
 const s = mailCleanDisplay(String(content || ''));
@@ -541,7 +523,7 @@ replyPendingSave(pending);
 }
 save(list);
 viewLetter = null;
-if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+showPage('page-mail');
 selectMailTab('in');
 render();
 updateBadge();
@@ -549,7 +531,7 @@ if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 回了一封
 toast('回信已寄出');
 if (Math.random() * 100 < (window.favCfg ? window.favCfg().taMail : 30) && window.addTaFavItem) {
 window.addTaFavItem({ kind: 'mail', title: l.tt || '', text: val, ts: Date.now() });
-setTimeout(() => toast(window.taFit ? window.taFit('他收藏了你的回信') : '他收藏了你的回信'), 1200);
+setTimeout(() => toast(window.taFit ? window.taFit('他 收藏了你的回信') : '他 收藏了你的回信'), 1200);
 }
 }
 }
@@ -561,10 +543,10 @@ function replyPendingSave(arr, cid) { try { csFor(cid).set(REPLY_PENDING_KEY, JS
 function notifyMailToChat(cid, text, opts) {
 const cur = window.__activeCid || 'default';
 if (cid === cur) {
-if (window.chatAddSystem) window.chatAddSystem(text, { mailNotice: !!(opts && opts.mailNotice), mailId: opts && opts.mailId });
+if (window.chatAddSystem) window.chatAddSystem(text, { mailNotice: !!(opts && opts.mailNotice) });
 return;
 }
-if (window.chatAppendToDeskMsg) { window.chatAppendToDeskMsg(cid, text, { mailNotice: !!(opts && opts.mailNotice), mailId: opts && opts.mailId }); }
+if (window.chatAppendToDeskMsg) { window.chatAppendToDeskMsg(cid, text, { mailNotice: !!(opts && opts.mailNotice) }); }
 }
 function partnerNameFor(cid) {
 try {
@@ -596,13 +578,11 @@ const idx = list.findIndex(x => x.id === p.id);
 if (idx < 0) { changed = true; return; }          // 信件已不存在 → 丢弃计划
 if (list[idx].partnerReply) { changed = true; return; } // 已有 TA 回信 → 丢弃计划
 if (p.due > now) { rest.push(p); return; }        // 未到期 → 保留
-const target = list[idx];
-target.partnerReply = { content: p.content, tm: now };
+list[idx].partnerReply = { content: p.content, tm: now };
 landed = true;
-const targetTitle = String(target.tt || '').trim();
-notifyMailToChat(cid, name + ' 给你回了信' + (targetTitle ? '：《' + targetTitle + '》' : ''), { mailNotice: true, mailId: target.id });
+notifyMailToChat(cid, name + ' 给你回了信', { mailNotice: true });
 if (cid === (window.__activeCid || 'default') && window.showDeskPopup && !mailPageVisible()) {
-window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你回了一封信：' + String(p.content || '')), onClick: function () { openMailLetter(target.id); }, isHidden: document.visibilityState === 'hidden' });
+window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你回了一封信：' + String(p.content || '')), onClick: openMailPage, isHidden: document.visibilityState === 'hidden' });
 }
 changed = true;
 });
@@ -686,7 +666,7 @@ if (inEl) {
 const inHtml = mailGroupedHtml(inList, 'in', name);
 inEl.innerHTML = mailRescueStrip() + (inHtml || (mailEmptyIsLie() && window.mochiLoadingHtml
 ? window.mochiLoadingHtml('收到的信')
-: '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等他吧') : '还没有收到信，等等他吧') + '</div>'));
+: '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等 他 吧') : '还没有收到信，等等 他 吧') + '</div>'));
 if (inList.length && inEl.querySelectorAll('.mail-item').length < inList.length) inEl.innerHTML = mailRescueStrip() + inHtml;
 }
 const outList = list.filter(l => l.type === 'sent');
@@ -697,59 +677,6 @@ outEl.innerHTML = outHtml || (mailEmptyIsLie() && window.mochiLoadingHtml
 : '<div class="ta-empty">还没有寄出任何信，提笔写一封吧</div>');
 if (outList.length && outEl.querySelectorAll('.mail-item').length < outList.length) outEl.innerHTML = outHtml;
 }
-try { applyMailJump(); } catch (e) {}
-}
-function jumpFoldKey(l) {
-const dir = l.type === 'sent' ? 'out' : 'in';
-const tm = Number(l.tm) || 0;
-if (tm && tm >= weekStartTs(Date.now())) return null;
-return dir + '|' + (tm ? monthKeyOf(tm) : 'none');
-}
-function applyMailJump() {
-if (!mailJumpId) return;
-if (Date.now() - mailJumpAt > 8000) { mailJumpId = null; return; }
-let l = null;
-try { l = load().find(x => x.id === mailJumpId); } catch (e) {}
-if (!l) {
-if (mailDbReady) { mailJumpId = null; toast('这封信已经不在了'); }
-return;
-}
-const dir = l.type === 'sent' ? 'out' : 'in';
-selectMailTab(dir);
-const mk = jumpFoldKey(l);
-if (mk) {
-mailFoldOpen[mk] = true;
-const fold = document.querySelector('#page-mail .mail-fold[data-mail-fold="' + mk + '"]');
-if (fold && !fold.classList.contains('open')) {
-fold.classList.add('open');
-const head = fold.querySelector('.mail-fold-head');
-if (head) head.setAttribute('aria-expanded', 'true');
-}
-}
-const listEl = document.getElementById(dir === 'in' ? 'mail-in-list' : 'mail-out-list');
-if (!listEl) return;
-let item = null;
-const items = listEl.querySelectorAll('.mail-item');
-for (let i = 0; i < items.length; i++) {
-if (items[i].dataset.id === l.id) { item = items[i]; break; }
-}
-if (!item) {
-if (!mailJumpRetried) {
-mailJumpRetried = true;
-try { render(); } catch (e) {}
-} else if (mailDbReady) {
-mailJumpId = null;
-toast('这封信已经不在了');
-}
-return;
-}
-setTimeout(function () {
-try {
-item.classList.add('mail-jump-hit');
-item.scrollIntoView({ block: 'center', behavior: 'smooth' });
-} catch (e) {}
-setTimeout(function () { try { item.classList.remove('mail-jump-hit'); } catch (e) {} }, 2800);
-}, 60);
 }
 if (window.mochiOnDataReady) window.mochiOnDataReady(function () { try { render(); } catch (e) {} });
 function mailListItemClick(e) {
@@ -805,10 +732,10 @@ replyPendingSave(pending);
 }
 if (input) input.value = '';
 if (input && input.__ceBox) input.__ceBox.textContent = '';
-if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 写了一封信' + (letter.tt ? '：《' + letter.tt + '》' : ''), { mailNotice: true, mailId: letter.id });
+if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 写了一封信', { mailNotice: true });
 toast('信件已寄出');
 render();
-if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+showPage('page-mail');
 selectMailTab('out');
 render();
 }
@@ -1080,12 +1007,12 @@ save(list, cid);
 cs.set('mail-letter-last', String(now));
 cs.set('mail-letter-next', String(cfg.writeMin + Math.random() * Math.max(1, cfg.writeMax - cfg.writeMin)));
 letterDayAdd(cid);
-notifyMailToChat(cid, '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + name + ' 给你寄来了一封信' + (letter.tt ? '：《' + letter.tt + '》' : ''), { mailNotice: true, mailId: letter.id });
+notifyMailToChat(cid, '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + name + ' 给你寄来了一封信', { mailNotice: true });
 if (cid === (window.__activeCid || 'default')) {
 updateBadge();
 render();
 if (window.showDeskPopup && !mailPageVisible()) {
-window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你寄来了一封信：' + String(content || '')), onClick: function () { openMailLetter(letter.id); }, isHidden: document.visibilityState === 'hidden' });
+window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你寄来了一封信：' + String(content || '')), onClick: openMailPage, isHidden: document.visibilityState === 'hidden' });
 }
 }
 } catch (e) {}
@@ -1216,7 +1143,6 @@ openMailPage();
 }
 const mailBack = document.getElementById('mail-back');
 if (mailBack) mailBack.addEventListener('click', () => {
-if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 const phone = document.getElementById('page-phone');
 if (phone) phone.hidden = false;
@@ -1230,20 +1156,11 @@ showPage('page-mail-write');
 });
 }
 const mailWriteBack = document.getElementById('mail-write-back');
-if (mailWriteBack) mailWriteBack.addEventListener('click', () => {
-if (window.closeEmojiPanel) window.closeEmojiPanel();
-if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
-render();
-});
+if (mailWriteBack) mailWriteBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); showPage('page-mail'); render(); });
 const mailSend = document.getElementById('mail-send');
 if (mailSend) mailSend.addEventListener('click', sendLetter);
 const mailReplyBack = document.getElementById('mail-reply-back');
-if (mailReplyBack) mailReplyBack.addEventListener('click', () => {
-if (window.closeEmojiPanel) window.closeEmojiPanel();
-viewLetter = null;
-if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
-render();
-});
+if (mailReplyBack) mailReplyBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); viewLetter = null; showPage('page-mail'); render(); });
 const mailReplySend = document.getElementById('mail-reply-send');
 if (mailReplySend) mailReplySend.addEventListener('click', submitReply);
 function selectMailTab(name) {
@@ -1252,7 +1169,7 @@ document.querySelectorAll('#page-mail .fav-tab').forEach(x => x.classList.toggle
 document.querySelectorAll('#page-mail .cal-card').forEach(c => { c.hidden = c.dataset.mpanel !== name; });
 }
 document.querySelectorAll('#page-mail .fav-tab').forEach(tab => {
-tab.addEventListener('click', () => { mailJumpId = null; selectMailTab(tab.dataset.mtab); });
+tab.addEventListener('click', () => selectMailTab(tab.dataset.mtab));
 });
 function mailInsertInto(textarea, s) {
 if (!textarea) return;

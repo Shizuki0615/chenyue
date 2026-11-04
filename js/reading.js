@@ -1153,37 +1153,6 @@ if (imp) imp.hidden = true;
 rdApplyChrome();
 rdRenderShelf();
 }
-function rdBackOne() {
-if (!page || page.hidden) return false;
-if (settingsPage && !settingsPage.hidden) return false; // 设置页是独立 .page，交给页面栈
-const layers = [
-['rd-live-drawer', rdCloseLiveDrawer],
-['rd-book-menu', rdCloseBookMenu],
-['rd-group-menu', rdCloseGroupMenu],
-['rd-book-group-menu', rdCloseGroupMenu],
-['rd-anno-ops', rdCloseAnnoOps],
-['rd-anno-preview', rdClosePreview],
-['rd-anno-sheet', rdCloseSheet],
-['rd-buddy-card', rdCloseBuddyCard],
-['rd-toc', function () { closeToc(true); }],
-['rd-toc-mask', function () { closeToc(true); }],
-['rd-anno-pop', rdClosePop],
-['rd-lost', rdCloseLost],
-['rd-import-panel', rdCloseImport],
-];
-for (let i = 0; i < layers.length; i++) {
-const el = document.getElementById(layers[i][0]);
-if (el && !el.hidden) { try { layers[i][1](); } catch (e) {} return true; }
-}
-const reader = document.getElementById('rd-reader');
-if (reader && !reader.hidden) { rdShowShelf(); return true; }
-const shelf = document.getElementById('rd-shelf');
-if (shelf && !shelf.hidden && rdViewGroupId !== null) {
-rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return true;
-}
-return false;
-}
-window.mochiReadingBack = rdBackOne;
 async function rdOpenBook(id) {
 const list = readIndex();
 const book = rdFindBook(id, list);
@@ -1317,38 +1286,32 @@ const padL = parseFloat(cs.paddingLeft) || 0;
 const padR = parseFloat(cs.paddingRight) || 0;
 const padT = parseFloat(cs.paddingTop) || 0;
 const padB = parseFloat(cs.paddingBottom) || 0;
-const rect = body.getBoundingClientRect();
-const w = Math.max(80, rect.width - padL - padR);
-const h = Math.max(80, rect.height - padT - padB);
+const w = Math.max(80, body.clientWidth - padL - padR);
+const h = Math.max(80, body.clientHeight - padT - padB);
 const fs = parseFloat(cs.fontSize) || 17;
 let lh = parseFloat(cs.lineHeight);
 if (!lh || isNaN(lh)) lh = fs * 1.8;
 const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
 if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-const pages = paginate(text, w, h, fs, lh, cs);
+const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
 RD_PAGE_CACHE[key] = pages;
 const keys = Object.keys(RD_PAGE_CACHE);
 if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
 return pages;
 }
-function paginate(text, w, h, fs, lh, cs) {
+function paginate(text, w, h, fs, lh, ff) {
 const src = String(text == null ? '' : text);
 const n = src.length;
 if (!n) return [{ s: 0, e: 0 }];
 const box = document.createElement('div');
 box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;' +
-'white-space:pre-wrap;box-sizing:border-box;width:' + w + 'px;' +
+'white-space:pre-wrap;word-break:break-word;box-sizing:border-box;width:' + w + 'px;' +
 'font-size:' + fs + 'px;line-height:' + lh + 'px;';
-if (cs) {
-if (cs.fontFamily) box.style.fontFamily = cs.fontFamily;
-box.style.wordBreak = cs.wordBreak || 'normal';
-box.style.overflowWrap = cs.overflowWrap || 'normal';
-if (cs.lineBreak) box.style.lineBreak = cs.lineBreak;
-}
+if (ff) box.style.fontFamily = ff;
 document.body.appendChild(box);
 const indents = Array.from(rdFindParaStarts(src));
 function measure(a, z) {
-if (z <= a) { box.innerHTML = ''; return; }
+if (!indents.length) { box.textContent = src.slice(a, z); return; }
 let lo2 = 0, hi2 = indents.length - 1;
 while (lo2 <= hi2) {
 const m2 = (lo2 + hi2) >> 1;
@@ -1356,10 +1319,10 @@ if (indents[m2] < a) lo2 = m2 + 1; else hi2 = m2 - 1;
 }
 let out = '', cur = a;
 for (let i = lo2; i < indents.length && indents[i] < z; i++) {
-out += rdEsc(src.slice(cur, indents[i])) + '<span class="rd-ind"></span>';
+out += src.slice(cur, indents[i]) + RD_INDENT;
 cur = indents[i];
 }
-box.innerHTML = out + rdEsc(src.slice(cur, z));
+box.textContent = out + src.slice(cur, z);
 }
 const pages = [];
 let s = 0;
@@ -2936,6 +2899,7 @@ try { store.set('reading-device-id', id); } catch (e) {}
 }
 return id;
 }
+const RD_INDENT = '\u3000\u3000';
 function rdFindParaStarts(text) {
 const src = String(text == null ? '' : text);
 const set = new Set();
@@ -5341,6 +5305,13 @@ e.preventDefault();
 rdOpen();
 return;
 }
+if (el.closest('#more-reading')) {
+e.preventDefault();
+const mp = document.getElementById('chat-more-panel');
+if (mp) mp.hidden = true;
+rdOpen();
+return;
+}
 if (el.closest('#rd-hero-go')) {
 e.preventDefault();
 const btn = document.getElementById('rd-hero-go');
@@ -5393,7 +5364,7 @@ rdOpenBook(ddGi.getAttribute('data-id'));
 return;
 }
 if (el.closest('#rd-shelf-back')) {
-if (rdBackOne()) return;
+if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
 rdClose(); return;
 }
 if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
@@ -5407,10 +5378,7 @@ const primaryOpt = el.closest('[data-rd-primary]');
 if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
 const turnOpt = el.closest('[data-rd-turn]');
 if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
-if (el.closest('#rd-reader-back')) {
-if (rdBackOne()) return;
-rdShowShelf(); return;
-}
+if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
 if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); return; }
@@ -5508,7 +5476,6 @@ const el = e.target;
 if (el && el.id === 'rd-anno-search') rdRenderCards(el.value || '');
 if (el && el.id === 'rd-toc-search') rdRenderToc(false);
 });
-window.readingOpen = rdOpen;
 window.__readingProbe = {
 version: 2,
 readIndex: readIndex,

@@ -841,19 +841,6 @@ body.cs-sys-plain .msg-poke {
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
 .msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
 
-/* 歌词卡片（音乐模块「歌词传情」）：歌名/歌手 + 封面小图 + 引号歌词句，颜色跟随气泡表面
-   限宽 230px：长歌词在卡内换行，不再把气泡撑到聊天宽度上限；短歌词仍按内容收窄。 */
-.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:min(100%, 230px); }
-.msg-lyric-head { display:flex; align-items:center; gap:8px; }
-.msg-lyric-cover {
-  width:36px; height:36px; border-radius:8px; flex:0 0 auto; object-fit:cover;
-  background:var(--static-bg, rgba(0,0,0,.06)); display:block;
-}
-.msg-lyric-meta { min-width:0; }
-.msg-lyric-song { font-size:11px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.msg-lyric-artist { font-size:10px; opacity:.55; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.msg-lyric-line { font-size:15px; line-height:1.65; word-break:break-word; }
-
 /* 鎷嶄竴鎷嶆诞灞傚崱鐗囷紙搴曢儴鍗婃锛岄湶鍑洪《閮ㄨ亰澶╂秷鎭紝鏂逛究杈圭湅杈圭帺锛?   搴曢儴 96px锛氭偓鍋滃湪杈撳叆鏍忎笂鏂癸紝涓嶅帇浣?涓嶈鐩栬緭鍏ユ爮锛堣緭鍏ユ爮椤堕儴绾?82px锛?   v3.5.110锛歜ottom 鍔?safe-area锛屽叏闈㈠睆鍏ㄥ睆妯″紡涓嬩笌杈撳叆鏍忓悓姝ヤ笂绉伙紝涓嶉敊浣?   v3.10.x锛歠ixed 鈫?absolute鈥斺€旈敭鐩樺脊鍑烘椂闅忔敹缂╁悗鐨?.phone/#page-chat 鍋滈潬锛?   涓嶅啀閿氬畾鍏ㄩ珮 layout viewport 鎺夊埌杈撳叆鏍忎笅鏂癸紙璇﹁ .more-panel 澶勬敞閲婏級 */
 .poke-card {
   position:absolute; top:auto; bottom:calc(96px + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px))); left:18px; right:18px;
@@ -1028,15 +1015,6 @@ body.cs-sys-plain .msg-poke {
 .invite-list .cc-item { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1); }
 .invite-list .cc-item:active { background:rgba(0,0,0,.04); }
 .invite-list .cc-empty { padding:18px 0; }
-/* 2026-10-28：编辑开关打开时字卡只用于改/删，不再显示「可点发送」的手型 */
-.invite-list .cc-item.inv-editing { cursor:default; }
-/* 2026-10-28：听歌 / 读书快捷邀请（仅「邀请他」模式显示；发送时自带类型，不靠内容猜） */
-.chat-ask-quick { display:flex; gap:8px; margin-bottom:8px; }
-.chat-ask-quick .cc-tool { flex:1; }
-.chat-ask-quick[hidden] { display:none; }
-/* 2026-10-28：听歌 / 读书邀请直达说明（仅「邀请他」模式显示；问问TA 模式下与字卡区一起收） */
-.chat-ask-mod-hint { font-size:11px; line-height:1.55; color:var(--muted); padding:2px 2px 8px; }
-.chat-ask-mod-hint[hidden] { display:none; }
 /* display:flex 会压过 UA 的 [hidden]{display:none}，必须显式补回（问问TA 模式下隐藏邀请字卡区与存入按钮） */
 .invite-list[hidden] { display:none; }
 #invite-groups[hidden] { display:none; }
@@ -1044,9 +1022,6 @@ body.cs-sys-plain .msg-poke {
 /* v3.x：邀请TA ——顶部分组栏批量管理 chip 选中态 */
 .inv-g-batch { border-style:dashed; }
 .inv-g-batch.on { background:#111; color:#fff; border-color:#111; }
-/* 2026-10-28：编辑开关 chip（与批量管理同款外观；关闭时字卡只可点卡发送） */
-.inv-g-edit { border-style:dashed; }
-.inv-g-edit.on { background:#111; color:#fff; border-color:#111; }
 /* v3.x：邀请TA ——批量模式下自建分组 chip 上的 ✎/✕ 迷你操作符（预设分组不显示） */
 .inv-g-op {
   display:inline-flex; align-items:center; justify-content:center;
@@ -1839,7 +1814,14 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 #page-chat .msg-ask .msg-choose-card.answered,
 #page-chat .msg-ask .msg-ask-card.answered.has-ask-arrow {
   position: relative;
-  padding-bottom: 44px;
+  /* v8.59.6 加固（用户 2026-11-04 实图：自定义卡片 CSS 写了 padding 后心形压到最后一行字上）：
+     底部留白不再靠 padding-bottom——卡片 CSS 注入会给每条声明加 !important，把 44px 一并顶掉。
+     改用卡内 ::after 占位块，padding 怎么改都不影响这块高度。 */
+  padding-bottom: 0;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
+#page-chat .msg-ask .msg-choose-card.answered::after {
+  content: ''; display: block; height: 44px;
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart {
@@ -1874,8 +1856,6 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
-#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow,
-#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered.has-ask-arrow { padding-bottom: 44px; }
 #page-chat .msg-ask .msg-ask-view-arrow {
   right: 8px;
   bottom: 6px;
@@ -1903,10 +1883,14 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
   border-radius: var(--chat-bubble-radius, 18px);
   padding: var(--chat-bubble-pad, 11px 14px);
-  padding-bottom: 44px;
+  padding-bottom: 0;
   box-shadow: 0 4px 14px rgba(0,0,0,.07);
   position: relative;
   text-align: left;
+}
+/* v8.59.6 同款加固：问卷详情钮/收藏心形也在卡底绝对定位，留白改 ::after 占位，不吃 padding。 */
+#page-chat .msg-ask .msg-ask-card.msg-survey-card::after {
+  content: ''; display: block; height: 44px;
 }
 #page-chat .msg-ask .msg-survey-head {
   font-size: calc(var(--chat-font-size, 14px) + 1px);

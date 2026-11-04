@@ -120,7 +120,7 @@ function minifyCss(code) {
 }
 
 // ===== 按顺序拼接样式 / 脚本（顺序即生效顺序） =====
-const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css', 'desk-grid-v2.css'];
+const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css'];
 const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
 
 // ===== PERF-PLAN 阶段 1：JS 外置化（2026-09-18）=====
@@ -854,8 +854,7 @@ const FIX_SENTINELS = [
   { name: '通话昵称与聊天域解耦（cs-lbl-partner 优先，回退名片名，不读桌面键）', file: 'js/call.js', needle: "window.contactNameFor ? window.contactNameFor(currentCall.cid) : '')" },
   { name: 'migrateLegacy def/root 提升函数顶部（修启动 ReferenceError 中断迁移）', file: 'js/contacts.js', needle: 'const root = window.xyStore(G);' },
   { name: 'iOS Edge 视口事件盲区兜底（window resize/工具条显隐 + 1s 轮询并进自愈，修输入栏下空一大块/页面上移残留）', file: 'js/mobile-adapt.js', needle: "addEventListener('orientationchange', onIosVvEvent)" },
-  // #1613g 退役：位置页顶栏统一用全站 .ch-back，旧 .loc-back 私有样式整段下线（返回按钮由 .ch-back 承接，不得回流）
-  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;', absent: true },
+  { name: '位置面板返回按钮半屏也显示（.loc-back 默认 flex，修聊天寻踪半框入口无返回按钮无法关闭）', file: 'css/chat-pages.css', needle: '.loc-back {\ndisplay:flex;' },
   { name: '夜宵提醒专属字卡（nightcap 窗口抽「夜宵提醒/夜宵关心」池，不再复用"按时吃饭"文案）', file: 'js/p2-features.js', needle: 'DEF_EAT_REMIND_NIGHT' },
   { name: '房间放置/移动横幅取消钮能真正隐藏（.r-banner[hidden] 补 display:none，修「取消」弹窗一直不消失）', file: 'index.html', needle: '.r-banner[hidden] { display: none; }' },
   { name: '桌面「已摸鱼」卡与「今日情话」卡文字水平对齐（.mini-card fish .mc-b 与情话等高，修两卡标题/正文错位）', file: 'css/home.css', needle: '.mini-card[data-card-bg="fish"] .mc-b' },
@@ -876,7 +875,7 @@ const FIX_SENTINELS = [
   { name: '打砖块进行中可放弃旧局重新开局（resume 分支副按钮=「新开局」，修「开启无法选多个球」）+ 结束面板副按钮文字重置', file: 'js/breakout.js', needle: "overlayCloseBtn.textContent = '新开局'" },
   { name: '音乐·TA 暂停再播放互动（播放中 taPauseProb 小概率 TA 暂停→发字卡→3.5s 后点播放恢复→再发字卡；设置可调、字卡库「音乐」tab 逐张开关）', file: 'js/music-player.js', needle: 'taPauseProb' },
   { name: '音乐·TA 暂停权限开关 + 防连发（taPauseEn 总开关关闭=彻底不触发；同一首歌只互动一次 + 冷却防"一直暂停又继续"）', file: 'js/music-player.js', needle: 'taPauseEn' },
-  { name: '音乐·TA 暂停再播放字卡数据（「TA 暂停播放/TA 恢复播放」两组进系统预设字卡【其他互动功能字卡→音乐】）', file: 'js/default-cards-data.js', needle: '他暂停播放' },
+  { name: '音乐·TA 暂停再播放字卡数据（「TA 暂停播放/TA 恢复播放」两组进系统预设字卡【其他互动功能字卡→音乐】）', file: 'js/default-cards-data.js', needle: '他 暂停播放' },
   { name: '音乐·TA 暂停播放补聊天系统消息（暂停时除字卡外再发"XX 暂停了音乐"系统消息，与其他音乐互动一致）', file: 'js/music-player.js', needle: '暂停了音乐' },
   { name: '音乐·TA 恢复播放补聊天系统消息（恢复时除字卡外再发"XX 又播放了音乐"系统消息）', file: 'js/music-player.js', needle: '又播放了音乐' },
   { name: '弱网/断网 play 拒绝回调判空（audio 异步回调期间可能已被 teardown 置空 → 先判空再解锁播放，修「Cannot read properties of null (reading \'play\')」红米K80 断网崩溃）', file: 'js/music-player.js', needle: '判空防 null.play()' },
@@ -1308,7 +1307,7 @@ const FIX_SENTINELS = [
   { name: '#208 聊天输入栏上移白边·键盘收起视口未还原自愈（iOS standalone 键盘收起 WebKit 偶发不还原视口，restoreKb 的 60px 还原门槛永不满足=kbActive 卡真 .phone 卡收缩高；失焦>4s 且视口仍<基线−60 强制复原）', file: 'js/mobile-adapt.js', needle: 'Date.now() - _focLostAt > 4000 && _vv && _vv.height < _fullVv - 60' },
   { name: '#208 聊天输入栏上移白边·tabbar 隐藏跳过采集（全屏页 tabs.js 给 tabbar 挂 hidden，矩形全 0 被判悬空 860px 每 5s 刷假错误环）', file: 'js/device.js', needle: 'if (!tb || tb.hidden) return null;' },
   { name: '#208 聊天输入栏上移白边·判定器布局视口未贴底（保留形态 diff 应≈envTop；键盘收起未还原时按 inner 判贴合全绿漏报，单列 ✗ 让白带状态可诊断）', file: 'js/device.js', needle: 'diff > envTop + 24 && !(inp.kb && inp.kb.kbActive)' },
-  { name: '#209 输入栏下方灰底断截面·焦点保留硬证据自愈（安卓返回键收键盘不派 blur/#197 族 focusout 丢失时 !foc 复原分支永不执行=停靠残留卡死；可视区双信号回满 ≤12px 即复原，焦点在不在都算键盘已收；推定停靠 _aProv/_iProv 与全屏态不碰；#916 换锚：原 needle 随稳态高度对账重构改为同语义守卫正形态，逻辑只强不弱）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue || (_hNow > 0 && _hNow >= _aH - 12 && _ihW >= _aIH - 12)) {' },
+  { name: '#209 输入栏下方灰底断截面·焦点保留硬证据自愈（安卓返回键收键盘不派 blur/#197 族 focusout 丢失时 !foc 复原分支永不执行=停靠残留卡死；可视区双信号回满 ≤12px 即复原，焦点在不在都算键盘已收；推定停靠 _aProv/_iProv 与全屏态不碰；#916 换锚：原 needle 随稳态高度对账重构改为同语义守卫正形态，逻辑只强不弱）', file: 'js/mobile-adapt.js', needle: 'if (_hNow > 0 && _hNow >= _aH - 12 && (window.innerHeight || 0) >= _aIH - 12) {' },
   { name: '#210 视口形态判定器同源（window.mochiViewportForm 单一事实源：执行器 syncVvFit 与诊断 screenDiagJudge 共用，新形态只改一处；删定义即回归两处手抄判式漂移——#186 期间 force 分支已实际漂移两处）', file: 'js/device.js', needle: 'window.mochiViewportForm = function (sig) {' },
   { name: '#210 判定器·force 声明期望底边=屏高（#186 缺陷修正：原误写 innerH 与「期望=屏高」注释矛盾，forced 设备自检必误报底部超出；env=0 的 18.3 白边期望按 safeTop+inner 补满。#276 起该分支同步加坏 screenH 门，needle 随代码演进）', file: 'js/device.js', needle: 'forceCover ? ((screenH >= innerH ? screenH : 0) || (safeTop + innerH))' },
   { name: '#210 采集器 force 传入判定器（#186 缺陷修正：漏传致「用户已声明覆盖形态」分支在真实采集路径永不命中=死分支）', file: 'js/device.js', needle: "inp.force = (function () { try { return localStorage.getItem('xy-home-v2:__safe-top-force') === '1'; } catch (e) { return false; } })();" },
@@ -1349,7 +1348,7 @@ const FIX_SENTINELS = [
   { name: '#132 房间字卡门控接 dcf-room（删 sayLine 门控行即回归）', file: 'js/room.js', needle: "window.dcfGet('room')" },
   { name: '#132 此间字卡门控接 dcf-cjian（删 cjLine 门控行即回归）', file: 'js/cjian.js', needle: "window.dcfGet('cjian')" },
   { name: '#611 梦角档案管理·入口提醒（档案页管理弹窗顶部「梦角会跟着桌面联系人自动创建」，删这句即回归）', file: 'js/cjian.js', needle: "'梦角会跟着桌面联系人自动创建，一般不用手动添加'" },
-  { name: '#611 梦角档案管理·arc 不带时辰（档案页添加梦角不弹时辰浮层、提示改指此间；改回「下一步还能限定 TA 常在的时辰区间」即回归）', file: 'js/cjian.js', needle: "'选一个时间偏移（想限定他常在的时辰，去「此间」设）'" },
+  { name: '#611 梦角档案管理·arc 不带时辰（档案页添加梦角不弹时辰浮层、提示改指此间；改回「下一步还能限定 TA 常在的时辰区间」即回归）', file: 'js/cjian.js', needle: "'选一个时间偏移（想限定 他 常在的时辰，去「此间」设）'" },
   { name: '#611 梦角档案管理·入口传 arc 标记（删 { arc: 1 } 即回归——档案页又会冒出此间的「时辰区间」）', file: 'js/memo-arc.js', needle: 'e.stopPropagation(); if (window.cjianManage) window.cjianManage({ arc: 1 });' },
   { name: '#132 漂流瓶字卡门控接 dcf-drift（删 poolLine 门控行即回归）', file: 'js/drift-bottle.js', needle: "window.dcfGet('drift')" },
   { name: '#132 音乐字卡门控接 dcf-music（删 taPauseSendCard 门控行即回归）', file: 'js/music-player.js', needle: "window.dcfGet('music')" },
@@ -2167,8 +2166,11 @@ const FIX_SENTINELS = [
   { name: '#427 打砖块全屏同族抗内联残留（删则同 #427 在打砖块复发）', file: 'css/chat-pages.css', needle: '#chat-brick-panel.brick-fs { position:fixed !important;' },
   { name: '#427 贪吃蛇全屏同族抗内联残留（删则同 #427 在贪吃蛇复发）', file: 'css/chat-pages.css', needle: '#chat-snake-panel.snake-fs { position:fixed !important;' },
   { name: '#427 五子棋兄弟互斥只认真可见面板（hidden=false 但零渲染盒＝残留态不触发误关；删则残留兄弟把刚打开的棋盘反复自动关掉＝「打开就消失回聊天、刷新才恢复」）', file: 'js/gomoku.js', needle: 'getClientRects().length > 0) { closePanel(); break; }' },
-  // ==== #428 退役：#1613 起位置面板改成真正的 .page（不再 fixed/z-9999 浮层）——旧浮层不得回流 ====
-  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;', absent: true },
+  // ==== 2026-09-13 #428 寻踪「看看TA在哪」全屏位置面板抬到提醒条之上（vivo S60 等多机型报「点看看ta在哪
+  //      页面卡死，只能退出刷新」：面板 z-78 低于顶部提醒条 z-998，备份提醒显形期间（距上次导出超 1 天即弹、
+  //      #355 收短后极常见）正好压住头部返回按钮＝面板关不掉+body 滚动锁＝整页像卡死；z 抬 9999，
+  //      仍低于 modal-mask 99999 / 应用锁 999999）====
+  { name: '#428 全屏位置面板盖过提醒条（.loc-panel.loc-full z-9999；删则备份提醒条压住返回按钮，「看看TA在哪」全屏面板关不掉像卡死，多机型复发）', file: 'css/chat-pages.css', needle: 'background:#fff; z-index:9999;' },
   // #1455 退役：live 版 #416/#998 已在位（needle "return chatScrollMax() - cb.scrollTop <= 8;"）；本条 #416 为旧底（原 needle "return cb.scrollHeight - cb.scrollTop - cb.clientHeight <= 8;" 已从 src/js/chat.js 消失），按 #1447 先例只留一条活锚
   { name: '#416 群聊解除接管只认真的贴到底（gcAtBottom 同 ≤8px 口径；删则旧 150px 容差让滚动手势第一个 scroll 事件就清掉接管、下一条成员回复把历史阅读拽回最底复发）', file: 'js/group-chat.js', needle: 'return body.scrollHeight - body.scrollTop - body.clientHeight <= 8;' },
   { name: '#416 群聊滚回贴底检测必须停稳（gcScrollTimer 120ms 防手势中第一个 scroll 事件误清接管；删则「每次点滑动被拽回最底」随下一条回复复发）', file: 'js/group-chat.js', needle: 'gcScrollTimer = setTimeout(() => {' },
@@ -2645,7 +2647,7 @@ const FIX_SENTINELS = [
   { name: '#577b 引导步骤内补充提示块（删则 warn 文案不再渲染＝回到只有一句 d）', file: 'js/onboarding.js', needle: 's.warn ? ' },
   { name: '#577c 功能介绍·快速开始写明聊天昵称要单独设（删则又只说「设置双方昵称、头像」）', file: 'template.html', needle: '聊天里显示的名字 / 头像与它<b>互相独立、不会同步</b>' },
   { name: '#577d 聊天设置「昵称与头像」标题标注聊天专用（删则设置页不提与桌面独立，用户仍以为改桌面即生效）', file: 'template.html', needle: '昵称与头像（聊天专用 · 与桌面各自独立，互不同步）' },
-  { name: '#577e 功能大全昵称条目关键词补「桌面昵称 / 不同步」（删则搜「桌面昵称」找不到这两条）', file: 'js/feature-hub.js', needle: "昵称 名字 联系人 改名 聊天昵称 桌面昵称 不同步 不一样 没变 显示他" },
+  { name: '#577e 功能大全昵称条目关键词补「桌面昵称 / 不同步」（删则搜「桌面昵称」找不到这两条）', file: 'js/feature-hub.js', needle: "昵称 名字 联系人 改名 聊天昵称 桌面昵称 不同步 不一样 没变 显示 他" },
   // ---- #577b 用户追加（2026-09-16）：「聊天里的更换头像，你没说可以直接在聊天设置里更换，
   //      或在聊天输入栏左边打开更多功能里的【头像互动】上传头像库可互动」——漏了头像互动这条换聊天头像的路 ----
   // #616（2026-09-16）：「头像互动」整块改名「头像和昵称互动」后，这三条 needle 里的旧名
@@ -3043,7 +3045,7 @@ const FIX_SENTINELS = [
   { name: '#616d 头像/昵称两级 pane 切换（删掉＝切到「昵称」大类看不到昵称池，或切回「头像」两个 pane 同时露出来）', file: 'js/avatar-lib.js', needle: 'if (avPaneC) avPaneC.hidden = !(nameKind && !me);' },
   { name: '#616e 空池也要显示空态提示（删掉＝「库没变」快路径把空库误判成已渲染，四个池的「还没有…点击下方按钮添加」永不出现）', file: 'js/avatar-lib.js', needle: 'function emptyHintMismatch(el, lib) { return !!el && el.hidden !== (lib.length > 0); }' },
   { name: '#616f 昵称事件消息豁免改名清扫（删掉＝第二次改名把旧记录改写成 {ta}，两条记录看起来一模一样＝用户报的「看不出换了什么昵称」复发）', file: 'js/chat.js', needle: 'if (r.nickKeep) return false;' },
-  { name: '#616g 昵称系统消息文案写明「换成了「XXX」」（删掉＝退回「XX 更换了昵称」，看不出换成哪个昵称，与 #616f 配套）', file: 'js/avatar-lib.js', needle: "function nickMsgPartner(to) { return '他把聊天昵称换成了「' + to + '」'; }" },
+  { name: '#616g 昵称系统消息文案写明「换成了「XXX」」（删掉＝退回「XX 更换了昵称」，看不出换成哪个昵称，与 #616f 配套）', file: 'js/avatar-lib.js', needle: "function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }" },
   { name: '#775v 手动改联系人聊天昵称也落系统记录（删掉＝在聊天设置→形象改名后，聊天里没有「我的昵称 把聊天昵称换成了「X」」这条，与联系人自己改名不对称）', file: 'js/chat-settings.js', needle: 'if (window.chatAddSystem && window.chatNickMsgMeSet) {' },
   { name: '#775w 该记录主语取本人聊天昵称（改回写死「我」＝我的昵称换了以后历史记录不跟随；两处入口共用同一条文案）', file: 'js/avatar-lib.js', needle: "return '我 把聊天昵称换成了「' + to + '」';" },
   { name: '#v846a 昵称池编辑闸（删掉＝✕ 又常显，想点昵称换名时误删复发）', file: 'js/avatar-lib.js', needle: "if (!nickEditOn()) { delBtn.style.display = 'none'; delBtn.tabIndex = -1; }" },
@@ -3809,7 +3811,7 @@ const FIX_SENTINELS = [
   // CSS needle 按 minifyCss 产物形态逐字写（剥注释/行首缩进、保行内空格与分号）
   { name: '#769j 底栏底色走 color-mix 透明度链（删回纯色 background＝「背景透明度」滑杆整条失效）', file: 'css/tabbar.css', needle: 'background:color-mix(in srgb, var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff)) calc(var(--tabbar-bg-a, 1) * 100%), transparent);' },
   { name: '#769k 图标层透明度吃变量（改回无 opacity＝整栏透明度失效）', file: 'css/tabbar.css', needle: 'opacity:var(--tabbar-ico-a, 1);' },
-  { name: '#769l 上传按钮图片渲染规则（删＝img 裸尺寸/无裁切，图标大小与圆角滑杆失效）', file: 'css/tabbar.css', needle: '.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); position:relative; z-index:1; }' },
+  { name: '#769l 上传按钮图片渲染规则（删＝img 裸尺寸/无裁切，图标大小与圆角滑杆失效）', file: 'css/tabbar.css', needle: '.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); }' },
   { name: '#769m 触摸显形（删＝低透明度下按压无任何反馈，「看不见也知道那里有导航」防线失效）', file: 'css/tabbar.css', needle: '.tabbar.tabbar-faint:active .tab { opacity:1; }' },
   { name: '#769n 深色模式喂底色变量而非盖死 background（改回直接覆盖＝深色下透明度滑杆失效，#769j 链在深色断掉）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar { --tabbar-base-bg:var(--dark-card-92); border-color:var(--dark-border-12); }' },
   { name: '#769o 设置页「底部栏美化」行锚（整行删＝设置页入口消失，抽屉分区成唯一入口）', file: 'template.html', needle: '<div class="set-row" id="row-tabbar-beauty">' },
@@ -3873,8 +3875,7 @@ const FIX_SENTINELS = [
   // ==== 2026-09-19 #809 问问TA 发单题「思考时间（秒）」可自定义（用户直派「和帮我决定群来决定一样的自定义思考时间，默认就是现在的秒」）——半框注入同款 stepper（1~10 秒，点击即持久化 per-cid 键 ask-think-secs），ask 分支延迟改 askThinkSecsLoad()*1000（默认 3 秒＝原随机 1500+rand*2500 常用档；invite 分支保持随机不变）。行为断言见 tools/verify-ask-think-time.mjs ====
   { name: '#809a 思考时间点击即持久化（删＝关面板重开回默认，设置形同虚设）', file: 'js/chat.js', needle: "store.set('ask-think-secs', String(n));" },
   { name: '#809b 半框思考时间 stepper 行（删＝设置入口消失，功能不可达）', file: 'js/chat.js', needle: 'id="chat-ask-think"' },
-  // 2026-10-31：思考时间改「上限」语义后，延迟由 askThinkDelayMs 读设置并随机；锚点随实现更新
-  { name: '#809c ask 回答延迟读设置（改回固定随机＝用户设置不生效，思考时间恒 1.5~4 秒）', file: 'js/chat.js', needle: '}, askThinkDelayMs());' },
+  { name: '#809c ask 回答延迟读设置（改回固定随机＝用户设置不生效，思考时间恒 1.5~4 秒）', file: 'js/chat.js', needle: '}, askThinkSecsLoad() * 1000);' },
   { name: '#813a 聊天设置头像：武装与激活拆两步（armHead 只武装、headActivate 只激活；删＝回到「arm+click 融合且挂在 onMiss 兜底上」，label 转发成功的内核上选完图静默丢弃）', file: 'js/chat-settings.js', needle: 'function armHead(cb) { headCb = cb; }' },
   { name: '#813b 删除型：旧融合式激活函数不得回流（复活＝label 转发成功的内核永远拿不到回调）', file: 'js/chat-settings.js', needle: 'function pickHead(', absent: true },
   { name: '#811a 头像入口按作者角色进页（删/改回只传 owner＝点我的头像又进联系人个人页，主诉③复发）', file: 'js/feed.js', needle: "openFeedAll(av.dataset.owner, av.dataset.role === 'me' ? 'me' : 'ta');" },
@@ -3985,7 +3986,7 @@ const FIX_SENTINELS = [
   //   单聊/群聊两处说明从行上方挪到「回复条数最少/最多」两行正下方、开头点破语义「这两项＝你每发 1 条消息，TA 就跟着回你几条」，
   //   加粗强调「这是每条消息的条数、不是 TA 一天最多发几条，不建议调大」＋调大后果实例（连发各触发一批／群聊成员各算各的）。
   //   群聊设置抽屉镜像（group-chat.js cntNote）同文案随 #794 在途批收口、本批不携带。====
-  { name: '#869a 单聊条数说明点破「每条消息」语义（删回笼统说明＝再被读成总上限、调大后联系人刷屏复发）', file: 'template.html', needle: "注意：这是「每条消息」的条数，不是他一天最多发几条" },
+  { name: '#869a 单聊条数说明点破「每条消息」语义（删回笼统说明＝再被读成总上限、调大后联系人刷屏复发）', file: 'template.html', needle: "注意：这是「每条消息」的条数，不是 他 一天最多发几条" },
   { name: '#869b 群聊条数说明点破「每条消息每个成员」语义（删＝群聊各算各的刷屏提醒缺失）', file: 'template.html', needle: '注意：这是「每条消息、每个成员」的条数' },
   // ==== 2026-09-19 #875 「TA在身边」藏在寻踪里是设计（位置面板唯一入口就在寻踪半框/寻踪页），
   //   但入口原是全宽浅色虚线的次要按钮、排在面板最底部 ⇒ 被读成寻踪的附加说明：用户既不知道
@@ -4035,7 +4036,7 @@ const FIX_SENTINELS = [
   { name: '#1015i TA 自动送礼源头闸（删＝扣款已发生而礼物消息被总闸拦＝扣了钱没礼物）', file: 'js/gift-shop.js', needle: "if (window.nightModeActive && window.nightModeActive()) return;\nconst st = wlSettings();" },
   { name: '#1015j 朋友圈自动动态夜间不生成（删＝夜里照发动态+聊天提示）', file: 'js/feed.js', needle: "if (window.nightModeActive && window.nightModeActive()) return;\ntry {\nconst cs = window.storeFor(cid);" },
   { name: '#1015k 跨桌面消息队列回放夜间暂停（删＝夜里回放其他桌面队列照常进聊天）', file: 'js/bg-keep.js', needle: "if (!force && window.nightModeActive && window.nightModeActive()) return 0;" },
-  { name: '#1015l 夜间模式说明＝「只拦 TA 主动，你的消息与回复照常」口径（退回旧含糊文案＝用户再被误导「为什么还在发」）', file: 'js/settings-help.js', needle: "你自己发的消息与他对你的回复照常即时送达" },
+  { name: '#1015l 夜间模式说明＝「只拦 TA 主动，你的消息与回复照常」口径（退回旧含糊文案＝用户再被误导「为什么还在发」）', file: 'js/settings-help.js', needle: "你自己发的消息与 他 对你的回复照常即时送达" },
   // ==== 2026-09-20 #876 吃什么转盘「转盘抽取」中奖片不在指针下：旧公式把指针当在右侧 0 角（2π-normalized），CSS 指针实际钉在正上方（.eat-pointer top:-12px 尖朝下＝画布角 3π/2）＝高亮片/「今天吃」菜名恒与指针错开约 1/4 圈（2~30 格×500 随机角仿真 100% 错位）。修法＝抽 eatIdxUnderPtr（顶部指针几何），主转盘＋切菜单转盘两处接线 ====
   { name: '#876a 转盘中奖片按顶部指针几何计算（指针 .eat-pointer 在 12 点＝画布角 3π/2；改回 2π-零角旧形态＝高亮/菜名恒不在指针下）', file: 'js/p2-features.js', needle: 'function eatIdxUnderPtr(normalized, n, slice) { return Math.floor((((3 * Math.PI / 2 - normalized)' },
   { name: '#876b 主转盘接线（删＝吃什么页「转盘抽取」中奖片与指针错位复发）', file: 'js/p2-features.js', needle: 'eatIdxUnderPtr(normalized, dishes.length, slice)' },
@@ -4048,8 +4049,8 @@ const FIX_SENTINELS = [
   { name: '#879a 网页包裹方案提取入口（删＝分享/售卖网页文件里的方案解析失败复发「美化文件导入用不了」）', file: 'js/personalize.js', needle: "const htmlLike = /<!doctype\\s*html|<html[\\s>]|<body[\\s>]|<textarea[\\s>]/i.test(t1);" },
   { name: '#879b 提取失败可行动报错（删＝用户再拿到天书 JSON error 无从下手）', file: 'js/personalize.js', needle: "lastErr = new Error('粘贴的是网页不是方案文本" },
   // ==== 2026-09-20 #881 聊天设置两行头像补「头像和昵称互动也能换＋会覆盖」静态提示（用户直派：互动触发联系人换头像会覆盖聊天设置的头像，用户不知情以为设置失效）====
-  { name: '#881a 联系人头像行覆盖提醒（删＝开随机更换的用户不知道 TA 换头像会顶掉这里设置的头像）', file: 'template.html', needle: "开了随机更换后，他换头像会覆盖这里设置的" },
-  { name: '#881b 我的头像行覆盖提醒（删＝开 TA 主动给我换头像的用户不知道会顶掉这里设置的头像）', file: 'template.html', needle: "「他主动给我换头像」触发时会覆盖这里设置的" },
+  { name: '#881a 联系人头像行覆盖提醒（删＝开随机更换的用户不知道 TA 换头像会顶掉这里设置的头像）', file: 'template.html', needle: "开了随机更换后，他 换头像会覆盖这里设置的" },
+  { name: '#881b 我的头像行覆盖提醒（删＝开 TA 主动给我换头像的用户不知道会顶掉这里设置的头像）', file: 'template.html', needle: "「他 主动给我换头像」触发时会覆盖这里设置的" },
   // ==== 2026-09-20 #886 吃什么转盘「指针永远跟着显示的菜走」＋切桌面复位＋提醒键清扫（用户确认三项都修）：①打开/「换一个」/改菜单重抽（都走 eatPick）后 eatAlignWheelToDish 把显示菜扇区中线转到顶部指针下——#876 只修了「转盘抽取」，静置/换一个时指针仍与显示菜无关；②编辑菜单面板/切换菜单浮层是页内常驻节点，.page 整页隐藏看不见但跨桌面重进会带着上一桌面的面板状态（第一次点「编辑菜单」变关闭），contact-switched 时停转＋关浮层＋收面板；③eat-remind-done「今日已提醒」键每天至多 4 键永不清理，清扫只留当天（xyStore.remove 三处同清） ====
   { name: '#886a 指针永远指着显示的菜（显示菜扇区中线转到 3π/2；删＝打开/换一个后指针与显示菜无关）', file: 'js/p2-features.js', needle: 'eatSpinAngle = ((3 * Math.PI / 2 - (i + 0.5) * slice) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);' },
   { name: '#886b 切桌面复位（删＝跨桌面重进带着上一桌面的编辑面板/切换浮层状态）', file: 'js/p2-features.js', needle: "document.addEventListener('contact-switched', function () { eatClearSpin(); eatSwitchClose(); const mp = document.getElementById('eat-menu-panel'); if (mp) mp.hidden = true; });" },
@@ -4754,8 +4755,7 @@ const FIX_SENTINELS = [
   { name: '#1449c 第四条正文·在线权威源', file: 'pwa/notice.json', needle: '二传二改但禁止以盈利为目的。Mochi字卡网站完全免费。' },
   { name: '#1449d 「关于云存储」章·离线兜底静态 DOM', file: 'template.html', needle: '关于云存储（本站没有云存储，二改请不要公开云存储）</p>' }, // #1500 目录统一编号：needle 去标签前缀＝对编号不敏感,
   { name: '#1449e 二传二改说明标题升为四点·离线兜底', file: 'template.html', needle: '「二传与二改说明」卡' },
-  // #1449f 退役：用户直派删除设置页底部防骗声明（该锚点原本只落在这一段，开屏/在线公告/关于页的免费与署名口径仍在 #613/#1449c/#1449g）；保留同名 absent 防止这段回流
-  { name: '#1449f 第四条·离线兜底（开屏章内）', file: 'template.html', needle: '作者只有两个账号：小红书@言序', absent: true },
+  { name: '#1449f 第四条·离线兜底（开屏章内）', file: 'template.html', needle: '作者只有两个账号：小红书@言序' },
   { name: '#1449g 第四条·设置 → 关于「二传与二改说明」卡', file: 'template.html', needle: '四、二改可以自加云存储，但请不要公开云存储</b>——这个网站的存储都是保存在个人设备本地的' },
   { name: '#1373a 停更时间线卡在第二页最顶（删＝作者停更口径与「两页都写着」那句指路同时失去落点）', file: 'index.html', needle: 'id="splash-mandatory-timeline"' },
   { name: '#1373b 停更后的使用建议卡在（删＝作者定稿那段建议从产物里消失）', file: 'index.html', needle: 'id="splash-mandatory-usage-advice"' },
@@ -4873,7 +4873,7 @@ const FIX_SENTINELS = [
   { name: '#1006l 存钱罐「回一句给TA」走用户发送侧（改回 chatAddIn＝用户的话又落在 TA 气泡）', file: 'js/p2-features.js', needle: "if (t && window.chatSendMsg) { try { window.chatSendMsg(t); } catch (e) {} toast('已回复'); }" },
   { name: '#1006m 吃什么「问 TA」走用户发送侧（改回 chatAddIn＝变成 TA 问用户）', file: 'js/p2-features.js', needle: 'if (window.chatSendMsg) { try { window.chatSendMsg(msg); }' },
   { name: '#1006n 摸鱼小结信 TA 口吻（改回「你俩…（我 +x · 名字 +y）」＝TA 把自己算在外、把用户标成「我」）', file: 'js/mail.js', needle: "'你和我一共摸鱼 ' + totalFish + ' 点（你 +' + fm + ' · 我 +' + ft + '）。'" },
-  { name: '#1006o 市集标语送给 TA（改回「送给你」＝收礼人写成用户）', file: 'js/gift-shop.js', needle: "挑一份心意，跨越两个世界送给他" },
+  { name: '#1006o 市集标语送给 TA（改回「送给你」＝收礼人写成用户）', file: 'js/gift-shop.js', needle: "挑一份心意，跨越两个世界送给 他" },
   /* ==== 2026-09-22 #1026 输入框提示文字（「说点什么…」）颜色与显隐可控（用户直派「聊天设置里【说点什么...】这一行输入栏的文字无法更换颜色或关闭」）：那行字由 .chat-input:empty::before 画，原颜色写死（单聊 #b5b5b5、群聊 #aaa）且设置里没有入口——唯一相近的「对方正在输入文字颜色」管的是气泡上方那条提示，与它无关。新增 cs-ph-ink / cs-ph-show 两键（每联系人独立、随聊天美化方案走），applySettings 写 :root 的 --chat-ph-ink / --chat-ph-visibility，未设置即删变量回落主题灰；隐藏走 visibility 不走 display，输入栏几何一字不动。 ==== */
   { name: '#1026a 占位符取用户色变量（改回写死色＝设置里换色无效）', file: 'css/chat-main.css', needle: 'content:attr(data-ph); color:var(--chat-ph-ink, var(--hint-ink)); pointer-events:none;' },
   { name: '#1026b 占位符显隐接线（删＝「隐藏提示文字」开关失效）', file: 'js/chat-settings.js', needle: "setVar(root, '--chat-ph-visibility', 'hidden')" },
@@ -5003,7 +5003,7 @@ const FIX_SENTINELS = [
   { name: '#1180e 限流三个键的默认值行（不登记＝rl-en 永不进 getCfg，开关初值恒空、rl-win/rl-max 读不到兜底值）', file: 'js/reply-settings.js', needle: "'rl-en': 0, 'rl-win': 5, 'rl-max': 15," },
   { name: '#1180f 回复设置·聊天「总量限流」开关行在位（删掉＝用户没有入口打开本功能，功能等于不存在）', file: 'template.html', needle: 'id="rl-en"' },
   { name: '#1180g 「为什么比设的还多」说明指向限流出口（删掉＝用户读完仍不知道只有总量限流能管住这些额外多发，#869 同族报障复发）', file: 'template.html', needle: '想让上面这些一起被管住，打开本面板下方「总量限流」' },
-  { name: '#1180h 开屏公告新增「关于 TA 发消息太多」一章（离线兜底源；删＝用户找不到「回复条数管不住这些」的官方解释）', file: 'template.html', needle: "关于他发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>" }, // #1500 同前,
+  { name: '#1180h 开屏公告新增「关于 TA 发消息太多」一章（离线兜底源；删＝用户找不到「回复条数管不住这些」的官方解释）', file: 'template.html', needle: "关于 他 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）</p>" }, // #1500 同前,
 // [开屏精简批 2026-10-15 退役]   { name: '#1180i 在线权威源同口径一章（删＝联网用户只看到旧章节，两份必须同改）', file: 'pwa/notice.json', needle: '关于 TA 发消息太多（「回复条数」为什么管不住，以及新增的总量限流）"' }, // #1500 目录统一编号后标题＝「14、关于 TA 发消息太多…」
   // ==== 2026-09-27 #1341 复核 #1180 四处口径（用户「帮我检查这个功能有没有用、会不会导致无法正常聊天」→「同意，按建议修复这四个问题」）：
   //      ① 限流与 #1015 夜间闸的豁免位拆成两把钥匙（旧写法共用 nightAllow＝带它的 TA 自发内容既不占额度也拦不住，与设置页文案不符）；
@@ -5380,7 +5380,7 @@ const FIX_SENTINELS = [
   { name: '#1300a 回场动画闸枚举面收在聊天消息列表（chat-body）子树（删回 document.getAnimations()＋body.contains()＝真机 35388 节点上这道闸自己成了回前台一帧的耗时项）', file: 'js/chat.js', needle: 'const sub = body.getAnimations ? body.getAnimations({ subtree: true }) : null;' },
   { name: '#1300b 老内核不认 {subtree:true} 时落回全站枚举（问出空表证不了「窗内确实没有」；删＝静默不修，#1151c/#1181b 的落终态在老内核整块失效）', file: 'js/chat.js', needle: 'all = body.getAnimations && body.getAnimations().length ? sub : document.getAnimations();' },
   { name: '#1300c 卡片背景读空但这一帧还挂着图＝保留最后一帧＋踢一次按需取回，落地回调带 type 重跑本卡片（删回「读空即清内联」＝#1195e 每次切后台放掉大键后卡片背景被拆＝用户口径「背景图要重启才显示」；把回调写成裸 applyCardBg 引用＝落地时以 undefined 调用、cardBgSel 空转，那一帧永远拆不掉＝幽灵帧）', file: 'js/personalize.js', needle: "hydrateDeskBgOnce('card-bg-' + type, el, () => applyCardBg(type))" },
-  { name: '#1300d 整页背景同款闸（页背景同为 >200KB 只存 IDB 的大键；删＝整页背景回前台被拆成默认底色）', file: 'js/personalize.js', needle: 'hydrateDeskBgOnce(bgKey, s, applyPageBgs)' },
+  { name: '#1300d 整页背景同款闸（页背景同为 >200KB 只存 IDB 的大键；删＝整页背景回前台被拆成默认底色）', file: 'js/personalize.js', needle: "hydrateDeskBgOnce('page-bg-' + i, s, applyPageBgs)" },
   { name: '#1300e 回前台双通道主动复核桌面大键背景（visibilitychange→visible ＋ bg-keep 的 mochi-fg-resume，#1270 壁纸那一枪的同族补口；删＝只能等用户走进 refreshDeskVisuals 才发现「图在库里、内存里没了」）', file: 'js/personalize.js', needle: "document.addEventListener('mochi-fg-resume', resumeDeskBgWatch);" },
   { name: '#1300f 取回只由「这一帧还挂着图」触发（删证人判断＝每次回前台对几十个从没设过的背景键各敲一次 IDB＋重跑应用函数，回场那帧被自己拖重）', file: 'js/personalize.js', needle: 'if (!el || !el.style.backgroundImage) return false;' },
   { name: '#1300g 回前台复核经 #695 调度（改成直跑＝用户回前台落在聊天页时照样解码桌面大图，抢走那一帧预算；删掉固定引用作业＝反复切前后台攒出一串待办）', file: 'js/personalize.js', needle: 'whenDeskVisible(resumeDeskBgJob);' },
@@ -5943,16 +5943,16 @@ const FIX_SENTINELS = [
   //   站内此前只有 TA→我 那一半（maybeMusicRequest 按概率弹 openMusicInvitePanel）；本批补我→TA 这一半
   //   （三档回应＝同意 60／拒绝 25／申请换一首 15，换那一跳复用同一个邀请面板、不另建弹窗）。
   //   删任一处＝那一半又回到「只能等 TA 按概率开口」，或退成「点了只有一句台词、不会真的起播」（聊天里那张通用邀请字卡就是这毛病）。
-  { name: '#1400a 管理音乐那排挂「邀请 TA 一起听」（删＝我这一侧的邀请又零入口）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-ask\">邀请他一起听</button>" },
-  { name: '#1400b 同一排挂「让 TA 邀我听这首」（删＝想立刻请 TA 邀这一首只剩 音乐设置→诊断邀请→强制触发，而那颗是随机挑歌、不是用户点的这首）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-inv\">让他邀我听这首</button>" },
+  { name: '#1400a 管理音乐那排挂「邀请 TA 一起听」（删＝我这一侧的邀请又零入口）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-ask\">邀请 他 一起听</button>" },
+  { name: '#1400b 同一排挂「让 TA 邀我听这首」（删＝想立刻请 TA 邀这一首只剩 音乐设置→诊断邀请→强制触发，而那颗是随机挑歌、不是用户点的这首）', file: 'js/music-player.js', needle: "<button class=\"cc-tool\" id=\"sm-e-ta-inv\">让 他 邀我听这首</button>" },
   { name: '#1400c 强制邀请那颗的接线（#994 教训：渲染与接线成对，只画按钮不挂处理器＝点了没反应的静默死亡）', file: 'js/music-player.js', needle: "if (taInv) taInv.addEventListener('click', () => { forceTaInviteFor(id); });" },
   { name: '#1400d 我方邀请三档掷骰的同意档走 accept 真起播（改成只发台词＝又回到聊天邀请字卡那种「答应了却没播」）', file: 'js/music-player.js', needle: "if (roll < 0.6) { accept(say('音乐邀请他·同意'" },
   { name: '#1400e 拒绝档在聊天里留一句痕（删＝这次邀请的结果只有气泡，回看不知 TA 答没答应）', file: 'js/music-player.js', needle: "taMusicSys(name + ' 这次没答应，说待会儿再听《' + trackName + '》');" },
   { name: '#1400f 申请换一首那一跳复用唯一邀请面板（换成新建一层弹窗或改成直接抢播＝与 TA→我 那条「你点一起听才播」的口径分叉）', file: 'js/music-player.js', needle: 'if (!openMusicInvitePanel(pick.id, !!currentId)) {' },
-  { name: '#1400g 我方邀请的在飞闸（TA 的回应延迟 1.5~4s 落地，没这道闸连点就把三条回应叠成一串）', file: 'js/music-player.js', needle: "if (myInvitePending) { toast('刚才那条还在等他回，先看这一条'); return; }" },
+  { name: '#1400g 我方邀请的在飞闸（TA 的回应延迟 1.5~4s 落地，没这道闸连点就把三条回应叠成一串）', file: 'js/music-player.js', needle: "if (myInvitePending) { toast('刚才那条还在等 他 回，先看这一条'); return; }" },
   { name: '#1400h 切桌面时交还我方在飞闸（残留＝新桌面的正常邀请被旧桌面那条还没落地的邀请挡掉，看着像按钮坏了）', file: 'js/music-player.js', needle: 'reqData = null;\nmyInvitePending = false;' },
-  { name: '#1400i 音乐设置那句「一起听歌」说明指到两颗新按钮（不指路＝功能在做而用户找不到，只能报「没有这个设计」）', file: 'js/music-player.js', needle: "想现在就要（或换你主动邀他）" },
-  { name: '#1400j 功能介绍第 10 节补「你也可以主动邀请 TA 听歌」条', file: 'template.html', needle: "你也可以主动邀请他听歌" },
+  { name: '#1400i 音乐设置那句「一起听歌」说明指到两颗新按钮（不指路＝功能在做而用户找不到，只能报「没有这个设计」）', file: 'js/music-player.js', needle: "想现在就要（或换你主动邀 他）" },
+  { name: '#1400j 功能介绍第 10 节补「你也可以主动邀请 TA 听歌」条', file: 'template.html', needle: "你也可以主动邀请 他 听歌" },
   { name: '#1400k 第 10 节计数随新条同步 11→12（漂移＝按章标题上的条数找不到条，#980b/#997h 同款）', file: 'template.html', needle: '音乐</span><span class="lg-count">12</span>' },
   { name: '#1400l 待确认邀请只在面板真在屏上时才算数（tc 层共用：被别的面板顶掉后 reqData 还是真的，拿它锁门＝这两个入口从此永久拒绝）', file: 'js/music-player.js', needle: "return !!(reqData && m && !m.hidden && document.getElementById('sm-req-yes'));" },
   /* ==== 2026-09-29 #1403 作者直派三件事：①「关闭寻踪时不需要隐藏我的按钮图标，因为这个功能里还有一个【TA在身边 · 位置感知】需要点击进去才能看到页面」②「寻踪记录没有自动折叠起来导致记录很长，改为默认只显示当天、其他自动折叠，并检查其他历史记录有没有这种问题」③「关闭时功能里需文字显示已禁用 联系人无法再触发更新日常，并检查关闭寻踪功能有没有出现错误」。#823 当年把「停用生成」和「收起入口」捆成一件事，于是关一个功能连带把住在同一页里的另一个独立功能（位置面板唯一入口就在寻踪页/半框，见 #875）一起藏了——三处入口同时收＝寻踪页再也进不去。本批拆开：闸门只留生成侧（#823a doCheckin、#823b 半框、#823f 更多面板三针一字未动），桌面图标与寻踪页恢复可用，页顶写明「已禁用：联系人无法再触发更新日常」，关闭态那颗「刷新」不再空转（旧写法进 doCheckin 首行 return＝点了没任何反应＝站内最大宗那一型静默失败）。记录折叠复用 #1053（帮我决定记录）那套「当天直显＋更早 details 默认折叠」与它的全局 .dc-h-* 样式皮＝零新增 CSS、两处视觉一致。检查面另见 #1279：功能诊断那句 gated 从此不可达，一并摘掉（留着＝真故障时诊断拿它当借口）。行为断言 tools/verify-checkin-disable.mjs（本批改约后复跑）＋tools/verify-1279-func-diag-checkin-row.mjs B4/B5 换向 ==== */
@@ -6452,16 +6452,16 @@ const FIX_SENTINELS = [
   { name: '#1516 vv 基线钳进布局视口（删＝Edge 工具栏假高顶高基线，正常高度被误判键盘收缩、会话劫持钉全高＝被盖/空隙乱象）', file: 'js/mobile-adapt.js', needle: '_aH = Math.min(h, window.innerHeight || h);' },
   { name: '#1519a 寻踪预设开关只对预设卡生效（删＝「整组停用『地点』」与逐张开关把用户自建的地点/做的事/说的话一起关光；作者实报多机型同现）', file: 'js/p2-features.js', needle: 'if (CK_DEF_LIST[k].indexOf(x) < 0) return false;' },
   { name: '#1519b 功能字卡取池口请库取回（删＝cc-groups 大键切后台读空时 13 类自建功能卡静默缺席，聊天回复池有钩只有这条路没有）', file: 'js/chatcard.js', needle: 'maybeHydrateReplyPool(); if (CC_FUNC_KEYS.indexOf(cat) < 0) return [];' },
-  { name: '#1519c TA 的提问题库整包写前问读全没有（删＝盲窗里管理页任何开关/增删＝用纯预设题库顶掉库里自定义题）', file: 'js/ta-ask.js', needle: "window.xyBigWriteBlocked(store, KEY, '他的提问题库')" },
+  { name: '#1519c TA 的提问题库整包写前问读全没有（删＝盲窗里管理页任何开关/增删＝用纯预设题库顶掉库里自定义题）', file: 'js/ta-ask.js', needle: "window.xyBigWriteBlocked(store, KEY, '他 的提问题库')" },
   { name: '#1519d 查岗问题库整包写前问读全没有（删＝同型清库）', file: 'js/ck-question.js', needle: "window.xyBigWriteBlocked(store, KEY, '查岗问题库')" },
   { name: '#1519e 邀请字卡库整包写前问读全没有（删＝同型清库）', file: 'js/ta-invite.js', needle: "window.xyBigWriteBlocked(store, KEY, '邀请字卡库')" },
   { name: '#1519f 题库读空请库取回（删＝盲窗这一拍按纯预设走且下一拍也不主动取回）', file: 'js/ta-ask.js', needle: 'if (store.awaitingBigKey && store.awaitingBigKey(KEY)) store.requestBigKey(KEY);' },
   { name: '#1519g 位置卡库整包写前问读全没有（删＝盲窗里增删位置卡＝整本被顶）', file: 'js/loc-lib.js', needle: "window.xyBigWriteBlocked(store, CUSTOM_KEY, '位置卡库')" },
   { name: '#1520a 寻踪字卡库整包写前问读全没有（删＝盲窗里批量添加/删除/编辑把整本自建卡顶掉，与 #1519 读侧闸同族的写侧洞）', file: 'js/p2-features.js', needle: "xyBigWriteBlocked(store, 'checkin-cards-' + k, '寻踪字卡库')" },
   { name: '#1520b 保底那一发不再重入新闸（删＝慢设备取回首窗 6s > 4s 保底 ⇒ 残缺一发＋6 秒后完整一发＝双发推送双条记录）', file: 'js/p2-features.js', needle: 'ckBigBypass = true;' },
-  { name: '#1520c TA 的小问题库整包写前问读全没有（删＝#1519 漏掉的同文件三本题库之一，清库风险同型）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY2, '他的小问题库')" },
-  { name: '#1520d TA 的好奇题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY3, '他的好奇题库')" },
-  { name: '#1520e TA 的调侃题库整包写前问读全没有（删＝同上；2026-10-26 界面用词由「吐槽」改「调侃」后重锚）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY4, '他的调侃题库')" },
+  { name: '#1520c TA 的小问题库整包写前问读全没有（删＝#1519 漏掉的同文件三本题库之一，清库风险同型）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY2, '他 的小问题库')" },
+  { name: '#1520d TA 的好奇题库整包写前问读全没有（删＝同上）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY3, '他 的好奇题库')" },
+  { name: '#1520e TA 的调侃题库整包写前问读全没有（删＝同上；2026-10-26 界面用词由「吐槽」改「调侃」后重锚）', file: 'js/ta-ask.js', needle: "xyBigWriteBlocked(store, KEY4, '他 的调侃题库')" },
   { name: '#1520f 内存里已读得到就不发取回（删＝键挂在启动挂起名单且 IDB 不稳时，功能字卡取池口每次都重发 MB 级读）', file: 'js/chatcard.js', needle: 'if (HYDRATE_TRUSTS_MEMORY) {' },
   { name: '#1520g 用户动作尊重写闸结果（删＝被拦后仍清空输入框并报「已添加/已导入」，用户没料可再点一次）', file: 'js/p2-features.js', needle: 'ckSaveItems(ckTab, list) === false' },
   { name: '#1520h 位置卡库保存回传布尔（删＝调用方无法知道这一发没落笔）', file: 'js/loc-lib.js', needle: "CUSTOM_KEY, '位置卡库')) return false;" },
@@ -6495,15 +6495,15 @@ const FIX_SENTINELS = [
   { name: '#1530c 柜内领取调回聊天侧同步钩子（删＝柜里领了屏上聊天卡还挂【领取】、聊天里也没了「你收下了…」留痕，两处口径分叉）', file: 'js/gift-shop.js', needle: 'try { if (window.chatGiftClaimSync) window.chatGiftClaimSync(it.id, it.name); } catch (eCS) {}' },
   { name: '#1530d 聊天侧同步＝按心意柜指针就地补卡＋留痕（不写状态＝单一事实源仍在柜；rateAllow 删＝额度满时这条用户当刻操作留痕被 #1341 闸吞掉）', file: 'js/chat.js', needle: "if (r && r.special === 'gift' && r.giftBoxId === boxId) { giftPatchCard(i); if (!rec) rec = r; }" },
   { name: '#1530e 详情领取钮容器（删＝居中面板里按钮退回 inline 默认宽度，与聊天卡【领取】的整行实底形态脱族）', file: 'css/market.css', needle: '.gb-detail-claim { display: flex; margin-top: 16px; }' },
-  { name: '#1531a 无键盘基线每拍钳进布局视口（删＝_aH 卡在地址栏隐时的高度 816 而 innerHeight 恒 690，地址栏显隐被当成键盘弹出/收起，页面在保底停靠 400px 与全高 690px 之间翻转＝弹跳闪屏＋输入栏与面板之间空隙；现场快照环实锤：[prov,0,816,400px]→[open,1,690,690px]）', file: 'js/mobile-adapt.js', needle: 'if (_aH > _ihNowKb + 12 && !_kbShrink) _aH = _ihNowKb || _aH;' },
+  { name: '#1531a 无键盘基线每拍钳进布局视口（删＝_aH 卡在地址栏隐时的高度 816 而 innerHeight 恒 690，地址栏显隐被当成键盘弹出/收起，页面在保底停靠 400px 与全高 690px 之间翻转＝弹跳闪屏＋输入栏与面板之间空隙；现场快照环实锤：[prov,0,816,400px]→[open,1,690,690px]）', file: 'js/mobile-adapt.js', needle: 'if (_aH > (window.innerHeight || 0) + 12) _aH = window.innerHeight || _aH;' },
   { name: '#1532a 聚焦期无条件采样环（删＝本机键盘链路从不启动、现有快照环永远空＝40 轮盲修的根源；聚焦期每拍记真实几何到 __mochiFocRing）', file: 'js/mobile-adapt.js', needle: '__mochiFocRing' },
   { name: '#1532b 诊断单输出聚焦期采样环（删＝采样了但诊断看不到）', file: 'js/device.js', needle: '聚焦期采样环=' },
   { name: '#1533a 残差账随会话清零（删＝上一轮的账带进下一轮；采样环实锤：钉高 328px vs 可视底边 411px、用户七轴全 0 ⇒ 短的 83px 是账＝输入栏抬得过高＝键盘上沿与输入栏的空隙）', file: 'js/mobile-adapt.js', needle: '_aDockFix = 0; _aLastDockSig = 0; _aHoldSuppressUntil' },
   { name: '#1533b 动画期不许记账（删＝弹出/收起动画中每拍拿新视口底边减上一帧页面底边，差值是一帧动画距离却被当残差记账＝账被动画污染）', file: 'js/mobile-adapt.js', needle: 'if (Date.now() - _aVvChgAt < 400) return' },
   { name: '#1534a 微调面板拖动对齐边看边调（删＝把手 36×4px 细条手机上点不中＝用户感知「拖不动」；触控区扩到整行 20px＋标题行可拖＋守卫排除滑块）', file: 'js/personalize.js', needle: 'height:20px;margin:2px 0 0;flex:none;background:linear-gradient' },
   { name: '#1535a 残差账退出高度计算（删＝钉高继续叠加 _aDockFix；采样环实锤：键盘开着 vv=411 而页面钉 251＝账 -160＝输入栏悬在键盘上沿 160px 之上＝主诉空隙；该账系 a800682 9/29 #1463 引入，与用户「9/28 还正常」时间线吻合）', file: 'js/mobile-adapt.js', needle: 'var want = Math.round(_hv + _aKbGap());' },
-  { name: '#1537a 收口钉 innerHeight 不清空回 CSS（删＝本机 dvh 收键盘后回落到比视口大 126px 的脏值，输入栏沉到视口外＝「消失几秒」；采样环实锤 rowB=942 vs 视口 816 连续 6 秒静止搁浅）', file: 'js/mobile-adapt.js', needle: "_aPhone.style.height = _ihPin + 'px'; // #1537" },
-  { name: '#1537b 无会话时 CSS 高度超出视口才重钉（删＝地址栏显隐后 dvh 脏值让页面比视口长一截＝输入栏沉底）', file: 'js/mobile-adapt.js', needle: 'getBoundingClientRect().bottom > _ihPin + 2' },
+  { name: '#1537a 收口钉 innerHeight 不清空回 CSS（删＝本机 dvh 收键盘后回落到比视口大 126px 的脏值，输入栏沉到视口外＝「消失几秒」；采样环实锤 rowB=942 vs 视口 816 连续 6 秒静止搁浅）', file: 'js/mobile-adapt.js', needle: "_aPhone.style.height = Math.round(window.innerHeight || 0) + 'px'; // #1537" },
+  { name: '#1537b 无会话时 CSS 高度超出视口才重钉（删＝地址栏显隐后 dvh 脏值让页面比视口长一截＝输入栏沉底）', file: 'js/mobile-adapt.js', needle: 'getBoundingClientRect().bottom > (window.innerHeight || 0) + 2) _aPhone.style.height' },
   { name: '#1537c 键盘期快照环扩容 24 条（删＝4 条存不下开键盘那一刻的样本，56 秒即被挤出＝现场数据丢失）', file: 'js/mobile-adapt.js', needle: 'if (q.length > 24) q.length = 24;' },
   { name: '#1538a 保底停靠有实测读数时禁用 58% 猜测（删＝键盘明明报了真实高度却仍按「键盘占 42%」盲猜停靠＝输入栏悬在键盘上沿数百 px＝恒定巨大空隙；采样环实锤 vv=411 而页面钉 251＝58% 猜测值；用户实测滚动/地址栏变化空隙恒定）', file: 'js/mobile-adapt.js', needle: 'var _realH = 0;' },
   { name: '#1538b 二线兜底同口径禁猜（删＝X5/旧夸克族二线仍盲猜）', file: 'js/mobile-adapt.js', needle: 'var _realH2 = 0;' },
@@ -6556,8 +6556,8 @@ const FIX_SENTINELS = [
   { name: '#1547n 夜间免打扰闸（删＝半夜生成他的批注/回应）', file: 'js/reading.js', needle: 'function rdNightGuard() {' },
   { name: '#1547o 回应必须等他越过我批注那句（删＝他还没读到就回应＝未卜先知）', file: 'js/reading.js', needle: 'if (rdFlatPos(book, q.ch, q.e) > hisFlat) { rest.push(q); continue; }' },
   { name: '#1547p 删除我的批注连带删他的回应（删＝留下一条没有上下文的回复）', file: 'js/reading.js', needle: 'x.id === id || x.replyTo === id' },
-  // #1547q 已于 2026-10-28 随用户要求删除「更多 → 互动」读书入口而退场（桌面图标仍是主要入口，见 #1591a 回流哨兵）
-  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings', 'loc-panel'];" },
+  { name: '#1547q 聊天「更多 → 互动」入口（删＝只剩桌面图标一条入口）', file: 'template.html', needle: 'id="more-reading" data-mcat="chat"' },
+  { name: '#1547r 阅读页与阅读设置页登记为全屏页（删＝进阅读器/设置页后 tabbar 常驻，遮住底部内容）', file: 'js/tabs.js', needle: "'page-reading', 'page-reading-settings'];" },
   { name: '#1547s 正文键不进备份（删＝20MB 正文进备份/迁移包，导出卡死）', file: 'js/data-backup.js', needle: 'const READING_BODY_RE = /^xy-home-v2:reading-body:/;' },
   { name: '#1547t 遮罩 [hidden] 兜底（删＝作者 display:flex 压过 UA [hidden]，关不掉的层留在屏上）', file: 'css/reading.css', needle: '.rd-shelf[hidden],.rd-reader[hidden]' },
   { name: '#1547u 共读批注走字卡库取池出口（删＝他只用内置池，逐张关闭/整组停用/密码锁全部失效）', file: 'js/default-cards.js', needle: 'window.getReadingAnnoCards = function (kind) {' },
@@ -6769,395 +6769,9 @@ const FIX_SENTINELS = [
   // ==== 2026-10-27 #1584 设置主页大标题吸顶 ====
   { name: '#1584a 设置主页「设置」标题吸顶、标签行让出实测高度（删＝大标题又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-setting .set-title {' },
   { name: '#1584b 设置主页标题高度同步（删＝--set-head-h 恒为 46px，字号/安全区变化后标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--set-head-h', h + 'px');" },
-  // ==== 2026-10-27 #1585 音乐「歌词传情」 ====
-  { name: '#1585a 歌词页登记为全屏页（删＝歌词页底部被 tabbar 压住、状态栏不隐藏）', file: 'js/tabs.js', needle: "'page-music-lyric'" },
-  { name: '#1585b 歌词页整页结构在位（删＝歌曲头/滚动歌词/选中操作条无承载，点小框进不去）', file: 'template.html', needle: 'id="page-music-lyric"' },
-  { name: '#1585c 歌词缓存/自动拉取入口（删＝每次进歌词页都重新请求，或小框当前句永远空白）', file: 'js/music-player.js', needle: 'function ensureLyric(m, force, cb) {' },
-  { name: '#1585d 播放进度推动当前句（删＝小框当前句与歌词页高亮不随播放走）', file: 'js/music-player.js', needle: 'try { lyricTick(); }' },
-  { name: '#1585e 歌词卡片出站发送接口（删＝点「发给 TA」无效，消息会退回成普通文字）', file: 'js/chat.js', needle: 'window.chatAddLyricCard = function (data) {' },
-  { name: '#1585f 歌词卡片渲染分支（删＝聊天里只剩纯文字，歌名/封面/引号卡面丢失）', file: 'js/chat.js', needle: "rec.special === 'lyric'" },
-  { name: '#1585g 歌词卡片样式与限宽（删＝歌词卡无封面/歌名层级，或长歌词把卡片撑到气泡上限）', file: 'css/chat-main.css', needle: '.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:min(100%, 230px); }' },
-  // ==== 2026-10-27 #1586 他主动从正在听的歌里挑句发来 ====
-  { name: '#1586a 他发歌词调度入口（删＝播放中不会再自动挑句发来）', file: 'js/music-player.js', needle: 'function taLyricMaybeSchedule(m) {' },
-  { name: '#1586b 发歌词前复核当前播放（删＝切歌/暂停后仍会把上一首的歌词发进来）', file: 'js/music-player.js', needle: 'function taLyricFire(id) {' },
-  { name: '#1586c 他发歌词概率设置（删＝音乐设置里没有开关，用户无法调/关）', file: 'js/music-player.js', needle: "bindProbStep('sm-set-lyricprob', 'taLyricProb', 35, 100);" },
-  { name: '#1586d 歌词卡支持 TA 发来（删＝自动歌词只能作为我发出的消息）', file: 'js/chat.js', needle: "const side = data.side === 'in' ? 'in' : 'out';" },
-  { name: '#1586e 多句歌词换行渲染（删＝连续 2~3 句挤成一行）', file: 'js/chat.js', needle: 'escTxtBr(lyricLineTxt)' },
-  { name: '#1586f 他发歌词的入站提示音（删＝歌词卡只弹横幅/未读，不响普通消息音）', file: 'js/chat.js', needle: "if (r && side === 'in' && data.silent !== true && window.playSfx)" },
-  // ==== 2026-10-27 #1587 歌词来源与失败重试 ====
-  { name: '#1587a 网易云后端歌词源（删＝漫游曲目只能靠 LRCLIB，冷门歌继续无词）', file: 'js/music-player.js', needle: 'function fetchLyricFromNetease(m, cb) {' },
-  { name: '#1587b 后端歌词失败后回落 LRCLIB（删＝后端一挂就完全没词）', file: 'js/music-player.js', needle: 'fetchLyricFromNetease(m, function (resN) {' },
-  { name: '#1587c 临时失败不记成无歌词（删＝LRCLIB 偶发 503 后整首歌都不再重试）', file: 'js/music-player.js', needle: 'else if (transient) {' },
-  { name: '#1587d 临时失败文案（删＝用户看到「没找到歌词」而不是「服务暂时没响应」）', file: 'js/music-player.js', needle: '歌词服务暂时没响应' },
-  { name: '#1587e 后端歌词短超时（删＝歌词要等 15 秒后端超时才回落 LRCLIB）', file: 'js/music-player.js', needle: 'try { xhr.timeout = lim; } catch (e) {}' },
-  { name: '#1587f 漫游曲目清退时连带清歌词缓存（删＝换一批 FM 歌就留下无主歌词键）', file: 'js/music-player.js', needle: 'removed.forEach(id => {' },
-  // ==== 2026-10-28 #1588 底栏当前分区阴影块 ====
-  { name: '#1588a 底栏当前分区阴影块（删＝选中 tab 退回透明背景，分区不可见）', file: 'css/tabbar.css', needle: 'background:var(--tabbar-active-bg, rgba(0,0,0,.05));' },
-  { name: '#1588b 深色底栏选中块阴影（删＝深色下只剩纯色块，没有阴影层次）', file: 'css/dark.css', needle: '[data-theme="dark"] .tabbar .tab.active::before { background:var(--dark-hover); box-shadow:0 1px 7px rgba(0,0,0,.32); }' },
-  // ==== 2026-10-28 #1589 桌面小组件 / 图标自定义 CSS ====
-  { name: '#1589a 小组件 CSS 入口（删＝桌面小组件没有自定义样式入口）', file: 'template.html', needle: 'id="row-widget-css"' },
-  { name: '#1589b 图标 CSS 入口（删＝桌面图标没有自定义样式入口）', file: 'template.html', needle: 'id="row-icon-css"' },
-  { name: '#1589c 桌面 CSS 作用域（删＝用户选择器逃出桌面页，污染聊天/全局）', file: 'js/personalize.js', needle: 'function scopeDeskCss(css, fallbackSel) {' },
-  { name: '#1589d 桌面 CSS 随联系人切换重应用（删＝切桌面后仍套上一个桌面的 CSS）', file: 'js/personalize.js', needle: 'try { applyDeskWidgetCss(); } catch (e) {}' },
-  { name: '#1589e 桌面 CSS 随美化方案/恢复默认（删＝方案导入导出、恢复全部默认漏掉 CSS）', file: 'js/personalize.js', needle: '\'desk-widget-css\', \'desk-icon-css\',' },
-  { name: '#1589f 小组件选择器插入（删＝组件下拉/插入按钮消失，又回到手写选择器）', file: 'js/personalize.js', needle: 'function insertDeskWidgetSelector(ta, type) {' },
-  // ==== 2026-10-28 #1590 听歌 / 读书邀请（TA 同意后直达模块页） ====
-  { name: '#1590a 邀请内容识别听歌/读书（删＝同意后停在聊天，不打开对应模块）', file: 'js/chat.js', needle: 'function inviteModuleOf(content) {' },
-  { name: '#1590b 邀请同意后直达模块页（删＝识别了也不再跳转）', file: 'js/chat.js', needle: 'if (status === \'接受\' && inviteKind && sameCid()) {' },
-  { name: '#1590c 邀请直达走桌面图标同一条打开链（删＝跳转绕过模块自身的开页/渲染）', file: 'js/chat.js', needle: 'function inviteOpenModule(kind) {' },
-  { name: '#1590d 邀请面板直达说明（删＝用户不知道邀请听歌/读书会直接开页）', file: 'template.html', needle: 'id="chat-ask-mod-hint"' },
-  { name: '#1590e 说明只在邀请他模式显示（删＝问问TA 面板也挂着听歌/读书提示）', file: 'js/chat.js', needle: 'if (modHint) modHint.hidden = !isInvite;' },
-  { name: '#1590f 直达说明样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出提示）', file: 'css/chat-main.css', needle: '.chat-ask-mod-hint[hidden] { display:none; }' },
-  { name: '#1590g 听歌/读书快捷邀请入口（删＝邀请面板只剩关键词猜测一条路）', file: 'template.html', needle: 'id="chat-ask-quick"' },
-  { name: '#1590h 快捷邀请只随邀请他模式显示（删＝问问TA 面板也挂着一起听歌/读书）', file: 'js/chat.js', needle: 'if (quickInv) quickInv.hidden = !isInvite;' },
-  { name: '#1590i 快捷邀请发送时钉死类型（删＝类型又回到靠话术关键词猜）', file: 'js/chat.js', needle: 'sendInviteContent(content, kind);' },
-  { name: '#1590j 快捷邀请样式与 hidden 兜底（删＝display 压掉 hidden，问问TA 下仍露出按钮）', file: 'css/chat-main.css', needle: '.chat-ask-quick[hidden] { display:none; }' },
-  { name: '#1590k 邀请字卡编辑开关（删＝✎/✕ 又常显，没有开关可关）', file: 'js/chat.js', needle: '\'emoji-g-chip inv-g-edit\'' },
-  { name: '#1590l 编辑态点卡不发送（删＝想改字卡却把邀请发了出去）', file: 'js/chat.js', needle: 'if (!tiInviteEdit) item.addEventListener(\'click\', () => { sendInviteContent(c); });' },
-  { name: '#1590m 打开面板重置编辑开关（删＝上次开着编辑，下次打开仍露 ✎/✕）', file: 'js/chat.js', needle: 'if (isInvite) tiInviteEdit = false;' },
-  { name: '#1590n 编辑开关样式（删＝开关与批量管理外观不一致）', file: 'css/chat-main.css', needle: '.inv-g-edit.on {' },
-  // ==== 2026-10-28 #1591 互动面板移除读书入口（桌面读书图标与读书模块保留） ====
-  { name: '#1591a 互动里不再有读书入口（回流＝聊天更多又长出一颗读书）', file: 'template.html', needle: 'id="more-reading"', absent: true },
-  { name: '#1591b reading.js 不再接 more-reading（回流＝已删入口又接上开页）', file: 'js/reading.js', needle: 'el.closest(\'#more-reading\')', absent: true },
-  // ==== 2026-10-28 #1592 主动邀请概率 / 我发出的邀请概率 ====
-  { name: '#1592a 主动邀请总概率设置行（删＝五类邀请没有共用总闸）', file: 'template.html', needle: 'data-k="ai-invite-prob"' },
-  { name: '#1592b 主动邀请总闸消费（删＝设置显示但骰子不读）', file: 'js/chat.js', needle: 'if (!hit(cfgn(c, \'ai-invite-prob\', 100))) return false;' },
-  { name: '#1592c 他主动邀请听歌门（删＝听歌邀请概率设了也不触发）', file: 'js/chat.js', needle: 'cfgn(c, \'ai-music-en\', 1) === 1 && hit(cfgn(c, \'ai-music-prob\', 5))' },
-  { name: '#1592d 他主动邀请读书门（删＝读书邀请概率设了也不触发）', file: 'js/chat.js', needle: 'cfgn(c, \'ai-reading-en\', 1) === 1 && hit(cfgn(c, \'ai-reading-prob\', 5))' },
-  { name: '#1592e 听歌主动邀请导出（删＝听歌门找不到弹面板的入口）', file: 'js/music-player.js', needle: 'window.taMusicInviteNow = function () {' },
-  { name: '#1592f 读书正式开页导出（删＝读书邀请同意后打不开书架）', file: 'js/reading.js', needle: 'window.readingOpen = rdOpen;' },
-  { name: '#1592g 读书邀请类型与同意后开书架（删＝读书邀请没有弹窗/直达）', file: 'js/chat.js', needle: 'reading: { title: \'读书邀请\' }' },
-  { name: '#1592h 读书同意直达书架（删＝同意后停在聊天）', file: 'js/chat.js', needle: 'if (kind === \'reading\') { try { if (window.readingOpen) window.readingOpen(); } catch (e) {} return; }' },
-  { name: '#1592i 读书邀请不冒充小游戏（删＝读书邀请被「小游戏记录」误收）', file: 'js/chat.js', needle: 'if (inv.kind && !_readingInv) _pokeOpts.gInv = inv.kind;' },
-  { name: '#1592j 我发出的邀请·接受概率设置行（删＝接受率不能调）', file: 'template.html', needle: 'data-k="invite-accept-prob"' },
-  { name: '#1592k 我发出的邀请·拒绝概率设置行（删＝拒绝率不能调）', file: 'template.html', needle: 'data-k="invite-reject-prob"' },
-  { name: '#1592l 接受/拒绝概率消费（删＝两条设置不参与掷骰）', file: 'js/chat.js', needle: 'const invAcc = Math.max(0, Math.min(100, Number(cfgn(_invCfg, \'invite-accept-prob\', 60)) || 0));' },
-  { name: '#1592m 新增概率默认值注册（删＝getCfg 读不到新键，设置页恒显默认且不生效）', file: 'js/reply-settings.js', needle: '\'ai-invite-prob\': 100,' },
-  // ==== 2026-10-28 #1593 漫游曲目歌手/封面/时长（/personal_fm 旧字段兼容） ====
-  { name: '#1593a 歌手双结构兼容（删＝漫游曲目歌手恒空，显示「未知歌手」）', file: 'js/music-player.js', needle: 'function neaArtistText(s) {' },
-  { name: '#1593b 入库改用兼容歌手解析（删＝保留了函数但曲目仍读 s.ar）', file: 'js/music-player.js', needle: 'artist: neaArtistText(s),' },
-  { name: '#1593c 封面双结构兼容（删＝漫游曲目没有专辑封面）', file: 'js/music-player.js', needle: 'function neaCoverText(s) {' },
-  { name: '#1593d 时长双结构兼容（删＝漫游曲目时长停在 00:00）', file: 'js/music-player.js', needle: 'function neaDurationSec(s) {' },
-  // ==== 2026-10-28 #1594 聊天互动按钮改名「头像昵称」 ====
-  { name: '#1594a 互动入口按钮显示「头像昵称」（删＝又回到长名「头像和昵称互动」）', file: 'template.html', needle: '<span>头像昵称</span>' },
-  { name: '#1594b 旧长名不再出现在该按钮（回流＝改回「头像和昵称互动」）', file: 'template.html', needle: '<span>头像和昵称互动</span>', absent: true },
-  // ==== 2026-10-28 #1595 图标与底栏图案颜色 ====
-  { name: '#1595a 图标与底栏线条颜色入口（删＝设置页没有这条颜色项）', file: 'template.html', needle: 'id="row-icon-ink"' },
-  { name: '#1595b 线条颜色应用函数（删＝选了颜色也不生效）', file: 'js/personalize.js', needle: 'function applyIconInkColor() {' },
-  { name: '#1595c 底栏未选中同色半透明（删＝未选中图标与选中同亮，分不清当前分区）', file: 'js/personalize.js', needle: '.tabbar .tab svg{stroke-opacity:.55;}' },
-  { name: '#1595d 线条颜色键随美化方案（删＝导出/导入、撤销与恢复默认漏掉该颜色）', file: 'js/personalize.js', needle: '\'icon-ink-color\'' },
-  { name: '#1595e 线条颜色随联系人切换重应用（删＝切桌面后仍套上一个桌面的线条颜色）', file: 'js/personalize.js', needle: 'document.addEventListener(\'contact-switched\', applyIconInkColor);' },
-  // ==== 2026-10-28 #1596 朋友圈 TA 回应我的评论进楼中楼 ====
-  { name: '#1596a 按 ts 定位我刚发的评论（删＝认最后一条，期间插入别的评论会挂错楼）', file: 'js/feed.js', needle: 'if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === \'me\')' },
-  { name: '#1596b TA 回应挂进我的评论楼中楼（删＝又 push 成平铺的新顶级评论）', file: 'js/feed.js', needle: 'myC.replies.push(stampAuthor({ content: taText' },
-  { name: '#1596c 通知定位到楼内回复（删＝点通知只闪到整条评论）', file: 'js/feed.js', needle: 'const loc = { ci: myCi, ri: myC.replies.length - 1 };' },
-  // ==== 2026-10-29 #1597 桌面美化·颜色项手输色值入口 ====
-  { name: '#1597a 八个颜色行都挂手输入口（删＝取色器打不开的手机又只剩色板一条路）', file: 'js/personalize.js', needle: "['row-accent-color', '主题色', getAccentColor, (c) => {" },
-  { name: '#1597b 手输走 #RRGGBB 弹窗而非系统取色器（删＝退回点了没反应的 colorPicker）', file: 'js/personalize.js', needle: "openHexColorModal('输入' + it[1] + '色值'" },
-  { name: '#1597c 点手输不触发该行原选择器（删＝一次点击弹两层窗）', file: 'js/personalize.js', needle: 'e.stopPropagation(); // 别触发该行原来的选择器弹窗' },
-  { name: '#1597d 手输按钮排在默认按钮之前（删＝常用入口被兜底按钮挤到最右）', file: 'js/personalize.js', needle: 'if (reset) row.insertBefore(btn, reset);' },
-  { name: '#1597e 图标文字项先写键再刷新（删＝applyAppNameColor 无参读旧值，颜色不生效）', file: 'js/personalize.js', needle: 'store.set(APP_NAME_COLOR_KEY, c);' },
-  // ==== 2026-10-29 #1598 我的收藏存快照，漫游曲目不再消失 ====
-  { name: '#1598a 收藏时把曲目存成快照（删＝只存 id，漫游曲目被清出库后收藏项整个消失）', file: 'js/music-player.js', needle: 'list.unshift(m ? favSnapOf(m) : { id: id, favAt: Date.now() });' },
-  { name: '#1598b 已删收藏按快照回读（删＝findTrack 找不到就整行丢弃，列表里什么都不剩）', file: 'js/music-player.js', needle: 'const x = favList().find(t => t.id === id);' },
-  { name: '#1598c 已删收藏点击可重新入库播放（删＝只能干看「已删除」，点了没反应）', file: 'js/music-player.js', needle: 'if (x && favRestorable(x)) { restoreFavSong(x); return; }' },
-  { name: '#1598d 旧纯 id 收藏自愈回补快照（删＝老用户的收藏升级后仍是裸 id，迟早丢）', file: 'js/music-player.js', needle: 'if (healed) saveFavList(list);' },
-  { name: '#1598e 漫游换批不清收藏过的 FM 曲目（删＝收藏的漫游歌被 prune，重开就没了）', file: 'js/music-player.js', needle: "if (m.playlistId !== 'fm' || keep[m.id] || favKeep[m.id]) return true;" },
-  { name: '#1598f 收藏仍写回原键 music-favs（删＝换新键后备份导出带不走收藏）', file: 'js/music-player.js', needle: "function saveFavList(list) { store.set('music-favs', JSON.stringify(list)); }" },
-  // ==== 2026-10-29 #1599 收藏的歌可归进歌单（收藏即入库 + 行内「加入歌单」）====
-  { name: '#1599a 收藏漫游曲目时改成我的音乐库（删＝歌仍是 FM 临时曲，换批被清、也归不进歌单）', file: 'js/music-player.js', needle: "if (m && m.playlistId === 'fm') {" },
-  { name: '#1599b 收藏行挂「加入歌单」入口（删＝只能躺在收藏里，没法归进歌单）', file: 'js/music-player.js', needle: 'class="sm-song-add" data-id="' },
-  { name: '#1599c 点加号不触发行播放（删＝点「加入歌单」顺手把歌播了）', file: 'js/music-player.js', needle: "if (e.target.closest('.sm-song-more, .sm-song-add')) return;" },
-  { name: '#1599d 加号走歌单选择弹窗（删＝只能进默认库，建不了也用不了已有歌单）', file: 'js/music-player.js', needle: 'addFavToPlaylist(b.dataset.id);' },
-  { name: '#1599e 弹窗回调兼容下标与值两种返回（删＝有的机型点了 pills 拿不到歌单 id）', file: 'js/music-player.js', needle: 'if (typeof v === \'number\' && opts[v]) val = opts[v].value;' },
-  { name: '#1599f 已删收藏先还原再归类（删＝文件不在的歌点了加号没反应）', file: 'js/music-player.js', needle: "if (!x || !favRestorable(x)) { toast('这首歌的文件已不在，无法加入歌单'); return; }" },
-  // ==== 2026-10-29 #1600 回信页上下滑动整壳塌陷（键盘动画毛刺读数被写成内联高）====
-  { name: '#1600a vv 报 0 的过渡帧整拍跳过（删＝open=h<_aH-60 恒真、收起分支把 0 写进内联高＝整壳只剩 18dvh 一条）', file: 'js/mobile-adapt.js', needle: 'if (!(h > 0)) return;' },
-  { name: '#1600b 键盘会话可视高地板 34%（删＝0/极小毛刺读数被记成稳态并拿去钉高，回信页寄出栏悬在屏幕四分之一处）', file: 'js/mobile-adapt.js', needle: 'return _b > 0 ? Math.max(120, Math.round(_b * 0.34)) : 120;' },
-  { name: '#1600c 收起动画分支按地板写高（删＝毛刺帧把内联高写成 0px，整壳塌成 CSS min-height 一条）', file: 'js/mobile-adapt.js', needle: 'var _hClose = Math.max(Math.round(h || 0), _aKbFloorH());' },
-  { name: '#1600d 收起标记按几何解粘（删＝读数回到键盘态却因 _aClosing 早退、整壳永久停在塌缩值）', file: 'js/mobile-adapt.js', needle: 'if (_aKb && _aClosing && open && h >= _aKbFloorH() && Date.now() - _aVvChgAt > 400) {' },
-  // ==== 2026-10-29 #1601 WebView（uni-app/Html5Plus）无会话钉高也吃 0 读数 ====
-  { name: '#1601a #1537 钉高读数先过地板（删＝键盘过渡帧把 innerHeight 报成 0/极小值时照单全收写进内联高＝整壳只剩 18dvh 一条）', file: 'js/mobile-adapt.js', needle: 'if (_ihPin >= _aKbFloorH()) {' },
-  { name: '#1601b 已有内联高比布局视口矮一大截＝毛刺残留，清掉复钉（删＝0px 内联高一直挂着，没人再按真实 innerHeight 停靠）', file: 'js/mobile-adapt.js', needle: 'if (_aPhone.style.height && (!(_phPin > 0) || _phPin < _ihPin - 120)) {' },
-  { name: '#1601c 1s 看门狗清短残留不再等「inner 回基线」（删＝键盘开着时该条件恒不成立，整壳停在塌缩值到收键盘为止）', file: 'js/mobile-adapt.js', needle: 'var _shortResidue = !!(_aPhone.style.height && (!(_phW > 0) || (_ihW > 0 && _phW < _ihW - 120)));' },
-  { name: '#1601d 清残留后按当前布局视口立即复钉（删＝清完回落到 100vh 脏高，寄出栏沉到键盘下面直到下一次 resize）', file: 'js/mobile-adapt.js', needle: 'if (_shortResidue && _ihW > 0) {' },
-  // ==== 2026-10-29 #1602 resizes-content WebView：键盘缩布局视口时基线不得被钳 ====
-  { name: '#1602a 键盘期不钳无键盘基线（删＝#1531 把 _aH 钳成 keyboard 高度 533 → open 恒假 → 键盘会话永不开启 → _aProv 盲猜并深收到 34% 地板 181px＝回信页整壳塌陷实报）', file: 'js/mobile-adapt.js', needle: 'var _kbShrink = _focNow && _ihNowKb > 0 && _ihNowKb < Math.max(_aH, _aIH) - 60;' },
-  { name: '#1602b 已钳小的基线按布局基线回补（删＝_aH 上一帧已被键盘高度污染，取它判定「正在缩小」永远为假＝会话仍开不起来）', file: 'js/mobile-adapt.js', needle: 'if (_kbShrink && _aIH > _aH + 60) _aH = _aIH;' },
-  { name: '#1602c 诊断暴露最近一拍的文本持焦（删＝报障分不清「焦点丢了」还是「读数被钳」，只能再猜一轮）', file: 'js/mobile-adapt.js', needle: 'focNow: !!_aFocDbg,' },
-  // ==== 2026-10-29 #1603 取色入口统一手输色值（通用弹窗 + 边看边调六个颜色行）====
-  { name: '#1603a 通用取色弹窗的手输色值行（删＝APP 内嵌 WebView 打不开原生取色器时，点「自定义颜色」没反应＝完全没法设色）', file: 'template.html', needle: 'id="modal-hexrow"' },
-  { name: '#1603b 手输框非法值红框（删＝填错格式没反馈，用户以为没生效/已生效）', file: 'css/base.css', needle: '.modal-hex.bad { border-color:#d64545; }' },
-  { name: '#1603c 确定时手输色优先于色板/pills（删＝只开 colorPicker 没色板的弹窗手输色提交不出去）', file: 'js/personalize.js', needle: 'if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }' },
-  { name: '#1603d 边看边调六个颜色行内联手输框（删＝每个颜色都要多点一层「手输色值」弹窗才有输入口）', file: 'js/personalize.js', needle: "hexIn.placeholder = '#RRGGBB';" },
-  { name: '#1603e 旧 index 缓存时 js 现场补建手输行（删＝新版 js 配旧模板完全没有手输入口，P2 看不到）', file: 'js/personalize.js', needle: 'if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);' },
-  // ==== 2026-10-31 #1608 套壳 App 智能返回（plus 物理键/侧滑 + 信箱按来源返回）====
-  { name: '#1608a HBuilderX 套壳注册安卓返回键（删＝物理键/侧滑直接退出应用，页面栈与弹窗优先全失效）', file: 'js/tabs.js', needle: "window.plus.key.addEventListener('backbutton', function () {" },
-  { name: '#1608b 桌面再按返回退出整个 App（删＝主页返回键无动作/被系统直接杀进程，用户要求防退出失效）', file: 'js/tabs.js', needle: 'try { if (window.plus.runtime && window.plus.runtime.quit) window.plus.runtime.quit(); } catch (e) {}' },
-  { name: '#1608c 有上一页就回上一页（删＝信箱返回永远回桌面，聊天信件提示进来也回不到聊天）', file: 'js/tabs.js', needle: 'if (stack.length > 1) stack.pop();' },
-  { name: '#1608d 信箱顶栏返回改走页面栈（删＝桌面/聊天进信箱都固定回桌面，用户在聊天的来源丢失）', file: 'js/mail.js', needle: "if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }" },
-  { name: '#1608e 寄信/回信/写信返回都走页面栈（删＝信箱重复入栈，物理返回从信箱退回写信页）', file: 'js/mail.js', needle: "if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');" },
-  // ==== 2026-11-02 #1609 取色弹窗入口统一（原生取色器下线，手输框唯一自定义入口）====
-  { name: '#1609a 原生取色器入口全站隐藏（删＝App 内置 WebView 里「自定义颜色」死入口回归，且与下方手输框重复）', file: 'js/personalize.js', needle: 'customBtn.hidden = true;' },
-  { name: '#1609b 主题色说明缩成一行（删＝又变回五行的系统取色器解释，弹窗重新被文字占满）', file: 'js/personalize.js', needle: "staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。'," },
-  { name: '#1609c 主题色只留「从壁纸取色/恢复默认」两粒胶囊（删＝手动输入色值旧入口回归，与手输框重复）', file: 'js/personalize.js', needle: "{ label: '从壁纸取色', value: '__pick_wall__' }," },
-  // ==== 2026-11-02 #1610 底部导航栏组只留「基础」tab（原来在 tab 外，两个 tab 同显）====
-  { name: '#1610a 底部导航栏组移进基础面板（移回 tab 外＝基础/壁纸与图标两个 tab 又各显一遍，用户实报重复）', file: 'template.html', needle: '2026-11-02 #1610：底部导航栏组从 tab 外移进「基础」面板' },
-  // ==== 2026-11-02 #1611 全屏页状态栏与桌面同位置（Mochi/时间/电量不随进应用上移）====
-  { name: '#1611a 桌面壳顶部留白变量（删＝全屏页恢复 padding:0，桌面模拟器下状态栏上移 16px）', file: 'css/base.css', needle: '--phone-top-pad:16px;' },
-  { name: '#1611b 全屏页按桌面顶部留白补回（删＝Mochi/时间/电量进应用后仍比桌面高 16px）', file: 'css/tabbar.css', needle: '.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }' },
-  { name: '#1611c 全屏页状态栏左右 22px 对齐桌面（删＝全屏页状态栏比桌面左移 4px）', file: 'css/tabbar.css', needle: 'padding-left: calc(22px + var(--mochi-side-adj,0px));' },
-  // ==== 2026-11-02 #1612 位置面板全屏时顶部状态栏常驻（#1613 改页面后退役：状态栏在页面外天然常驻，
-  //      旧的 fixed 面板/--mochi-sb-h 测量不得回流）====
-  { name: '#1612a 打开位置面板时实测状态栏底边（删＝面板从壳顶铺，Mochi/时间/电量被整块盖住）', file: 'js/p2-features.js', needle: "if (h > 0) document.documentElement.style.setProperty('--mochi-sb-h', h + 'px');", absent: true },
-  { name: '#1612b 全屏位置面板顶边下移到状态栏底边（删＝面板盖住顶栏，用户实报「这个页面没有顶栏」）', file: 'css/chat-pages.css', needle: 'top:var(--mochi-sb-h,0px); right:0; bottom:0; left:0; max-height:none; border-radius:0;', absent: true },
-  { name: '#1612c 桌面壳形态面板顶边叠加壳顶偏移（删＝桌面模拟器里面板顶边比状态栏高 24px+）', file: 'css/chat-pages.css', needle: 'top: calc(max(24px, 50vh - 422px) + var(--mochi-sb-h, 0px));', absent: true },
-  { name: '#1612d 面板头部不再重复 safe-area 留白（删＝状态栏已占位后头部再空一截）', file: 'css/chat-pages.css', needle: '.loc-panel.loc-full .loc-head { padding:12px 16px; }', absent: true },
-  // ==== 2026-11-02 #1613 位置面板改成真正的页面（不再 fixed 浮层）====
-  { name: '#1613a 位置面板改为 .page（删＝回到 fixed 浮层，用户明确不要浮层）', file: 'template.html', needle: '<div class="page" id="loc-panel" hidden>' },
-  { name: '#1613b 位置页页面样式（删＝位置页按浮层样式渲染，fixed/滚动全乱）', file: 'css/chat-pages.css', needle: 'padding:0; background:var(--card-bg-97,#fff);' },
-  { name: '#1613c 打开位置页走页面显隐（删＝打开还是弹浮层/其它页不隐藏）', file: 'js/p2-features.js', needle: "document.querySelectorAll('.page').forEach(function (p) { p.hidden = (p.id !== 'loc-panel'); });" },
-  { name: '#1613d 位置页返回走页面栈（删＝左上角返回固定回桌面，聊天/寻踪来源丢失）', file: 'js/p2-features.js', needle: 'const go = window.mochiGoBack;' },
-  { name: '#1613e 位置页登记全屏页（删＝tabbar 常驻遮住底部内容）', file: 'js/tabs.js', needle: ", 'loc-panel'];" },
-  { name: '#1613f 位置页不再登记浮层滚动锁（删＝页面被当成浮层锁滚，内部 loc-scroll 可能划不动）', file: 'js/mobile-adapt.js', needle: "'#loc-panel'", absent: true },
-  { name: '#1613g 位置页顶栏统一用全站 chat-head（删＝又回自定义 loc-head，用户要求顶栏与其他界面一致）', file: 'template.html', needle: '<span class="ch-back" id="loc-back" aria-label="返回">' },
-  // ==== 2026-11-02 #1614 聊天信件通知直达对应信件（用户「有好几封信时得一封封找才知道他回的是哪封」）====
-  { name: '#1614a 回信通知带原信标题（删＝通知又回到通用文案，用户点前认不出是哪封）', file: 'js/mail.js', needle: "targetTitle ? '：《' + targetTitle + '》' : ''" },
-  { name: '#1614b 信件通知透传 mailId（删＝聊天记录里没有信件 id，点进去只能回列表一封封找）', file: 'js/mail.js', needle: 'mailId: opts && opts.mailId' },
-  { name: '#1614c 聊天信件通知按 id 直达（删＝仍统一 openMailPage 打开列表）', file: 'js/chat.js', needle: 'if (rec.mailId && window.openMailLetter)' },
-  { name: '#1614d 信箱直达入口 openMailLetter（删＝没有按 id 开门的方法）', file: 'js/mail.js', needle: 'window.openMailLetter = openMailLetter;' },
-  { name: '#1614e 信箱每次重画后补定位（删＝数据 ready/回信落地重画后高亮丢失）', file: 'js/mail.js', needle: 'try { applyMailJump(); } catch (e) {}' },
-  { name: '#1614f 目标信件高亮样式（删＝定位到了但用户看不出是哪封）', file: 'css/chat-pages.css', needle: '.mail-item.mail-jump-hit' },
-  { name: '#1614i 信件高亮色跟随主题色（删＝又写死暖橙，用户要求高亮与主题色同步）', file: 'css/chat-pages.css', needle: 'color-mix(in srgb, var(--btn-bg, #111111) 22%, transparent)' },
-  // ==== 2026-11-02 #1615 底栏选中块圆角跟随底栏圆角 ====
-  { name: '#1615a 选中块圆角跟随 --tabbar-radius（删＝又写死 13px，改底栏圆角时块不跟）', file: 'css/tabbar.css', needle: 'border-radius:calc(var(--tabbar-radius, 22px) - 2px)' },
-  { name: '#1614g 目标信在列表里按 id 精确查找（删＝按位置/标题就近猜，多封信时仍找错）', file: 'js/mail.js', needle: 'if (items[i].dataset.id === l.id) { item = items[i]; break; }' },
-  { name: '#1614h 聊天记录透传 mailId 字段（删＝刷新/重开后通知里的信件 id 丢失）', file: 'js/chat.js', needle: 'mailId: opts.mailId' },
-  // ==== 2026-11-02 #1616 读书模块一层一层返回（用户：页面跳转有问题，要求逐层退出）====
-  { name: '#1616a 读书逐层返回入口（删＝物理返回越过阅读器/书架直接回桌面）', file: 'js/reading.js', needle: 'window.mochiReadingBack = rdBackOne;' },
-  { name: '#1616b 物理/PWA 返回先走读书层（删＝closeLayers 不认阅读器/目录/批注层，返回跳层）', file: 'js/tabs.js', needle: 'try { if (window.mochiReadingBack && window.mochiReadingBack()) return true; } catch (e) {}' },
-  { name: '#1616c 阅读器左上角返回逐层消化（删＝目录/他在哪/批注层开着时也直接退到书架）', file: 'js/reading.js', needle: "if (el.closest('#rd-reader-back')) {" },
-  { name: '#1616d 书架左上角返回逐层消化（删＝导入/边看边调/菜单/分组开着也直接退桌面）', file: 'js/reading.js', needle: "if (el.closest('#rd-shelf-back')) {" },
-  { name: '#1616e 阅读层从高到低只关一层（删＝返回把所有阅读弹层一次关光）', file: 'js/reading.js', needle: "['rd-live-drawer', rdCloseLiveDrawer]," },
-  { name: '#1616f 阅读器关到书架而不是桌面（删＝返回直接 rdClose 回桌面）', file: 'js/reading.js', needle: 'if (reader && !reader.hidden) { rdShowShelf(); return true; }' },
-  // ==== 2026-11-02 #1617 设置页底部清理（用户直派：删署名/防骗声明，版本行改辰光玥影）====
-  { name: '#1617a 设置页版本行改名辰光玥影（删＝又回 Mochi 字卡传讯）', file: 'template.html', needle: '<div class="ver">辰光玥影 ' },
-  { name: '#1617b 设置页底部署名行不得回流（用户直派删除）', file: 'template.html', needle: 'class="ver-credit"', absent: true },
-  { name: '#1617c 设置页底部防骗声明不得回流（用户直派删除；开屏/关于页口径仍在）', file: 'template.html', needle: 'class="set-alert"', absent: true },
-  { name: '#1617d 时钟看门狗也不再往设置页回填防骗声明（删掉的静态块被 ensureSettings 复活过；回流即报警）', file: 'js/clock.js', needle: 'function ensureSettings() {', absent: true },
-  { name: '#1617e 旧 clock.js 缓存回填的 .set-alert 在设置页兜底隐藏（删＝部分缓存下又看到那段声明）', file: 'css/setting.css', needle: '#page-setting .set-alert { display:none !important; }' },
-  // ==== 2026-11-02 #1618 心意币文案品牌名与状态栏左上角可自定义文字同步（用户直派）====
-  { name: '#1618a 状态栏可自定义文字统一出口（删＝心意币文案又写死 Mochi）', file: 'js/personalize.js', needle: 'window.mochiCoinBrand = function () {' },
-  { name: '#1618b 申请回执卡按品牌名渲染并留刷新标记（删＝聊天里又写死 Mochi）', file: 'js/chat.js', needle: "m.dataset.askcoin = '1';" },
-  { name: '#1618c 改品牌名后就地刷新已渲染的回执卡（删＝改名后旧卡仍显示旧名）', file: 'js/chat.js', needle: 'window.mochiRefreshCoinBrand = function () {' },
-  { name: '#1618d 钱包余额行/申请弹窗/toast 同源品牌名（删＝集市与聊天口吻不一致）', file: 'js/gift-shop.js', needle: "· 向 ' + coinBrandNow() + ' 申请心意币" },
-  { name: '#1618e 主页申请流水空态与旧记录来源同源品牌名（删＝记录页仍写 Mochi）', file: 'js/records.js', needle: '暂无申请记录（可点心意币余额行向 ' },
-  { name: '#1618f 聊天统计申请记录空态同源品牌名（删＝统计页仍写 Mochi）', file: 'js/p2-features.js', needle: "还没有向 ' + escH(coinBrandNow())" },
-  // ==== 2026-11-03 #1619 第三页图标组被拆散 / 隐藏图标加回仍不可见（用户直派）====
-  { name: '#1619a 模板池快照只记顶层组件（删＝restoreTemplateDesk 把 p3apps 内图标逐个拽出组，第三页整组加不全）', file: 'js/personalize.js', needle: "document.querySelectorAll('#desk-widget-pool > [data-desk-widget]')" },
-  { name: '#1619b 组件库添加图标＝撤销隐藏名单（删＝隐藏过的图标搬到别页仍 display:none，看着像加不上）', file: 'js/personalize.js', needle: 'if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }' },
-  { name: '#1619c 整组图标添加时一并恢复组内隐藏项（删＝只有组里动态图标显示，模板四枚仍隐身）', file: 'js/personalize.js', needle: "node.querySelectorAll('.app')).forEach(un)" },
-  { name: '#1619d 已在本页但隐身的图标点组件库即恢复（删＝永远只提示「已在本页」，用户无法把图标加回来）', file: 'js/personalize.js', needle: "toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');" },
-  // ==== 2026-11-03 #1620 桌面网格 v2 第一期地基（影子数据 + 迁移备份 + 测试开关）====
-  { name: '#1620a 新版桌面网格模型键（删＝影子数据/迁移全部失效）', file: 'js/personalize.js', needle: "const DESK_GRID_V2_KEY = 'desk-grid-v2';" },
-  { name: '#1620b 模型完整性校验（删＝坏数据可落盘覆盖上一份）', file: 'js/personalize.js', needle: 'const deskGridV2Validate = (m) => {' },
-  { name: '#1620c 迁移前旧布局备份（删＝开启测试先破坏旧布局的退路没了）', file: 'js/personalize.js', needle: 'const deskGridV2BackupOnce = () => {' },
-  { name: '#1620d 旧 DOM 结构变化影子同步（删＝旧操作后新模型不更新）', file: 'js/personalize.js', needle: 'deskGridV2MO.observe(pagesBox, { childList: true, subtree: true });' },
-  { name: '#1620e 测试开关设置行（删＝用户无法开启/回退新版桌面数据）', file: 'template.html', needle: 'id="row-desk-grid-v2"' },
-  { name: '#1620f 测试开关登记为全局根键（删＝migrateLegacy 每次刷新把开关迁进 default 并删根键）', file: 'js/contacts.js', needle: "'desk-grid-v2-enabled'," },
-  // ==== 2026-11-03 #1621 桌面网格 v2 第二期（全网格渲染 + 长按编辑）====
-  { name: '#1621a 网格页样式（删＝页面回退流式布局，拖拽坐标不可视）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page {' },
-  { name: '#1621b 角标独立浮层（删＝绝对定位子项被 CSS Grid 当网格项摆错位置，只剩一个角标可见）', file: 'css/desk-grid-v2.css', needle: '#dgr-badge-layer {' },
-  { name: '#1621c 按模型渲染网格位置（删＝图标/卡片无法落在模型坐标）', file: 'js/personalize.js', needle: 'const deskGridV2Render = () => {' },
-  { name: '#1621d 网格模式启动（删＝开关开启后仍是旧桌面）', file: 'js/personalize.js', needle: 'function deskGridV2Boot() {' },
-  { name: '#1621e 组件库在网格模式按模型落位（删＝加回图标/卡片仍走旧 app-grid）', file: 'js/personalize.js', needle: 'const deskGridV2AddFromLib = (wid, pageIdx) => {' },
-  { name: '#1621f 启动期不覆盖已有网格模型（删＝刷新一次就丢拖动坐标/后加卡片）', file: 'js/personalize.js', needle: 'if (!deskGridV2GridOn && deskGridV2HasGridModel()) return;' },
-  { name: '#1621g 返回键先退网格编辑态（删＝编辑时按返回直接退页面）', file: 'js/personalize.js', needle: 'window.mochiDeskGridBack = function () {' },
-  { name: '#1621h tabs 接入网格编辑返回（删＝物理返回/侧滑绕过编辑态）', file: 'js/tabs.js', needle: 'window.mochiDeskGridBack && window.mochiDeskGridBack()' },
-  { name: '#1621i 自适应行高模型标记（删＝固定行高口径复发，卡片行上下留大空白）', file: 'js/personalize.js', needle: "m.rowMode = 'fixed';" },
-  // ==== 2026-11-03 #1622 桌面网格 v2 第三期（页缩略图 / 排序 / 加删页 / 页背景跟 pageId）====
-  { name: '#1622a 编辑态页缩略图条（删＝页面无法在桌面内排序/加删）', file: 'css/desk-grid-v2.css', needle: '#dgr-pagebar {' },
-  { name: '#1622b 页面按 pageId 取背景键（删＝页面排序/删除后背景仍按旧索引错位）', file: 'js/personalize.js', needle: 'const deskGridV2PageBgKeyAt = (i) => {' },
-  { name: '#1622c 页背景应用改读 pageId 键（删＝重排后背景跟错页）', file: 'js/personalize.js', needle: 'if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey)' },
-  { name: '#1622d 页面拖动排序（删＝缩略图只能看不能排）', file: 'js/personalize.js', needle: 'function deskGridV2ReorderPages(from, to) {' },
-  { name: '#1622e 桌面内加页/删页（删＝只能在设置页管理，删除只限末页）', file: 'js/personalize.js', needle: 'function deskGridV2DeletePage(idx) {' },
-  { name: '#1622f 页面缩略图重建（删＝加删页后缩略图条不更新）', file: 'js/personalize.js', needle: 'function deskGridV2RefreshPageBar() {' },
-  // ==== 2026-11-03 #1623 开桌重叠兜底（晚到卡片/野节点未入模型被 CSS Grid 自动放置）====
-  { name: '#1623a 页内直接子项也纳入收养（删＝晚到卡片成为自动放置项，和已定位卡片叠住）', file: 'js/personalize.js', needle: "page.items.push({ key: key, type: type, col: free.col, row: free.row, w: d.w, h: d.h, g: '', sz: 1 });" },
-  { name: '#1623b 渲染后模型外的野卡片收回隐藏池（删＝无 data-dgr-key 的卡片留在页面里与网格项重叠）', file: 'js/personalize.js', needle: 'if (!isItem || node.dataset.dgrKey) return;' },
-  { name: '#1623c 开桌真实矩形重叠检测并按行重排（删＝模型/晚到节点造成的重叠不自动修复）', file: 'js/personalize.js', needle: 'function deskGridV2HealOverlaps(reason) {' },
-  { name: '#1623d 开桌/同步/可见性触发重叠体检（删＝只在首次 boot 查一次，切页/回桌面后重叠不修）', file: 'js/personalize.js', needle: "scheduleDeskGridV2Heal('boot');" },
-  // ==== 2026-11-03 #1624/#1625 桌面网格行高与卡片尺寸档 ====
-  // #1624a/b 名字保留（历史登记不能删），#1625 起行高口径由 auto 升级为固定 92px 档。
-  { name: '#1624a 网格行高纯 auto（删＝桌面 Chrome 把所有行压成 86px，卡片溢出压卡片/压图标并留大空隙）', file: 'css/desk-grid-v2.css', needle: 'grid-auto-rows: var(--dgr-row, 92px);' },
-  { name: '#1624b 运行时行高兜底（删＝旧 index 被缓存时仍用旧 minmax 行高，卡片照样重叠）', file: 'js/personalize.js', needle: 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:var(--dgr-row,92px)!important}' },
-  { name: '#1625c 老模型按类型补卡片尺寸档（删＝旧数据高卡仍 h=1，内容溢出压下一行）', file: 'js/personalize.js', needle: 'const deskGridV2DefaultSize = (node, it) => {' },
-  { name: '#1625d 挤压回流避让（删＝改大小/拖动后卡片之间重叠）', file: 'js/personalize.js', needle: 'const deskGridV2ReflowPage = (page, pinnedKey) => {' },
-  { name: '#1625e 卡片尺寸写入渲染节点（删＝宽度档样式与缩略图读不到实际尺寸）', file: 'js/personalize.js', needle: 'node.dataset.dgrW = String(it.w);' },
-  { name: '#1625f 编辑态右下角改大小把手（删＝只能拖动不能改大小）', file: 'js/personalize.js', needle: "rh.className = 'dgr-resize';" },
-  { name: '#1625g 改大小松手落盘并回流（删＝预览尺寸不保存/被压卡片不避让）', file: 'js/personalize.js', needle: 'function deskGridV2ResizeEnd(e) {' },
-  { name: '#1625h 紧凑档内容适配（删＝卡片缩到 1 行时内容溢出被裁或撑破）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-head { display: none; }' },
-  { name: '#1625i 组件库添加卡片使用默认尺寸档（删＝新加高卡 h=1 溢出压下一行）', file: 'js/personalize.js', needle: "const d = deskGridV2DefaultSize(node, { key: wid, type: 'widget' });" },
-  { name: '#1625j 行为验证口可改大小/读默认尺寸（删＝无头测试无法验证尺寸落盘）', file: 'js/personalize.js', needle: 'resize: deskGridV2SetSize,' },
-  { name: '#1625k 滚出可视区的项不再生成角标（删＝滚动后残留的 −/缩放手把浮在别的卡片上）', file: 'js/personalize.js', needle: 'if (rect.bottom <= sr.top + 2 || rect.top >= sr.bottom - 2) return;' },
-  // ==== 2026-11-03 #1626 组件库瘦身 / 情话摸鱼拆卡 / 统一倒数日 / 图标名称 / 编辑撤销 ====
-  { name: '#1626a 组件库删整组入口且情话摸鱼按模式二选一（删＝整组批量入口回来或旧版出现拆开的卡）', file: 'js/personalize.js', needle: "const libIds = WIDGET_IDS.filter(wid => deskGridV2GridOn ? wid !== 'quote-row' : !LIB_SPLIT_IDS[wid]);" },
-  { name: '#1626b 情话/摸鱼拆成两张半宽卡（删＝仍是组合卡，不能独立拖动/改大小）', file: 'js/personalize.js', needle: 'const deskGridV2SplitQuoteRow = () => {' },
-  { name: '#1626c 拆卡保持模板原 DOM 位置（删＝新装用户两张卡被追加到页面最底部）', file: 'js/personalize.js', needle: 'const insertRef = wrapper ? wrapper.nextSibling : null;' },
-  { name: '#1626d 统一倒数日事件计算（纪念日 + 自定义 + 旧倒计时）', file: 'js/personalize.js', needle: 'function countdownEvents() {' },
-  { name: '#1626e 倒数日今天/明天文案', file: 'js/personalize.js', needle: 'function countdownDayText(days) {' },
-  { name: '#1626f 倒数日「接下来」列表渲染（删＝拉高卡片也只显示最近一个）', file: 'js/personalize.js', needle: "const listEl = document.getElementById('da-list');" },
-  { name: '#1626g 旧 desk-countdowns 并入纪念页（删＝自定义倒计时只剩数据没有管理入口）', file: 'js/personalize.js', needle: 'function mergeLegacyDeskCountdowns() {' },
-  { name: '#1626h 旧网格 countdown 项清除并补倒数日卡（删＝旧卡残留/事件只剩数据没有卡）', file: 'js/personalize.js', needle: 'const deskGridV2AbsorbLegacyCountdowns = (m) => {' },
-  { name: '#1626i 点倒数日卡进纪念页管理（删＝卡片点了没反应）', file: 'js/personalize.js', needle: "const card = e.target.closest('[data-desk-widget=\"desk-anniv\"]');" },
-  { name: '#1626j 图标名称显示开关（删＝设置行无效，名称一直显示）', file: 'js/personalize.js', needle: "const DESK_ICON_NAME_KEY = 'desk-icon-name-hidden';" },
-  { name: '#1626k 编辑态撤销快照（删＝误拖/误删/误改大小无法恢复）', file: 'js/personalize.js', needle: 'function deskGridV2PushUndo(m) {' },
-  { name: '#1626l 编辑条撤销按钮（删＝有快照但没有撤销入口）', file: 'js/personalize.js', needle: "undo.id = 'dgr-undo-btn';" },
-  { name: '#1626m 倒数日列表样式（删＝列表行挤在一起不可读）', file: 'css/home.css', needle: '.desk-anniv .da-list-row {' },
-  { name: '#1626n 网格拉高显示倒数日列表（删＝4×2 也看不到接下来 3 个）', file: 'css/desk-grid-v2.css', needle: '> .desk-anniv[data-dgr-h="2"] .da-list,' },
-  { name: '#1626o 倒数日卡从组件库加回时刷新内容（删＝先有事件后加卡会显示旧空数据）', file: 'js/personalize.js', needle: "if (wid === 'desk-anniv') { try { renderDeskAnniv(); } catch (e) {} }" },
-  { name: '#1626p 图标名称隐藏 CSS（删＝开关只切类名、桌面仍显示名称）', file: 'css/home.css', needle: 'html.desk-hide-app-names .app .app-name { display:none; }' },
-  { name: '#1626q 网格隐藏名称后图标垂直居中（删＝图标贴格顶、下方空一大截）', file: 'css/home.css', needle: 'html.desk-hide-app-names .app { justify-content:center; }' },
-  // ==== 2026-11-03 #1627 被挤开的项全方向找空位 ====
-  { name: '#1627a 回流全方向距离评分（删＝图标只会往下挪，不会去左右/上方空位）', file: 'js/personalize.js', needle: 'const d = dr * 10 + dc;' },
-  { name: '#1627b 回流不再限制从原行往下（删＝搜索起点回退到原行，上方向空位失效）', file: 'js/personalize.js', needle: 'const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, 0);' },
-  { name: '#1627c 回流先占住所有原位再腾位（删＝先处理的图标会抢后一张卡的位置，连环下推）', file: 'js/personalize.js', needle: 'occ[k] = (occ[k] || 0) + 1;' },
-  // ==== 2026-11-03 #1628 拍立得相框（2×2，复用图片组件） ====
-  { name: '#1628a 相框默认 2×2（删＝新相框按普通图片占整行）', file: 'js/personalize.js', needle: "if (frameMeta && frameMeta.frame === 'polaroid') return { w: 2, h: 2 };" },
-  { name: '#1628b 相框渲染节点（删＝照片没有奶油相纸框/小字）', file: 'js/personalize.js', needle: "node.className = 'desk-image-widget' + (isFrame ? ' desk-photo-frame' : '');" },
-  { name: '#1628c 照片焦点写入 object-position（删＝拖动调焦点不生效/不持久）', file: 'js/personalize.js', needle: 'const fx = Number.isFinite(Number(m.focusX))' },
-  { name: '#1628d 照片焦点调整浮层（删＝选图后无法拖动调焦点）', file: 'js/personalize.js', needle: 'function openPhotoFrameCrop(src, focus, cb) {' },
-  { name: '#1628e 添加拍立得相框流程（删＝组件库相框入口点了没反应）', file: 'js/personalize.js', needle: 'function addDeskPhotoFrame(pageIdx) {' },
-  { name: '#1628f 相框管理菜单（删＝无法换图/调焦点/改小字/删除）', file: 'js/personalize.js', needle: 'function openPhotoFrameMenu(id) {' },
-  { name: '#1628g 组件库相框入口（删＝没有添加 2×2 相框的入口）', file: 'js/personalize.js', needle: "pfName.textContent = '拍立得相框（2×2）';" },
-  { name: '#1628h 编辑态点相框进管理菜单（删＝网格编辑时点相框没反应）', file: 'js/personalize.js', needle: "const frame = e.target.closest('.desk-photo-frame');" },
-  { name: '#1628i 相框基础样式（删＝变成普通图片，没有白框/胶带/小字位）', file: 'css/home.css', needle: '.desk-photo-frame {' },
-  { name: '#1628j 相框网格 2×2 填充布局（删＝小字被照片盖住/照片溢出相框）', file: 'css/desk-grid-v2.css', needle: '> .desk-photo-frame[data-dgr-key] {' },
-  { name: '#1628k 相框胶带跟随主题色（删＝胶带固定米色，不跟主题）', file: 'js/personalize.js', needle: "document.documentElement.style.setProperty('--photo-frame-tape', color);" },
-  { name: '#1628l 焦点浮层物理返回取消（删＝安卓返回键越过浮层，直接退页面/App）', file: 'js/tabs.js', needle: 'try { if (window.mochiPhotoCropBack && window.mochiPhotoCropBack()) return true; } catch (e) {}' },
-  { name: '#1628m 焦点浮层隐藏编辑工具条（删＝调焦点时仍看到减号/页缩略图/编辑条叠在暗层下）', file: 'css/home.css', needle: 'html.dpf-crop-open #dgr-editbar,' },
-  // ==== 2026-11-03 #1629 分页圆点下移 ====
-  // #1631 再下移 1px（2→1）；#1632 再下移 2px（1→-1），锚点同步改为 bottom:-1px
-  { name: '#1629a 分页圆点下移 4px（删＝圆点离底部导航条又变远）', file: 'css/home.css', needle: 'position:absolute; left:0; right:0; bottom:-1px;' },
-  // ==== 2026-11-03 #1630 拍立得相框接入「小组件 CSS」====
-  { name: '#1630a 组件列表含拍立得相框（删＝小组件 CSS 选不到相框）', file: 'js/personalize.js', needle: "{ type: 'photo-frame', name: '拍立得相框', sel: '.desk-photo-frame' }," },
-  { name: '#1630b 相框专属选择器插入（删＝选相框仍插入 [data-card-bg]，规则不命中）', file: 'js/personalize.js', needle: "const sel = (item && item.sel) ? item.sel : '[data-card-bg=\"' + type + '\"]';" },
-  { name: '#1630c 相纸底色变量（删＝CSS 里改 --photo-frame-paper 无效）', file: 'css/home.css', needle: 'background:var(--photo-frame-paper,#fffaf0);' },
-  { name: '#1630d 相框小字颜色变量（删＝CSS 里改 --photo-frame-ink 无效）', file: 'css/home.css', needle: 'color:var(--photo-frame-ink,#7b6a58);' },
-  { name: '#1630e CSS 面板说明相框变量（删＝用户不知道相框可以用哪几个变量）', file: 'js/personalize.js', needle: '--photo-frame-paper</code>、小字颜色 <code>--photo-frame-ink</code>、胶带颜色 <code>--photo-frame-tape</code>' },
-  // ==== 2026-11-03 #1633 底部栏上下位置滑杆 ====
-  { name: '#1633a 底栏上下位移变量（删＝滑杆拖动后底栏不动）', file: 'js/personalize.js', needle: "if (y !== 0) rs.setProperty('--tabbar-y', y + 'px');" },
-  { name: '#1633b 底栏 translateY 落地（删＝变量写了也没有视觉位移）', file: 'css/tabbar.css', needle: 'transform:translateY(var(--tabbar-y,0px));' },
-  { name: '#1633c 底部栏美化「上下位置」滑杆（删＝用户没有调整入口）', file: 'js/personalize.js', needle: "mkSlider('上下位置', 'tabbar-y-offset', '', -12, 12, 1, 'px', 0," },
-  { name: '#1633d 恢复底部栏默认清位移键（删＝恢复默认后底栏仍偏移）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'].forEach(k => store.remove(k));" },
-  { name: '#1633e 美化方案导出含位移键（删＝换方案/导入后底栏位置丢失）', file: 'js/personalize.js', needle: "'tabbar-icon-size', 'tabbar-y-offset'," },
-  // ==== 2026-11-03 #1634 分页圆点显示开关 ====
-  { name: '#1634a 设置页分页圆点开关行（删＝用户没有隐藏/恢复圆点的入口）', file: 'template.html', needle: 'id="row-desk-dots"' },
-  { name: '#1634b 分页圆点开关状态键（删＝开关点了不落库，刷新又显示）', file: 'js/personalize.js', needle: "const DESK_DOTS_KEY = 'desk-dots-hidden';" },
-  { name: '#1634c 分页圆点隐藏类挂载（删＝开关只改状态文字，圆点不消失）', file: 'js/personalize.js', needle: "document.documentElement.classList.toggle('desk-hide-dots', hidden);" },
-  { name: '#1634d 分页圆点隐藏样式（删＝类挂了但圆点仍显示，即本 bug 形态）', file: 'css/home.css', needle: 'html.desk-hide-dots #desktop-dots { display:none; }' },
-  { name: '#1634e 切换桌面重新应用圆点状态（删＝换联系人后圆点显隐不跟随各自设置）', file: 'js/personalize.js', needle: "document.addEventListener('contact-switched', applyDeskDotsVisibility);" },
-  // ==== 2026-11-04 #1635 拍立得相框贴纸（手绘 SVG / 自由拖 / 三档大小） ====
-  { name: '#1635a 相框贴纸图案库（删＝贴纸面板变空、已有贴纸也渲染不出来）', file: 'js/personalize.js', needle: 'const DESK_FRAME_STICKERS = [' },
-  { name: '#1635b 相框渲染贴纸层（删＝选了贴纸但相框上看不到）', file: 'js/personalize.js', needle: 'const stickers = photoFrameStickersOf(m);' },
-  { name: '#1635c 贴纸拖动绑定（删＝编辑态拖不动贴纸）', file: 'js/personalize.js', needle: 'bindPhotoFrameStickerDrag(node, sp, m.id, si);' },
-  { name: '#1635d 贴纸拖动与位置落库（删＝拖动只动画面，刷新后回原位）', file: 'js/personalize.js', needle: 'function bindPhotoFrameStickerDrag(frameNode, stickerEl, id, idx) {' },
-  { name: '#1635e 贴纸选择面板（删＝管理菜单没有贴纸可选）', file: 'js/personalize.js', needle: 'function openPhotoFrameStickerPicker(id) {' },
-  { name: '#1635f 相框菜单贴纸入口（删＝用户进不去贴纸面板）', file: 'js/personalize.js', needle: "{ label: '贴纸', value: 'stk' }," },
-  { name: '#1635g 贴纸位置/大小写入相框元数据（删＝换图/刷新后贴纸丢失）', file: 'js/personalize.js', needle: 'mm.stickers = arr;' },
-  { name: '#1635h 贴纸取消恢复原状（删＝取消后仍保留误选的贴纸）', file: 'js/personalize.js', needle: 'if (!keep && dirty) writePhotoFrameStickers(id, before);' },
-  { name: '#1635i 贴纸基础样式（删＝贴纸不定位/不缩放/没有贴纸白边）', file: 'css/home.css', needle: '.dpf-sticker {' },
-  { name: '#1635j 编辑态贴纸可拖动（删＝普通状态挡住点照片，或编辑态拖不动）', file: 'css/home.css', needle: '.decor-on .desk-photo-frame .dpf-sticker,' },
-  { name: '#1635k 贴纸选择面板样式（删＝面板内容挤成一列/按钮无样式）', file: 'css/home.css', needle: '.dpf-stk-overlay {' },
-  // ==== 2026-11-04 #1636 多贴纸（最多 8 张 / 点图案即加 / 已贴列表选中管理） ====
-  { name: '#1636a 多贴纸数量上限（删＝想贴多少贴多少，画面与数据失控）', file: 'js/personalize.js', needle: 'const DESK_FRAME_STICKER_MAX = 8;' },
-  { name: '#1636b 旧单张贴纸兼容读取（删＝已贴的单张旧数据消失）', file: 'js/personalize.js', needle: 'const raw = meta && Array.isArray(meta.stickers) ? meta.stickers' },
-  { name: '#1636c 多张贴纸逐个渲染（删＝只能显示一张贴纸）', file: 'js/personalize.js', needle: 'stickers.forEach((stickerMeta, si) => {' },
-  { name: '#1636d 点图案即新增一张（删＝面板只能替换不能叠多张）', file: 'js/personalize.js', needle: 'if (draft.length >= DESK_FRAME_STICKER_MAX)' },
-  { name: '#1636e 新贴纸默认落点避让（删＝每次新增都叠在同一位置）', file: 'js/personalize.js', needle: 'function nextPhotoFrameStickerSpot(list) {' },
-  { name: '#1636f 已贴贴纸列表（删＝无法单独选中某一张调大小/删除）', file: 'js/personalize.js', needle: "placedTitle.textContent = '已贴 ' + draft.length + '/' + DESK_FRAME_STICKER_MAX + ' · 选中一张可改大小或删除';" },
-  { name: '#1636g 选中单张贴纸后删除（删＝只能整组清空，不能删某一张）', file: 'js/personalize.js', needle: 'draft.splice(selected, 1);' },
-  { name: '#1636h 拖动按索引写回数组（删＝拖第 2 张却改到第 1 张）', file: 'js/personalize.js', needle: 'if (!arr[idx]) return;' },
-  { name: '#1636i 新格式落库并清旧键（删＝旧单张与新数组两份数据重复渲染）', file: 'js/personalize.js', needle: 'if (clean.length) mm.stickers = clean; else delete mm.stickers;' },
-  { name: '#1636j 已贴列表样式（删＝列表项没有选中态/挤成文字堆）', file: 'css/home.css', needle: '.dpf-stk-placed-item {' },
-  // ==== 2026-11-04 #1637 单张贴纸手动旋转（选中后拖 -180~180° 滑杆） ====
-  { name: '#1637a 贴纸角度读取（删＝手动旋转角度不生效/被默认小角度覆盖）', file: 'js/personalize.js', needle: 'function photoFrameStickerRot(st, si) {' },
-  { name: '#1637b 渲染应用手动角度（删＝存了角度但画面不转）', file: 'js/personalize.js', needle: "sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');" },
-  { name: '#1637c 贴纸面板旋转滑杆（删＝用户没有旋转入口）', file: 'js/personalize.js', needle: "rotRow.className = 'dpf-stk-rotrow';" },
-  { name: '#1637d 拖动滑杆实时预览（删＝拖的时候看不到角度变化）', file: 'js/personalize.js', needle: "el.style.setProperty('--stk-rot', v + 'deg');" },
-  { name: '#1637e 松手落库旋转角度（删＝刷新后角度回默认）', file: 'js/personalize.js', needle: 'draft[selected].rot = Math.round(Number(rotInput.value));' },
-  { name: '#1637f 旋转角度随贴纸数据存取（删＝导出/导入/拖动后角度丢失）', file: 'js/personalize.js', needle: 'if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));' },
-  { name: '#1637g 旋转滑杆样式（删＝滑杆挤成默认丑样式/没有角度数值）', file: 'css/home.css', needle: '.dpf-stk-rotrow {' },
-  { name: '#1637h 面板草稿保留已有角度（删＝打开面板后其他贴纸的原角度被默认值覆盖）', file: 'js/personalize.js', needle: 'const draft = before.map(s => Object.assign({}, s));' },
-  // ==== 2026-11-04 #1638 贴纸面板可拖动 + 面板开着也能拖贴纸 ====
-  { name: '#1638a 遮罩透明且不吃指针（删＝面板一开照片被压暗或拖不到照片上的贴纸）', file: 'css/home.css', needle: 'background:transparent; overscroll-behavior:contain; pointer-events:none;' },
-  { name: '#1638b 面板本身可交互（删＝遮罩放行后连面板按钮都点不到）', file: 'css/home.css', needle: 'box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;' },
-  { name: '#1638c 面板拖动把手（删＝用户不知道面板可以拖/没有抓手）', file: 'js/personalize.js', needle: "handle.className = 'dpf-stk-handle';" },
-  { name: '#1638d 面板拖动绑定（删＝把手只是装饰，面板拖不动）', file: 'js/personalize.js', needle: 'const bindPanelDrag = (el) => {' },
-  { name: '#1638e 面板位移落地（删＝拖动时面板不跟手）', file: 'js/personalize.js', needle: "panel.style.transform = panelOffset ? 'translateY(' + (-panelOffset) + 'px)' : '';" },
-  { name: '#1638f 关闭面板清理拖动监听（删＝面板关了 window 上还挂监听，重复打开越挂越多）', file: 'js/personalize.js', needle: "window.removeEventListener('pointermove', panelDragMove);" },
-  { name: '#1638g 面板把手样式（删＝没有可拖的视觉提示）', file: 'css/home.css', needle: '.dpf-stk-handle {' },
-  { name: '#1638h 面板开着时点照片不叠开相框菜单（删＝拖贴纸时误触会反复弹菜单）', file: 'js/personalize.js', needle: "if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }" },
-  { name: '#1638i 面板开着时点贴纸不冒泡开菜单（删＝轻点贴纸会叠出相框菜单）', file: 'js/personalize.js', needle: "const stkPanelOpen = !!document.getElementById('dpf-stk-overlay');" },
-  // ==== 2026-11-04 #1639 网格编辑拖贴纸不带动拍立得 ====
-  { name: '#1639b 网格编辑按贴纸不登记卡片拖动（删＝拖贴纸时整张拍立得被捕获监听一起拖走）', file: 'js/personalize.js', needle: "if (e.target.closest('.dpf-sticker')) return;" },
-  // ==== 2026-11-04 #1640 贴纸面板往下拖可收成小胶囊 ====
-  { name: '#1640a 面板胶囊样式（删＝收起后还是整块面板，继续挡桌面）', file: 'css/home.css', needle: '.dpf-stk-panel.dpf-stk-panel-mini {' },
-  { name: '#1640b 面板收起/展开切换（删＝拖到底也收不起来）', file: 'js/personalize.js', needle: 'const setPanelMini = (on) => {' },
-  { name: '#1640c 面板允许向下拖出屏幕（删＝只能停在底部，无法再往下挪）', file: 'js/personalize.js', needle: 'const maxDown = Math.max(0, panel.offsetHeight - 54);' },
-  { name: '#1640d 下拖超过一半松手即收起（删＝拖到底松手又弹回整块）', file: 'js/personalize.js', needle: 'if (-panelOffset > maxDown * 0.45) { setPanelMini(true); return; }' },
-  { name: '#1640e 点胶囊展开（删＝收起后无法再打开面板）', file: 'js/personalize.js', needle: "if (panel.classList.contains('dpf-stk-panel-mini')) setPanelMini(false);" },
-  { name: '#1640f 胶囊悬在底部导航之上（删＝收起后仍挡住底栏按钮）', file: 'js/personalize.js', needle: 'panel.style.marginBottom = lift + \'px\';' },
-  // ==== 2026-11-04 #1641 网格删除的打卡卡片重启后不再复活 ====
-  { name: '#1641a 已移除卡片持久名单（删＝没有名单可挡，模板重启又把卡片带回来）', file: 'js/personalize.js', needle: 'const getHiddenWidgets = () => {' },
-  { name: '#1641b 删除标准卡片写入移除名单（删＝删完只在本次会话生效，重启复活）', file: 'js/personalize.js', needle: 'if (hw.indexOf(key) < 0) { hw.push(key); setHiddenWidgets(hw); }' },
-  { name: '#1641c 收养逻辑跳过已移除卡片并收回隐藏池（删＝重启时打卡卡片被收养回模型）', file: 'js/personalize.js', needle: 'if (getHiddenWidgets().indexOf(key) >= 0) {' },
-  { name: '#1641d 从 DOM 重建模型时跳过已移除卡片（删＝模型损坏重建后卡片一起复活）', file: 'js/personalize.js', needle: 'if (getHiddenWidgets().indexOf(wk) >= 0) return;' },
-  { name: '#1641e 组件库重新添加时解除移除标记（删＝从库里加回打卡卡后又被收回池）', file: 'js/personalize.js', needle: 'if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }' },
-  { name: '#1641f 恢复默认桌面清空移除名单（删＝恢复默认后打卡卡仍回不来）', file: 'js/personalize.js', needle: "store.remove('hidden-widgets');" },
-  { name: '#1641g 恢复默认时同时等待 IDB 删除移除名单（删＝IDB 回填把名单又带回来）', file: 'js/personalize.js', needle: "dels.push(window.idbDelete(P + ':hidden-widgets'));" },
-  // ==== 2026-11-04 #1642 emoji 贴纸 + 自定义上传贴纸 ====
-  { name: '#1642a emoji 常用面板数据（删＝Emoji 页签没有常用表情可选）', file: 'js/personalize.js', needle: 'const DESK_EMOJI_STICKERS = [' },
-  { name: '#1642b 上传贴纸库全局键（删＝上传图无法跨相框/跨桌面复用）', file: 'js/personalize.js', needle: "const DESK_STICKER_LIB_KEY = 'desk-sticker-lib';" },
-  { name: '#1642c 贴纸三种类型统一校验（删＝emoji/上传贴纸保存后被清掉）', file: 'js/personalize.js', needle: "if (st.kind === 'emoji') {" },
-  { name: '#1642d 贴纸按类型渲染（删＝emoji/上传贴纸在相框上显示不出来）', file: 'js/personalize.js', needle: 'function fillPhotoFrameStickerNode(sp, stickerMeta) {' },
-  { name: '#1642e 贴纸分类页签（删＝手绘/emoji/上传混在一起没有入口）', file: 'js/personalize.js', needle: "tabsBar.className = 'dpf-stk-tabs';" },
-  { name: '#1642f emoji 任意输入框（删＝只能点常用 emoji，不能粘贴自定义表情）', file: 'js/personalize.js', needle: "emojiInput.className = 'dpf-stk-emoji-input';" },
-  { name: '#1642g 上传贴纸写入全局库（删＝上传后刷新图片丢失）', file: 'js/personalize.js', needle: 'gStore.set(DESK_STICKER_SRC_PREFIX + ref, data);' },
-  { name: '#1642h 我的上传列表（删＝上传过的贴纸看不到、无法复用）', file: 'js/personalize.js', needle: "uploadGrid.className = 'dpf-stk-upload-grid';" },
-  { name: '#1642i 贴纸页签样式（删＝三个页签挤在一起/没有选中态）', file: 'css/home.css', needle: '.dpf-stk-tabs {' },
-  { name: '#1642j 上传贴纸缩略图样式（删＝我的上传变成一列大图/布局塌）', file: 'css/home.css', needle: '.dpf-stk-upload-item {' },
-  { name: '#1642k 上传贴纸本体样式（删＝贴到相框上的图片尺寸失控）', file: 'css/home.css', needle: '.dpf-sticker-upload .dpf-sticker-img {' },
-  { name: '#1642l 上传贴纸先挂节点再取 src（删＝同会话刚上传的贴纸显示空白）', file: 'js/personalize.js', needle: 'const src = deskStickerSrc(stickerMeta.ref);' },
-  // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
-  { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
-  { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
-  { name: '#1604c 最少/最多句数设置行（删＝用户没有调整入口）', file: 'js/music-player.js', needle: 'id="sm-set-lyricmin"' },
-  { name: '#1604d 最少/最多联动（删＝可设出 最少>最多 的无效范围）', file: 'js/music-player.js', needle: 'if (key === \'taLyricMin\' && (Number(settings.taLyricMax) || 4) < nv) {' },
-  // ==== 2026-10-30 #1605 我挑歌词支持多选 ====
-  { name: '#1605a 歌词多选状态（删＝又退回单选 sel）', file: 'js/music-player.js', needle: 'selSet: [], loading: false' },
-  { name: '#1605b 多选下标升序取用（删＝发送顺序乱/取不到已选）', file: 'js/music-player.js', needle: 'function lyricSelIndexes() {' },
-  { name: '#1605c 点行加选/再点取消（删＝又变成一选就顶掉上一句）', file: 'js/music-player.js', needle: 'if (at >= 0) arr.splice(at, 1); else arr.push(i);' },
-  { name: '#1605d 发送时多句合并（删＝只发最后选中的一句）', file: 'js/music-player.js', needle: 'const line = lyricSelIndexes().map(function (i) { return lyricState.lines[i].text; }).join(\'\\n\');' },
-  { name: '#1605e 选择条显示已选句数（删＝多选后不知道选了几句）', file: 'js/music-player.js', needle: '\'已选 \' + idxs.length + \' 句：\'' },
-  // ==== 2026-10-31 #1606 问问TA 思考时间去掉 10 秒上限 ====
-  { name: '#1606a 读取只保下限（删＝又夹回 1~10 秒）', file: 'js/chat.js', needle: 'return (n >= 1) ? n : 3;' },
-  { name: '#1606b 思考时间 stepper 不设上限（删＝又写回 data-max=10）', file: 'js/chat.js', needle: 'id="chat-ask-think" data-min="1" data-step="1"' },
-  { name: '#1606c 保存只夹下限（删＝点 + 超过 10 秒又被顶回 3）', file: 'js/chat.js', needle: 'if (!(n >= 1)) n = 3;' },
-  // ==== 2026-10-31 #1607 问问TA 思考时间＝上限语义＋可手输 ====
-  { name: '#1607a 随机延迟函数（删＝又变成固定等满设定秒数）', file: 'js/chat.js', needle: 'function askThinkDelayMs() {' },
-  { name: '#1607c 点数字直接输入（删＝设 30 秒要点 27 次 +）', file: 'js/chat.js', needle: 'window.openModal(\'最长思考时间（秒）\', String(askThinkSecsLoad()), (v) => {' },
-  { name: '#1607d 设置项标明最长（删＝用户仍按固定等待理解）', file: 'js/chat.js', needle: '<span>最长思考时间（秒）</span>' },
-  // ==== 2026-11-02 #1608 底栏选中阴影/背景块跟随图标线条色 ====
-  { name: '#1608a 阴影色跟随线条色（删＝阴影又固定黑色，与彩色线条割裂）', file: 'js/personalize.js', needle: 'box-shadow:0 1px 6px rgba(' },
-  { name: '#1608b 浅色线条阴影自动压暗（删＝白/浅灰线条的阴影淡到看不见）', file: 'js/personalize.js', needle: 'const _inkLight = _inkLum > 0.72;' },
-  { name: '#1608c 选中背景块用线条色本身（删＝背景块又被压暗成灰粉色）', file: 'js/personalize.js', needle: 'background:rgba(\' + _inkR + \',\' + _inkG' },
-  { name: '#1608d 选中背景块保持可见（删＝内缩后几乎看不见，只剩白底）', file: 'js/personalize.js', needle: 'const _bgA = _inkLight ? 0.13 : 0.10;' },
-  // ==== 2026-11-02 #1609 底栏选中块内缩 + 阴影收紧 ====
-  { name: '#1609a 选中块内缩伪元素（删＝背景又铺满整个 tab 热区；内缩量 2/5，原 4/8 缩得过小）', file: 'css/tabbar.css', needle: 'top:2px; bottom:2px; left:5px; right:5px;' },
-  { name: '#1609b 自定义线条色时背景/阴影落内缩层（删＝设色后背景又回到铺满）', file: 'js/personalize.js', needle: '.tabbar .tab.active::before{background:rgba(' },
-  // ==== 2026-11-02 #1610 已摸鱼「天」与今日情话首行对齐 ====
-  { name: '#1610a 已摸鱼正文上移 1px（删＝「天」比「我想陪着你」低 1px）', file: 'css/home.css', needle: 'height:45px; line-height:15px; margin-top:7px; overflow:hidden;' },
+  // ==== 2026-11-04 #1585 已答卡底部留白改 ::after 占位（防自定义 CSS 压心形） ====
+  { name: '#1585a 已答卡/选择卡心形留白改 ::after 占位（删＝自定义卡片 CSS 写 padding 时心形又压到最后一行字上）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after' },
+  { name: '#1585b 问卷卡详情钮/心形留白改 ::after 占位（删＝改 padding 后详情钮与收藏心形压字）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.msg-survey-card::after' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

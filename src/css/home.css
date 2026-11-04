@@ -200,10 +200,8 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    垂直居中，但情话正文高 45px、已摸鱼正文仅单行，内容总高不一致导致各自居中后
    两卡的「标题行 / 正文行」水平错位。给已摸鱼正文区同 45px 固定高 + 顶对齐，
    与情话卡结构一致，标题与正文首行即完全对齐。 */
-/* 2026-11-02：与「今日情话」首行严格对齐——实测「天」比「我想陪着你」低 1px
-   （16px 数字把整行基线拉低了 1px），上移 1px 消差。 */
 .mini-card[data-card-bg="fish"] .mc-b {
-  height:45px; line-height:15px; margin-top:7px; overflow:hidden;
+  height:45px; line-height:15px; margin-top:8px; overflow:hidden;
 }
 .mini-card[data-card-bg="fish"] .mc-b b { line-height:inherit; }
 
@@ -362,11 +360,6 @@ html.desk-zoom-card .week-card, html.desk-zoom-card .desk-period, html.desk-zoom
    行高 + 省略号后图标块高度恒定（58 图标+8 gap+14 文字=80 ≤ 96 行高），字号多大
    三页都对齐。 */
 .app .app-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:14px; line-height:14px; display:block; }
-/* #1626 图标名称显示开关：personalize.js 在 html 上挂 desk-hide-app-names 时隐藏名称。
-   缺少这条规则＝开关只切换类名、名称仍显示（用户报「之前生效过、后面突然不生效」的根因）。
-   网格版图标格高 92px，隐藏名称后垂直居中，避免图标贴格顶。 */
-html.desk-hide-app-names .app .app-name { display:none; }
-html.desk-hide-app-names .app { justify-content:center; }
 
 /* v3.7.x：单个功能图标移出 app-grid 作为独立组件时居中显示 */
 .page-slide .app[data-desk-widget^="app-"] { align-self:center; margin:8px 0; }
@@ -448,9 +441,7 @@ html.desk-hide-app-names .app { justify-content:center; }
    #page-phone 之外，长按保存图片不受影响。 */
 #page-phone { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 .dots {
-  /* #1629 用户反馈圆点离下方导航条偏远：整体下移 4px（6→2）；#1631 再下移 1px（2→1）；
-     #1632 再下移 2px（1→-1），探出桌面底边 1px，视觉上更贴近导航条 */
-  position:absolute; left:0; right:0; bottom:-1px;
+  position:absolute; left:0; right:0; bottom:6px;
   display:flex; justify-content:center; gap:8px; padding:0;
   /* v3.27.x（#580）：圆点跟随手指改成每帧切换（desktop-slider.js），而 active 是
      「宽度 7px→20px」的变形——width 动画每帧都会触发一次布局。圆点是 #page-phone
@@ -466,9 +457,6 @@ html.desk-hide-app-names .app { justify-content:center; }
   transition:width .16s ease, background .16s ease;
 }
 .dot.active { width:20px; background:var(--ink); }
-/* #1634 分页圆点显示开关：只隐藏视觉，DOM 与 desktop-slider 的监听保留，
-   隐藏后左右滑动切页照常工作，设置里随时可打开恢复。 */
-html.desk-hide-dots #desktop-dots { display:none; }
 /* 桌面内容底部留白：滚动到底时最后一项不被悬浮圆点盖住 */
 .page-slide { padding-bottom:18px; }
 
@@ -598,13 +586,6 @@ html.desk-hide-dots #desktop-dots { display:none; }
 .desk-timer .dt-btn { flex:1; font-size:12px; padding:6px 0; border:1px solid rgba(0,0,0,.12); border-radius:8px; background:rgba(0,0,0,.03); color:var(--ink,#111); cursor:pointer; font-family:inherit; }
 .desk-timer .dt-btn:active { background:rgba(0,0,0,.08); }
 .desk-anniv { padding:14px 16px; margin:0 0 14px; text-align:center; }
-/* #1626 统一倒数日卡：主事件居中，下面接「接下来」列表（列表只在网格版拉高后显示） */
-.desk-anniv .da-main { display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.desk-anniv .da-list { display:none; margin-top:8px; width:100%; }
-.desk-anniv .da-list-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:10.5px; line-height:1.45; color:var(--muted,#666); }
-.desk-anniv .da-list-name { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.desk-anniv .da-list-days { flex:none; font-weight:600; color:var(--ink,#111); }
-.desk-anniv .da-days.past { font-size:18px; }
 .desk-anniv .da-label { font-size:11px; color:var(--muted,#888); }
 .desk-anniv .da-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-anniv .da-name { font-size:12px; color:var(--muted,#666); }
@@ -677,203 +658,6 @@ html.desk-hide-dots #desktop-dots { display:none; }
 .desk-countdown-widget .dcd-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-countdown-widget .dcd-date { font-size:12px; color:var(--muted,#666); }
 .desk-image-widget img { width:100%; display:block; border-radius:inherit; }
-/* #1628 拍立得相框：复用图片组件上传/存储，2×2 默认尺寸（网格版），奶油相纸+主题色胶带
-   #1630 颜色入口：--photo-frame-paper 相纸底色 / --photo-frame-ink 小字颜色 /
-   --photo-frame-tape 胶带颜色（未改时胶带跟主题色）。「小组件 CSS」选「拍立得相框」
-   会自动插入 .desk-photo-frame { ... }。 */
-.desk-photo-frame {
-  position:relative; margin:14px 0; padding:8px 8px 0;
-  background:var(--photo-frame-paper,#fffaf0); border-radius:10px; overflow:visible;
-  box-shadow:0 6px 18px rgba(0,0,0,.10), inset 0 0 0 1px rgba(255,255,255,.75);
-}
-.desk-photo-frame::before {
-  content:''; position:absolute; top:-7px; left:50%;
-  width:54px; height:16px; border-radius:2px;
-  background:var(--photo-frame-tape,#e7d2aa); opacity:.86;
-  transform:translateX(-50%) rotate(-2deg);
-  box-shadow:0 1px 2px rgba(0,0,0,.08); pointer-events:none;
-}
-.desk-photo-frame .dpf-img {
-  width:100%; display:block; border-radius:4px; background:#f1ece1;
-  object-fit:cover; object-position:50% 50%; -webkit-user-drag:none;
-}
-.desk-photo-frame .dpf-cap {
-  height:27px; line-height:27px; padding:0 2px;
-  font-size:11px; color:var(--photo-frame-ink,#7b6a58); text-align:center;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  letter-spacing:.02em;
-}
-.desk-photo-frame.dpf-no-cap .dpf-img { border-radius:4px 4px 3px 3px; }
-/* #1635 拍立得相框贴纸：手绘 SVG + 白色裁切边；位置由 left/top 百分比控制。
-   普通状态 pointer-events:none，不挡点照片；装修/网格编辑态才可拖动。 */
-.dpf-sticker {
-  position:absolute; z-index:3; width:20%; line-height:0; pointer-events:none;
-  transform:translate(-50%,-50%) rotate(var(--stk-rot,-4deg));
-  filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 2px 3px rgba(0,0,0,.16));
-}
-.dpf-sticker svg { width:100%; height:auto; display:block; }
-.dpf-sticker-s { width:14%; }
-.dpf-sticker-m { width:20%; }
-.dpf-sticker-l { width:28%; }
-.decor-on .desk-photo-frame .dpf-sticker,
-html.dgr-editing .desk-photo-frame .dpf-sticker {
-  pointer-events:auto; touch-action:none; cursor:grab;
-}
-.dpf-sticker.dpf-sticker-drag { cursor:grabbing; z-index:4; }
-/* #1635 贴纸选择面板（底部抽屉） */
-.dpf-stk-overlay {
-  position:fixed; inset:0; z-index:10001; display:flex; align-items:flex-end; justify-content:center;
-  background:transparent; overscroll-behavior:contain; pointer-events:none;
-  /* #1638/#1639 面板打开时不加暗色遮罩（用户要边看照片边拖贴纸）；遮罩层也不吃指针，
-     只有面板本身拦截。点面板外的照片/贴纸会直接落到桌面。 */
-}
-.dpf-stk-panel {
-  box-sizing:border-box; width:min(96vw,430px); max-height:76vh; overflow:auto;
-  padding:16px 14px calc(14px + env(safe-area-inset-bottom,0px));
-  background:var(--card-bg,#fff); border-radius:22px 22px 0 0;
-  box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;
-}
-/* #1638 面板可上下拖动：顶部小把手 + 标题行都能拖，拖高后少挡照片 */
-.dpf-stk-handle {
-  width:38px; height:4px; margin:0 auto 8px; border-radius:99px;
-  background:rgba(0,0,0,.18); touch-action:none; cursor:grab;
-}
-.dpf-stk-panel-drag .dpf-stk-handle { cursor:grabbing; }
-.dpf-stk-title { font-size:15px; font-weight:700; color:var(--ink,#111); text-align:center; margin-bottom:12px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
-.dpf-stk-panel-drag .dpf-stk-title { cursor:grabbing; }
-/* #1640 往下拖到底＝收成底部小胶囊，只留把手+标题，点一下再展开 */
-.dpf-stk-panel.dpf-stk-panel-mini {
-  width:auto; max-width:80vw; margin:0 auto;
-  padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
-  border-radius:99px; overflow:hidden;
-}
-.dpf-stk-panel.dpf-stk-panel-mini > *:not(.dpf-stk-handle):not(.dpf-stk-title) { display:none; }
-.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-handle { margin-bottom:4px; }
-.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-title { margin-bottom:0; font-size:12px; }
-.dpf-stk-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
-/* #1642 emoji / 上传贴纸分类页签与面板 */
-.dpf-stk-tabs { display:flex; gap:6px; margin-bottom:10px; }
-.dpf-stk-tab {
-  flex:1; padding:7px 0; border:1px solid var(--card-border,rgba(0,0,0,.12));
-  border-radius:9px; background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111);
-  font-size:12px; cursor:pointer;
-}
-.dpf-stk-tab.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
-.dpf-stk-emoji-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
-.dpf-stk-emoji-item {
-  border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px;
-  background:#fff; font-size:24px; line-height:1; padding:9px 0 7px;
-  cursor:pointer; color:var(--ink,#111);
-}
-.dpf-stk-emoji-row { display:flex; gap:6px; margin-top:9px; }
-.dpf-stk-emoji-input {
-  flex:1; min-width:0; padding:8px 10px; border:1px solid var(--card-border,rgba(0,0,0,.12));
-  border-radius:9px; background:var(--card-bg,#fff); color:var(--ink,#111); font-size:13px;
-}
-.dpf-stk-emoji-add {
-  flex:none; padding:8px 13px; border:1px solid var(--card-border,rgba(0,0,0,.12));
-  border-radius:9px; background:var(--btn-bg,#111); color:var(--btn-ink,#fff); font-size:12px; cursor:pointer;
-}
-.dpf-stk-upload-btn {
-  width:100%; padding:9px 0; border:1px dashed rgba(0,0,0,.22); border-radius:10px;
-  background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111); font-size:12px; cursor:pointer;
-}
-.dpf-stk-upload-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:8px; }
-.dpf-stk-upload-item {
-  height:46px; border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:10px;
-  background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  padding:4px; overflow:hidden;
-}
-.dpf-stk-upload-item img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-.dpf-stk-upload-empty { font-size:10.5px; color:var(--muted,#999); padding:4px 0 2px; }
-/* 贴纸本体：emoji / 上传图 */
-.dpf-sticker-emoji-svg text, .dpf-sticker-emoji text {
-  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
-}
-.dpf-sticker-upload .dpf-sticker-img { width:100%; height:auto; display:block; }
-.dpf-sticker-missing {
-  aspect-ratio:1 / 1; min-height:34px; border:1px dashed rgba(0,0,0,.25); border-radius:10px;
-  background:rgba(255,255,255,.72); display:flex; align-items:center; justify-content:center;
-}
-.dpf-sticker-missing::after { content:'?'; font-size:16px; color:var(--muted,#999); }
-.dpf-stk-placed-emoji { font-size:20px; line-height:1; }
-.dpf-stk-placed-item img { width:22px; height:22px; object-fit:contain; display:block; }
-.dpf-stk-item {
-  border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px; background:#fffaf0;
-  padding:7px 2px 4px; display:flex; flex-direction:column; align-items:center; gap:2px;
-  cursor:pointer; color:var(--ink,#111);
-}
-.dpf-stk-item svg { width:34px; height:34px; display:block; transform:rotate(var(--stk-rot,0deg)); filter:drop-shadow(0 1px 2px rgba(0,0,0,.12)); }
-.dpf-stk-item span { font-size:9.5px; color:var(--muted,#888); line-height:1.3; }
-.dpf-stk-item.on { outline:2px solid var(--btn-bg,#111); outline-offset:1px; }
-/* #1636 多贴纸：已贴列表（选中后可改大小/删除） */
-.dpf-stk-subtitle { margin-top:12px; font-size:11px; line-height:1.5; color:var(--muted,#888); }
-.dpf-stk-placed { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-.dpf-stk-placed-item {
-  display:flex; align-items:center; gap:5px; padding:5px 9px 5px 6px;
-  border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:10px;
-  background:#fffaf0; color:var(--ink,#111); font-size:10.5px; cursor:pointer;
-}
-.dpf-stk-placed-item svg { width:22px; height:22px; display:block; }
-.dpf-stk-placed-item.on { outline:2px solid var(--btn-bg,#111); outline-offset:1px; }
-.dpf-stk-placed-empty { font-size:10.5px; color:var(--muted,#999); padding:2px 0; }
-.dpf-stk-sizes { display:flex; gap:8px; margin-top:12px; justify-content:center; }
-.dpf-stk-size {
-  min-width:64px; padding:7px 0; border:1px solid var(--card-border,rgba(0,0,0,.12));
-  border-radius:9px; background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111);
-  font-size:12px; cursor:pointer;
-}
-.dpf-stk-size.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
-/* #1637 单张贴纸旋转滑杆（选中已贴贴纸后出现） */
-.dpf-stk-rotrow { display:flex; align-items:center; gap:8px; margin-top:12px; }
-.dpf-stk-rotrow[hidden] { display:none; }
-.dpf-stk-rotrow label { flex:none; font-size:11.5px; color:var(--muted,#888); }
-.dpf-stk-rotrow input[type=range] { flex:1; min-width:0; }
-.dpf-stk-rotval { flex:none; width:42px; text-align:right; font-size:11px; color:var(--muted,#999); }
-.dpf-stk-tip { margin-top:10px; font-size:10.5px; line-height:1.5; color:var(--muted,#999); text-align:center; }
-.dpf-stk-actions { display:flex; gap:8px; margin-top:12px; }
-.dpf-stk-actions button { flex:1; padding:10px 0; border:none; border-radius:11px; font-size:12.5px; font-weight:600; cursor:pointer; }
-.dpf-stk-cancel { background:var(--btn-cancel-bg,#f2f2f2); color:var(--ink,#111); }
-.dpf-stk-remove { background:#fff0f0; color:#b35b5b; }
-.dpf-stk-remove[hidden] { display:none; }
-.dpf-stk-ok { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); }
-/* 编辑/装修态给相框一个轻提示，不挡照片操作 */
-.decor-on .desk-photo-frame.desk-image-widget::after {
-  content:'点我换图 · 贴纸 · 调焦点 · 改字'; position:absolute; left:0; right:0; bottom:0;
-  padding:5px 6px; text-align:center; font-size:10px; color:#fff;
-  background:linear-gradient(transparent, rgba(60,45,30,.62));
-  border-radius:0 0 10px 10px; pointer-events:none;
-}
-/* #1628 照片焦点调整浮层 */
-.dpf-crop-overlay {
-  position:fixed; inset:0; z-index:10001; box-sizing:border-box;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:13px;
-  padding:24px; background:rgba(20,16,12,.86);
-  touch-action:none; overscroll-behavior:contain;
-}
-.dpf-crop-title { color:#fff; font-size:14px; font-weight:600; letter-spacing:.02em; }
-.dpf-crop-box {
-  position:relative; width:min(78vw,320px,52vh); aspect-ratio:1 / 1;
-  border-radius:8px; overflow:hidden; background:#fff; cursor:grab;
-  touch-action:none; box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 0 0 4px #fffaf0;
-}
-.dpf-crop-box:active { cursor:grabbing; }
-.dpf-crop-box img {
-  width:100%; height:100%; object-fit:cover; object-position:50% 50%;
-  display:block; pointer-events:none; user-select:none; -webkit-user-select:none;
-}
-.dpf-crop-tip { color:rgba(255,255,255,.62); font-size:11px; text-align:center; }
-.dpf-crop-actions { display:flex; gap:12px; margin-top:2px; }
-.dpf-crop-actions button {
-  min-width:78px; padding:9px 18px; border:none; border-radius:10px;
-  font-size:12px; font-weight:600; cursor:pointer;
-}
-.dpf-crop-cancel { background:rgba(255,255,255,.16); color:#fff; }
-.dpf-crop-ok { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); }
-html.dpf-crop-open, html.dpf-crop-open body { overflow:hidden; }
-html.dpf-crop-open #dgr-editbar,
-html.dpf-crop-open #dgr-pagebar,
-html.dpf-crop-open #dgr-badge-layer { visibility:hidden; }
 /* 装修模式下图片组件可操作：点组件弹菜单（换图/删除），加视觉提示 */
 .decor-on .desk-image-widget::after {
   content:'点我换图 · 删除'; position:absolute; left:0; right:0; bottom:0;
@@ -954,12 +738,6 @@ html.dpf-crop-open #dgr-badge-layer { visibility:hidden; }
 .mw-info { flex:1; min-width:0; }
 .mw-song { font-size:16px; font-weight:700; letter-spacing:.5px; }
 .mw-artist { font-size:11px; color:var(--muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-/* 当前唱到的一句（歌词页入口）：10.5px 单行，撑高约 15px，仍在 190px 小部件高度内 */
-.mw-lyric {
-  margin-top:2px; font-size:10.5px; line-height:1.3; color:var(--muted);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.mw-lyric[hidden] { display:none; }
 .mw-progress { margin-top:10px; }
 .mw-bar {
   position:relative; height:4px; border-radius:99px; background:#e3e3e3;
@@ -1069,8 +847,7 @@ html.dpf-crop-open #dgr-badge-layer { visibility:hidden; }
    47~59px 是系统状态栏区域，硬编码 12px 会被状态栏盖住/顶进灵动岛（同类元素
    .ver-update-bar/.sm-float 均已避让，仅此处遗漏）；浏览器内 env() 返回 0，行为不变 */
 .desk-msg {
-  /* 顶部横幅往下让开状态栏：原来只留 12px，真机上会压在时间/品牌那一行上 */
-  position:fixed; top:calc(44px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
+  position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%);
   /* v3.5.127：z 从 300 降到 89——不再盖过弹层（modal 90/tc 85/qa 88/call 95），
      否则 TA 来消息时横幅压在弹窗/来电面板上面 */
   z-index:89; width:min(320px, calc(100% - 24px));

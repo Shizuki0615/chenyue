@@ -370,7 +370,7 @@
     if (mailRescueFlight) { toast('正在从本地库读取…'); return; }
     toast('正在从本地库找回…');
     mailRescueRun(undefined, function (r) {
-      if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带他回信 ' + r.rp + ' 封）' : ''));
+      if (r && r.ok) toast('已从本地库合并：屏上 ' + r.before + ' → ' + r.after + ' 封' + (r.rp ? '（带 他 回信 ' + r.rp + ' 封）' : ''));
       else if (r && r.why === 'absent') toast('本地库里没有这一格（可能从未落地）');
       else if (r && r.why === 'noidb') toast('这台设备没有可用的本地库');
       else toast('本地库这次没读出来（存储正忙）：过几秒再点一次');
@@ -557,13 +557,9 @@
       return el && !el.hidden;
     });
   }
-  // #1614：聊天信件通知直达——目标信件 id 与定位窗口
-  let mailJumpId = null, mailJumpAt = 0, mailJumpRetried = false;
   // 打开信箱页（渲染 + 清角标），供信箱图标点击与弹窗点击共用
   // v3.10.x：暴露给 chat.js——聊天里的信件通知（写了一封信/给你回了信等）可点击直达
-  function openMailPage(keepJump) {
-    // #1614：普通打开信箱（图标/返回/其它入口）清掉上一次的直达目标；只有 openMailLetter 传 true 保留
-    if (keepJump !== true) mailJumpId = null;
+  function openMailPage() {
     // v3.27.x 性能：先显示 page-mail 再补查/渲染——render() 现在只在信箱页可见时干活
     //（后台落地路径不再白建列表 DOM），进页这一刻按需渲染；红米 K80「先可见再写入」
     // 防御口径同 submitReply/sendLetter。
@@ -577,24 +573,6 @@
     updateBadge();
   }
   window.openMailPage = openMailPage;
-  // #1614：从聊天信件通知直达某封信——按 id 找信、切对应 tab、展开月份组，再滚到并高亮。
-  // 数据未就绪时先挂起，render() 末尾会按同一 id 再补一次定位。
-  function openMailLetter(id) {
-    if (!id) { openMailPage(); return; }
-    mailJumpId = String(id);
-    mailJumpAt = Date.now();
-    mailJumpRetried = false;
-    try {
-      const l = load().find(x => x.id === mailJumpId);
-      if (l) {
-        selectMailTab(l.type === 'sent' ? 'out' : 'in');
-        const mk = jumpFoldKey(l);
-        if (mk) mailFoldOpen[mk] = true;
-      }
-    } catch (e) {}
-    openMailPage(true);
-  }
-  window.openMailLetter = openMailLetter;
   // 写信纸 HTML（简约卡片：标题 + 寄信人/时间 + 正文）
   // 正文支持字卡库图片（dataURL）直接显示；图片/表情包都是字卡，统一渲染为
   // 同尺寸缩略图（sticker:/image: 前缀仅作历史类型标记，不再区分显示大小）
@@ -820,8 +798,7 @@
       // 以为回信没成功（红米 K80 Chrome 反馈「回了信不显示、重新点也看不到回信」）。
       // 同步先 showPage+selectMailTab 让 page-mail 与目标 tab 可见，再 render() 确保
       // innerHTML 在元素可见时写入（防御个别内核对 hidden 元素 innerHTML 渲染延迟）。
-      // #1608：寄信/回信成功回信箱算「回退」，走页面栈（否则信箱会再入栈，物理返回会退回写信页）
-      if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+      showPage('page-mail');
       selectMailTab('in');
       render();
       updateBadge();
@@ -832,7 +809,7 @@
       // v3.7.x：概率由收藏设置页控制，默认 30%
       if (Math.random() * 100 < (window.favCfg ? window.favCfg().taMail : 30) && window.addTaFavItem) {
         window.addTaFavItem({ kind: 'mail', title: l.tt || '', text: val, ts: Date.now() });
-        setTimeout(() => toast(window.taFit ? window.taFit('他收藏了你的回信') : '他收藏了你的回信'), 1200);
+        setTimeout(() => toast(window.taFit ? window.taFit('他 收藏了你的回信') : '他 收藏了你的回信'), 1200);
       }
     }
   }
@@ -851,12 +828,12 @@
     const cur = window.__activeCid || 'default';
     if (cid === cur) {
       // v3.10.x：opts.mailNotice → 聊天通知可点击打开信箱
-      if (window.chatAddSystem) window.chatAddSystem(text, { mailNotice: !!(opts && opts.mailNotice), mailId: opts && opts.mailId });
+      if (window.chatAddSystem) window.chatAddSystem(text, { mailNotice: !!(opts && opts.mailNotice) });
       return;
     }
     // v3.14.x：改走 chat.js 统一安全追加——原「idbGet→push→整包写回」在读取
     // 超时（返回 undefined）时会把该桌面全部聊天记录覆盖成 [这一条]
-    if (window.chatAppendToDeskMsg) { window.chatAppendToDeskMsg(cid, text, { mailNotice: !!(opts && opts.mailNotice), mailId: opts && opts.mailId }); }
+    if (window.chatAppendToDeskMsg) { window.chatAppendToDeskMsg(cid, text, { mailNotice: !!(opts && opts.mailNotice) }); }
   }
   // 该联系人桌面的 TA 昵称（lbl-partner，回退 contacts.name，再回退 'TA'）
   function partnerNameFor(cid) {
@@ -902,16 +879,13 @@
         if (list[idx].partnerReply) { changed = true; return; } // 已有 TA 回信 → 丢弃计划
         if (p.due > now) { rest.push(p); return; }        // 未到期 → 保留
         // 到期：落地 TA 回信
-        const target = list[idx];
-        target.partnerReply = { content: p.content, tm: now };
+        list[idx].partnerReply = { content: p.content, tm: now };
         landed = true;
-        const targetTitle = String(target.tt || '').trim();
-        // #1614：通知带上信件 id + 标题——点进去直接定位到这一封
-        notifyMailToChat(cid, name + ' 给你回了信' + (targetTitle ? '：《' + targetTitle + '》' : ''), { mailNotice: true, mailId: target.id });
+        notifyMailToChat(cid, name + ' 给你回了信', { mailNotice: true });
         // v3.5.107：TA 回信且不在信箱页 → 前台桌面弹窗（仅当前激活桌面才弹，用户能看到）
         if (cid === (window.__activeCid || 'default') && window.showDeskPopup && !mailPageVisible()) {
           // FIX 2026-09-13 #403 弹窗正文剥媒体池令牌/附件（原样传信件正文＝通知横幅直出乱码）
-window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你回了一封信：' + String(p.content || '')), onClick: function () { openMailLetter(target.id); }, isHidden: document.visibilityState === 'hidden' });
+window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你回了一封信：' + String(p.content || '')), onClick: openMailPage, isHidden: document.visibilityState === 'hidden' });
         }
         changed = true;
       });
@@ -1029,7 +1003,7 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
       //   自救入口（mailRescueStrip 自己按残缺判据决定出不出现，正常读写时这段是空串、一个字不加）
       inEl.innerHTML = mailRescueStrip() + (inHtml || (mailEmptyIsLie() && window.mochiLoadingHtml
         ? window.mochiLoadingHtml('收到的信')
-        : '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等他吧') : '还没有收到信，等等他吧') + '</div>'));
+        : '<div class="ta-empty">' + (window.taFit ? window.taFit('还没有收到信，等等 他 吧') : '还没有收到信，等等 他 吧') + '</div>'));
       // v3.26.x：防御 innerHTML 未生效——个别安卓内核（红米 K80 Chrome）对 hidden 元素
       // innerHTML 渲染延迟，列表项数与数据不符时重试一次（红米 K80 反馈「列表空」）。
       if (inList.length && inEl.querySelectorAll('.mail-item').length < inList.length) inEl.innerHTML = mailRescueStrip() + inHtml;
@@ -1043,64 +1017,6 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
         : '<div class="ta-empty">还没有寄出任何信，提笔写一封吧</div>');
       if (outList.length && outEl.querySelectorAll('.mail-item').length < outList.length) outEl.innerHTML = outHtml;
     }
-    // #1614：每次重画后补一次目标定位（数据 ready/回信落地都会重画）
-    try { applyMailJump(); } catch (e) {}
-  }
-  // #1614：目标信所在月份折叠键（本周/缺日期的口径与 mailGroupedHtml 完全一致）
-  function jumpFoldKey(l) {
-    const dir = l.type === 'sent' ? 'out' : 'in';
-    const tm = Number(l.tm) || 0;
-    if (tm && tm >= weekStartTs(Date.now())) return null;
-    return dir + '|' + (tm ? monthKeyOf(tm) : 'none');
-  }
-  // #1614：把目标信切到对应 tab、展开月份组，滚到并高亮；找不到就回退到普通列表
-  function applyMailJump() {
-    if (!mailJumpId) return;
-    if (Date.now() - mailJumpAt > 8000) { mailJumpId = null; return; }
-    let l = null;
-    try { l = load().find(x => x.id === mailJumpId); } catch (e) {}
-    if (!l) {
-      if (mailDbReady) { mailJumpId = null; toast('这封信已经不在了'); }
-      return;
-    }
-    const dir = l.type === 'sent' ? 'out' : 'in';
-    selectMailTab(dir);
-    const mk = jumpFoldKey(l);
-    if (mk) {
-      mailFoldOpen[mk] = true;
-      const fold = document.querySelector('#page-mail .mail-fold[data-mail-fold="' + mk + '"]');
-      if (fold && !fold.classList.contains('open')) {
-        fold.classList.add('open');
-        const head = fold.querySelector('.mail-fold-head');
-        if (head) head.setAttribute('aria-expanded', 'true');
-      }
-    }
-    const listEl = document.getElementById(dir === 'in' ? 'mail-in-list' : 'mail-out-list');
-    if (!listEl) return;
-    let item = null;
-    const items = listEl.querySelectorAll('.mail-item');
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].dataset.id === l.id) { item = items[i]; break; }
-    }
-    if (!item) {
-      if (!mailJumpRetried) {
-        mailJumpRetried = true;
-        try { render(); } catch (e) {}
-      } else if (mailDbReady) {
-        mailJumpId = null;
-        toast('这封信已经不在了');
-      }
-      return;
-    }
-    setTimeout(function () {
-      try {
-        item.classList.add('mail-jump-hit');
-        item.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      } catch (e) {}
-      setTimeout(function () { try { item.classList.remove('mail-jump-hit'); } catch (e) {} }, 2800);
-    }, 60);
-    // 保留 8 秒定位窗口：开页时 checkPendingReply/data-ready 可能再重画一次，重画后仍能补高亮；
-    // 用户手动切 tab、普通重开信箱或超时都会清掉，不会长期反复滚回
   }
   // #785：回填真完成后补渲一次（render 开头按 page-mail 不可见早退，隐藏时零代价）
   if (window.mochiOnDataReady) window.mochiOnDataReady(function () { try { render(); } catch (e) {} });
@@ -1180,16 +1096,14 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     if (input) input.value = '';
     if (input && input.__ceBox) input.__ceBox.textContent = '';
     // v3.10.x：信件通知可点击（chat.js 渲染 mail-notice 类，点击打开信箱）
-    // #1614：通知带信件 id + 标题，点进去精准定位到刚寄出的这封
-    if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 写了一封信' + (letter.tt ? '：《' + letter.tt + '》' : ''), { mailNotice: true, mailId: letter.id });
+    if (window.chatAddSystem) window.chatAddSystem('你给 ' + name + ' 写了一封信', { mailNotice: true });
     toast('信件已寄出');
     // v3.26.x：先 showPage+selectMailTab 让 page-mail 与「寄出的信」tab 可见，再 render()——
     // 原实现 render() 在 showPage 之前，page-mail 仍 hidden 时写入 innerHTML，个别安卓
     // 内核（红米 K80 Chrome 实测）对 hidden 元素 innerHTML 渲染延迟，寄信后列表空白。
     // 改为 DOM 可见后再渲染，并保留前一次 render() 兜底（双渲染，零副作用）。
     render();
-    // #1608：寄出后回信箱算「回退」，走页面栈（否则物理返回会退回写信页）
-    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
+    showPage('page-mail');
     selectMailTab('out');
     render();
   }
@@ -1579,14 +1493,13 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
       cs.set('mail-letter-last', String(now));
       cs.set('mail-letter-next', String(cfg.writeMin + Math.random() * Math.max(1, cfg.writeMax - cfg.writeMin)));
       letterDayAdd(cid);
-      // #1614：通知带信件 id + 标题，点进去直接定位到这一封来信
-      notifyMailToChat(cid, '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + name + ' 给你寄来了一封信' + (letter.tt ? '：《' + letter.tt + '》' : ''), { mailNotice: true, mailId: letter.id });
+      notifyMailToChat(cid, '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + name + ' 给你寄来了一封信', { mailNotice: true });
       // 前台弹窗 + 角标刷新仅当前激活桌面（用户能看到）；非当前桌面下次切回时 load 自然显示
       if (cid === (window.__activeCid || 'default')) {
         updateBadge();
         render();
         if (window.showDeskPopup && !mailPageVisible()) {
-          window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你寄来了一封信：' + String(content || '')), onClick: function () { openMailLetter(letter.id); }, isHidden: document.visibilityState === 'hidden' });
+          window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('给你寄来了一封信：' + String(content || '')), onClick: openMailPage, isHidden: document.visibilityState === 'hidden' });
         }
       }
     } catch (e) {}
@@ -1751,8 +1664,6 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
   }
   const mailBack = document.getElementById('mail-back');
   if (mailBack) mailBack.addEventListener('click', () => {
-    // #1608：按来源返回——桌面进信箱回桌面，聊天点信件提示进信箱回聊天
-    if (window.mochiGoBack) { window.mochiGoBack('page-phone'); return; }
     document.querySelectorAll('.page').forEach(p => p.hidden = true);
     const phone = document.getElementById('page-phone');
     if (phone) phone.hidden = false;
@@ -1767,23 +1678,12 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     });
   }
   const mailWriteBack = document.getElementById('mail-write-back');
-  if (mailWriteBack) mailWriteBack.addEventListener('click', () => {
-    if (window.closeEmojiPanel) window.closeEmojiPanel();
-    // #1608：写信返回信箱走页面栈（正常栈顶就是信箱），兜底仍信箱
-    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
-    render();
-  });
+  if (mailWriteBack) mailWriteBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); showPage('page-mail'); render(); });
   const mailSend = document.getElementById('mail-send');
   if (mailSend) mailSend.addEventListener('click', sendLetter);
   // 回信页：返回 / 寄出
   const mailReplyBack = document.getElementById('mail-reply-back');
-  if (mailReplyBack) mailReplyBack.addEventListener('click', () => {
-    if (window.closeEmojiPanel) window.closeEmojiPanel();
-    viewLetter = null;
-    // #1608：回信返回信箱走页面栈（正常栈顶就是信箱），兜底仍信箱
-    if (window.mochiGoBack) window.mochiGoBack('page-mail'); else showPage('page-mail');
-    render();
-  });
+  if (mailReplyBack) mailReplyBack.addEventListener('click', () => { if (window.closeEmojiPanel) window.closeEmojiPanel(); viewLetter = null; showPage('page-mail'); render(); });
   const mailReplySend = document.getElementById('mail-reply-send');
   if (mailReplySend) mailReplySend.addEventListener('click', submitReply);
   // tab 切换（v3.10.x 抽成函数：寄信成功后自动跳「寄出的信」复用）
@@ -1793,8 +1693,7 @@ window.showDeskPopup({ name: '信箱', notifyKind: 'mail', text: mailPlainDesc('
     document.querySelectorAll('#page-mail .cal-card').forEach(c => { c.hidden = c.dataset.mpanel !== name; });
   }
   document.querySelectorAll('#page-mail .fav-tab').forEach(tab => {
-    // #1614：用户手动切 tab 时取消之前的高亮定位，不再反复滚回目标信
-    tab.addEventListener('click', () => { mailJumpId = null; selectMailTab(tab.dataset.mtab); });
+    tab.addEventListener('click', () => selectMailTab(tab.dataset.mtab));
   });
 
   // ================= 写信/回信：表情包 / 图片 工具栏（v3.6.x 只留这两个按钮） =================

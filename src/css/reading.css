@@ -390,19 +390,14 @@
 /* 正文的选中由我们自己的长按接管，关掉系统选择才不会同时冒出系统菜单 */
 .rd-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-sel{background:rgba(244,182,194,.45);border-radius:3px}
-/* 批注圈是零宽锚点：视觉用 ::before 绝对定位画，行内不占宽高。
-   分页测量时不带这些记号，若记号占行内宽度/抬升行高，渲染就比测量多绕行，
-   排得满的页会溢出底栏——这是「个别页溢出、后几页又偏空」的根源 */
-.rd-mark{display:inline-block;width:0;height:0;position:relative;cursor:pointer}
-.rd-mark::before{content:'';position:absolute;left:1px;top:-14px;width:8px;height:8px;border-radius:50%;background:#f4b6c2}
+.rd-mark{display:inline-block;width:8px;height:8px;margin-left:1px;border-radius:50%;background:#f4b6c2;vertical-align:super;position:relative;cursor:pointer}
 /* 我是实心点，他是空心圈：同一句只有他的批注时画空心 */
-.rd-mark-his::before{background:transparent;border:1.5px solid #f4b6c2;box-sizing:border-box}
+.rd-mark-his{background:transparent;border:1.5px solid #f4b6c2;box-sizing:border-box}
 /* 同一句两人都留过批注：实心点外加一圈，成为双圈 */
-.rd-mark-both::before{background:#f4b6c2;box-shadow:0 0 0 1.6px #fff,0 0 0 3.2px #f4b6c2}
-.rd-mark b{position:absolute;left:10px;top:-15px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
-/* 他读过的句子句尾：极淡的铅笔竖线，只表示「他经过这里」，不带任何内容；同样零宽 */
-.rd-trace{display:inline-block;width:0;height:0;position:relative;pointer-events:none}
-.rd-trace::before{content:'';position:absolute;left:2px;top:-.82em;width:1px;height:.9em;background:currentColor;opacity:.16;border-radius:1px}
+.rd-mark-both{background:#f4b6c2;box-shadow:0 0 0 1.6px #fff,0 0 0 3.2px #f4b6c2}
+.rd-mark b{position:absolute;left:9px;top:-5px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
+/* 他读过的句子句尾：极淡的铅笔竖线，只表示「他经过这里」，不带任何内容 */
+.rd-trace{display:inline-block;width:1px;height:.9em;margin-left:2px;vertical-align:-.08em;background:currentColor;opacity:.16;border-radius:1px;pointer-events:none}
 /* 同句第一次撞上时的一行提示 */
 .rd-pop-same{font-size:12px;line-height:1.6;opacity:.65;padding-bottom:2px}
 .rd-selbar{position:absolute;z-index:6;display:flex;transform:translateX(-50%);border-radius:12px;background:#2b2b2b;box-shadow:0 6px 22px rgba(0,0,0,.25);overflow:hidden}

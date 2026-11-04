@@ -94,7 +94,7 @@
   });
 
   // 独立全屏页：隐藏底部导航栏 + 状态栏（Mochi/时间），页面自身补偿内边距
-  const FULL_PAGES = ['page-chat', 'page-group-chat', 'page-chat-settings', 'page-custom-cards', 'page-default-cards', 'page-fun-cards', 'page-mood-cards', 'page-reply-cards', 'page-theme', 'page-fav', 'page-fav-settings', 'page-memory', 'page-calendar', 'page-period', 'page-accounting', 'page-divine', 'page-music', 'page-music-lyric', 'page-stats', 'page-interact', 'page-checkin', 'page-ta-ask', 'page-ta-ask-survey', 'page-ta-choose', 'page-ta-curious', 'page-ta-roast', 'page-ta-checkin', 'page-ta-invite', 'page-checkin-cards', 'page-quote-cards', 'page-home', 'page-mail', 'page-mail-write', 'page-mail-reply', 'page-feed', 'page-feed-all', 'page-feed-friends', 'page-license', 'page-about', 'page-guide', 'page-featurehub', 'page-reply-settings', 'page-call-settings', 'page-sfx-settings', 'page-memo-arc', 'page-cjian', 'page-room', 'page-drift', 'page-my-arc', 'page-mood', 'page-reading', 'page-reading-settings', 'loc-panel'];
+  const FULL_PAGES = ['page-chat', 'page-group-chat', 'page-chat-settings', 'page-custom-cards', 'page-default-cards', 'page-fun-cards', 'page-mood-cards', 'page-reply-cards', 'page-theme', 'page-fav', 'page-fav-settings', 'page-memory', 'page-calendar', 'page-period', 'page-accounting', 'page-divine', 'page-music', 'page-stats', 'page-interact', 'page-checkin', 'page-ta-ask', 'page-ta-ask-survey', 'page-ta-choose', 'page-ta-curious', 'page-ta-roast', 'page-ta-checkin', 'page-ta-invite', 'page-checkin-cards', 'page-quote-cards', 'page-home', 'page-mail', 'page-mail-write', 'page-mail-reply', 'page-feed', 'page-feed-all', 'page-feed-friends', 'page-license', 'page-about', 'page-guide', 'page-featurehub', 'page-reply-settings', 'page-call-settings', 'page-sfx-settings', 'page-memo-arc', 'page-cjian', 'page-room', 'page-drift', 'page-my-arc', 'page-mood', 'page-reading', 'page-reading-settings'];
   // FIX 2026-09-11 #338：静态锚点缓存（.phone/.tabbar）+ syncChrome 签名早退（见下方注释）
   let _scPhone = null, _scTabbar = null, _scLastSig = null;
   function syncChrome() {
@@ -159,80 +159,32 @@
   }
 })();
 
-// ===== 安卓返回键（v3.5.96 PWA / #1608 2026-10-31 套壳 App 智能返回）=====
-// PWA 全屏模式用 history/popstate；HBuilderX 套壳用 plus.key 的 backbutton（物理键与侧滑同一事件）。
-// 浏览器标签页模式不接管返回（保留浏览器自带后退）。页面栈始终维护，供信箱等页面按钮按来源返回。
+// ===== 全屏 PWA 安卓返回键（v3.5.96）：先关弹层 → 回上一页 → 最后退出应用 =====
+// 全屏模式下没有浏览器返回栏，安卓返回手势/按键默认直接退出应用；
+// 改为与微信一致：弹层优先关闭，其次页面回退（页面切换入栈），栈空才退出
 (function () {
-  const inPwa = !!(window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
-  // #1608：主页面（底部 tab + 聊天）按物理返回先回桌面，不按页面栈回上一个 tab
-  const MAIN_PAGES = { 'page-phone': 1, 'page-chat': 1, 'page-chatcard': 1, 'page-setting': 1 };
-  function visiblePage() {
-    const live = document.querySelectorAll('.page');
-    for (let i = 0; i < live.length; i++) if (!live[i].hidden) return live[i];
-    return null;
-  }
+  // 仅 PWA 安装模式（standalone/fullscreen）启用返回键拦截；浏览器标签页模式交给浏览器自带返回
+  const inPwa = window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+  if (!inPwa) return;
+  const PAGES = Array.from(document.querySelectorAll('.page'));
+  function visiblePage() { return PAGES.find(p => !p.hidden); }
   const first = visiblePage();
-  if (inPwa && first) history.replaceState({ page: first.id }, '');
-  const stack = [];
+  if (first) history.replaceState({ page: first.id }, '');
+  let stack = [];
   // v3.5.132：初始页入栈——否则从桌面直接进入任何页面（第一跳只 push 1 个条目），
   // 返回键判定 stack.length<=1 直接放行，无法回到桌面
   if (first) stack.push(first.id);
-  function currentId() {
+  const mo = new MutationObserver(() => {
     const v = visiblePage();
-    return v ? v.id : '';
-  }
-  function show(id) {
-    const t = id ? document.getElementById(id) : null;
-    if (!t) return false;
-    // v3.27.x：返回键回退也是切页，hidden 前同样抢拍（#209 键盘残留）
-    try { if (window.__mochiLeaveSnap) window.__mochiLeaveSnap('switch'); } catch (e) {}
-    document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== id; });
-    // v3.5.131：返回键回退页面时同步退出桌面装修模式（否则 editing 类残留，
-    // 之后点 app 图标被 `if (editing) return` 静默吞掉，表现为"点了没反应"）
-    try { if (window.exitDecor) window.exitDecor(); } catch (e) {}
-    return true;
-  }
-  // 页面切换入栈：body 子树观察，静态页与运行中新建页都覆盖（旧实现只观察 load 期快照）
-  let recordTimer = 0;
-  function recordNow() {
-    recordTimer = 0;
-    const v = currentId();
     if (!v) return;
-    if (stack.length && stack[stack.length - 1] === v) return;
-    if (inPwa) { try { history.pushState({ page: v }, ''); } catch (e) {} }
-    stack.push(v);
-    if (stack.length > 60) stack.splice(0, stack.length - 60);
-  }
-  const mo = new MutationObserver((muts) => {
-    for (let i = 0; i < muts.length; i++) {
-      const t = muts[i].target;
-      if (t && t.classList && t.classList.contains('page') && muts[i].attributeName === 'hidden') {
-        if (!recordTimer) recordTimer = setTimeout(recordNow, 0);
-        return;
-      }
+    const last = stack.length ? stack[stack.length - 1] : null;
+    if (last !== v.id) {
+      stack.push(v.id);
+      history.pushState({ page: v.id }, '');
     }
   });
-  mo.observe(document.body, { attributes: true, attributeFilter: ['hidden'], subtree: true });
-
-  // #1608：统一的页面返回（信箱顶栏返回等按钮用）——有上一页回上一页，没有就回兜底页
-  function goBack(fallback) {
-    const cur = currentId();
-    if (cur && (!stack.length || stack[stack.length - 1] !== cur)) stack.push(cur);
-    if (stack.length > 1) stack.pop();
-    else { stack.length = 0; stack.push(fallback || 'page-phone'); }
-    const target = stack[stack.length - 1] || fallback || 'page-phone';
-    if (!show(target)) {
-      if (cur) { stack.length = 0; stack.push(cur); }
-      return cur;
-    }
-    // PWA 下补一个历史条目，与旧「页面切换即 pushState」口径对齐（网页标签页模式不碰 history）
-    if (inPwa) { try { history.pushState({ page: target }, ''); } catch (e) {} }
-    return target;
-  }
-  window.mochiGoBack = goBack;
-
-  // 浮层/弹窗优先关闭（与 mobile-adapt 滚动穿透锁同一组浮层）
-  function closeLayers() {
+  PAGES.forEach(p => mo.observe(p, { attributes: true, attributeFilter: ['hidden'] }));
+  window.addEventListener('popstate', () => {
     // 1) 弹层优先关闭（不改变页面栈）——与 mobile-adapt.js 的滚动穿透锁同一组浮层，
     //    微信式交互：按返回先关面板（表情/更多/拍一拍/搜索/半框等），再退页面
     const layers = ['img-view-mask', 'modal-mask', 'qa-mask', 'tc-mask', 'poke-card', 'emoji-panel',
@@ -246,88 +198,33 @@
       'screen-adj-panel'];
     for (const id of layers) {
       const el = document.getElementById(id);
-      if (!el || el.hidden) continue;
-      // modal 走「取消」按钮，收尾（cb=null/键盘复位）与用户点取消一致
-      if (id === 'modal-mask') {
-        const cancel = document.getElementById('modal-cancel');
-        if (cancel) { try { cancel.click(); return true; } catch (e) {} }
-      }
-      el.hidden = true;
-      return true;
+      if (el && !el.hidden) { el.hidden = true; return; }
     }
     const mg = document.querySelector('.mg-mask:not([hidden])');
-    if (mg) { mg.hidden = true; return true; }
+    if (mg) { mg.hidden = true; return; }
     // 2) 来电中 → 走完整拒绝逻辑；通话中 → 挂断
     const callMask = document.getElementById('call-mask');
     if (callMask && !callMask.hidden) {
       const reject = document.getElementById('call-reject-btn');
-      if (reject && !reject.hidden) { reject.click(); return true; }
+      if (reject && !reject.hidden) { reject.click(); return; }
       const hang = document.getElementById('call-hang-btn');
-      if (hang && !hang.hidden) { hang.click(); return true; }
+      if (hang && !hang.hidden) { hang.click(); return; }
       callMask.hidden = true;
-      return true;
+      return;
     }
-    // #1616：读书模块自己的层（阅读器/目录/他在哪/批注层/导入/书架分组等）逐层消化；
-    // 只在该页可见时生效，true＝本次返回已关掉一层，不再退页面
-    // #1628：拍立得相框焦点调整浮层优先消化返回键（取消本次调整，不退出页面/App）
-    try { if (window.mochiPhotoCropBack && window.mochiPhotoCropBack()) return true; } catch (e) {}
-    try { if (window.mochiDeskGridBack && window.mochiDeskGridBack()) return true; } catch (e) {}
-    try { if (window.mochiReadingBack && window.mochiReadingBack()) return true; } catch (e) {}
-    return false;
-  }
-
-  // 键盘优先：返回键先收键盘（用户口径：弹窗/键盘开着时第一次返回只关它们）
-  function kbOpen() {
-    try { const k = window.__mochiAndroidKb && window.__mochiAndroidKb(); if (k && k.kbActive) return true; } catch (e) {}
-    const ae = document.activeElement;
-    const phone = document.querySelector('.phone');
-    return !!(ae && phone && phone.contains(ae) &&
-      (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable));
-  }
-  function dismissKb() {
-    if (!kbOpen()) return false;
-    try { if (window.mochiKbDismiss) { window.mochiKbDismiss(); return true; } } catch (e) {}
-    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
-    return true;
-  }
-
-  // ===== HBuilderX 套壳：安卓物理返回键/侧滑（plus.key）=====
-  function initPlusBack() {
-    if (!window.plus || !window.plus.key || window.__mochiPlusBackBound) return;
-    window.__mochiPlusBackBound = true;
-    window.plus.key.addEventListener('backbutton', function () {
-      if (dismissKb()) return;
-      if (closeLayers()) return;
-      const cur = currentId();
-      if (MAIN_PAGES[cur]) {
-        if (cur !== 'page-phone') {
-          stack.length = 0;
-          stack.push('page-phone');
-          show('page-phone');
-          return;
-        }
-        // 已在桌面（主页）：再按返回退出整个 App
-        try { if (window.plus.runtime && window.plus.runtime.quit) window.plus.runtime.quit(); } catch (e) {}
-        return;
-      }
-      goBack('page-phone');
-    }, false);
-  }
-  if (window.plus) { try { initPlusBack(); } catch (e) {} }
-  document.addEventListener('plusready', function () { try { initPlusBack(); } catch (e) {} }, false);
-
-  // ===== PWA 全屏模式（保持原 v3.5.96 行为）：history/popstate =====
-  // 仅 PWA 安装模式启用返回键拦截；浏览器标签页模式交给浏览器自带返回
-  if (inPwa) {
-    window.addEventListener('popstate', function () {
-      if (closeLayers()) return;
-      // 已在初始页 → 不拦截，浏览器/系统退出应用
-      if (stack.length <= 1) return;
-      stack.pop();
-      const target = stack[stack.length - 1];
-      if (target) show(target);
-      // 补回一个 history 条目，防止浏览器误判直接退出
-      try { history.pushState({ page: target }, ''); } catch (e) {}
-    });
-  }
+    // 3) 回上一页；已在初始页 → 不拦截，浏览器/系统退出应用
+    if (stack.length <= 1) return;
+    stack.pop();
+    const target = stack[stack.length - 1];
+    // v3.27.x：返回键回退也是切页，hidden 前同样抢拍（本 IIFE 无 sdLeaveSnap 引用，直调钩子）
+    try { if (window.__mochiLeaveSnap) window.__mochiLeaveSnap('switch'); } catch (e) {}
+    PAGES.forEach(p => { p.hidden = p.id !== target; });
+    // v3.5.131：返回键回退页面时同步退出桌面装修模式（否则 editing 类残留，
+    // 之后点 app 图标被 `if (editing) return` 静默吞掉，表现为"点了没反应"）
+    try {
+      if (window.exitDecor) window.exitDecor();
+    } catch (e) {}
+    // 补回一个 history 条目，防止浏览器误判直接退出
+    history.pushState({ page: target }, '');
+  });
 })();

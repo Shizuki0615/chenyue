@@ -67,6 +67,9 @@
 [data-theme="dark"] .set-row .arrow svg { stroke:#666; }
 [data-theme="dark"] .set-row.sub .txt { color:#ccc; }
 [data-theme="dark"] .ver { color:#666; }
+[data-theme="dark"] .ver-credit { color:#777; }
+[data-theme="dark"] .set-alert { background:#232323; color:#aaa; }
+[data-theme="dark"] .set-alert b { color:#eee; }
 [data-theme="dark"] .gs-row { border-bottom-color:rgba(255,255,255,.05); }
 [data-theme="dark"] .stp-min,
 [data-theme="dark"] .stp-max { background:var(--dark-hover); color:#aaa; }
@@ -387,8 +390,7 @@
    tabbar.css 的 color-mix 透明度链在深色模式下同样生效（旧写法盖死 background，
    背景透明度滑杆在深色下会整条失效） */
 [data-theme="dark"] .tabbar { --tabbar-base-bg:var(--dark-card-92); border-color:var(--dark-border-12); }
-/* 2026-11-02：选中块改内缩伪元素后，深色背景/阴影同步落到 ::before（阴影范围一并收紧） */
-[data-theme="dark"] .tabbar .tab.active::before { background:var(--dark-hover); box-shadow:0 1px 7px rgba(0,0,0,.32); }
+[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); }
 /* SVG stroke 兜底 */
 [data-theme="dark"] .ch-back svg,
 [data-theme="dark"] .set-row .ico svg,
@@ -771,7 +773,8 @@
 [data-theme="dark"] .ck-location { border-bottom-color:rgba(255,255,255,.06); }
 [data-theme="dark"] .ck-loc-entry { border-color:rgba(255,255,255,.22); background:var(--static-bg); }
 [data-theme="dark"] .ck-loc-entry:active { background:var(--dark-hover); }
-[data-theme="dark"] #loc-panel { background:var(--dark-card-97); }
+[data-theme="dark"] .loc-panel { background:var(--dark-card-97); }
+[data-theme="dark"] .loc-head,
 [data-theme="dark"] .loc-section { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-send-area { border-top-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-ask-btn { color:#111; }
@@ -802,9 +805,12 @@
 [data-theme="dark"] .fw-result { background:rgba(255,180,80,.1); border-color:rgba(255,180,80,.35); }
 [data-theme="dark"] .fw-p-line { color:rgba(255,255,255,.75); }
 [data-theme="dark"] .fw-result .fw-p-line:first-child { color:#ffc97e; }
-/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配
-   #1613：已改为真正的 .page，页面背景由 #loc-panel 承接，旧 .loc-full 选择器下线；
-   #1613g：顶栏统一用全站 .chat-head（暗色由 .chat-head 既有规则承接），旧 loc-head/loc-back 下线 */
+/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配 */
+[data-theme="dark"] .loc-panel.loc-full { background:var(--dark-card-97); }
+[data-theme="dark"] .loc-head { background:rgba(30,30,30,.96); }
+[data-theme="dark"] .loc-back { border-color:rgba(255,255,255,.14); background:rgba(255,255,255,.06); }
+[data-theme="dark"] .loc-back svg { stroke:#f0f0f0; }
+[data-theme="dark"] .loc-back:active { background:rgba(255,255,255,.12); }
 [data-theme="dark"] .loc-section { background:var(--dark-card-92); border-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-item { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-tag { background:var(--dark-hover); }

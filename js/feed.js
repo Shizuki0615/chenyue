@@ -1088,7 +1088,7 @@ listEl.innerHTML = memHtml + (feedMainPosts.length
 ? '<div class="ta-empty">' + esc(bucket.label) + '还没有动态<br><span style="font-size:12px">点上面那条胶囊翻更早的月份</span></div>'
 : ((feedSyncCold || (window.mochiDataPending && window.mochiDataPending()))
 ? window.mochiLoadingHtml('朋友圈内容')
-: '<div class="ta-empty">还没有动态，他会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
+: '<div class="ta-empty">还没有动态，他 会不定期分享生活<br><button class="memo-send-btn" id="feed-empty-pub" style="margin-top:8px">我来发第一条</button></div>')));
 feedRenderRangeBar(buckets);
 feedRenderSig = sig;
 const clearBtn = document.getElementById('feed-head-clear');
@@ -2062,8 +2062,7 @@ return;
 p.comments = p.comments || [];
 const pcfg = feedCfgFor(p.owner || 'default');
 const commentText = pickReplyContent(pcfg, p.owner || 'default');
-const myCommentTs = Date.now();
-p.comments.push(stampAuthor({ content: content, ts: myCommentTs, replies: [] }, activeMe()));
+p.comments.push(stampAuthor({ content: content, ts: Date.now(), replies: [] }, activeMe()));
 save(list);
 hideCommentBar();
 refreshPostCard(pid);
@@ -2076,19 +2075,11 @@ const p2b = list2.find(x => x.id === pid);
 if (!p2b) return;
 p2b.comments = p2b.comments || [];
 const taText = pickReplyContent(cfg, p2b.owner || 'default');
-let myCi = -1;
-for (let i = p2b.comments.length - 1; i >= 0; i--) {
-const c0 = p2b.comments[i];
-if (c0 && c0.ts === myCommentTs && (c0.role || c0.by) === 'me') { myCi = i; break; }
-}
-if (myCi < 0) return; // 评论已被删/数据被清：宁可静默，也不把回复写成一条无主的顶级评论
-const myC = p2b.comments[myCi];
-myC.replies = myC.replies || [];
-myC.replies.push(stampAuthor({ content: taText, ts: Date.now(), to: myC.authorName || feedUserName() }, taAuthorOf(p2b)));
+p2b.comments.push(stampAuthor({ content: taText, ts: Date.now(), replies: [] }, taAuthorOf(p2b)));
 save(list2);
 refreshPostCard(pid);
 const taName2 = p2b.taName || taFeedNameFor(p2b.owner || 'default');
-const loc = { ci: myCi, ri: myC.replies.length - 1 };
+const loc = { ci: p2b.comments.length - 1 };
 if ((p2b.role || p2.by) === 'me') addNotice('comment', p2b.id, taName2 + ' 评论了你的动态：' + noticeTextClean(taText), p2b.owner || 'default', loc);
 else addNotice('comment', p2b.id, taName2 + ' 回复了你的评论：' + noticeTextClean(taText), p2b.owner || 'default', loc);
 } catch (eC) {} });
@@ -2459,7 +2450,7 @@ if (fav.some(x => (x.by || 'me') === 'ta' && (x.kind || 'msg') === 'feed' && x.t
 fav.push(Object.assign({ by: 'ta' }, f));
 s.set('fav-msgs', JSON.stringify(fav));
 if (cid === (window.__activeCid || 'default')) {
-toast(window.taFit ? window.taFit('他收藏了你的朋友圈动态') : '他收藏了你的朋友圈动态');
+toast(window.taFit ? window.taFit('他 收藏了你的朋友圈动态') : '他 收藏了你的朋友圈动态');
 }
 }, (ccfg.likeSpeedMin + Math.random() * Math.max(1, ccfg.likeSpeedMax - ccfg.likeSpeedMin)) * 1000);
 }
@@ -2952,7 +2943,7 @@ render();
 const np = document.getElementById('feed-notice-panel');
 if (np && !np.hidden) renderNotices();
 toast('朋友圈数据已全部清除');
-}, { noInput: true, staticText: '将删除全部动态（我的与他的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
+}, { noInput: true, staticText: '将删除全部动态（我的与 他 的）、评论、点赞和通知提醒，且无法恢复。确定继续吗？' });
 });
 }
 const feedHeadClear = document.getElementById('feed-head-clear');

@@ -1228,41 +1228,6 @@
     rdRenderShelf();
   }
 
-  // #1616：读书模块一层一层返回——先关最上面的阅读层，再阅读器→书架→分组→（页面栈/桌面）
-  // 物理返回和页内左上角返回共用同一入口；返回 true 表示本次已消化，不再退页面。
-  function rdBackOne() {
-    if (!page || page.hidden) return false;
-    if (settingsPage && !settingsPage.hidden) return false; // 设置页是独立 .page，交给页面栈
-    // 按实际叠放从高到低：边看边调(80) → 书架菜单(60) → 阅读器批注层(10~5) → 导入面板(2)
-    const layers = [
-      ['rd-live-drawer', rdCloseLiveDrawer],
-      ['rd-book-menu', rdCloseBookMenu],
-      ['rd-group-menu', rdCloseGroupMenu],
-      ['rd-book-group-menu', rdCloseGroupMenu],
-      ['rd-anno-ops', rdCloseAnnoOps],
-      ['rd-anno-preview', rdClosePreview],
-      ['rd-anno-sheet', rdCloseSheet],
-      ['rd-buddy-card', rdCloseBuddyCard],
-      ['rd-toc', function () { closeToc(true); }],
-      ['rd-toc-mask', function () { closeToc(true); }],
-      ['rd-anno-pop', rdClosePop],
-      ['rd-lost', rdCloseLost],
-      ['rd-import-panel', rdCloseImport],
-    ];
-    for (let i = 0; i < layers.length; i++) {
-      const el = document.getElementById(layers[i][0]);
-      if (el && !el.hidden) { try { layers[i][1](); } catch (e) {} return true; }
-    }
-    const reader = document.getElementById('rd-reader');
-    if (reader && !reader.hidden) { rdShowShelf(); return true; }
-    const shelf = document.getElementById('rd-shelf');
-    if (shelf && !shelf.hidden && rdViewGroupId !== null) {
-      rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return true;
-    }
-    return false;
-  }
-  window.mochiReadingBack = rdBackOne;
-
   // ===== 打开一本书 =====
   // 换机恢复备份时正文不在包里：明确告知并记 missing，不白屏、不假装书还在。
   async function rdOpenBook(id) {
@@ -1415,18 +1380,15 @@
     const padR = parseFloat(cs.paddingRight) || 0;
     const padT = parseFloat(cs.paddingTop) || 0;
     const padB = parseFloat(cs.paddingBottom) || 0;
-    // 宽高取 getBoundingClientRect 的分数值：clientWidth/clientHeight 是取整的，
-    // 和真实内容盒差零点几像素，夹英文的页两边就会做出不同的换行
-    const rect = body.getBoundingClientRect();
-    const w = Math.max(80, rect.width - padL - padR);
+    const w = Math.max(80, body.clientWidth - padL - padR);
     // 正文顶部有呼吸位：分页要按内容区高度算，扣掉上下内边距，否则最后一行会被裁掉
-    const h = Math.max(80, rect.height - padT - padB);
+    const h = Math.max(80, body.clientHeight - padT - padB);
     const fs = parseFloat(cs.fontSize) || 17;
     let lh = parseFloat(cs.lineHeight);
     if (!lh || isNaN(lh)) lh = fs * 1.8;
     const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
     if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-    const pages = paginate(text, w, h, fs, lh, cs);
+    const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
     RD_PAGE_CACHE[key] = pages;
     const keys = Object.keys(RD_PAGE_CACHE);
     if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
@@ -1435,28 +1397,20 @@
 
   // 真分页：用一个不可见的同宽同字号测量块，对每页末尾偏移做二分，
   // 找到「不溢出容器高度」的最大偏移；保证每次至少前进 1 个字符。
-  function paginate(text, w, h, fs, lh, cs) {
+  function paginate(text, w, h, fs, lh, ff) {
     const src = String(text == null ? '' : text);
     const n = src.length;
     if (!n) return [{ s: 0, e: 0 }];
     const box = document.createElement('div');
     box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;' +
-      'white-space:pre-wrap;box-sizing:border-box;width:' + w + 'px;' +
+      'white-space:pre-wrap;word-break:break-word;box-sizing:border-box;width:' + w + 'px;' +
       'font-size:' + fs + 'px;line-height:' + lh + 'px;';
-    if (cs) {
-      if (cs.fontFamily) box.style.fontFamily = cs.fontFamily;
-      // 断行设置逐项复用正文自己的 computed style：测量和渲染必须连 word-break 都一致，
-      // 否则夹英文的页（卷首引文、样文）两边换行点不同，同一片文字算出的行数就不一样
-      box.style.wordBreak = cs.wordBreak || 'normal';
-      box.style.overflowWrap = cs.overflowWrap || 'normal';
-      if (cs.lineBreak) box.style.lineBreak = cs.lineBreak;
-    }
+    if (ff) box.style.fontFamily = ff;
     document.body.appendChild(box);
-    // 段首缩进：测量插和渲染同一个 .rd-ind（inline-block 2em）、走同一个 rdEsc。
-    // 以前测量塞两个全角空格、渲染插 span，宽度和断行点都有细微差别
+    // 段首要占两个全角宽，测量也按同样宽度算，否则缩进后每页会多挤出一行
     const indents = Array.from(rdFindParaStarts(src));
     function measure(a, z) {
-      if (z <= a) { box.innerHTML = ''; return; }
+      if (!indents.length) { box.textContent = src.slice(a, z); return; }
       let lo2 = 0, hi2 = indents.length - 1;
       while (lo2 <= hi2) {
         const m2 = (lo2 + hi2) >> 1;
@@ -1464,10 +1418,10 @@
       }
       let out = '', cur = a;
       for (let i = lo2; i < indents.length && indents[i] < z; i++) {
-        out += rdEsc(src.slice(cur, indents[i])) + '<span class="rd-ind"></span>';
+        out += src.slice(cur, indents[i]) + RD_INDENT;
         cur = indents[i];
       }
-      box.innerHTML = out + rdEsc(src.slice(cur, z));
+      box.textContent = out + src.slice(cur, z);
     }
     const pages = [];
     let s = 0;
@@ -3227,7 +3181,8 @@
 
   // 段首缩进：只在行首、非空行、非章标题行插一个两字宽的占位 span。
   // 用 span 而不是往正文里塞空格，字符偏移不被改变，批注/书签/进度都不受影响。
-  // 分页测量插的是同一个 span（见 paginate），两边排版逐像素一致。
+  // 分页测量时用两个全角空格代表同样的宽度（见 paginate），保证不会多挤出一行。
+  const RD_INDENT = '\u3000\u3000';
   function rdFindParaStarts(text) {
     const src = String(text == null ? '' : text);
     const set = new Set();
@@ -5809,6 +5764,14 @@
       rdOpen();
       return;
     }
+    // 聊天「更多 → 互动」里的入口：先收起面板再开页，和桌面图标走同一条路径
+    if (el.closest('#more-reading')) {
+      e.preventDefault();
+      const mp = document.getElementById('chat-more-panel');
+      if (mp) mp.hidden = true;
+      rdOpen();
+      return;
+    }
     if (el.closest('#rd-hero-go')) {
       e.preventDefault();
       const btn = document.getElementById('rd-hero-go');
@@ -5861,8 +5824,7 @@
       return;
     }
     if (el.closest('#rd-shelf-back')) {
-      // #1616：先消化本页最上面一层（导入/边看边调/菜单/分组），没有才退桌面
-      if (rdBackOne()) return;
+      if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
       rdClose(); return;
     }
     if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
@@ -5876,11 +5838,7 @@
     if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
     const turnOpt = el.closest('[data-rd-turn]');
     if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
-    if (el.closest('#rd-reader-back')) {
-      // #1616：阅读器左上角返回也逐层消化（目录/他在哪/批注层 → 阅读器 → 书架）
-      if (rdBackOne()) return;
-      rdShowShelf(); return;
-    }
+    if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
     if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
@@ -5987,9 +5945,6 @@
     if (el && el.id === 'rd-toc-search') rdRenderToc(false);
   });
 
-  // 2026-10-28：正式开页出口——聊天里的读书邀请（他主动发起）同意后要直接打开书架。
-  // 与桌面图标同一条 rdOpen（隐藏其它页、渲染书架、收 tabbar），不是另一套开页。
-  window.readingOpen = rdOpen;
   window.__readingProbe = {
     version: 2,
     readIndex: readIndex,
