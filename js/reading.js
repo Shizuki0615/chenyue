@@ -1153,6 +1153,37 @@ if (imp) imp.hidden = true;
 rdApplyChrome();
 rdRenderShelf();
 }
+function rdBackOne() {
+if (!page || page.hidden) return false;
+if (settingsPage && !settingsPage.hidden) return false; // 设置页是独立 .page，交给页面栈
+const layers = [
+['rd-live-drawer', rdCloseLiveDrawer],
+['rd-book-menu', rdCloseBookMenu],
+['rd-group-menu', rdCloseGroupMenu],
+['rd-book-group-menu', rdCloseGroupMenu],
+['rd-anno-ops', rdCloseAnnoOps],
+['rd-anno-preview', rdClosePreview],
+['rd-anno-sheet', rdCloseSheet],
+['rd-buddy-card', rdCloseBuddyCard],
+['rd-toc', function () { closeToc(true); }],
+['rd-toc-mask', function () { closeToc(true); }],
+['rd-anno-pop', rdClosePop],
+['rd-lost', rdCloseLost],
+['rd-import-panel', rdCloseImport],
+];
+for (let i = 0; i < layers.length; i++) {
+const el = document.getElementById(layers[i][0]);
+if (el && !el.hidden) { try { layers[i][1](); } catch (e) {} return true; }
+}
+const reader = document.getElementById('rd-reader');
+if (reader && !reader.hidden) { rdShowShelf(); return true; }
+const shelf = document.getElementById('rd-shelf');
+if (shelf && !shelf.hidden && rdViewGroupId !== null) {
+rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return true;
+}
+return false;
+}
+window.mochiReadingBack = rdBackOne;
 async function rdOpenBook(id) {
 const list = readIndex();
 const book = rdFindBook(id, list);
@@ -5362,7 +5393,7 @@ rdOpenBook(ddGi.getAttribute('data-id'));
 return;
 }
 if (el.closest('#rd-shelf-back')) {
-if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
+if (rdBackOne()) return;
 rdClose(); return;
 }
 if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
@@ -5376,7 +5407,10 @@ const primaryOpt = el.closest('[data-rd-primary]');
 if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
 const turnOpt = el.closest('[data-rd-turn]');
 if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
-if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
+if (el.closest('#rd-reader-back')) {
+if (rdBackOne()) return;
+rdShowShelf(); return;
+}
 if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
 if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
 if (el.closest('#rd-buddy-close')) { e.preventDefault(); rdCloseBuddyCard(); return; }

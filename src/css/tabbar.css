@@ -15,6 +15,9 @@
   background:color-mix(in srgb, var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff)) calc(var(--tabbar-bg-a, 1) * 100%), transparent);
   border:1px solid rgba(0,0,0,.12);
   border-radius:var(--tabbar-radius, 22px); padding:8px 6px; z-index:2;
+  /* #1633 底栏上下位置微调（设置→底部栏美化「上下位置」滑杆；正值下移、负值上移）。
+     用 translateY 只做视觉平移、不改 flex 布局，不影响圆点与页面高度；0 时无位移。 */
+  transform:translateY(var(--tabbar-y,0px));
   /* v3.6.x：去掉 box-shadow——纯白背景上 0 2px 8px rgba(0,0,0,.05) 投影
      就是卡片下方一道淡灰（用户反馈"形状旁边还有一点灰色"）；
      有边框已足够区分，无投影更干净（深色模式 dark.css 覆盖同去） */

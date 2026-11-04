@@ -13,6 +13,10 @@ return store.get('lbl-partner')
 || (window.contactNameFor ? window.contactNameFor(window.__activeCid || 'default') : '')
 || (window.taWord ? window.taWord() : '他');
 }
+function coinBrandNow() {
+try { if (window.mochiCoinBrand) return window.mochiCoinBrand(); } catch (e) {}
+return 'Mochi';
+}
 function avatarsLoad() {
 try { return JSON.parse(store.get('records-avatar') || '[]'); } catch (e) { return []; }
 }
@@ -89,7 +93,7 @@ const name = dispName();
 const myName = store.get('lbl-user') || '我';
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 if (!list.length) {
-el.innerHTML = recEmpty('<div class="ta-empty">' + (kind === 'ask' ? '暂无申请记录（可点心意币余额行向 Mochi 申请）' : '暂无赚钱记录（玩游戏、种花、钓鱼都能赚心意币）') + '</div>');
+el.innerHTML = recEmpty('<div class="ta-empty">' + (kind === 'ask' ? '暂无申请记录（可点心意币余额行向 ' + esc(coinBrandNow()) + ' 申请）' : '暂无赚钱记录（玩游戏、种花、钓鱼都能赚心意币）') + '</div>');
 return;
 }
 const yuan = (fen) => (fen / 100).toFixed(2);
@@ -102,7 +106,7 @@ if (x.myFen) parts.push(myName + ' +¥' + yuan(x.myFen));
 if (x.taFen) parts.push(name + ' +¥' + yuan(x.taFen));
 line = parts.join(' · ') || '—';
 }
-const src = x.src ? esc(x.src) : (kind === 'ask' ? '向 Mochi 申请' : '赚钱');
+const src = x.src ? esc(x.src) : (kind === 'ask' ? '向 ' + esc(coinBrandNow()) + ' 申请' : '赚钱');
 return '<div class="tc-listitem"><div class="tc-li-top"><span class="tc-li-q">🪙 ' + src + '</span><span class="tc-li-time">' + fmtDT(x.ts) + '</span></div>' +
 '<div class="tc-li-line">' + line + '</div></div>';
 }).join('');

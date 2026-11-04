@@ -4,6 +4,11 @@
 
   function store() { return window.activeStore(); }
   function partnerName() { return (typeof window.chatPartnerName === 'function') ? window.chatPartnerName() : '他'; }
+  // #1618：心意币文案里的品牌名——与状态栏左上角可自定义文字同步（默认 Mochi）
+  function coinBrandNow() {
+    try { if (window.mochiCoinBrand) return window.mochiCoinBrand(); } catch (e) {}
+    return 'Mochi';
+  }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
   function pick(arr) { return arr.length ? arr[Math.floor(Math.random() * arr.length)] : ''; }
@@ -108,7 +113,7 @@
   // 供 chat.js 红包侧委托同一本全局账（避免两套实现漂移）
   window.giftWalletGet = walletGet;
   window.giftWalletSet = walletSet;
-  function walletText() { const w = walletGet(); return '心意币 ¥' + fenToYuan(w.myBalance) + ' · ' + partnerName() + ' ¥' + fenToYuan(w.systemBalance) + ' · 向 Mochi 申请心意币'; }
+  function walletText() { const w = walletGet(); return '心意币 ¥' + fenToYuan(w.myBalance) + ' · ' + partnerName() + ' ¥' + fenToYuan(w.systemBalance) + ' · 向 ' + coinBrandNow() + ' 申请心意币'; }
   function renderGiftBalances() {
     ['gift-balance', 'market-balance'].forEach(function (id) {
       const el = document.getElementById(id);
@@ -177,10 +182,10 @@
     function hintTxt() {
       var w = walletGet();
       return '当前：心意币 ¥' + fenToYuan(w.myBalance) + ' · ' + pn + ' ¥' + fenToYuan(w.systemBalance) +
-        (doneAny ? '\n已到账，可继续为' + LBL[side] + '申请；留空点【完成】结束' : '\n选择收款方，输入申请金额点【申请】，Mochi 打款后自动入账；留空点【完成】结束');
+        (doneAny ? '\n已到账，可继续为' + LBL[side] + '申请；留空点【完成】结束' : '\n选择收款方，输入申请金额点【申请】，' + coinBrandNow() + ' 打款后自动入账；留空点【完成】结束');
     }
     var ctl = null;
-    ctl = window.openModal('向 Mochi 申请心意币', '', function (arg) {
+    ctl = window.openModal('向 ' + coinBrandNow() + ' 申请心意币', '', function (arg) {
       var picked = (arg === 'my' || arg === 'ta');
       var el = document.getElementById('modal-input');
       var raw = String(picked ? ((el && el.value) || '') : (arg == null ? '' : arg)).trim();
@@ -194,7 +199,7 @@
       else w.systemBalance += fen;
       walletSet(w); renderGiftBalances();
       coinLedgerAdd('ask', target === 'my' ? fen : 0, target === 'ta' ? fen : 0, '市集申请');
-      toast('Mochi 已打款，' + LBL[target] + ' +¥' + fmtYuan(fen / 100));
+      toast(coinBrandNow() + ' 已打款，' + LBL[target] + ' +¥' + fmtYuan(fen / 100));
       doneAny = true;
       side = target === 'my' ? 'ta' : 'my';
       if (ctl) {

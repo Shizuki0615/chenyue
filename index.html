@@ -1209,6 +1209,8 @@ box-shadow:0 1px 4px rgba(0,0,0,.08); box-sizing:border-box;
 .app-grid.editing .app-ico { outline:2px solid var(--ink); outline-offset:3px; }
 .app .app-name { font-size:11px; color:var(--ink); letter-spacing:.5px; }
 .app .app-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; height:14px; line-height:14px; display:block; }
+html.desk-hide-app-names .app .app-name { display:none; }
+html.desk-hide-app-names .app { justify-content:center; }
 .page-slide .app[data-desk-widget^="app-"] { align-self:center; margin:8px 0; }
 .app-grid { margin-top:0; }
 .app-grid.p2-grid { margin-top:0; }
@@ -1237,7 +1239,7 @@ html.desk-layer-cold .desktop-pages.has-page-bg .page-slide { will-change: auto;
 #page-phone { position:relative; }
 #page-phone { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 .dots {
-position:absolute; left:0; right:0; bottom:6px;
+position:absolute; left:0; right:0; bottom:-1px;
 display:flex; justify-content:center; gap:8px; padding:0;
 contain:layout;
 }
@@ -1246,6 +1248,7 @@ width:7px; height:7px; border-radius:99px; background:rgba(0,0,0,.18); cursor:po
 transition:width .16s ease, background .16s ease;
 }
 .dot.active { width:20px; background:var(--ink); }
+html.desk-hide-dots #desktop-dots { display:none; }
 .page-slide { padding-bottom:18px; }
 .page-slide.desk-page {
 display:flex; flex-direction:column;
@@ -1348,6 +1351,12 @@ background:#111; color:#fff; cursor:pointer; font-family:inherit; flex-shrink:0;
 .desk-timer .dt-btn { flex:1; font-size:12px; padding:6px 0; border:1px solid rgba(0,0,0,.12); border-radius:8px; background:rgba(0,0,0,.03); color:var(--ink,#111); cursor:pointer; font-family:inherit; }
 .desk-timer .dt-btn:active { background:rgba(0,0,0,.08); }
 .desk-anniv { padding:14px 16px; margin:0 0 14px; text-align:center; }
+.desk-anniv .da-main { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.desk-anniv .da-list { display:none; margin-top:8px; width:100%; }
+.desk-anniv .da-list-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:10.5px; line-height:1.45; color:var(--muted,#666); }
+.desk-anniv .da-list-name { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.desk-anniv .da-list-days { flex:none; font-weight:600; color:var(--ink,#111); }
+.desk-anniv .da-days.past { font-size:18px; }
 .desk-anniv .da-label { font-size:11px; color:var(--muted,#888); }
 .desk-anniv .da-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-anniv .da-name { font-size:12px; color:var(--muted,#666); }
@@ -1399,6 +1408,186 @@ box-shadow:0 4px 14px rgba(0,0,0,.06); cursor:pointer;
 .desk-countdown-widget .dcd-days { font-size:26px; font-weight:700; color:var(--ink,#111); margin:2px 0; }
 .desk-countdown-widget .dcd-date { font-size:12px; color:var(--muted,#666); }
 .desk-image-widget img { width:100%; display:block; border-radius:inherit; }
+.desk-photo-frame {
+position:relative; margin:14px 0; padding:8px 8px 0;
+background:var(--photo-frame-paper,#fffaf0); border-radius:10px; overflow:visible;
+box-shadow:0 6px 18px rgba(0,0,0,.10), inset 0 0 0 1px rgba(255,255,255,.75);
+}
+.desk-photo-frame::before {
+content:''; position:absolute; top:-7px; left:50%;
+width:54px; height:16px; border-radius:2px;
+background:var(--photo-frame-tape,#e7d2aa); opacity:.86;
+transform:translateX(-50%) rotate(-2deg);
+box-shadow:0 1px 2px rgba(0,0,0,.08); pointer-events:none;
+}
+.desk-photo-frame .dpf-img {
+width:100%; display:block; border-radius:4px; background:#f1ece1;
+object-fit:cover; object-position:50% 50%; -webkit-user-drag:none;
+}
+.desk-photo-frame .dpf-cap {
+height:27px; line-height:27px; padding:0 2px;
+font-size:11px; color:var(--photo-frame-ink,#7b6a58); text-align:center;
+white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+letter-spacing:.02em;
+}
+.desk-photo-frame.dpf-no-cap .dpf-img { border-radius:4px 4px 3px 3px; }
+.dpf-sticker {
+position:absolute; z-index:3; width:20%; line-height:0; pointer-events:none;
+transform:translate(-50%,-50%) rotate(var(--stk-rot,-4deg));
+filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 2px 3px rgba(0,0,0,.16));
+}
+.dpf-sticker svg { width:100%; height:auto; display:block; }
+.dpf-sticker-s { width:14%; }
+.dpf-sticker-m { width:20%; }
+.dpf-sticker-l { width:28%; }
+.decor-on .desk-photo-frame .dpf-sticker,
+html.dgr-editing .desk-photo-frame .dpf-sticker {
+pointer-events:auto; touch-action:none; cursor:grab;
+}
+.dpf-sticker.dpf-sticker-drag { cursor:grabbing; z-index:4; }
+.dpf-stk-overlay {
+position:fixed; inset:0; z-index:10001; display:flex; align-items:flex-end; justify-content:center;
+background:transparent; overscroll-behavior:contain; pointer-events:none;
+}
+.dpf-stk-panel {
+box-sizing:border-box; width:min(96vw,430px); max-height:76vh; overflow:auto;
+padding:16px 14px calc(14px + env(safe-area-inset-bottom,0px));
+background:var(--card-bg,#fff); border-radius:22px 22px 0 0;
+box-shadow:0 -10px 30px rgba(0,0,0,.22); pointer-events:auto;
+}
+.dpf-stk-handle {
+width:38px; height:4px; margin:0 auto 8px; border-radius:99px;
+background:rgba(0,0,0,.18); touch-action:none; cursor:grab;
+}
+.dpf-stk-panel-drag .dpf-stk-handle { cursor:grabbing; }
+.dpf-stk-title { font-size:15px; font-weight:700; color:var(--ink,#111); text-align:center; margin-bottom:12px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+.dpf-stk-panel-drag .dpf-stk-title { cursor:grabbing; }
+.dpf-stk-panel.dpf-stk-panel-mini {
+width:auto; max-width:80vw; margin:0 auto;
+padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
+border-radius:99px; overflow:hidden;
+}
+.dpf-stk-panel.dpf-stk-panel-mini > *:not(.dpf-stk-handle):not(.dpf-stk-title) { display:none; }
+.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-handle { margin-bottom:4px; }
+.dpf-stk-panel.dpf-stk-panel-mini .dpf-stk-title { margin-bottom:0; font-size:12px; }
+.dpf-stk-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+.dpf-stk-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.dpf-stk-tab {
+flex:1; padding:7px 0; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111);
+font-size:12px; cursor:pointer;
+}
+.dpf-stk-tab.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
+.dpf-stk-emoji-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+.dpf-stk-emoji-item {
+border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px;
+background:#fff; font-size:24px; line-height:1; padding:9px 0 7px;
+cursor:pointer; color:var(--ink,#111);
+}
+.dpf-stk-emoji-row { display:flex; gap:6px; margin-top:9px; }
+.dpf-stk-emoji-input {
+flex:1; min-width:0; padding:8px 10px; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--card-bg,#fff); color:var(--ink,#111); font-size:13px;
+}
+.dpf-stk-emoji-add {
+flex:none; padding:8px 13px; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--btn-bg,#111); color:var(--btn-ink,#fff); font-size:12px; cursor:pointer;
+}
+.dpf-stk-upload-btn {
+width:100%; padding:9px 0; border:1px dashed rgba(0,0,0,.22); border-radius:10px;
+background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111); font-size:12px; cursor:pointer;
+}
+.dpf-stk-upload-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:8px; }
+.dpf-stk-upload-item {
+height:46px; border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:10px;
+background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+padding:4px; overflow:hidden;
+}
+.dpf-stk-upload-item img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+.dpf-stk-upload-empty { font-size:10.5px; color:var(--muted,#999); padding:4px 0 2px; }
+.dpf-sticker-emoji-svg text, .dpf-sticker-emoji text {
+font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+.dpf-sticker-upload .dpf-sticker-img { width:100%; height:auto; display:block; }
+.dpf-sticker-missing {
+aspect-ratio:1 / 1; min-height:34px; border:1px dashed rgba(0,0,0,.25); border-radius:10px;
+background:rgba(255,255,255,.72); display:flex; align-items:center; justify-content:center;
+}
+.dpf-sticker-missing::after { content:'?'; font-size:16px; color:var(--muted,#999); }
+.dpf-stk-placed-emoji { font-size:20px; line-height:1; }
+.dpf-stk-placed-item img { width:22px; height:22px; object-fit:contain; display:block; }
+.dpf-stk-item {
+border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:12px; background:#fffaf0;
+padding:7px 2px 4px; display:flex; flex-direction:column; align-items:center; gap:2px;
+cursor:pointer; color:var(--ink,#111);
+}
+.dpf-stk-item svg { width:34px; height:34px; display:block; transform:rotate(var(--stk-rot,0deg)); filter:drop-shadow(0 1px 2px rgba(0,0,0,.12)); }
+.dpf-stk-item span { font-size:9.5px; color:var(--muted,#888); line-height:1.3; }
+.dpf-stk-item.on { outline:2px solid var(--btn-bg,#111); outline-offset:1px; }
+.dpf-stk-subtitle { margin-top:12px; font-size:11px; line-height:1.5; color:var(--muted,#888); }
+.dpf-stk-placed { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.dpf-stk-placed-item {
+display:flex; align-items:center; gap:5px; padding:5px 9px 5px 6px;
+border:1px solid var(--card-border,rgba(0,0,0,.12)); border-radius:10px;
+background:#fffaf0; color:var(--ink,#111); font-size:10.5px; cursor:pointer;
+}
+.dpf-stk-placed-item svg { width:22px; height:22px; display:block; }
+.dpf-stk-placed-item.on { outline:2px solid var(--btn-bg,#111); outline-offset:1px; }
+.dpf-stk-placed-empty { font-size:10.5px; color:var(--muted,#999); padding:2px 0; }
+.dpf-stk-sizes { display:flex; gap:8px; margin-top:12px; justify-content:center; }
+.dpf-stk-size {
+min-width:64px; padding:7px 0; border:1px solid var(--card-border,rgba(0,0,0,.12));
+border-radius:9px; background:var(--btn-cancel-bg,#fafafa); color:var(--ink,#111);
+font-size:12px; cursor:pointer;
+}
+.dpf-stk-size.on { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); border-color:transparent; }
+.dpf-stk-rotrow { display:flex; align-items:center; gap:8px; margin-top:12px; }
+.dpf-stk-rotrow[hidden] { display:none; }
+.dpf-stk-rotrow label { flex:none; font-size:11.5px; color:var(--muted,#888); }
+.dpf-stk-rotrow input[type=range] { flex:1; min-width:0; }
+.dpf-stk-rotval { flex:none; width:42px; text-align:right; font-size:11px; color:var(--muted,#999); }
+.dpf-stk-tip { margin-top:10px; font-size:10.5px; line-height:1.5; color:var(--muted,#999); text-align:center; }
+.dpf-stk-actions { display:flex; gap:8px; margin-top:12px; }
+.dpf-stk-actions button { flex:1; padding:10px 0; border:none; border-radius:11px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.dpf-stk-cancel { background:var(--btn-cancel-bg,#f2f2f2); color:var(--ink,#111); }
+.dpf-stk-remove { background:#fff0f0; color:#b35b5b; }
+.dpf-stk-remove[hidden] { display:none; }
+.dpf-stk-ok { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); }
+.decor-on .desk-photo-frame.desk-image-widget::after {
+content:'点我换图 · 贴纸 · 调焦点 · 改字'; position:absolute; left:0; right:0; bottom:0;
+padding:5px 6px; text-align:center; font-size:10px; color:#fff;
+background:linear-gradient(transparent, rgba(60,45,30,.62));
+border-radius:0 0 10px 10px; pointer-events:none;
+}
+.dpf-crop-overlay {
+position:fixed; inset:0; z-index:10001; box-sizing:border-box;
+display:flex; flex-direction:column; align-items:center; justify-content:center; gap:13px;
+padding:24px; background:rgba(20,16,12,.86);
+touch-action:none; overscroll-behavior:contain;
+}
+.dpf-crop-title { color:#fff; font-size:14px; font-weight:600; letter-spacing:.02em; }
+.dpf-crop-box {
+position:relative; width:min(78vw,320px,52vh); aspect-ratio:1 / 1;
+border-radius:8px; overflow:hidden; background:#fff; cursor:grab;
+touch-action:none; box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 0 0 4px #fffaf0;
+}
+.dpf-crop-box:active { cursor:grabbing; }
+.dpf-crop-box img {
+width:100%; height:100%; object-fit:cover; object-position:50% 50%;
+display:block; pointer-events:none; user-select:none; -webkit-user-select:none;
+}
+.dpf-crop-tip { color:rgba(255,255,255,.62); font-size:11px; text-align:center; }
+.dpf-crop-actions { display:flex; gap:12px; margin-top:2px; }
+.dpf-crop-actions button {
+min-width:78px; padding:9px 18px; border:none; border-radius:10px;
+font-size:12px; font-weight:600; cursor:pointer;
+}
+.dpf-crop-cancel { background:rgba(255,255,255,.16); color:#fff; }
+.dpf-crop-ok { background:var(--btn-bg,#111); color:var(--btn-ink,#fff); }
+html.dpf-crop-open, html.dpf-crop-open body { overflow:hidden; }
+html.dpf-crop-open #dgr-editbar,
+html.dpf-crop-open #dgr-pagebar,
+html.dpf-crop-open #dgr-badge-layer { visibility:hidden; }
 .decor-on .desk-image-widget::after {
 content:'点我换图 · 删除'; position:absolute; left:0; right:0; bottom:0;
 padding:6px; text-align:center; font-size:11px; color:#fff;
@@ -8802,16 +8991,7 @@ border:none; outline:none; font-family:inherit; padding:0; min-width:110px;
 text-align:center; font-size:11px; color:#c0c0c0; letter-spacing:1px;
 padding:6px 0 2px;
 }
-.ver-credit {
-text-align:center; font-size:10px; color:#d4d4d4; letter-spacing:1px;
-padding:0 0 8px;
-}
-.set-alert {
-padding:10px 18px 18px; margin:0 14px 6px; border-radius:10px;
-background:#f2f2f2; text-align:center;
-font-size:11.5px; line-height:1.7; color:#555;
-}
-.set-alert b { color:#111; }
+#page-setting .set-alert { display:none !important; }
 #page-setting { padding-bottom:20px; }
 .gs-scroll { flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;
 padding-bottom:20px; }
@@ -9039,6 +9219,7 @@ flex-shrink:0; background:var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff))
 background:color-mix(in srgb, var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff)) calc(var(--tabbar-bg-a, 1) * 100%), transparent);
 border:1px solid rgba(0,0,0,.12);
 border-radius:var(--tabbar-radius, 22px); padding:8px 6px; z-index:2;
+transform:translateY(var(--tabbar-y,0px));
 }
 .tabbar.tabbar-blur-on { -webkit-backdrop-filter:blur(var(--tabbar-blur, 10px)); backdrop-filter:blur(var(--tabbar-blur, 10px)); }
 .tabbar .tab {
@@ -9141,9 +9322,6 @@ html.tablet .tabbar .tab { padding:14px 8px; border-radius:16px; }
 [data-theme="dark"] .set-row .arrow svg { stroke:#666; }
 [data-theme="dark"] .set-row.sub .txt { color:#ccc; }
 [data-theme="dark"] .ver { color:#666; }
-[data-theme="dark"] .ver-credit { color:#777; }
-[data-theme="dark"] .set-alert { background:#232323; color:#aaa; }
-[data-theme="dark"] .set-alert b { color:#eee; }
 [data-theme="dark"] .gs-row { border-bottom-color:rgba(255,255,255,.05); }
 [data-theme="dark"] .stp-min,
 [data-theme="dark"] .stp-max { background:var(--dark-hover); color:#aaa; }
@@ -11323,6 +11501,474 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
 .rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
 .rd-dd-fade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5));pointer-events:none;transition:opacity .18s ease}
+html.desk-grid-v2 #page-phone {
+--dgr-cols: 4;
+--dgr-row: 92px;
+--dgr-colgap: 8px;
+--dgr-rowgap: 14px;
+--dgr-pad-x: 8px;
+--dgr-pad-y: 14px;
+}
+html.desk-grid-v2 .page-slide.dgr-page {
+display: grid !important;
+flex-direction: unset !important;
+grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
+grid-auto-rows: var(--dgr-row, 92px);
+gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
+align-content: start;
+justify-items: stretch;
+padding: var(--dgr-pad-y, 14px) var(--dgr-pad-x, 8px) 18px;
+position: relative;
+overflow-y: auto;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app-grid,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-hint,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-add {
+display: none !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key] {
+margin: 0 !important;
+min-width: 0;
+align-self: stretch;
+position: relative;
+}
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key]:not(.app) {
+height: 100% !important;
+max-height: 100% !important;
+min-height: 0 !important;
+align-self: stretch !important;
+overflow: hidden;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app {
+width: 100%;
+height: 100%;
+justify-self: stretch;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-image-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+width: 100% !important;
+align-self: stretch !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-clock,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-list,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-list {
+display: flex;
+flex-direction: column;
+gap: 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-main,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-main {
+margin-bottom: 6px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-days,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-days {
+font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-name {
+max-width: 100%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+font-size: 10px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-days {
+font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-list-row {
+font-size: 9.5px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] {
+display: flex;
+flex-direction: column;
+justify-content: flex-start;
+height: 100% !important;
+overflow: visible;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-img {
+flex: 1 1 auto;
+width: 100% !important;
+height: auto !important;
+min-height: 0;
+object-fit: cover;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-cap {
+display: block;
+flex: 0 0 27px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] {
+padding: 6px 6px 0;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-cap {
+display: none;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"]::before {
+top: -5px;
+width: 42px;
+height: 12px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-w="2"] .dpf-cap {
+font-size: 10px;
+}
+#dgr-editbar button:disabled { opacity: .35; cursor: default; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] {
+flex-direction: column;
+gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] .mini-card {
+height: calc(50% - 7px) !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] {
+flex-direction: column;
+gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] .mini-card {
+height: 92px !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-key] {
+overflow: clip;
+overflow-clip-margin: 16px;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page {
+padding-bottom: 210px;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key] {
+animation: dgr-jiggle .26s infinite alternate ease-in-out;
+transform-origin: 50% 50%;
+touch-action: none;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-source {
+animation: none !important;
+opacity: .42;
+}
+@keyframes dgr-jiggle {
+from { transform: rotate(-.35deg); }
+to { transform: rotate(.35deg); }
+}
+html.desk-grid-v2.dgr-resizing .page-slide.dgr-page > [data-dgr-key] {
+animation: none !important;
+}
+.dgr-drag-ghost {
+position: fixed;
+z-index: 9998;
+pointer-events: none;
+margin: 0 !important;
+opacity: .96;
+transform-origin: 50% 50%;
+filter: drop-shadow(0 10px 22px rgba(0,0,0,.22));
+}
+#dgr-placeholder-layer {
+position: absolute;
+inset: 0;
+z-index: 40;
+pointer-events: none;
+}
+.dgr-placeholder {
+position: absolute;
+z-index: 3;
+border: 1.5px dashed var(--ink, #111111);
+border-radius: 14px;
+background: color-mix(in srgb, var(--btn-bg, #111111) 8%, transparent);
+pointer-events: none;
+box-sizing: border-box;
+}
+#dgr-badge-layer {
+position: absolute;
+inset: 0;
+z-index: 95;
+pointer-events: none;
+}
+#dgr-badge-layer .dgr-minus {
+position: absolute;
+pointer-events: auto;
+}
+.dgr-minus {
+z-index: 30;
+width: 22px;
+height: 22px;
+padding: 0;
+border: none;
+border-radius: 50%;
+background: #ff3b30;
+color: #fff;
+font-size: 15px;
+line-height: 22px;
+font-weight: 700;
+text-align: center;
+cursor: pointer;
+box-shadow: 0 3px 8px rgba(0,0,0,.25);
+transform: translate(-45%, -45%);
+}
+#dgr-badge-layer .dgr-resize {
+position: absolute;
+pointer-events: auto;
+}
+.dgr-resize {
+z-index: 31;
+width: 22px;
+height: 22px;
+padding: 0;
+border: 2px solid #fff;
+border-radius: 7px;
+background: var(--btn-bg, #111111);
+cursor: nwse-resize;
+box-shadow: 0 3px 8px rgba(0,0,0,.25);
+transform: translate(-45%, -45%);
+touch-action: none;
+}
+.dgr-resize::before {
+content: '';
+position: absolute;
+right: 4px;
+bottom: 4px;
+width: 8px;
+height: 8px;
+border-right: 2px solid #fff;
+border-bottom: 2px solid #fff;
+}
+#dgr-pagebar {
+position: absolute;
+left: 12px;
+right: 12px;
+bottom: 96px;
+z-index: 97;
+display: none;
+align-items: center;
+gap: 8px;
+padding: 6px 8px;
+border-radius: 16px;
+background: rgba(255,255,255,.88);
+box-shadow: 0 6px 22px rgba(0,0,0,.14);
+backdrop-filter: blur(14px);
+-webkit-backdrop-filter: blur(14px);
+overflow-x: auto;
+scrollbar-width: none;
+box-sizing: border-box;
+}
+#dgr-pagebar::-webkit-scrollbar { display: none; }
+html.dgr-editing #dgr-pagebar { display: flex; }
+.dgr-page-thumb {
+position: relative;
+flex: none;
+width: 46px;
+height: 62px;
+border-radius: 10px;
+border: 1.5px solid rgba(0,0,0,.08);
+background: linear-gradient(160deg, #fff, #f3f3f3);
+overflow: hidden;
+touch-action: none;
+user-select: none;
+cursor: pointer;
+box-sizing: border-box;
+}
+.dgr-page-thumb.on {
+border-color: var(--btn-bg, #111111);
+box-shadow: 0 0 0 2px color-mix(in srgb, var(--btn-bg, #111111) 16%, transparent);
+}
+.dgr-page-thumb.dgr-page-drop {
+border-color: var(--btn-bg, #111111);
+transform: scale(.96);
+}
+.dgr-page-thumb .dgr-thumb-num {
+position: absolute;
+left: 4px;
+bottom: 3px;
+font-size: 10px;
+font-weight: 700;
+color: var(--ink, #111111);
+z-index: 2;
+}
+.dgr-page-thumb .dgr-thumb-mini {
+position: absolute;
+left: 4px;
+right: 4px;
+top: 5px;
+bottom: 18px;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+grid-auto-rows: 6px;
+gap: 2px;
+opacity: .75;
+}
+.dgr-page-thumb .dgr-thumb-mini span {
+border-radius: 2px;
+background: rgba(0,0,0,.18);
+}
+.dgr-page-thumb .dgr-thumb-mini span.card {
+background: rgba(0,0,0,.28);
+grid-column: 1 / -1;
+}
+.dgr-page-thumb .dgr-page-del {
+position: absolute;
+top: 1px;
+left: 1px;
+z-index: 3;
+width: 16px;
+height: 16px;
+padding: 0;
+border: none;
+border-radius: 50%;
+background: #ff3b30;
+color: #fff;
+font-size: 11px;
+line-height: 16px;
+font-weight: 700;
+cursor: pointer;
+}
+.dgr-page-add-thumb {
+flex: none;
+width: 46px;
+height: 62px;
+border-radius: 10px;
+border: 1.5px dashed rgba(0,0,0,.22);
+background: rgba(255,255,255,.45);
+color: var(--ink, #111111);
+font-size: 20px;
+font-weight: 600;
+cursor: pointer;
+}
+[data-theme="dark"] #dgr-pagebar { background: rgba(30,30,30,.9); }
+[data-theme="dark"] .dgr-page-thumb { background: linear-gradient(160deg,#2a2a2a,#1e1e1e); border-color: rgba(255,255,255,.12); }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-num { color: #f0f0f0; }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-mini span { background: rgba(255,255,255,.2); }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-mini span.card { background: rgba(255,255,255,.3); }
+[data-theme="dark"] .dgr-page-add-thumb { color: #f0f0f0; border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.06); }
+#dgr-editbar {
+position: absolute;
+left: 12px;
+right: 12px;
+bottom: 26px;
+z-index: 98;
+display: none;
+align-items: center;
+justify-content: space-between;
+gap: 8px;
+padding: 8px 10px;
+border-radius: 16px;
+background: rgba(255,255,255,.9);
+color: var(--ink, #111111);
+box-shadow: 0 8px 26px rgba(0,0,0,.16);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+box-sizing: border-box;
+}
+html.dgr-editing #dgr-editbar { display: flex; }
+#dgr-editbar .dgr-hint {
+flex: 1;
+min-width: 0;
+font-size: 11px;
+color: var(--muted, #888);
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+#dgr-editbar button {
+flex: none;
+padding: 8px 14px;
+border-radius: 12px;
+border: 1px solid rgba(0,0,0,.1);
+font-size: 13px;
+font-weight: 600;
+color: var(--ink, #111111);
+background: rgba(255,255,255,.7);
+cursor: pointer;
+}
+#dgr-editbar button#dgr-add-btn {
+border-color: transparent;
+background: var(--btn-bg, #111111);
+color: var(--btn-ink, #ffffff);
+}
+[data-theme="dark"] #dgr-editbar {
+background: rgba(30,30,30,.9);
+color: #f0f0f0;
+box-shadow: 0 8px 26px rgba(0,0,0,.5);
+}
+[data-theme="dark"] #dgr-editbar button {
+color: #f0f0f0;
+background: rgba(255,255,255,.08);
+border-color: rgba(255,255,255,.12);
+}
+[data-theme="dark"] #dgr-editbar button#dgr-add-btn {
+background: #f0f0f0;
+color: #111111;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatars { gap: 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar { gap: 4px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .ring { width: 44px; height: 44px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-love { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-head { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-artist,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-lyric,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-progress,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-times { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-cover { width: 40px; height: 40px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls { margin-top: 3px; padding: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-play { width: 30px; height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-heart { width: 30px; height: 30px; min-width: 30px; min-height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-queue { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-inner { padding-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-phase,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-bar-wrap { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-label,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-sub { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-days { font-size: 30px; margin: 2px 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] { padding: 8px 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-head { margin-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-grid { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-disp { font-size: 22px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-controls { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] .da-days { font-size: 20px; margin: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="2"]:not(.app) { padding-left: 10px !important; padding-right: 10px !important; }
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="3"]:not(.app) { padding-left: 12px !important; padding-right: 12px !important; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatars { gap: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .ring { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-heart svg { width: 16px; height: 16px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-love { width: 100%; gap: 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] #love-days { font-size: 16px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] { padding: 8px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-cover { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-lyric { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-queue { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-heart { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-play { width: 38px; height: 38px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-w="2"] .dpd-days { font-size: 38px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-sub { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-ta { gap: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-btn { padding: 5px 8px; font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-days { gap: 3px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-day { font-size: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .checkin[data-dgr-w="2"] .ck-btn { padding: 7px 10px; min-height: 34px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mini-card { padding: 10px 8px 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mc-b { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-cell { font-size: 9px; line-height: 18px; height: 18px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-grid { gap: 1px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget[data-dgr-w="2"],
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] { padding: 10px 8px; }
 </style>
 <!-- v3.40.0：vConsole 手机端调试面板（腾讯开源 v3.15.1）。
      默认不加载，满足任一条件才启用：
@@ -11815,7 +12461,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793782843448" data-version="v8.66.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793782988451" data-version="v8.73.6">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -12075,11 +12721,14 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <button class="dt-btn" id="dt-toggle-mode">倒计时</button>
           </div>
         </div>
-        <!-- 纪念日倒计时组件 -->
-        <div class="desk-anniv glass" data-desk-widget="desk-anniv" data-card-bg="desk-anniv">
-          <div class="da-label">距下一个纪念日</div>
-          <div class="da-days" id="da-days">—</div>
-          <div class="da-name" id="da-name">未设置</div>
+        <!-- #1626 统一倒数日卡：自动读纪念日设置 + 自定义倒数日，点卡片进纪念页管理 -->
+        <div class="desk-anniv glass" data-desk-widget="desk-anniv" data-card-bg="desk-anniv" title="点击管理倒数日">
+          <div class="da-main">
+            <div class="da-label">最近的倒数日</div>
+            <div class="da-days" id="da-days">—</div>
+            <div class="da-name" id="da-name">未设置</div>
+          </div>
+          <div class="da-list" id="da-list"></div>
         </div>
 
         <!-- v3.2x：原第三页移除的组件——经期倒计时卡 / 今日备忘·心情行 / 第三页功能图标组，
@@ -13398,7 +14047,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.66.4</div>
+          <div class="val" id="about-ver-val">v8.73.6</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -13517,12 +14166,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">Mochi 字卡传讯 v8.66.4</div>
-      <div class="ver-credit">原版小红书@言序（1842523578）</div>
-      <!-- v3.27.x：设置页底部防骗声明 -->
-      <div class="set-alert">
-        <b>Mochi字卡网站免费。</b>作者只有两个账号：小红书@言序（1842523578）和抖音@言序（58334080131）；作者不玩抖音、不回消息，是看到有人想花钱求网站才开的号，仅用于发布本站链接。本站不收取任何费用，如有出现任何收费情况，均为诈骗，注意防止被骗。二传、分享本站链接必须标注作者署名：小红书 @言序（1842523578），禁止删除或修改；严禁收费倒卖本站链接、安装包——如果你是花钱买来的链接：你被骗了，请拒付退款并举报卖家。
-      </div>
+      <div class="ver">辰光玥影 v8.73.6</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -13849,6 +14493,24 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">恢复默认桌面<span class="sub">恢复默认布局与页数</span></div>
         </div>
+        <!-- #1620/#1621：新版桌面网格数据与编辑开关（第二期：网格渲染 + 长按拖动） -->
+        <div class="set-row" id="row-desk-grid-v2">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></div>
+          <div class="txt">新版桌面编辑（测试）<span class="sub">开启后桌面改为网格布局：长按图标/卡片拖动、跨页，右下角拖拽改大小，左上角 − 移出 · 卡片可缩到半宽，图标能放在卡片旁边的空格 · 关闭回旧版</span></div>
+          <div class="val" id="desk-grid-v2-val">关闭</div>
+        </div>
+        <!-- #1626 图标名称显示开关：控制桌面图标下方名称文字 -->
+        <div class="set-row" id="row-desk-icon-name">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></div>
+          <div class="txt">显示图标名称<span class="sub">关闭后桌面只显示图标，不显示下方名称文字</span></div>
+          <div class="val" id="desk-icon-name-val">显示</div>
+        </div>
+        <!-- #1634 分页圆点显示开关：隐藏后仍可随时打开，左右滑动切页不受影响 -->
+        <div class="set-row" id="row-desk-dots">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+          <div class="txt">显示分页圆点<span class="sub">关闭后隐藏桌面底部的分页指示点，左右滑动切页不受影响</span></div>
+          <div class="val" id="desk-dots-val">显示</div>
+        </div>
       </div>
       <div class="cg-title">背景与壁纸</div>
       <div class="set-group glass">
@@ -13935,7 +14597,7 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.66.4</span>
+              <span class="lic-ver">v8.73.6</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -14103,15 +14765,15 @@ font-family:inherit; padding:4px 2px; cursor:pointer; -webkit-tap-highlight-colo
           <details class="lic-grp">
             <summary><span class="lg-num">07</span><span class="lg-name">手机桌面</span><span class="lg-count">18</span></summary>
             <div class="lg-body">
-          <div class="lic-li">桌面可添加至 5 页滑动（scroll-snap），指示器圆点点击切换；原第三页的组件（经期卡 / 备忘心情行 / 第三页图标组）已收进装修库，可从组件库随时找回</div>
-          <div class="lic-li">组件隐藏池自由添加：时钟 / 月历 / 计时器 / 纪念日倒计时 / 图片组件 / 文字组件</div>
+          <div class="lic-li">桌面可添加至 5 页滑动（scroll-snap），指示器圆点点击切换；原第三页的组件（经期卡 / 备忘心情行 / 独立功能图标）已收进装修库，可从组件库随时找回</div>
+          <div class="lic-li">组件隐藏池自由添加：时钟 / 月历 / 计时器 / 倒数日（纪念日+自定义） / 图片组件 / 文字组件</div>
           <div class="lic-li">时钟、日历、备忘录、今日心情、离周末还有几天</div>
           <div class="lic-li">桌面组件【今日情话】为联系人每日随机刷新想对你说的话（可在字卡库自定义添加）</div>
           <div class="lic-li">桌面组件【今日备忘】【今天的心情】可简单输入记录</div>
           <div class="lic-li">和他一起摸鱼打卡：摸鱼值 / 工作值双方随机增长，打卡横幅统计摸鱼天数，摸鱼抓包彩蛋涨值翻倍</div>
           <div class="lic-li">第一页图标：聊天、群聊（开启群聊模式后显示）、主页、信箱、朋友圈、日历、纪念、占卜（开启群聊模式期间收起，改用 设置 → 工具 → 占卜 打开）、收藏</div>
           <div class="lic-li">第二页：音乐播放器卡、本周日常、周末倒计时；图标——音乐、聊天统计、提问记录、寻踪、此间、同频、伸手</div>
-          <div class="lic-li">装修库组件：经期倒计时大卡、今日备忘 / 今天的心情、第三页功能图标组（经期记录、记账、梦角档案、我的档案、房间、备忘录、喝水、吃什么、存钱罐、番茄钟）；第三页图标同样动态注入</div>
+          <div class="lic-li">装修库组件：经期倒计时大卡、今日备忘 / 今天的心情、独立功能图标（经期记录、记账、梦角档案、我的档案、房间、备忘录、喝水、吃什么、存钱罐、番茄钟）；图标可逐个添加和摆放</div>
           <div class="lic-li">心意市集 / 心意柜图标成组自动注入桌面</div>
           <div class="lic-li">装修模式：编辑布局、添加卡片、点图标换图、卡片设背景、长按拖拽跨页摆放、恢复图标</div>
           <div class="lic-li">手机桌面美化：主题色、桌面字号、卡片大小、组件圆角、内置壁纸预设、背景模糊遮罩、每页独立背景图</div>
@@ -23751,4 +24413,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw1vzo6w -->
+<!-- __MOCHI_EOF__ mw1w2s2r -->

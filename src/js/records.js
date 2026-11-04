@@ -20,6 +20,11 @@
       || (window.contactNameFor ? window.contactNameFor(window.__activeCid || 'default') : '')
       || (window.taWord ? window.taWord() : '他');
   }
+  // #1618：心意币文案里的品牌名——与状态栏左上角可自定义文字同步（默认 Mochi）
+  function coinBrandNow() {
+    try { if (window.mochiCoinBrand) return window.mochiCoinBrand(); } catch (e) {}
+    return 'Mochi';
+  }
   // ---- 换头像记录（含事件文案 + 头像缩略图；最多 30 条） ----
   // 记录所有换头像事件：联系人主动换我的头像（直接换 / 邀请同意 / 邀请拒绝）、
   // 我手动换自己的头像等——统一由 chatSystem 写入，text 为聊天系统消息原文
@@ -116,7 +121,7 @@
     const myName = store.get('lbl-user') || '我';
     const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     if (!list.length) {
-      el.innerHTML = recEmpty('<div class="ta-empty">' + (kind === 'ask' ? '暂无申请记录（可点心意币余额行向 Mochi 申请）' : '暂无赚钱记录（玩游戏、种花、钓鱼都能赚心意币）') + '</div>');
+      el.innerHTML = recEmpty('<div class="ta-empty">' + (kind === 'ask' ? '暂无申请记录（可点心意币余额行向 ' + esc(coinBrandNow()) + ' 申请）' : '暂无赚钱记录（玩游戏、种花、钓鱼都能赚心意币）') + '</div>');
       return;
     }
     const yuan = (fen) => (fen / 100).toFixed(2);
@@ -129,7 +134,7 @@
         if (x.taFen) parts.push(name + ' +¥' + yuan(x.taFen));
         line = parts.join(' · ') || '—';
       }
-      const src = x.src ? esc(x.src) : (kind === 'ask' ? '向 Mochi 申请' : '赚钱');
+      const src = x.src ? esc(x.src) : (kind === 'ask' ? '向 ' + esc(coinBrandNow()) + ' 申请' : '赚钱');
       return '<div class="tc-listitem"><div class="tc-li-top"><span class="tc-li-q">🪙 ' + src + '</span><span class="tc-li-time">' + fmtDT(x.ts) + '</span></div>' +
         '<div class="tc-li-line">' + line + '</div></div>';
     }).join('');

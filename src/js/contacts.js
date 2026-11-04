@@ -29,6 +29,10 @@
     // 同 bg-* 道理是全局根键，绝不随联系人隔离，防 migrateLegacy 搬进 default 并删根键
     // （挂起键丢了=用户回来接不到重响的来电）。
     'incoming-requests', 'desk-checkin-en', 'desk-call-en', 'desk-freq-mode', 'call-hold',
+    // #1620：新版桌面网格测试开关是全局根键（跟随设备/全桌面，不随联系人隔离）；
+    // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键 → 开关自己关掉、
+    // 新版数据生成链在非 default 桌面失效。
+    'desk-grid-v2-enabled',
     // v3.27.x：night-mode-en（夜间免打扰模式总开关）同为全局根键，全桌面通、不随联系人隔离。
     // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键 → 开关自己关掉、夜间静默失效。
     'night-mode-en',

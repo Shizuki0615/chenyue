@@ -1228,6 +1228,41 @@
     rdRenderShelf();
   }
 
+  // #1616：读书模块一层一层返回——先关最上面的阅读层，再阅读器→书架→分组→（页面栈/桌面）
+  // 物理返回和页内左上角返回共用同一入口；返回 true 表示本次已消化，不再退页面。
+  function rdBackOne() {
+    if (!page || page.hidden) return false;
+    if (settingsPage && !settingsPage.hidden) return false; // 设置页是独立 .page，交给页面栈
+    // 按实际叠放从高到低：边看边调(80) → 书架菜单(60) → 阅读器批注层(10~5) → 导入面板(2)
+    const layers = [
+      ['rd-live-drawer', rdCloseLiveDrawer],
+      ['rd-book-menu', rdCloseBookMenu],
+      ['rd-group-menu', rdCloseGroupMenu],
+      ['rd-book-group-menu', rdCloseGroupMenu],
+      ['rd-anno-ops', rdCloseAnnoOps],
+      ['rd-anno-preview', rdClosePreview],
+      ['rd-anno-sheet', rdCloseSheet],
+      ['rd-buddy-card', rdCloseBuddyCard],
+      ['rd-toc', function () { closeToc(true); }],
+      ['rd-toc-mask', function () { closeToc(true); }],
+      ['rd-anno-pop', rdClosePop],
+      ['rd-lost', rdCloseLost],
+      ['rd-import-panel', rdCloseImport],
+    ];
+    for (let i = 0; i < layers.length; i++) {
+      const el = document.getElementById(layers[i][0]);
+      if (el && !el.hidden) { try { layers[i][1](); } catch (e) {} return true; }
+    }
+    const reader = document.getElementById('rd-reader');
+    if (reader && !reader.hidden) { rdShowShelf(); return true; }
+    const shelf = document.getElementById('rd-shelf');
+    if (shelf && !shelf.hidden && rdViewGroupId !== null) {
+      rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return true;
+    }
+    return false;
+  }
+  window.mochiReadingBack = rdBackOne;
+
   // ===== 打开一本书 =====
   // 换机恢复备份时正文不在包里：明确告知并记 missing，不白屏、不假装书还在。
   async function rdOpenBook(id) {
@@ -5826,7 +5861,8 @@
       return;
     }
     if (el.closest('#rd-shelf-back')) {
-      if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return; }
+      // #1616：先消化本页最上面一层（导入/边看边调/菜单/分组），没有才退桌面
+      if (rdBackOne()) return;
       rdClose(); return;
     }
     if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
@@ -5840,7 +5876,11 @@
     if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
     const turnOpt = el.closest('[data-rd-turn]');
     if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
-    if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
+    if (el.closest('#rd-reader-back')) {
+      // #1616：阅读器左上角返回也逐层消化（目录/他在哪/批注层 → 阅读器 → 书架）
+      if (rdBackOne()) return;
+      rdShowShelf(); return;
+    }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
     if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
