@@ -6769,6 +6769,9 @@ const FIX_SENTINELS = [
   // ==== 2026-10-27 #1584 设置主页大标题吸顶 ====
   { name: '#1584a 设置主页「设置」标题吸顶、标签行让出实测高度（删＝大标题又滚走或与标签行叠压）', file: 'css/setting.css', needle: '#page-setting .set-title {' },
   { name: '#1584b 设置主页标题高度同步（删＝--set-head-h 恒为 46px，字号/安全区变化后标签行错位）', file: 'js/personalize.js', needle: "page.style.setProperty('--set-head-h', h + 'px');" },
+  // ==== 2026-11-04 #1585 已答卡底部留白改 ::after 占位（防自定义 CSS 压心形） ====
+  { name: '#1585a 已答卡/选择卡心形留白改 ::after 占位（删＝自定义卡片 CSS 写 padding 时心形又压到最后一行字上）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after' },
+  { name: '#1585b 问卷卡详情钮/心形留白改 ::after 占位（删＝改 padding 后详情钮与收藏心形压字）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.msg-survey-card::after' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
