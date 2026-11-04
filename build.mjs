@@ -6772,6 +6772,8 @@ const FIX_SENTINELS = [
   // ==== 2026-11-04 #1585 已答卡底部留白改 ::after 占位（防自定义 CSS 压心形） ====
   { name: '#1585a 已答卡/选择卡心形留白改 ::after 占位（删＝自定义卡片 CSS 写 padding 时心形又压到最后一行字上）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after' },
   { name: '#1585b 问卷卡详情钮/心形留白改 ::after 占位（删＝改 padding 后详情钮与收藏心形压字）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.msg-survey-card::after' },
+  // ==== 2026-11-04 #1586 卡片 CSS「左右分开」整套示例 ====
+  { name: '#1586 卡片 CSS 左右分开示例按钮与整套样式（删＝示例入口消失/只剩片段）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex4"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
