@@ -1760,24 +1760,117 @@ if (!g) { toast('存储接口不可用，请刷新后重试'); return; }
 window.openTCPanel('卡片 CSS', '' +
 '<div class="sm-fld-hint" style="margin-bottom:8px">全局卡片样式，所有联系人共用，只作用单聊问卡。可直接写选择器（如 <code>.msg-ask-card{...}</code>、<code>.ask-opt-btn{...}</code>、<code>.ask-line-who{...}</code>），系统会自动把选择器限定在 <code>#page-chat</code>，群聊不会生效。</div>' +
 '<textarea id="cs-card-css-input" class="tc-input" rows="6" placeholder=".msg-ask-card{border-radius:18px}&#10;.ask-opt-btn{border-color:rgba(0,0,0,.12)}"></textarea>' +
-'<div class="sm-fld-hint" style="margin:8px 0 4px">示例（点一下填进输入框，可再改）：</div>' +
+'<div class="sm-fld-hint" style="margin:8px 0 4px">示例（点一下填进输入框，可再改；「左右分开」是整套样式，会替换输入框内容）：</div>' +
 '<div class="mail-actions" style="margin-bottom:8px">' +
 '<button class="cc-tool" id="cs-card-ex1">卡面圆角</button>' +
 '<button class="cc-tool" id="cs-card-ex2">选项描边</button>' +
 '<button class="cc-tool" id="cs-card-ex3">分割线颜色</button>' +
+'<button class="cc-tool" id="cs-card-ex4" title="整套左右分开样式，会替换输入框内容">左右分开</button>' +
 '</div>' +
 '<div class="mail-actions"><button class="cc-tool" id="cs-card-css-clear">恢复默认</button><button class="cc-tool" id="cs-card-css-ok">应用</button></div>');
 const ta = document.getElementById('cs-card-css-input');
 if (ta) ta.value = g.get(CARD_CSS_KEY) || '';
+const splitCardCss = [
+'/* ===== 问卡 · 对方（左） ===== */',
+'.msg-ask.msg-ask-in {',
+'  --ask-side-bg: #efe6ff;',
+'  --ask-side-text: #2a2024;',
+'  --ask-opt-bg: rgba(255,255,255,.55);',
+'  --ask-side-sel: rgba(221,204,255,.55);',
+'}',
+'.msg-ask.msg-ask-in .msg-ask-card,',
+'.msg-ask.msg-ask-in .msg-choose-card {',
+'  position: relative;',
+'  background-color: rgba(238,230,255,.15);',
+'  background-image:',
+'    linear-gradient(to top, rgba(255,255,255,.75) 0%, transparent 50%),',
+'    radial-gradient(ellipse at center, rgba(221,204,255,.95) 0%, rgba(221,204,255,.45) 45%, transparent 85%);',
+'  background-size: 100% 100%, 100% 100%;',
+'  border: 1px solid rgba(255,255,255,.36);',
+'  border-radius: 16px;',
+'  padding: 10px 14px;',
+'  line-height: 1.6;',
+'  backdrop-filter: blur(4px) saturate(140%);',
+'  -webkit-backdrop-filter: blur(4px) saturate(140%);',
+'  box-shadow: 0 4px 12px rgba(0,0,0,.02);',
+'  text-shadow: 0 1px 2px rgba(255,255,255,.8);',
+'}',
+'.msg-ask.msg-ask-in .msg-ask-card::before,',
+'.msg-ask.msg-ask-in .msg-choose-card::before {',
+'  content: "☪︎";',
+'  position: absolute;',
+'  top: -4px;',
+'  right: -2px;',
+'  font-size: 16px;',
+'  color: #ffffff;',
+'  font-family: Arial, sans-serif;',
+'  line-height: 1;',
+'  text-shadow: 0 0 4px rgba(255,255,255,.8);',
+'  pointer-events: none;',
+'}',
+'',
+'/* ===== 问卡 · 自己（右） ===== */',
+'.msg-ask.msg-ask-out {',
+'  --ask-side-bg: #ffe6f7;',
+'  --ask-side-text: #2a2024;',
+'  --ask-opt-bg: rgba(255,255,255,.55);',
+'  --ask-side-sel: rgba(255,204,235,.55);',
+'}',
+'.msg-ask.msg-ask-out .msg-ask-card,',
+'.msg-ask.msg-ask-out .msg-choose-card {',
+'  position: relative;',
+'  background-color: rgba(255,230,247,.15);',
+'  background-image:',
+'    linear-gradient(to top, rgba(255,255,255,.75) 0%, transparent 50%),',
+'    radial-gradient(ellipse at center, rgba(255,204,235,.95) 0%, rgba(255,204,235,.45) 45%, transparent 85%);',
+'  background-size: 100% 100%, 100% 100%;',
+'  border: 1px solid rgba(255,255,255,.36);',
+'  border-radius: 16px;',
+'  padding: 10px 14px;',
+'  line-height: 1.6;',
+'  backdrop-filter: blur(8px) saturate(140%);',
+'  -webkit-backdrop-filter: blur(8px) saturate(140%);',
+'  box-shadow: 0 4px 12px rgba(0,0,0,.02);',
+'  text-shadow: 0 1px 2px rgba(255,255,255,.8);',
+'}',
+'.msg-ask.msg-ask-out .msg-ask-card::before,',
+'.msg-ask.msg-ask-out .msg-choose-card::before {',
+'  content: "❀";',
+'  position: absolute;',
+'  top: -4px;',
+'  left: -2px;',
+'  font-size: 16px;',
+'  color: #ffffff;',
+'  font-family: Arial, sans-serif;',
+'  line-height: 1;',
+'  text-shadow: 0 0 4px rgba(255,255,255,.8);',
+'  pointer-events: none;',
+'}',
+'',
+'/* ===== 卡内配套（选项 / 标签 / 分割线也玻璃化） ===== */',
+'.msg-ask .ask-line { line-height: 1.6; }',
+'.msg-ask .ask-line-who { background: rgba(255,255,255,.55); opacity: .8; }',
+'.msg-ask .ask-opt-btn,',
+'.msg-ask .ask-opt-row,',
+'.msg-ask .ask-opt-static { border-color: rgba(255,255,255,.55); }',
+'.msg-ask .ask-opt-submit { background: rgba(255,255,255,.6); color: #2a2024; }',
+'.msg-ask .msg-ask-lines,',
+'.msg-ask .msg-survey-list,',
+'.msg-ask .msg-survey-actions { border-top-color: rgba(255,255,255,.5); }',
+'.msg-ask .msg-fav-heart,',
+'.msg-ask .msg-ask-view-arrow { background: rgba(255,255,255,.55); }'
+].join('\n');
 const cardCssExamples = [
 '.msg-ask-card{border-radius:20px}',
 '.ask-opt-btn,.ask-opt-row{border-color:rgba(127,127,127,.32)}',
-'.msg-ask-lines{border-top-color:rgba(127,127,127,.32)}'
+'.msg-ask-lines{border-top-color:rgba(127,127,127,.32)}',
+splitCardCss
 ];
-[['cs-card-ex1', 0], ['cs-card-ex2', 1], ['cs-card-ex3', 2]].forEach(([id, i]) => {
+[['cs-card-ex1', 0], ['cs-card-ex2', 1], ['cs-card-ex3', 2], ['cs-card-ex4', 3]].forEach(([id, i]) => {
 const b = document.getElementById(id);
 if (!b || !ta) return;
 b.addEventListener('click', () => {
+if (i === 3) { ta.value = cardCssExamples[i]; return; }
 const cur = String(ta.value || '').trim();
 ta.value = cur ? cur + '\n' + cardCssExamples[i] : cardCssExamples[i];
 });
