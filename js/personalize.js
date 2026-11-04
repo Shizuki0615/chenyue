@@ -1746,6 +1746,12 @@ try { return JSON.parse(store.get('hidden-icons') || '[]'); } catch (e) { return
 const setHiddenIcons = (arr) => {
 store.set('hidden-icons', JSON.stringify(arr));
 };
+const getHiddenWidgets = () => {
+try { return JSON.parse(store.get('hidden-widgets') || '[]'); } catch (e) { return []; }
+};
+const setHiddenWidgets = (arr) => {
+try { store.set('hidden-widgets', JSON.stringify(arr)); } catch (e) {}
+};
 const applyHiddenIcons = () => {
 const hidden = getHiddenIcons();
 const ckOff = typeof window.checkinDeskOff === 'function' && window.checkinDeskOff();
@@ -5963,10 +5969,12 @@ document.querySelectorAll('.app-grid').forEach(function (g) {
 if (g.dataset.app) store.remove('app-icon-order-' + g.dataset.app);
 });
 store.remove('hidden-icons');
+store.remove('hidden-widgets');
 if (window.idbDelete) {
 const P = (window.activePrefix ? window.activePrefix() : 'xy-home-v2:default');
 dels.push(window.idbDelete(P + ':desk-layout'));
 dels.push(window.idbDelete(P + ':hidden-icons'));
+dels.push(window.idbDelete(P + ':hidden-widgets'));
 dels.push(window.idbDelete(P + ':desk-grid-v2'));
 document.querySelectorAll('.app-grid').forEach(function (g) {
 if (g.dataset.app) dels.push(window.idbDelete(P + ':app-icon-order-' + g.dataset.app));
@@ -6140,7 +6148,9 @@ return;
 }
 if (n.classList.contains('app')) { addIcon(n); return; }
 if (n.hasAttribute('data-desk-widget')) {
-add({ key: n.getAttribute('data-desk-widget'), type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
+const wk = n.getAttribute('data-desk-widget');
+if (getHiddenWidgets().indexOf(wk) >= 0) return;
+add({ key: wk, type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
 return;
 }
 if (n.hasAttribute('data-desk-image')) {
@@ -6466,6 +6476,10 @@ w = 1;
 h = 1;
 } else if (node.hasAttribute('data-desk-widget')) {
 key = node.getAttribute('data-desk-widget');
+if (getHiddenWidgets().indexOf(key) >= 0) {
+try { ensureWidgetPool().appendChild(node); } catch (e) {}
+return;
+}
 type = 'widget';
 } else if (node.hasAttribute('data-desk-image')) {
 key = node.getAttribute('data-desk-image');
@@ -7081,6 +7095,10 @@ return;
 try { removeDeskCountdown(key); } catch (e) {}
 return;
 } else {
+if (it.type === 'widget') {
+const hw = getHiddenWidgets();
+if (hw.indexOf(key) < 0) { hw.push(key); setHiddenWidgets(hw); }
+}
 if (node) {
 try { ensureWidgetPool().appendChild(node); } catch (e) {}
 node.style.gridColumn = '';
@@ -7439,6 +7457,9 @@ if (!changed) { toast('已在本页'); return true; }
 } else {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 if (!node) return false;
+const hw = getHiddenWidgets();
+const hwi = hw.indexOf(wid);
+if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }
 const existing = deskGridV2Find(m, wid);
 if (existing) {
 if (existing.pageIdx === pageIdx) { toast('已在本页'); return true; }

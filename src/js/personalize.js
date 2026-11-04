@@ -2330,6 +2330,14 @@ try {
   const setHiddenIcons = (arr) => {
     store.set('hidden-icons', JSON.stringify(arr));
   };
+  // #1641 网格模式手动移除的卡片（打卡横幅等标准小组件）：
+  // 模板每次启动都会重新生成同名节点，必须靠这份持久名单阻止「收养逻辑」把它加回来。
+  const getHiddenWidgets = () => {
+    try { return JSON.parse(store.get('hidden-widgets') || '[]'); } catch (e) { return []; }
+  };
+  const setHiddenWidgets = (arr) => {
+    try { store.set('hidden-widgets', JSON.stringify(arr)); } catch (e) {}
+  };
   const applyHiddenIcons = () => {
     const hidden = getHiddenIcons();
     // #823：寻踪总开关关闭时桌面【寻踪】图标与手动隐藏图标同轴收起——本函数会把「名单外」
@@ -7368,6 +7376,8 @@ try {
             if (g.dataset.app) store.remove('app-icon-order-' + g.dataset.app);
           });
           store.remove('hidden-icons');
+          // #1641 恢复默认桌面＝之前手动移除的标准卡片也一起回来
+          store.remove('hidden-widgets');
           // v3.27.x（华为 Mate 40 Pro+自带浏览器反馈）：store.remove 里的 idbDelete 是异步
           // fire-and-forget，原 400ms 后 reload 在 IDB 慢/事务挂起的浏览器上删除还没提交，
           // 新页面 idbRestore 会把旧 desk-layout 从 IDB 回填回来 →「恢复默认没生效」。
@@ -7376,6 +7386,7 @@ try {
             const P = (window.activePrefix ? window.activePrefix() : 'xy-home-v2:default');
             dels.push(window.idbDelete(P + ':desk-layout'));
             dels.push(window.idbDelete(P + ':hidden-icons'));
+            dels.push(window.idbDelete(P + ':hidden-widgets'));
             dels.push(window.idbDelete(P + ':desk-grid-v2'));
             document.querySelectorAll('.app-grid').forEach(function (g) {
               if (g.dataset.app) dels.push(window.idbDelete(P + ':app-icon-order-' + g.dataset.app));
@@ -7580,7 +7591,10 @@ try {
       }
       if (n.classList.contains('app')) { addIcon(n); return; }
       if (n.hasAttribute('data-desk-widget')) {
-        add({ key: n.getAttribute('data-desk-widget'), type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
+        const wk = n.getAttribute('data-desk-widget');
+        // #1641 已手动移除的卡片即使模板又带出来，也不再写回模型
+        if (getHiddenWidgets().indexOf(wk) >= 0) return;
+        add({ key: wk, type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
         return;
       }
       if (n.hasAttribute('data-desk-image')) {
@@ -7930,6 +7944,11 @@ try {
         h = 1;
       } else if (node.hasAttribute('data-desk-widget')) {
         key = node.getAttribute('data-desk-widget');
+        // #1641 手动移除过的卡片：模板重启后会重新生成节点，这里拦住并收回隐藏池
+        if (getHiddenWidgets().indexOf(key) >= 0) {
+          try { ensureWidgetPool().appendChild(node); } catch (e) {}
+          return;
+        }
         type = 'widget';
       } else if (node.hasAttribute('data-desk-image')) {
         key = node.getAttribute('data-desk-image');
@@ -8568,6 +8587,11 @@ try {
       try { removeDeskCountdown(key); } catch (e) {}
       return;
     } else {
+      // #1641 标准小组件（打卡横幅等）记入持久移除名单：重启后模板再带出同名节点，收养逻辑会跳过它
+      if (it.type === 'widget') {
+        const hw = getHiddenWidgets();
+        if (hw.indexOf(key) < 0) { hw.push(key); setHiddenWidgets(hw); }
+      }
       if (node) {
         try { ensureWidgetPool().appendChild(node); } catch (e) {}
         node.style.gridColumn = '';
@@ -8933,6 +8957,10 @@ try {
     } else {
       const node = document.querySelector('[data-desk-widget="' + wid + '"]');
       if (!node) return false;
+      // #1641 从组件库重新加回时先解除「已移除」标记，否则收养逻辑仍会把它收回隐藏池
+      const hw = getHiddenWidgets();
+      const hwi = hw.indexOf(wid);
+      if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }
       const existing = deskGridV2Find(m, wid);
       if (existing) {
         if (existing.pageIdx === pageIdx) { toast('已在本页'); return true; }

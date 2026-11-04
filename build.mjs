@@ -7108,6 +7108,14 @@ const FIX_SENTINELS = [
   { name: '#1640d 下拖超过一半松手即收起（删＝拖到底松手又弹回整块）', file: 'js/personalize.js', needle: 'if (-panelOffset > maxDown * 0.45) { setPanelMini(true); return; }' },
   { name: '#1640e 点胶囊展开（删＝收起后无法再打开面板）', file: 'js/personalize.js', needle: "if (panel.classList.contains('dpf-stk-panel-mini')) setPanelMini(false);" },
   { name: '#1640f 胶囊悬在底部导航之上（删＝收起后仍挡住底栏按钮）', file: 'js/personalize.js', needle: 'panel.style.marginBottom = lift + \'px\';' },
+  // ==== 2026-11-04 #1641 网格删除的打卡卡片重启后不再复活 ====
+  { name: '#1641a 已移除卡片持久名单（删＝没有名单可挡，模板重启又把卡片带回来）', file: 'js/personalize.js', needle: 'const getHiddenWidgets = () => {' },
+  { name: '#1641b 删除标准卡片写入移除名单（删＝删完只在本次会话生效，重启复活）', file: 'js/personalize.js', needle: 'if (hw.indexOf(key) < 0) { hw.push(key); setHiddenWidgets(hw); }' },
+  { name: '#1641c 收养逻辑跳过已移除卡片并收回隐藏池（删＝重启时打卡卡片被收养回模型）', file: 'js/personalize.js', needle: 'if (getHiddenWidgets().indexOf(key) >= 0) {' },
+  { name: '#1641d 从 DOM 重建模型时跳过已移除卡片（删＝模型损坏重建后卡片一起复活）', file: 'js/personalize.js', needle: 'if (getHiddenWidgets().indexOf(wk) >= 0) return;' },
+  { name: '#1641e 组件库重新添加时解除移除标记（删＝从库里加回打卡卡后又被收回池）', file: 'js/personalize.js', needle: 'if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }' },
+  { name: '#1641f 恢复默认桌面清空移除名单（删＝恢复默认后打卡卡仍回不来）', file: 'js/personalize.js', needle: "store.remove('hidden-widgets');" },
+  { name: '#1641g 恢复默认时同时等待 IDB 删除移除名单（删＝IDB 回填把名单又带回来）', file: 'js/personalize.js', needle: "dels.push(window.idbDelete(P + ':hidden-widgets'));" },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },
