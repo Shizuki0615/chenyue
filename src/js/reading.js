@@ -1380,15 +1380,18 @@
     const padR = parseFloat(cs.paddingRight) || 0;
     const padT = parseFloat(cs.paddingTop) || 0;
     const padB = parseFloat(cs.paddingBottom) || 0;
-    const w = Math.max(80, body.clientWidth - padL - padR);
+    // 宽高取 getBoundingClientRect 的分数值：clientWidth/clientHeight 是取整的，
+    // 和真实内容盒差零点几像素，夹英文的页两边就会做出不同的换行
+    const rect = body.getBoundingClientRect();
+    const w = Math.max(80, rect.width - padL - padR);
     // 正文顶部有呼吸位：分页要按内容区高度算，扣掉上下内边距，否则最后一行会被裁掉
-    const h = Math.max(80, body.clientHeight - padT - padB);
+    const h = Math.max(80, rect.height - padT - padB);
     const fs = parseFloat(cs.fontSize) || 17;
     let lh = parseFloat(cs.lineHeight);
     if (!lh || isNaN(lh)) lh = fs * 1.8;
     const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
     if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-    const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
+    const pages = paginate(text, w, h, fs, lh, cs);
     RD_PAGE_CACHE[key] = pages;
     const keys = Object.keys(RD_PAGE_CACHE);
     if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
@@ -1397,20 +1400,28 @@
 
   // 真分页：用一个不可见的同宽同字号测量块，对每页末尾偏移做二分，
   // 找到「不溢出容器高度」的最大偏移；保证每次至少前进 1 个字符。
-  function paginate(text, w, h, fs, lh, ff) {
+  function paginate(text, w, h, fs, lh, cs) {
     const src = String(text == null ? '' : text);
     const n = src.length;
     if (!n) return [{ s: 0, e: 0 }];
     const box = document.createElement('div');
     box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;' +
-      'white-space:pre-wrap;word-break:break-word;box-sizing:border-box;width:' + w + 'px;' +
+      'white-space:pre-wrap;box-sizing:border-box;width:' + w + 'px;' +
       'font-size:' + fs + 'px;line-height:' + lh + 'px;';
-    if (ff) box.style.fontFamily = ff;
+    if (cs) {
+      if (cs.fontFamily) box.style.fontFamily = cs.fontFamily;
+      // 断行设置逐项复用正文自己的 computed style：测量和渲染必须连 word-break 都一致，
+      // 否则夹英文的页（卷首引文、样文）两边换行点不同，同一片文字算出的行数就不一样
+      box.style.wordBreak = cs.wordBreak || 'normal';
+      box.style.overflowWrap = cs.overflowWrap || 'normal';
+      if (cs.lineBreak) box.style.lineBreak = cs.lineBreak;
+    }
     document.body.appendChild(box);
-    // 段首要占两个全角宽，测量也按同样宽度算，否则缩进后每页会多挤出一行
+    // 段首缩进：测量插和渲染同一个 .rd-ind（inline-block 2em）、走同一个 rdEsc。
+    // 以前测量塞两个全角空格、渲染插 span，宽度和断行点都有细微差别
     const indents = Array.from(rdFindParaStarts(src));
     function measure(a, z) {
-      if (!indents.length) { box.textContent = src.slice(a, z); return; }
+      if (z <= a) { box.innerHTML = ''; return; }
       let lo2 = 0, hi2 = indents.length - 1;
       while (lo2 <= hi2) {
         const m2 = (lo2 + hi2) >> 1;
@@ -1418,10 +1429,10 @@
       }
       let out = '', cur = a;
       for (let i = lo2; i < indents.length && indents[i] < z; i++) {
-        out += src.slice(cur, indents[i]) + RD_INDENT;
+        out += rdEsc(src.slice(cur, indents[i])) + '<span class="rd-ind"></span>';
         cur = indents[i];
       }
-      box.textContent = out + src.slice(cur, z);
+      box.innerHTML = out + rdEsc(src.slice(cur, z));
     }
     const pages = [];
     let s = 0;
@@ -3181,8 +3192,7 @@
 
   // 段首缩进：只在行首、非空行、非章标题行插一个两字宽的占位 span。
   // 用 span 而不是往正文里塞空格，字符偏移不被改变，批注/书签/进度都不受影响。
-  // 分页测量时用两个全角空格代表同样的宽度（见 paginate），保证不会多挤出一行。
-  const RD_INDENT = '\u3000\u3000';
+  // 分页测量插的是同一个 span（见 paginate），两边排版逐像素一致。
   function rdFindParaStarts(text) {
     const src = String(text == null ? '' : text);
     const set = new Set();
