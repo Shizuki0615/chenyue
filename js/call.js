@@ -1080,6 +1080,21 @@ function partnerAvOf(cid) {
 const s = vtStoreFor(cid);
 return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
 }
+function myAvOf(cid) {
+const s = vtStoreFor(cid);
+return s.get('cs-avatar-user') || s.get('avatar-user') || '';
+}
+function paintSelfOff() {
+const avBox = document.getElementById('vt-self-off-av');
+const blur = document.getElementById('vt-self-off-blur');
+let av = '';
+try { av = myAvOf(vtCid()); } catch (e) { av = ''; }
+if (avBox) fillAv(avBox, av);
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
+}
+}
 function vtSelfState(state, txt) {
 const v = document.getElementById('vt-self');
 const off = document.getElementById('vt-self-off');
@@ -1089,6 +1104,7 @@ if (v) v.hidden = false;
 if (off) off.hidden = true;
 return;
 }
+paintSelfOff();
 if (v && off) {
 off.style.left = v.style.left || '';
 off.style.top = v.style.top || '';

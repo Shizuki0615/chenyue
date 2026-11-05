@@ -1534,6 +1534,22 @@
     const s = vtStoreFor(cid);
     return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
   }
+  function myAvOf(cid) {
+    const s = vtStoreFor(cid);
+    return s.get('cs-avatar-user') || s.get('avatar-user') || '';
+  }
+  // v8.74.9：我不开摄像头时，小窗也走「头像铺满 + 模糊背景」，与 TA 关摄像头同款
+  function paintSelfOff() {
+    const avBox = document.getElementById('vt-self-off-av');
+    const blur = document.getElementById('vt-self-off-blur');
+    let av = '';
+    try { av = myAvOf(vtCid()); } catch (e) { av = ''; }
+    if (avBox) fillAv(avBox, av);
+    if (blur) {
+      try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+      catch (e) { blur.style.backgroundImage = ''; }
+    }
+  }
   function vtSelfState(state, txt) {
     const v = document.getElementById('vt-self');
     const off = document.getElementById('vt-self-off');
@@ -1543,6 +1559,7 @@
       if (off) off.hidden = true;
       return;
     }
+    paintSelfOff();
     // 关摄像头/打开中：占位块跟到小窗当前位置，拖动过之后关摄像头不跳回右上角
     if (v && off) {
       off.style.left = v.style.left || '';

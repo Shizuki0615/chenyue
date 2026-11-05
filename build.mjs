@@ -7189,6 +7189,9 @@ const FIX_SENTINELS = [
   // ==== 2026-11-05 #1622 视频通话对方关摄像头＝头像模糊铺满 ====
   { name: '#1622 视频通话头像模糊背景层（删＝又回到纯黑/深色底）', file: 'template.html', needle: 'id="vt-ta-av-blur"' },
   { name: '#1622b 关摄像头时把头像写进模糊层（删＝模糊层永远空着，只剩深色渐变）', file: 'js/call.js', needle: 'blur.style.backgroundImage = av ?' },
+  // ==== 2026-11-05 #1623 我不开摄像头的小窗也用头像模糊 ====
+  { name: '#1623 我的摄像头小窗头像模糊背景（删＝关摄像头又回到黑框+图标）', file: 'template.html', needle: 'id="vt-self-off-blur"' },
+  { name: '#1623b 小窗关闭时填我的头像与模糊背景（删＝模糊层空着）', file: 'js/call.js', needle: 'function paintSelfOff()' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

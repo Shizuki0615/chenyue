@@ -1563,8 +1563,12 @@
       <div class="vt-shade"></div>
       <video class="vt-self" id="vt-self" playsinline muted autoplay></video>
       <div class="vt-self-off" id="vt-self-off" role="button" title="点一下重试摄像头">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
-        <span id="vt-self-off-txt">摄像头已关</span>
+        <div class="vt-self-off-blur" id="vt-self-off-blur" aria-hidden="true"></div>
+        <div class="vt-self-off-av" id="vt-self-off-av"></div>
+        <div class="vt-self-off-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
+          <span id="vt-self-off-txt">摄像头已关</span>
+        </div>
       </div>
     </div>
     <div class="call-av" id="call-av"></div>

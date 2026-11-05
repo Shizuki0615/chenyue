@@ -2263,11 +2263,36 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18);
   color:rgba(255,255,255,.78); font-size:9px; line-height:1.35; text-align:center;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  padding:0 4px; cursor:grab; touch-action:none;
+  padding:0 4px; cursor:grab; touch-action:none; overflow:hidden;
 }
 .vt-self-off.dragging { cursor:grabbing; }
 .vt-self-off[hidden] { display:none; }
-.vt-self-off svg { width:20px; height:20px; }
+/* v8.74.9 我不开摄像头时也像微信：我的头像铺满 + 模糊做背景，中间小头像，底部保留「摄像头已关」小标 */
+.vt-self-off-blur {
+  position:absolute; inset:-14px; background-size:cover; background-position:center;
+  background-repeat:no-repeat; filter:blur(14px) saturate(1.1); transform:scale(1.06);
+}
+.vt-self-off::after {
+  content:''; position:absolute; inset:0; z-index:1;
+  background:rgba(0,0,0,.32);
+}
+.vt-self-off-av {
+  position:relative; z-index:2; width:34px; height:34px; border-radius:50%;
+  overflow:hidden; background:#e9e9e9; box-shadow:0 2px 8px rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center;
+}
+.vt-self-off-av img { width:100%; height:100%; object-fit:cover; display:block; }
+.vt-self-off-av svg { width:18px; height:18px; }
+.vt-self-off-badge {
+  position:relative; z-index:2; display:flex; flex-direction:column;
+  align-items:center; gap:2px; color:rgba(255,255,255,.8);
+}
+.vt-self-off-badge svg { width:14px; height:14px; }
+.vt-stage.swap .vt-self-off-av { width:106px; height:106px; }
+.vt-stage.swap .vt-self-off-av svg { width:38px; height:38px; }
+.vt-stage.swap .vt-self-off-blur { filter:blur(28px) saturate(1.12); }
+.vt-stage.swap .vt-self-off-badge { font-size:12px; gap:4px; }
+.vt-stage.swap .vt-self-off-badge svg { width:20px; height:20px; }
 .call-btn.call-vt { background:#3a7bd5; }
 .call-btn.call-cam,
 .call-btn.call-flip,
