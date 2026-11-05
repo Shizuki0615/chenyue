@@ -534,6 +534,16 @@
     }
   }
 
+  // v8.74.4 他来电类型滑块：0=只语音、100=只视频，中间＝视频来电概率（存 reply-call-in-video）
+  function syncCallInVideo(v) {
+    const r = document.getElementById('call-in-video-range');
+    const out = document.getElementById('call-in-video-readout');
+    if (!r) return;
+    const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+    r.value = String(n);
+    if (out) out.textContent = n === 0 ? '只语音' : n >= 100 ? '只视频' : ('视频 ' + n + '% · 语音 ' + (100 - n) + '%');
+  }
+
   function syncUI() {
     const cfg = getCfg();
     // stepper 数值
@@ -562,6 +572,9 @@
       const el = document.getElementById(k);
       if (el) el.checked = cfg[k] === 1;
     });
+    // v8.74.4：他来电类型滑块也随页面/联系人同步
+    const vtRange = document.getElementById('call-in-video-range');
+    if (vtRange) syncCallInVideo(cfg['call-in-video'] !== undefined ? cfg['call-in-video'] : 30);
     // #807 捎话模式行（rp-thx-mode）非开关/stepper，走本文件注入块自带的同步助手
     try { if (window.rpThxModeSync) window.rpThxModeSync(); } catch (e) {}
     // #1451 拼字张数读数行（进页/重画时与两格数字同源刷新）
@@ -605,6 +618,15 @@
       else { try { const lb = st.closest('.gs-row') ? st.closest('.gs-row').querySelector('span') : null; if (lb) toastSaved(lb.textContent, true); } catch (e) {} }
     });
   });
+  // v8.74.4 来电类型滑块：拖动即时回显，松手落盘（与 stepper 同一套 reply-call-in-video）
+  const callVtRange = document.getElementById('call-in-video-range');
+  if (callVtRange) {
+    callVtRange.addEventListener('input', () => syncCallInVideo(callVtRange.value));
+    callVtRange.addEventListener('change', () => {
+      window.saveReplyCfg('call-in-video', String(Math.round(Number(callVtRange.value) || 0)));
+      syncCallInVideo(callVtRange.value);
+    });
+  }
   // v3.6.x：数值可直接点击输入——点击 stepper 数值框直接编辑数字，
   // 失焦后校验范围 + 按步长取整 + 保存（± 按钮仍可用）。
   // v3.5.138：改为被 mobile-adapt 转换器接管（contenteditable ce-box）——
@@ -1798,6 +1820,8 @@
   } catch (e) {}
 
   syncUI();
+  // v8.74.4：供通话设置页在打开时重新同步（滑块/stepper 随当前联系人刷新）
+  window.rpSyncUI = syncUI;
 
   // 导航：设置页「回复设置」→ 回复设置页（聊天 tab 默认）
   const genRow = document.getElementById('row-general');

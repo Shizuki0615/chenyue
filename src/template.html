@@ -3925,22 +3925,32 @@
         <!-- 视频通话：他开摄像头概率 + 他的画面图池（按联系人各自保存） -->
         <div class="gs-title">视频通话</div>
         <div class="set-group glass">
-          <div class="gs-row"><span>他来电打视频概率</span><div class="stepper" data-k="call-in-video" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-in-video-val" readonly><button class="stp-max">+</button></div></div>
+          <div class="gs-row" id="call-in-video-row" style="display:block">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span>他来电的类型</span>
+              <span id="call-in-video-readout" style="font-size:12px;font-weight:600;color:var(--muted,#888)">视频 30%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+              <span style="font-size:11px;color:var(--muted,#888);flex-shrink:0">只语音</span>
+              <input type="range" id="call-in-video-range" min="0" max="100" step="5" value="30" aria-label="他来电打视频的概率" style="flex:1;min-width:0;width:0;height:28px;padding:0;accent-color:var(--ask-accent,#e88fa3)">
+              <span style="font-size:11px;color:var(--muted,#888);flex-shrink:0">只视频</span>
+            </div>
+          </div>
           <div class="gs-row"><span>他开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【他来电打视频概率】他主动来电时先掷一次：命中就是<b>视频来电</b>（标题写「视频通话」，聊天记录里也是「打来了视频通话」，你接听后直接进视频界面，与你自己点「视频」完全一致）；没命中就是普通语音来电。默认 30%，设 0＝他只打语音。来电接听之后你依然可以手动切换视频/语音，这里管的是「他打过来的那一通本身是哪种」。<br>【他开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里他那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示他的头像，和微信里对方关摄像头一样。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【他来电的类型】滑块最左＝只打语音，最右＝只打视频，中间按百分比随机（例如 30% ＝三成视频来电、七成语音来电）。接听之后你依然可以手动切换视频 / 语音。<br>【他开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里他那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示他的头像，和微信里对方关摄像头一样。</div>
         <div class="gs-title">他的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
         <div class="div-result-empty" id="vt-pool-empty" hidden style="margin:0 16px 10px">还没有画面，点下面按钮添加</div>
         <button class="div-draw" id="vt-pool-add" style="margin:0 16px 10px;width:calc(100% - 32px)">＋ 添加画面（最多 8 张）</button>
         <div class="sm-set-hint" style="padding:0 16px 16px">这些图片只在视频通话里当「他那侧的画面」用，不会影响通话背景和聊天背景。建议用横图、人物在中间的构图，显示时按铺满裁切。单张会自动压到 1280px，8 张约占 1~2MB 存储。</div>
-        <!-- #641：通话半框（聊天页「更多功能→通话」的底部半屏面板）直达入口；背景设置已移至聊天设置 → 美化 → 通话 -->
-        <div class="gs-title">通话半框</div>
+        <!-- v8.74.4 原「通话半框」已删除，这里保留一个「预览来电弹窗」入口（纯预览，不产生真实通话） -->
+        <div class="gs-title">通话预览</div>
         <div class="set-group glass">
-          <div class="set-row" id="call-half-open">
-            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="18" height="9" rx="2"/><path d="M7 12V7a5 5 0 0110 0v5"/></svg></div>
-            <div class="txt">打开通话半框</div>
-            <div class="val">前往打开</div>
+          <div class="set-row" id="call-preview-open">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 6h6M10 9h4"/></svg></div>
+            <div class="txt">预览来电弹窗<span class="sub">只弹出来电时那个方形通话框看看效果，不掷概率、不写记录、不产生真实通话；点弹窗或空白处退出；通话中点击＝展开真实通话面板</span></div>
+            <div class="val">预览</div>
           </div>
         </div>
       </div>
@@ -5592,36 +5602,9 @@
           </div>
         </div>
       </div>
-      <!-- 通话：聊天页底部半框（v3.7.x 露出聊天消息，可开关「通话小框」） -->
-      <div class="poke-card" id="chat-call-panel" hidden>
-        <div class="poke-card-head">
-          <span>通话 · <b id="call-panel-name">他</b></span>
-          <button class="poke-card-close" id="chat-call-close">✕</button>
-        </div>
-        <div class="poke-card-scroll">
-          <div class="call-panel-status" id="call-panel-status">空闲 · 点击拨打语音通话</div>
-          <!-- #651：打开来电弹窗预览——联系人来电时的大弹窗（非迷你小框），纯查看不产生真实通话，点任意处退出；#987 起通话中点击＝展开真实通话面板 -->
-          <div class="call-panel-row" id="call-view-row" title="打开联系人打给你 / 你打给联系人时的方形通话弹窗（非通话小框）；空闲时是预览，点任意处退出，通话中点击＝展开通话面板">
-            <span class="cpr-txt">打开来电弹窗</span><span class="cpr-val">预览</span>
-          </div>
-          <div class="call-panel-row" id="call-vt-row" title="接通后点这里打开视频通话（调用手机摄像头；他那侧开不开由通话设置里的概率决定）">
-            <span class="cpr-txt">视频通话</span><span class="cpr-val" id="call-vt-row-val">开启摄像头</span>
-          </div>
-          <button class="call-panel-dial" id="call-panel-dial" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-            拨打语音通话
-          </button>
-          <button class="call-panel-dial call-panel-dial-vt" id="call-panel-dial-vt" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/></svg>
-            拨打视频通话
-          </button>
-          <button class="call-panel-hang" id="call-panel-hang" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-            挂断通话
-          </button>
-
-        </div>
-      </div>
+      <!-- v8.74.4 通话入口半框已删除：改由「更多功能」里的「语音通话 / 视频通话」两个直达项。
+           这里只留空壳（hidden），兼容旧模块按 id 收起/图层判断，不再有任何可见内容。 -->
+      <div class="poke-card" id="chat-call-panel" hidden></div>
       <!-- 猜拳：聊天页底部半框（露出聊天消息，和联系人猜拳，联系人随机出拳） -->
       <div class="poke-card" id="chat-rps-panel" hidden>
         <div class="poke-card-head">
@@ -6879,9 +6862,13 @@
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
             <span>搜索记录</span>
           </button>
-          <button class="more-item" id="more-call" data-mcat="chat" title="通话">
+          <button class="more-item" id="more-call" data-mcat="chat" title="拨打语音通话">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></span>
-            <span>通话</span>
+            <span>语音通话</span>
+          </button>
+          <button class="more-item" id="more-call-vt" data-mcat="chat" title="拨打视频通话">
+            <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="12.5" height="12" rx="3"/><path d="M15 10.5l6.5-3.5v10L15 13.5z"/></svg></span>
+            <span>视频通话</span>
           </button>
           <button class="more-item" id="more-poke" data-mcat="chat" title="打开拍一拍页面">
             <span class="mi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.5V7.2a1.5 1.5 0 0 1 3 0v7.3"/><path d="M11 14.5V6.5a1.5 1.5 0 0 1 3 0v8"/><path d="M14 14.5V7.8a1.5 1.5 0 0 1 3 0v6.7"/><path d="M6.5 14.5h12c0 3.5-2.7 6-6 6s-6-2.5-6-6"/><path d="M6 5a8.5 8.5 0 0 1 12 0"/></svg></span>

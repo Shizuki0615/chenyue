@@ -169,15 +169,9 @@
       toast('已恢复默认通话半框背景');
     });
   }
-  // #641：通话设置页「打开通话半框」——跳到当前联系人的聊天页并展开通话半框
-  const callHalfOpenRow = document.getElementById('call-half-open');
-  if (callHalfOpenRow) {
-    callHalfOpenRow.addEventListener('click', () => {
-      if (!window.enterChat || !window.openChatCallPanel) { toast('通话半框暂不可用'); return; }
-      window.enterChat();
-      window.openChatCallPanel();
-    });
-  }
+  // v8.74.4：旧「通话半框」入口已删除；设置页的「预览来电弹窗」直接复用纯预览函数
+  const callPreviewOpenRow = document.getElementById('call-preview-open');
+  if (callPreviewOpenRow) callPreviewOpenRow.addEventListener('click', previewCallPopup);
   // #651：通话功能页（聊天「更多功能→通话」半框）内直接上传/移除「通话半框背景」——
   //   与设置页 #call-half-bg-row 同键 call-half-bg、共用 pickCallBg；行值回显由 applyCallHalfBg 同步
   const callHalfBgEditRow = document.getElementById('call-half-bg-edit-row');
@@ -246,8 +240,6 @@
     callPreviewOn = true;
     toast('预览模式：点击任意处退出');
   }
-  const callViewRow = document.getElementById('call-view-row');
-  if (callViewRow) callViewRow.addEventListener('click', previewCallPopup);
   // 预览中切桌面：通话功能页随切换收起，预览弹窗一并退出（姓名/头像不残留上一桌面）
   document.addEventListener('contact-switched', closeCallPreview);
   // v3.5.94：通话背景大键可能只存在 IndexedDB（导入兜底写入/大键只进 IDB）→ 启动补读后重新应用
@@ -1176,26 +1168,21 @@
   //   （fixed / absolute / 带 transform 祖先）都成立；目标位统一钳制在可视视口内，
   //   iOS standalone 上边界仍抬到系统状态栏下方（miniSafeTop，v3.28.x #114 保留）。
   //   无 transform 的常规路径换算结果与原逻辑逐像素一致（不回归）。
-  // #830：轻点小框 → 打开通话半框（聊天页「更多功能→通话」的半屏面板）。
-  //   小框此前只有「拖动」和右侧挂断键两条出路，点中间没反应；拖拽与点击在同一组
-  //   pointer 事件里按 moved 分流（真实拖动过只存位置，不弹面板），按在挂断键上的
-  //   那次抬起整个交回按钮自身，不重复触发。
-  //   半框属聊天页 DOM，故先 enterChat 再 openChatCallPanel；通话归属桌面与当前桌面
-  //   不同时先切桌面——半框标题/背景都按当前桌面读，不切就会把 A 的通话显示成 B（同 #811 串身份口径）。
+  // #830 / v8.74.4：轻点小框 → 展开通话大面板（旧「通话入口半框」已删除）。
+  //   视频态仍直接回视频界面；语音态把 call-mask 展开并收起小框。
+  //   通话归属桌面与当前桌面不同时先切桌面——标题/背景都按当前桌面读。
   function openCallHalfFromMini() {
     if (!currentCall) return;
-    // 视频态的小框＝这通视频还在继续：点它直接回到视频界面（不再弹通话半框）
     if (VT.mode) { vtExpand(); return; }
     const ownerCid = currentCall.cid || window.__activeCid || 'default';
     if (ownerCid !== (window.__activeCid || 'default')) {
       try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e) {}
     }
-    if (!window.enterChat || !window.openChatCallPanel) {
-      if (mask) mask.hidden = false; // 半框入口缺失时退回展开通话大面板，不让点击变成没反应
-      return;
+    if (mask) {
+      mask.hidden = false;
+      if (mini) mini.hidden = true;
+      toast('通话中·已展开通话面板');
     }
-    window.enterChat();
-    window.openChatCallPanel();
   }
   if (mini) {
     let dragging = false, moved = false, pressOnHang = false, pressLX = 0, pressLY = 0, startLeft = 0, startTop = 0;

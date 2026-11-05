@@ -12690,6 +12690,7 @@ callSettingsRow.addEventListener('click', () => {
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 const csPage = document.getElementById('page-call-settings');
 if (csPage) csPage.hidden = false;
+if (window.rpSyncUI) { try { window.rpSyncUI(); } catch (e) {} }
 });
 }
 let deskClockTimer = null;

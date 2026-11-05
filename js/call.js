@@ -119,14 +119,8 @@ applyCallHalfBg();
 toast('已恢复默认通话半框背景');
 });
 }
-const callHalfOpenRow = document.getElementById('call-half-open');
-if (callHalfOpenRow) {
-callHalfOpenRow.addEventListener('click', () => {
-if (!window.enterChat || !window.openChatCallPanel) { toast('通话半框暂不可用'); return; }
-window.enterChat();
-window.openChatCallPanel();
-});
-}
+const callPreviewOpenRow = document.getElementById('call-preview-open');
+if (callPreviewOpenRow) callPreviewOpenRow.addEventListener('click', previewCallPopup);
 const callHalfBgEditRow = document.getElementById('call-half-bg-edit-row');
 if (callHalfBgEditRow) callHalfBgEditRow.addEventListener('click', () => pickCallBg(CALL_HALF_BG_KEY, '通话半框背景已设置'));
 const callHalfBgEditRm = document.getElementById('call-half-bg-edit-remove');
@@ -184,8 +178,6 @@ m.appendChild(catcher);
 callPreviewOn = true;
 toast('预览模式：点击任意处退出');
 }
-const callViewRow = document.getElementById('call-view-row');
-if (callViewRow) callViewRow.addEventListener('click', previewCallPopup);
 document.addEventListener('contact-switched', closeCallPreview);
 try {
 if (window.idbGet) {
@@ -808,12 +800,11 @@ const ownerCid = currentCall.cid || window.__activeCid || 'default';
 if (ownerCid !== (window.__activeCid || 'default')) {
 try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e) {}
 }
-if (!window.enterChat || !window.openChatCallPanel) {
-if (mask) mask.hidden = false; // 半框入口缺失时退回展开通话大面板，不让点击变成没反应
-return;
+if (mask) {
+mask.hidden = false;
+if (mini) mini.hidden = true;
+toast('通话中·已展开通话面板');
 }
-window.enterChat();
-window.openChatCallPanel();
 }
 if (mini) {
 let dragging = false, moved = false, pressOnHang = false, pressLX = 0, pressLY = 0, startLeft = 0, startTop = 0;

@@ -10453,71 +10453,30 @@ if (last) {
 try { last.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e2) { last.scrollIntoView(); }
 }
 });
-const chatCallPanel = document.getElementById('chat-call-panel');
-const chatCallClose = document.getElementById('chat-call-close');
-const callPanelName = document.getElementById('call-panel-name');
-const callPanelStatus = document.getElementById('call-panel-status');
-const callPanelDial = document.getElementById('call-panel-dial');
-const callPanelDialVt = document.getElementById('call-panel-dial-vt');
-const callPanelHang = document.getElementById('call-panel-hang');
-let callPanelTimer = null;
-function fmtCallDur(sec) {
-if (isNaN(sec) || sec < 0) return '00:00';
-const m = Math.floor(sec / 60), s = sec % 60;
-return (m < 10 ? '0' + m : '' + m) + ':' + (s < 10 ? '0' + s : '' + s);
-}
-function updateCallPanel() {
-if (!chatCallPanel || chatCallPanel.hidden) return;
-const pName = chatPartnerName();
-if (callPanelName) callPanelName.textContent = pName;
-let st = null;
-try { st = (window.getCallState && window.getCallState()) || null; } catch (err) { st = null; }
-if (st && st.status !== 'ended') {
-if (callPanelStatus) {
-callPanelStatus.textContent =
-st.status === 'connected' ? ('与 ' + (st.name || pName) + ' 通话中 · ' + fmtCallDur(st.durationSec)) :
-st.status === 'ringing' ? ((st.name || pName) + ' 来电…') :
-st.status === 'calling' ? ('正在呼叫 ' + (st.name || pName) + '…') : '通话中';
-}
-if (callPanelDial) callPanelDial.hidden = true;
-if (callPanelDialVt) callPanelDialVt.hidden = true;
-if (callPanelHang) callPanelHang.hidden = false;
-} else {
-if (callPanelStatus) callPanelStatus.textContent = '空闲 · 选择拨打语音或视频通话';
-if (callPanelDial) callPanelDial.hidden = false;
-if (callPanelDialVt) callPanelDialVt.hidden = false;
-if (callPanelHang) callPanelHang.hidden = true;
-}
-}
-function openChatCall() {
-if (!chatCallPanel) return;
+function closeCallEntryLayers() {
 const pc = document.getElementById('poke-card'); if (pc) pc.hidden = true;
 const ep = document.getElementById('emoji-panel'); if (ep) ep.hidden = true;
 const askP = document.getElementById('chat-ask-panel'); if (askP) closeChatAskPanel();
 const cs = document.getElementById('chat-search'); if (cs) cs.hidden = true;
 const dv = document.getElementById('chat-divine-panel'); if (dv) dv.hidden = true;
 const rp = document.getElementById('chat-rps-panel'); if (rp) rp.hidden = true;
+const rp2 = document.getElementById('chat-rp-panel'); if (rp2) rp2.hidden = true;
+const callP = document.getElementById('chat-call-panel'); if (callP) callP.hidden = true;
 if (window.closeAvlib) window.closeAvlib();
-chatCallPanel.hidden = false;
-closeIme();
-updateCallPanel();
-clearInterval(callPanelTimer);
-callPanelTimer = setInterval(updateCallPanel, 1000);
+if (morePanel) morePanel.hidden = true;
 }
-function closeChatCall() {
-if (chatCallPanel) chatCallPanel.hidden = true;
-clearInterval(callPanelTimer);
-callPanelTimer = null;
+function dialFromMore(asVideo) {
+closeCallEntryLayers();
+closeIme();
+if (window.placeCall) { try { window.placeCall(asVideo); } catch (e) {} return; }
+const name = chatPartnerName();
+addRec({ side: 'out', text: '拨打 ' + name + (asVideo ? ' 视频通话' : ' 语音通话'), special: 'call' });
+if (window.logFish) window.logFish();
 }
 const moreCall = document.getElementById('more-call');
-window.openChatCallPanel = openChatCall;
-if (moreCall) {
-moreCall.addEventListener('click', (e) => {
-e.stopPropagation();
-if (morePanel) morePanel.hidden = true;
-openChatCall();
-});
-}
+if (moreCall) moreCall.addEventListener('click', (e) => { e.stopPropagation(); dialFromMore(false); });
+const moreCallVt = document.getElementById('more-call-vt');
+if (moreCallVt) moreCallVt.addEventListener('click', (e) => { e.stopPropagation(); dialFromMore(true); });
 const morePong = document.getElementById('more-pong');
 if (morePong) {
 morePong.addEventListener('click', (e) => {
@@ -10596,35 +10555,6 @@ const say = pool.length ? pool[Math.floor(Math.random() * pool.length)] : ''; //
 if (say) addRec({ side: 'in', text: say, nightAllow: true, rateAllow: true });
 }, randInt(900, 1600));
 };
-if (chatCallClose) chatCallClose.addEventListener('click', (e) => { e.stopPropagation(); closeChatCall(); });
-if (callPanelDial) callPanelDial.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.placeCall) window.placeCall();
-else {
-const name = chatPartnerName();
-addRec({ side: 'out', text: '拨打 ' + name + ' 语音通话', special: 'call' });
-if (window.logFish) window.logFish();
-}
-setTimeout(updateCallPanel, 120);
-});
-if (callPanelDialVt) callPanelDialVt.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.placeCall) window.placeCall(true);
-else {
-const name = chatPartnerName();
-addRec({ side: 'out', text: '拨打 ' + name + ' 视频通话', special: 'call' });
-if (window.logFish) window.logFish();
-}
-setTimeout(updateCallPanel, 120);
-});
-if (callPanelHang) callPanelHang.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.hangupCall) window.hangupCall();
-setTimeout(updateCallPanel, 120);
-});
-document.addEventListener('contact-switched', function () {
-try { closeChatCall(); } catch (e) {}
-});
 if (pokeClose) pokeClose.addEventListener('click', (e) => { e.stopPropagation(); closePokeCard(); });
 function hydrateCcForChatPanels(done) {
 try {

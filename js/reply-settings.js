@@ -292,6 +292,14 @@ document.addEventListener('contact-switched', window.rpThxModeSync);
 window.rpThxModeSync();
 }
 }
+function syncCallInVideo(v) {
+const r = document.getElementById('call-in-video-range');
+const out = document.getElementById('call-in-video-readout');
+if (!r) return;
+const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+r.value = String(n);
+if (out) out.textContent = n === 0 ? '只语音' : n >= 100 ? '只视频' : ('视频 ' + n + '% · 语音 ' + (100 - n) + '%');
+}
 function syncUI() {
 const cfg = getCfg();
 document.querySelectorAll('#page-reply-settings .stepper, #page-call-settings .stepper').forEach(st => {
@@ -310,6 +318,8 @@ val.setAttribute('value', str);
 const el = document.getElementById(k);
 if (el) el.checked = cfg[k] === 1;
 });
+const vtRange = document.getElementById('call-in-video-range');
+if (vtRange) syncCallInVideo(cfg['call-in-video'] !== undefined ? cfg['call-in-video'] : 30);
 try { if (window.rpThxModeSync) window.rpThxModeSync(); } catch (e) {}
 syncSpellPairReadout();
 }
@@ -344,6 +354,14 @@ if (k === 'call-incoming') toastCallIncoming(fmt(nv));
 else { try { const lb = st.closest('.gs-row') ? st.closest('.gs-row').querySelector('span') : null; if (lb) toastSaved(lb.textContent, true); } catch (e) {} }
 });
 });
+const callVtRange = document.getElementById('call-in-video-range');
+if (callVtRange) {
+callVtRange.addEventListener('input', () => syncCallInVideo(callVtRange.value));
+callVtRange.addEventListener('change', () => {
+window.saveReplyCfg('call-in-video', String(Math.round(Number(callVtRange.value) || 0)));
+syncCallInVideo(callVtRange.value);
+});
+}
 document.querySelectorAll('#page-reply-settings .stepper .stp-val, #page-call-settings .stepper .stp-val').forEach(val => {
 const st = val.closest('.stepper');
 if (!st) return;
@@ -1341,6 +1359,7 @@ if (page && !page.hidden) syncUI();
 });
 } catch (e) {}
 syncUI();
+window.rpSyncUI = syncUI;
 const genRow = document.getElementById('row-general');
 if (genRow) {
 genRow.addEventListener('click', () => {

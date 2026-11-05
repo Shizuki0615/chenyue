@@ -15038,6 +15038,8 @@ bindAdjDrag(headTop, false); // #1534：拖标题行移动面板（与桌面美�
       document.querySelectorAll('.page').forEach(p => p.hidden = true);
       const csPage = document.getElementById('page-call-settings');
       if (csPage) csPage.hidden = false;
+      // v8.74.4：进通话设置页时按当前联系人重同步滑块/stepper
+      if (window.rpSyncUI) { try { window.rpSyncUI(); } catch (e) {} }
     });
   }
 

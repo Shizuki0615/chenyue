@@ -618,7 +618,7 @@ const FIX_SENTINELS = [
   { name: '#651a 来电弹窗预览的透明拦截层退出绑定（删掉＝预览里点接听/拒绝会触发真实通话，或预览关不掉）', file: 'js/call.js', needle: "catcher.addEventListener('click', closeCallPreview);" },
   { name: '#651b 预览让位真实来电（删掉＝预览开着时来电/去电弹层被拦截层盖住，接听/拒绝点不到）', file: 'js/call.js', needle: 'closeCallPreview();\ncloseImageOverlay();' },
   { name: '#651c 通话功能页「通话半框背景」上传入口行（删掉＝半框背景只能回设置页传，功能页入口消失）', file: 'template.html', needle: 'id="call-half-bg-edit-row"' },
-  { name: '#651d 通话功能页「打开来电弹窗」预览行（删掉＝入口消失，来电弹窗平时看不见）', file: 'template.html', needle: 'id="call-view-row"' },
+  { name: '#651d 通话设置页「预览来电弹窗」入口（删掉＝入口消失，来电弹窗平时看不见；v8.74.4 由旧半框行迁来）', file: 'template.html', needle: 'id="call-preview-open"' },
   { name: '#651e 通话背景上传显式传 CALL_BG_KEY（改回 addEventListener 直接传 pickCallBg＝click 事件被当 key 存进 "[object Object]"，通话背景永远设不上，历史 bug）', file: 'js/call.js', needle: "addEventListener('click', () => pickCallBg(CALL_BG_KEY))" },
   { name: '#545 全站自定义下拉（.mochi-custom-select）打开时显式 display:block（删掉/改回 \'\' ＝清内联后回落样式表 display:none，浮层永远打不开，全站下拉「点了没反应」复发，vivo X200s+Edge 等多机型）', file: 'js/ta-ask.js', needle: "list.style.display = 'block';" },
   { name: '#498 后台通知精确相等查重无条件拦（60秒间隔豁免复活＝切后台马上弹几分钟前看过的字卡，红米K80 等多设备复发）', file: 'js/bg-keep.js', needle: 'if (mf === key) return true;' },
@@ -4493,7 +4493,7 @@ const FIX_SENTINELS = [
   { name: '#993c 小游戏记录复用同一折叠渲染件（删/改回手抄列表＝两个流水区块各写一份，折叠只生效一半）', file: 'js/p2-features.js', needle: "return statsFoldSection('🎮', '小游戏记录', '条', uniq," },
   { name: '#987d 删除型：小游戏记录不得再手写自己的区块头（回流＝又一份独立实现，折叠逻辑漏掉它）', file: 'js/p2-features.js', absent: true, needle: "'<span class=\"stats-sec-count\">' + uniq.length + ' 条</span>" },
   { name: '#993e 删除型：旧的「全量直铺」流水渲染件不得回流（回来＝申请心意币记录又默认铺满整屏）', file: 'js/p2-features.js', absent: true, needle: 'function coinRecordSection(' },
-  { name: '#987f 功能页「打开来电弹窗」行说明含通话中行为（删＝用户不知道通话中点它是展开面板，又以为点了没反应）', file: 'template.html', needle: '通话中点击＝展开通话面板' },
+  { name: '#987f 功能页「打开来电弹窗」行说明含通话中行为（删＝用户不知道通话中点它是展开面板，又以为点了没反应）', file: 'template.html', needle: '通话中点击＝展开真实通话面板' },
   { name: '#985a 心意柜真礼物（side:in）带 claimed:0＝待领取（删＝收下的礼物不再有待领取状态，用户选定的「数据不丢＋状态仪式」塌一半）', file: 'js/gift-shop.js', needle: "if (side === 'in') e.claimed = 0;" },
   { name: '#985b 送出的礼物卡先落心意柜记录并互指（删＝卡片与心意柜脱钩，卡片上的领取态/回复无处存）', file: 'js/gift-shop.js', needle: "const entry = recordBox(gift, side, wish);" },
   { name: '#985c 卡片状态从心意柜记录读（删＝卡片回头去聊天记录里找领取态/回复，而聊天大包表达不了「老记录字段变了」，回复会自己消失）', file: 'js/gift-shop.js', needle: 'window.giftGiftMeta = function (boxId) {' },
@@ -7175,6 +7175,11 @@ const FIX_SENTINELS = [
   { name: '#1616 新版 P2 打开时按最高页签固定网格高度（删＝切页签面板高度又跳）', file: 'js/chat.js', needle: 'function stabilizeMorePanelHeight()' },
   // ==== 2026-11-05 #1617 面板等高只留底部空白，不拉大行间距 ====
   { name: '#1617 网格 align-content:start（删＝min-height 多出的高度又摊到行间距，图标被拉开）', file: 'css/chat-main.css', needle: 'justify-items:center; align-content:start;' },
+  // ==== 2026-11-05 #1618 通话入口拆分（语音/视频直达 + 删除半框 + 来电类型滑块）====
+  { name: '#1618a 更多面板「语音通话 / 视频通话」两个直达项（删＝又回到一个通话入口）', file: 'template.html', needle: 'id="more-call-vt"' },
+  { name: '#1618b 旧通话入口半框已删（删＝半框又回来/仍占 DOM 内容）', file: 'template.html', needle: '通话入口半框已删除' },
+  { name: '#1618c 他来电类型滑块（删＝又回到固定概率 stepper）', file: 'template.html', needle: 'id="call-in-video-range"' },
+  { name: '#1618d 来电类型滑块落盘 reply-call-in-video（删＝拖了不保存，来电仍按旧概率）', file: 'js/reply-settings.js', needle: "saveReplyCfg('call-in-video'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
