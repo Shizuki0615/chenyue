@@ -1054,11 +1054,13 @@ function vtPaintTa() {
 const img = document.getElementById('vt-ta-img');
 const avBox = document.getElementById('vt-ta-av');
 const ring = document.getElementById('vt-ta-av-ring');
+const blur = document.getElementById('vt-ta-av-blur');
 if (!img || !avBox) return;
 if (VT.taCam && VT.taBg) {
 img.src = VT.taBg;
 img.hidden = false;
 avBox.hidden = true;
+if (blur) blur.style.backgroundImage = '';
 } else {
 img.hidden = true;
 img.removeAttribute('src');
@@ -1066,6 +1068,11 @@ avBox.hidden = false;
 let av = '';
 try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
 fillAv(ring, av);
+if (blur) {
+try {
+blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : '';
+} catch (e) { blur.style.backgroundImage = ''; }
+}
 }
 if (statusEl) statusEl.textContent = VT.taCam ? '视频通话中' : '对方未开启摄像头';
 }

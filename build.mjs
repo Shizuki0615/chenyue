@@ -7186,6 +7186,9 @@ const FIX_SENTINELS = [
   { name: '#1620 四分类图标行居中（删＝又贴左边）', file: 'css/chat-main.css', needle: 'overflow-x:auto; scrollbar-width:none; justify-content:center;' },
   // ==== 2026-11-05 #1621 四分类图标长按拖动排序（全局） ====
   { name: '#1621 四分类图标长按拖动排序（删＝只能默认顺序）', file: 'js/chat.js', needle: "g.set('more-tabs-order'" },
+  // ==== 2026-11-05 #1622 视频通话对方关摄像头＝头像模糊铺满 ====
+  { name: '#1622 视频通话头像模糊背景层（删＝又回到纯黑/深色底）', file: 'template.html', needle: 'id="vt-ta-av-blur"' },
+  { name: '#1622b 关摄像头时把头像写进模糊层（删＝模糊层永远空着，只剩深色渐变）', file: 'js/call.js', needle: 'blur.style.backgroundImage = av ?' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
