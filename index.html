@@ -2409,12 +2409,15 @@ padding:16px;
 .more-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
 .more-tabs::-webkit-scrollbar { display:none; }
 .more-tab {
-flex:0 0 auto; padding:7px 13px; font-size:12px; font-weight:700;
-border:1px solid rgba(0,0,0,.1); border-radius:99px;
-background:rgba(255,255,255,.92); color:#666; cursor:pointer;
+flex:0 0 auto; width:36px; height:36px; padding:0;
+border:none; border-radius:50%;
+background:transparent; color:#777; cursor:pointer;
+display:flex; align-items:center; justify-content:center;
 font-family:inherit; -webkit-tap-highlight-color:transparent;
 }
-.more-tab.sel { background:#111; color:#fff; border-color:#111; }
+.more-tab svg { width:19px; height:19px; }
+.more-tab:active { opacity:.7; }
+.more-tab.sel { background:rgba(0,0,0,.07); color:#111; }
 .more-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; justify-items:center; align-content:start; }
 .more-grid[hidden] { display:none; }
 .more-item[hidden] { display:none; }
@@ -9394,9 +9397,9 @@ html.tablet .tabbar .tab { padding:14px 8px; border-radius:16px; }
 [data-theme="dark"] .chat-input:empty::before { color:var(--hint-ink); }
 [data-theme="dark"] .chat-plus-btn { background:var(--dark-card-92); border-color:var(--dark-border); color:var(--ink); }
 [data-theme="dark"] .more-panel { background:var(--dark-card-97); border-color:var(--dark-border); }
-[data-theme="dark"] .more-tab { background:var(--dark-card-92); color:var(--dark-soft); border-color:var(--dark-border); }
-[data-theme="dark"] .more-tab.sel { background:var(--btn-bg); color:var(--btn-ink); border-color:var(--btn-bg); }
-[data-theme="dark"] .more-tab:active { background:var(--dark-hover); }
+[data-theme="dark"] .more-tab { background:transparent; color:var(--dark-soft); border:none; }
+[data-theme="dark"] .more-tab.sel { background:rgba(255,255,255,.12); color:var(--ink); border:none; }
+[data-theme="dark"] .more-tab:active { background:rgba(255,255,255,.18); }
 [data-theme="dark"] .poke-card { background:var(--dark-card-97); border-color:var(--dark-border); }
 [data-theme="dark"] .poke-card-head { border-bottom-color:var(--dark-border); }
 [data-theme="dark"] .poke-card-close { background:var(--dark-hover); color:var(--ink); }
@@ -9648,7 +9651,7 @@ background: var(--dark-hover);
 [data-theme="dark"] .cal-month-btn svg,
 [data-theme="dark"] .mem-cal-btn svg,
 [data-theme="dark"] .more-tab svg {
-stroke: var(--ink);
+stroke: currentColor;
 }
 [data-theme="dark"] .card-search-input::placeholder,
 [data-theme="dark"] .chat-search-input::placeholder,
@@ -12486,7 +12489,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793882886911" data-version="v8.74.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793883603928" data-version="v8.74.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -14072,7 +14075,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.74.4</div>
+          <div class="val" id="about-ver-val">v8.74.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14191,7 +14194,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.74.4</div>
+      <div class="ver">辰光玥影 v8.74.5</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14622,7 +14625,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.74.4</span>
+              <span class="lic-ver">v8.74.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -18786,10 +18789,18 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
              每个功能只归属一个分类、分类间互不重复（v3.16.x 起移除「常用」页签，原常用默认项并入所属分类） -->
         <!-- v3.16.x：群聊页打开更多面板时，@群成员 显示在分类 tabs 行最右（仅群聊有，聊天页隐藏） -->
         <div class="more-tabs" id="more-tabs">
-          <button class="more-tab sel" type="button" data-mcat="chat">互动</button>
-          <button class="more-tab" type="button" data-mcat="tool">工具</button>
-          <button class="more-tab" type="button" data-mcat="game">小游戏</button>
-          <button class="more-tab" type="button" data-mcat="ask">他的提问</button>
+          <button class="more-tab sel" type="button" data-mcat="chat" aria-label="互动" title="互动">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          </button>
+          <button class="more-tab" type="button" data-mcat="tool" aria-label="工具" title="工具">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M18 7h2M4 17h2M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="7" cy="17" r="2"/></svg>
+          </button>
+          <button class="more-tab" type="button" data-mcat="game" aria-label="小游戏" title="小游戏">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11" r="1"/><circle cx="18.5" cy="13.5" r="1"/></svg>
+          </button>
+          <button class="more-tab" type="button" data-mcat="ask" aria-label="他的提问" title="他的提问">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.4 2.4 0 114.8.4c0 1.7-2.4 2.1-2.4 3.3"/><path d="M12 16.7h.01"/></svg>
+          </button>
           <button class="gc-more-at-top" id="gc-more-at" title="@群成员" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-20 0v1a10 10 0 0010 10"/></svg>@群成员
           </button>
@@ -24449,4 +24460,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw3jjy7z -->
+<!-- __MOCHI_EOF__ mw3jzbh4 -->

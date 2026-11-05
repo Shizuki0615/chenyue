@@ -7180,6 +7180,8 @@ const FIX_SENTINELS = [
   { name: '#1618b 旧通话入口半框已删（删＝半框又回来/仍占 DOM 内容）', file: 'template.html', needle: '通话入口半框已删除' },
   { name: '#1618c 他来电类型滑块（删＝又回到固定概率 stepper）', file: 'template.html', needle: 'id="call-in-video-range"' },
   { name: '#1618d 来电类型滑块落盘 reply-call-in-video（删＝拖了不保存，来电仍按旧概率）', file: 'js/reply-settings.js', needle: "saveReplyCfg('call-in-video'" },
+  // ==== 2026-11-05 #1619 更多面板四分类改纯图标页签 ====
+  { name: '#1619 四分类纯图标页签（删＝又回到文字胶囊）', file: 'template.html', needle: 'aria-label="互动" title="互动"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
