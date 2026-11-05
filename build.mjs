@@ -7166,6 +7166,8 @@ const FIX_SENTINELS = [
   { name: '#1612 邀请确认排队（删＝已有弹窗占屏时新邀请直接 onAccept，第二个邀请被自动同意）', file: 'js/chat.js', needle: 'const INVITE_BUSY_IDS' },
   // ==== 2026-11-05 #1613 已答卡最后一行下移（靠近心形，卡高不变）====
   { name: '#1613 已答卡最后一行下移 10px、底部占位同步收 10px（删＝「他」那句又离心形太远）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child' },
+  // ==== 2026-11-05 #1614 已答卡两行整体下移 4px（卡高不变）====
+  { name: '#1614 已答卡两行整体下移 4px、底部占位再收 4px（删＝你/他两行又贴回分隔线）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines,' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

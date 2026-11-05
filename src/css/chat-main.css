@@ -1846,10 +1846,16 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
 #page-chat .msg-ask .msg-choose-card.answered::after {
-  content: ''; display: block; height: 34px;
+  content: ''; display: block; height: 30px;
 }
-/* v8.73.9 用户 2026-11-05：已答卡最后一句（他）离右下收藏心形太远——把最后一行下移 10px，
-   同时上面 ::after 占位从 44 收到 34，二者相抵＝卡片总高不变，问题/「你」行/心形都不动。 */
+/* v8.74.0 用户 2026-11-05：你/他两行整体再下移 4px（「一点点点」）——容器 margin-top 9→13，
+   底部占位 34→30，二者相抵＝卡高仍不变；问题与心形不动。分隔线随容器一起下移。 */
+#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines,
+#page-chat .msg-ask .msg-choose-card.answered .msg-ask-lines {
+  margin-top: 13px;
+}
+/* v8.73.9 用户 2026-11-05：已答卡最后一句（他）离右下收藏心形太远——把最后一行再下移 10px，
+   贴近心形；卡片总高由上面占位同步抵消，问题/「你」行/心形都不动。 */
 #page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child,
 #page-chat .msg-ask .msg-choose-card.answered .msg-ask-lines .ask-line:last-child {
   margin-top: 10px;
