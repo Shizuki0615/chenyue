@@ -1846,7 +1846,13 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
 #page-chat .msg-ask .msg-choose-card.answered::after {
-  content: ''; display: block; height: 44px;
+  content: ''; display: block; height: 34px;
+}
+/* v8.73.9 用户 2026-11-05：已答卡最后一句（他）离右下收藏心形太远——把最后一行下移 10px，
+   同时上面 ::after 占位从 44 收到 34，二者相抵＝卡片总高不变，问题/「你」行/心形都不动。 */
+#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child,
+#page-chat .msg-ask .msg-choose-card.answered .msg-ask-lines .ask-line:last-child {
+  margin-top: 10px;
 }
 #page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
 #page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart {

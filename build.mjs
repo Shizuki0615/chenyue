@@ -7164,6 +7164,8 @@ const FIX_SENTINELS = [
   { name: '#1611c 卡片 CSS 左右分开示例按钮与整套样式（删＝示例入口消失/只剩片段）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex4"' },
   // ==== 2026-11-05 #1612 邀请确认排队（不再静默同意） ====
   { name: '#1612 邀请确认排队（删＝已有弹窗占屏时新邀请直接 onAccept，第二个邀请被自动同意）', file: 'js/chat.js', needle: 'const INVITE_BUSY_IDS' },
+  // ==== 2026-11-05 #1613 已答卡最后一行下移（靠近心形，卡高不变）====
+  { name: '#1613 已答卡最后一行下移 10px、底部占位同步收 10px（删＝「他」那句又离心形太远）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
