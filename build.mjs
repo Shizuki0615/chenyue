@@ -7192,6 +7192,11 @@ const FIX_SENTINELS = [
   // ==== 2026-11-05 #1623 我不开摄像头的小窗也用头像模糊 ====
   { name: '#1623 我的摄像头小窗头像模糊背景（删＝关摄像头又回到黑框+图标）', file: 'template.html', needle: 'id="vt-self-off-blur"' },
   { name: '#1623b 小窗关闭时填我的头像与模糊背景（删＝模糊层空着）', file: 'js/call.js', needle: 'function paintSelfOff()' },
+  // ==== 2026-11-05 #1625 刷新恢复保留视频态 + 面板内语音/视频切换 ====
+  { name: '#1625a 通话快照记录视频模式（删＝刷新后一律恢复成语音）', file: 'js/call.js', needle: 'vt: VT.mode ? 1 : 0' },
+  { name: '#1625b 刷新恢复视频界面（删＝走回语音面板）', file: 'js/call.js', needle: 'function vtRestoreFromSnapshot()' },
+  { name: '#1625c 语音/视频切换按钮两种接通态都常驻（删＝恢复的视频界面没有切回语音的按钮）', file: 'js/call.js', needle: 'if (vtBtn) vtBtn.hidden = !(mode === \'active\');' },
+  { name: '#1625d 视频态切换按钮改文案/图标为「语音」（删＝摄像机图标配「语音」）', file: 'js/call.js', needle: "vTxt.textContent = on ? '语音' : '视频'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

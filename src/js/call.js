@@ -488,6 +488,8 @@
       // #1394：掷骰的墙钟锚跟着落盘——不带它，刷新/恢复后「下一次该掷的时刻」只能从零重排，
       //   那正是「反复刷新＝无限续命」的来路。旧载荷没这个字段（读到 0）→ 恢复时按当下重算。
       hangupAt: currentCall.hangupAt || 0,
+      // v8.75.1：刷新恢复要能回到视频态；只记模式，不记摄像头流/画面（恢复时先关摄像头占位）
+      vt: VT.mode ? 1 : 0,
       name: currentCall.name || '', av: '', ts: Date.now()
     });
   }
@@ -602,10 +604,9 @@
     if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
     if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
     if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
-    // 视频按钮：只有接通后才有意义；但视频态里不再出现「语音」按钮——
-    // 语音/视频两套控件分开摆：视频态只有「切换/摄像头/翻转/挂断」，
-    // 想退回语音走通话半框的「视频通话」行（相当于微信的「…」菜单）
-    if (vtBtn) vtBtn.hidden = !(mode === 'active' && !VT.mode);
+    // v8.75.1：语音/视频切换按钮在两种接通态都常驻——语音态写「视频」，视频态写「语音」；
+    //   旧注释里「退回语音走通话半框」随半框删除已不成立，必须有面板内切换入口。
+    if (vtBtn) vtBtn.hidden = !(mode === 'active');
     if (swapBtn) swapBtn.hidden = !(mode === 'active' && VT.mode);
     if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
     if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
@@ -1181,6 +1182,11 @@
     if (mask) {
       mask.hidden = false;
       if (mini) mini.hidden = true;
+      if (cdEl) cdEl.hidden = true;
+      if (nameEl) nameEl.textContent = partnerName();
+      if (statusEl) statusEl.textContent = '正在通话...';
+      setMaskBtns('active');
+      syncCallAv(); syncCallName();
       toast('通话中·已展开通话面板');
     }
   }
@@ -1378,7 +1384,18 @@
         // #1394：hangupAt 跟着带回来（旧载荷没这字段→0→startCallDuration 按当下重算）
         currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
         shownAv = null; shownName = null;
-        if (callMiniEnabled()) {
+        if (info.vt) {
+          // v8.75.1：上次是视频通话 → 恢复视频界面（摄像头先关着，等用户点「打开」）
+          try { vtRestoreFromSnapshot(); } catch (e3) {
+            if (mask) mask.hidden = false;
+            if (mini) mini.hidden = true;
+            if (cdEl) cdEl.hidden = true;
+            if (nameEl) nameEl.textContent = name;
+            if (statusEl) statusEl.textContent = '正在通话...';
+            setMaskBtns('active');
+            syncCallAv(); syncCallName();
+          }
+        } else if (callMiniEnabled()) {
           if (mask) mask.hidden = true;
           if (cdEl) cdEl.hidden = true;
           if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); /* v3.26.x #137 显示时校正 */ }
@@ -1690,7 +1707,9 @@
     if (panel) panel.classList.toggle('vt', !!on);
     if (stage) stage.hidden = !on;
     if (title) title.textContent = on ? '视频通话' : '语音通话';
-    if (vTxt) vTxt.textContent = '视频';
+    if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+    const vb = document.getElementById('call-vt-btn');
+    if (vb) vb.classList.toggle('to-voice', !!on);
     const rowVal = document.getElementById('call-vt-row-val');
     if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
   }
@@ -1847,6 +1866,31 @@
       syncCallAv();
       syncCallName();
     }
+  }
+  // v8.75.1：刷新/重开后恢复视频态——不自动开摄像头（无用户手势），先显示
+  // 「头像模糊 + 摄像头已关」的视频界面，点「打开」再由用户手动启动；
+  // 语音/视频切换按钮由 setMaskBtns('active') + vtSetPanel(true) 一并亮出。
+  function vtRestoreFromSnapshot() {
+    if (!currentCall) return;
+    vtStopCam();
+    VT.mode = true;
+    VT.camOff = true;
+    VT.minimized = false;
+    VT.startAsVideo = false;
+    VT.swap = false;
+    VT.taCam = false;
+    VT.taBg = '';
+    vtClearMini();
+    vtSetPanel(true);
+    vtSelfState('off', '摄像头已关');
+    vtSyncCamBtn();
+    vtPaintTa();
+    if (nameEl) nameEl.textContent = currentCall.name || partnerName();
+    if (mask) mask.hidden = false;
+    if (mini) mini.hidden = true;
+    if (cdEl) cdEl.hidden = true;
+    setMaskBtns('active');
+    syncCallName();
   }
   function vtTeardown() {
     vtSwap(false);

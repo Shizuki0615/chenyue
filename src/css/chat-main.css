@@ -2294,6 +2294,10 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .vt-stage.swap .vt-self-off-badge { font-size:12px; gap:4px; }
 .vt-stage.swap .vt-self-off-badge svg { width:20px; height:20px; }
 .call-btn.call-vt { background:#3a7bd5; }
+/* 视频态里同一颗按钮变成「语音」：图标换成电话，避免摄像机图标配「语音」两个字 */
+.call-vt .vt-ic-voice { display:none; }
+.call-vt.to-voice .vt-ic-video { display:none; }
+.call-vt.to-voice .vt-ic-voice { display:block; }
 .call-btn.call-cam,
 .call-btn.call-flip,
 .call-btn.call-swap { background:rgba(255,255,255,.22); color:#fff; }

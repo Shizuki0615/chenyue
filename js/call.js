@@ -354,6 +354,7 @@ return JSON.stringify({
 cid: currentCall.cid, direction: currentCall.direction, status: currentCall.status,
 startTime: currentCall.startTime, connectedTime: currentCall.connectedTime || 0,
 hangupAt: currentCall.hangupAt || 0,
+vt: VT.mode ? 1 : 0,
 name: currentCall.name || '', av: '', ts: Date.now()
 });
 }
@@ -426,7 +427,7 @@ if (hangBtn) hangBtn.hidden = !(mode === 'calling' || mode === 'active');
 if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
 if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
 if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
-if (vtBtn) vtBtn.hidden = !(mode === 'active' && !VT.mode);
+if (vtBtn) vtBtn.hidden = !(mode === 'active');
 if (swapBtn) swapBtn.hidden = !(mode === 'active' && VT.mode);
 if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
 if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
@@ -803,6 +804,11 @@ try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e
 if (mask) {
 mask.hidden = false;
 if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+if (nameEl) nameEl.textContent = partnerName();
+if (statusEl) statusEl.textContent = '正在通话...';
+setMaskBtns('active');
+syncCallAv(); syncCallName();
 toast('通话中·已展开通话面板');
 }
 }
@@ -944,7 +950,17 @@ if (callCfg().resume !== 0) {
 try {
 currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
 shownAv = null; shownName = null;
-if (callMiniEnabled()) {
+if (info.vt) {
+try { vtRestoreFromSnapshot(); } catch (e3) {
+if (mask) mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+if (nameEl) nameEl.textContent = name;
+if (statusEl) statusEl.textContent = '正在通话...';
+setMaskBtns('active');
+syncCallAv(); syncCallName();
+}
+} else if (callMiniEnabled()) {
 if (mask) mask.hidden = true;
 if (cdEl) cdEl.hidden = true;
 if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); /* v3.26.x #137 显示时校正 */ }
@@ -1228,7 +1244,9 @@ const vTxt = document.getElementById('call-vt-txt');
 if (panel) panel.classList.toggle('vt', !!on);
 if (stage) stage.hidden = !on;
 if (title) title.textContent = on ? '视频通话' : '语音通话';
-if (vTxt) vTxt.textContent = '视频';
+if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+const vb = document.getElementById('call-vt-btn');
+if (vb) vb.classList.toggle('to-voice', !!on);
 const rowVal = document.getElementById('call-vt-row-val');
 if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
 }
@@ -1370,6 +1388,28 @@ if (mask) mask.hidden = false;
 syncCallAv();
 syncCallName();
 }
+}
+function vtRestoreFromSnapshot() {
+if (!currentCall) return;
+vtStopCam();
+VT.mode = true;
+VT.camOff = true;
+VT.minimized = false;
+VT.startAsVideo = false;
+VT.swap = false;
+VT.taCam = false;
+VT.taBg = '';
+vtClearMini();
+vtSetPanel(true);
+vtSelfState('off', '摄像头已关');
+vtSyncCamBtn();
+vtPaintTa();
+if (nameEl) nameEl.textContent = currentCall.name || partnerName();
+if (mask) mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+setMaskBtns('active');
+syncCallName();
 }
 function vtTeardown() {
 vtSwap(false);
