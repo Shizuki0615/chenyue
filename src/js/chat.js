@@ -17693,6 +17693,70 @@ window.__chatDbLoadedPrefix = function () {
     return p.indexOf('xy-home-v2:') === 0 ? p.slice('xy-home-v2:'.length) : '';
   } catch (e) { return ''; }
 };
+// ===== v8.74.1 新版输入栏 P1 / P2（全局开关 cs-input-v2；关闭时旧版路径零改动） =====
+// P1：表情（左）+ 输入框 + 右侧同一槽位的 ⋯ / 发送；P2：点 ⋯ 打开现有 #chat-more-panel，
+// 面板里的 图片 / 语音 / 继续说 / 批量 只是代理入口，点按等于点原按钮，不复制第二套逻辑。
+(function initChatInputV2() {
+try {
+const page = document.getElementById('page-chat');
+const panel = document.getElementById('chat-more-panel');
+if (!page) return;
+const v2Store = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const v2On = () => { const g = v2Store(); try { return !!(g && g.get('cs-input-v2') === '1'); } catch (e) { return false; } };
+window.chatInputV2On = v2On;
+const inputText = () => { const i = document.getElementById('chat-input'); return i ? String(i.innerText || i.textContent || '').trim() : ''; };
+const sendAllowed = () => { try { return (store.get('cs-send-show') || 'show') !== 'hide'; } catch (e) { return true; } };
+let obs = null;
+function syncSlot() {
+const row = page.querySelector('.chat-input-row');
+if (!row) return;
+if (!page.classList.contains('chat-input-v2')) { row.classList.remove('v2-has-text'); return; }
+row.classList.toggle('v2-has-text', !!(sendAllowed() && inputText()));
+}
+function syncProxies() {
+const set = function (id, ok) { const el = document.getElementById(id); if (el) el.classList.toggle('v2-proxy-off', !ok); };
+set('more-v2-img', true);
+let mic = false, cont = false, batch = false;
+try { mic = (typeof voiceEnabled === 'function') ? voiceEnabled() : false; } catch (e) {}
+try { cont = (typeof contSayOn === 'function') ? contSayOn('cs-trigger-bar') : false; } catch (e) {}
+try { batch = (typeof batchEnabled === 'function') ? batchEnabled() : false; } catch (e) {}
+set('more-v2-mic', mic); set('more-v2-cont', cont); set('more-v2-batch', batch);
+}
+function applyV2() {
+const on = v2On();
+page.classList.toggle('chat-input-v2', on);
+if (panel) panel.classList.toggle('chat-input-v2', on);
+const input = document.getElementById('chat-input');
+if (on) {
+syncProxies();
+if (input && !obs && window.MutationObserver) {
+obs = new MutationObserver(syncSlot);
+obs.observe(input, { childList: true, subtree: true, characterData: true });
+}
+} else if (obs) { obs.disconnect(); obs = null; }
+syncSlot();
+try { document.dispatchEvent(new Event('chat-input-v2-changed')); } catch (e) {}
+}
+window.applyChatInputV2 = applyV2;
+const input = document.getElementById('chat-input');
+if (input) input.addEventListener('input', syncSlot);
+const proxyMap = { 'more-v2-img': 'chat-img-btn', 'more-v2-mic': 'chat-mic-btn', 'more-v2-cont': 'chat-continue-btn', 'more-v2-batch': 'chat-batch-btn' };
+Object.keys(proxyMap).forEach((pid) => {
+const p = document.getElementById(pid);
+if (!p) return;
+p.addEventListener('click', (e) => {
+e.stopPropagation();
+const src = document.getElementById(proxyMap[pid]);
+if (src) { try { src.click(); } catch (err) {} }
+if (panel) panel.hidden = true;
+});
+});
+const moreBtn = document.getElementById('chat-more-btn');
+if (moreBtn) moreBtn.addEventListener('click', () => { setTimeout(syncProxies, 0); });
+document.addEventListener('contact-switched', () => { try { applyV2(); } catch (e) {} });
+applyV2();
+} catch (e) {}
+})();
 bootAutoSend();
 // FIX 2026-09-01 #120：启动不再无条件预读当前桌面聊天——大历史桌面（账本 b 超门槛）
 // 冷启动跳过，进入聊天页才读（enterChat 会 loadMsgs），防低端机"打开网站"即崩溃。

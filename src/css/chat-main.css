@@ -567,6 +567,24 @@ body.cs-typing-capsule #chat-typing {
 .chat-send svg { width:calc(var(--cs-input-btn-size, 38px) * .526); height:calc(var(--cs-input-btn-size, 38px) * .526); }
 .chat-send:disabled { opacity:.45; cursor:default; }
 
+/* ===== v8.74.1 新版输入栏 P1 / P2（聊天设置开关 cs-input-v2，默认关；旧版零改动） =====
+   P1：表情（左） + 输入框 + 右侧同一槽位的 ⋯ / 发送（有字才显示发送）；
+   P2：点 ⋯ 打开现有「更多功能」面板，图片 / 语音 / 继续说 / 批量由面板里的代理入口触发。
+   order 用 !important：旧版 applyInputBtnOrder 会把 inline order 写到每个按钮上。 */
+#page-chat.chat-input-v2 .chat-input-row #chat-emoji-btn { order: 1 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-input { order: 2 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-more-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-send { order: 3 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-img-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-mic-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-continue-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-batch-btn { display: none !important; }
+#page-chat.chat-input-v2 .chat-input-row:not(.v2-has-text) #chat-send { display: none !important; }
+#page-chat.chat-input-v2 .chat-input-row.v2-has-text #chat-more-btn { display: none !important; }
+/* P2 里的输入类代理入口：旧版整组隐藏；新版下按对应功能开关单独隐藏 */
+#chat-more-panel:not(.chat-input-v2) .more-item.v2-proxy { display: none !important; }
+#chat-more-panel.chat-input-v2 .more-item.v2-proxy.v2-proxy-off { display: none !important; }
+
 /* 鍏ㄥ睆鑱婂ぉ锛氬ご閮?娑堟伅/杈撳叆鏍忓乏鍙?18px 瀵归綈锛岃儗鏅摵婊?*/
 #page-chat {
   position:relative;

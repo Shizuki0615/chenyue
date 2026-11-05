@@ -7168,6 +7168,9 @@ const FIX_SENTINELS = [
   { name: '#1613 已答卡最后一行下移 10px、底部占位同步收 10px（删＝「他」那句又离心形太远）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child' },
   // ==== 2026-11-05 #1614 已答卡两行整体下移 4px（卡高不变）====
   { name: '#1614 已答卡两行整体下移 4px、底部占位再收 4px（删＝你/他两行又贴回分隔线）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines,' },
+  // ==== 2026-11-05 #1615 新版输入栏 P1/P2（开关 cs-input-v2） ====
+  { name: '#1615a 新版输入栏布局与 ⋯/发送槽位（删＝开关开了也不换布局）', file: 'js/chat.js', needle: '(function initChatInputV2() {' },
+  { name: '#1615b ⋯ 面板里的图片/语音/继续说/批量代理入口（删＝新版 P2 里没有这些入口）', file: 'template.html', needle: 'id="more-v2-img"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

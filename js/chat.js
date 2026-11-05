@@ -14165,6 +14165,67 @@ const p = lastIdbLoadPrefix || '';
 return p.indexOf('xy-home-v2:') === 0 ? p.slice('xy-home-v2:'.length) : '';
 } catch (e) { return ''; }
 };
+(function initChatInputV2() {
+try {
+const page = document.getElementById('page-chat');
+const panel = document.getElementById('chat-more-panel');
+if (!page) return;
+const v2Store = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const v2On = () => { const g = v2Store(); try { return !!(g && g.get('cs-input-v2') === '1'); } catch (e) { return false; } };
+window.chatInputV2On = v2On;
+const inputText = () => { const i = document.getElementById('chat-input'); return i ? String(i.innerText || i.textContent || '').trim() : ''; };
+const sendAllowed = () => { try { return (store.get('cs-send-show') || 'show') !== 'hide'; } catch (e) { return true; } };
+let obs = null;
+function syncSlot() {
+const row = page.querySelector('.chat-input-row');
+if (!row) return;
+if (!page.classList.contains('chat-input-v2')) { row.classList.remove('v2-has-text'); return; }
+row.classList.toggle('v2-has-text', !!(sendAllowed() && inputText()));
+}
+function syncProxies() {
+const set = function (id, ok) { const el = document.getElementById(id); if (el) el.classList.toggle('v2-proxy-off', !ok); };
+set('more-v2-img', true);
+let mic = false, cont = false, batch = false;
+try { mic = (typeof voiceEnabled === 'function') ? voiceEnabled() : false; } catch (e) {}
+try { cont = (typeof contSayOn === 'function') ? contSayOn('cs-trigger-bar') : false; } catch (e) {}
+try { batch = (typeof batchEnabled === 'function') ? batchEnabled() : false; } catch (e) {}
+set('more-v2-mic', mic); set('more-v2-cont', cont); set('more-v2-batch', batch);
+}
+function applyV2() {
+const on = v2On();
+page.classList.toggle('chat-input-v2', on);
+if (panel) panel.classList.toggle('chat-input-v2', on);
+const input = document.getElementById('chat-input');
+if (on) {
+syncProxies();
+if (input && !obs && window.MutationObserver) {
+obs = new MutationObserver(syncSlot);
+obs.observe(input, { childList: true, subtree: true, characterData: true });
+}
+} else if (obs) { obs.disconnect(); obs = null; }
+syncSlot();
+try { document.dispatchEvent(new Event('chat-input-v2-changed')); } catch (e) {}
+}
+window.applyChatInputV2 = applyV2;
+const input = document.getElementById('chat-input');
+if (input) input.addEventListener('input', syncSlot);
+const proxyMap = { 'more-v2-img': 'chat-img-btn', 'more-v2-mic': 'chat-mic-btn', 'more-v2-cont': 'chat-continue-btn', 'more-v2-batch': 'chat-batch-btn' };
+Object.keys(proxyMap).forEach((pid) => {
+const p = document.getElementById(pid);
+if (!p) return;
+p.addEventListener('click', (e) => {
+e.stopPropagation();
+const src = document.getElementById(proxyMap[pid]);
+if (src) { try { src.click(); } catch (err) {} }
+if (panel) panel.hidden = true;
+});
+});
+const moreBtn = document.getElementById('chat-more-btn');
+if (moreBtn) moreBtn.addEventListener('click', () => { setTimeout(syncProxies, 0); });
+document.addEventListener('contact-switched', () => { try { applyV2(); } catch (e) {} });
+applyV2();
+} catch (e) {}
+})();
 bootAutoSend();
 try { chatPrefetchIfLight(function () { loadMsgs(); }); } catch (e) {}
 setTimeout(rpExpireCheck, 2000);

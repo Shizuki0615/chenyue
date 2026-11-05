@@ -427,6 +427,7 @@ setVar(root, '--send-ink', sendInk);
 const sendShow = store.get('cs-send-show') || 'show';
 const sendBtn = document.getElementById('chat-send');
 if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
+if (window.applyChatInputV2) { try { window.applyChatInputV2(); } catch (e) {} }
 set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
 set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
 const inputRadius = store.get('cs-input-radius') || '';
@@ -2715,7 +2716,10 @@ return !!(m && m.style.display === 'flex');
 }
 function inputOrderSync() {
 const el = document.getElementById('cs-input-order-val');
-if (el) el.textContent = (window.mochiInputOrder && !window.mochiInputOrder.isDefault()) ? '已自定义' : '默认排列';
+if (!el) return;
+let v2 = false;
+try { v2 = !!(window.chatInputV2On && window.chatInputV2On()); } catch (e) {}
+el.textContent = v2 ? '新版固定' : ((window.mochiInputOrder && !window.mochiInputOrder.isDefault()) ? '已自定义' : '默认排列');
 }
 function inputOrderIcon(token) {
 if (token === 'input') return '';
@@ -2962,15 +2966,33 @@ ioBindResize();
 clearInterval(ioWatchTimer);
 ioWatchTimer = setInterval(() => { try { csDrawerLayerTick(); } catch (e) {} }, 240);
 }
+const csV2 = document.getElementById('cs-input-v2');
+if (csV2) {
+const gV2 = window.xyStore('xy-home-v2');
+const syncV2 = () => { try { csV2.checked = gV2.get('cs-input-v2') === '1'; } catch (e) { csV2.checked = false; } };
+syncV2();
+csV2.addEventListener('change', () => {
+try { if (csV2.checked) gV2.set('cs-input-v2', '1'); else gV2.remove('cs-input-v2'); } catch (e) {}
+if (window.applyChatInputV2) { try { window.applyChatInputV2(); } catch (e) {} }
+inputOrderSync();
+toast(csV2.checked ? '已开启新版输入栏：表情在左，⋯ 收其他功能' : '已回到旧版输入栏：按钮顺序设置恢复生效');
+});
+}
 const csIo = row('cs-input-order');
 if (csIo) {
 inputOrderSync();
-csIo.addEventListener('click', openInputOrderPanel);
+csIo.addEventListener('click', () => {
+let v2 = false;
+try { v2 = !!(window.chatInputV2On && window.chatInputV2On()); } catch (e) {}
+if (v2) { toast('新版输入栏下按钮位置固定；关闭「新版输入栏」后即可自定义'); return; }
+openInputOrderPanel();
+});
 document.addEventListener('contact-switched', () => {
 inputOrderSync();
 closeInputOrderPanel(false);
 });
 document.addEventListener('chat-input-order-changed', inputOrderSync);
+document.addEventListener('chat-input-v2-changed', inputOrderSync);
 document.addEventListener('mochi-wrj-heal', () => { inputOrderSync(); if (inputOrderPanelOpen()) renderInputOrderPanel(); });
 document.addEventListener('batch-send-changed', () => { if (inputOrderPanelOpen()) renderInputOrderPanel(); });
 document.addEventListener('voice-send-changed', () => { if (inputOrderPanelOpen()) renderInputOrderPanel(); });
