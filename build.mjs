@@ -7173,6 +7173,8 @@ const FIX_SENTINELS = [
   { name: '#1615b ⋯ 面板里的图片/语音/继续说/批量代理入口（删＝新版 P2 里没有这些入口）', file: 'template.html', needle: 'id="more-v2-img"' },
   // ==== 2026-11-05 #1616 新版 P2 四页签高度统一 ====
   { name: '#1616 新版 P2 打开时按最高页签固定网格高度（删＝切页签面板高度又跳）', file: 'js/chat.js', needle: 'function stabilizeMorePanelHeight()' },
+  // ==== 2026-11-05 #1617 面板等高只留底部空白，不拉大行间距 ====
+  { name: '#1617 网格 align-content:start（删＝min-height 多出的高度又摊到行间距，图标被拉开）', file: 'css/chat-main.css', needle: 'justify-items:center; align-content:start;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

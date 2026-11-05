@@ -751,7 +751,9 @@ body.cs-sys-plain .msg-poke {
 }
 .more-tab.sel { background:#111; color:#fff; border-color:#111; }
 /* v3.26.x：flex-wrap 会随屏宽自动换行导致不同手机每行 3~4 个不一；改 4 列 grid 固定每行 4 个 */
-.more-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; justify-items:center; }
+/* v8.74.3 用户 2026-11-05：新版 P2 给网格设 min-height 后，Grid 默认 stretch 会把多出的高度
+   摊到行间距上（「好丑，别改间隔」）；align-content:start 让行保持原高，多余高度全留在最下面。 */
+.more-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; justify-items:center; align-content:start; }
 .more-grid[hidden] { display:none; }
 /* .more-item 鑷甫 display:flex锛岄渶鏄惧紡鍏滃簳 hidden 灞炴€э紙鍒嗙被杩囨护闈犲畠闅愯棌锛?*/
 .more-item[hidden] { display:none; }
