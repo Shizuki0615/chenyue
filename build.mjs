@@ -7184,6 +7184,8 @@ const FIX_SENTINELS = [
   { name: '#1619 四分类纯图标页签（删＝又回到文字胶囊）', file: 'template.html', needle: 'aria-label="互动" title="互动"' },
   // ==== 2026-11-05 #1620 四个分类图标行居中 ====
   { name: '#1620 四分类图标行居中（删＝又贴左边）', file: 'css/chat-main.css', needle: 'overflow-x:auto; scrollbar-width:none; justify-content:center;' },
+  // ==== 2026-11-05 #1621 四分类图标长按拖动排序（全局） ====
+  { name: '#1621 四分类图标长按拖动排序（删＝只能默认顺序）', file: 'js/chat.js', needle: "g.set('more-tabs-order'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

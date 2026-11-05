@@ -10304,6 +10304,88 @@ window.applyMoreCat = applyMoreCat;
 // v3.26.x：群聊打开/关闭共享面板时切换群聊过滤模式
 window.setMoreGroupMode = (on) => { moreGroupMode = !!on; applyMoreCat('tool', !!on); };
 document.querySelectorAll('#more-tabs .more-tab').forEach(t => t.addEventListener('click', (e) => { e.stopPropagation(); applyMoreCat(t.dataset.mcat); }));
+// v8.74.7 用户 2026-11-05：四个分类图标长按拖动排序（全局一份，松手落盘 more-tabs-order）。
+// 只做横向排序，不复制桌面图标的自由坐标；群聊模式（只剩工具页签）不启用拖动。
+(function initMoreTabDrag() {
+const moreTabs = document.getElementById('more-tabs');
+if (!moreTabs) return;
+const DEF = ['chat', 'tool', 'game', 'ask'];
+const gStore = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const readOrder = () => {
+let a = null;
+try { const g = gStore(); a = JSON.parse(g.get('more-tabs-order') || 'null'); } catch (e) {}
+const arr = (Array.isArray(a) ? a : []).filter(k => DEF.indexOf(k) >= 0);
+DEF.forEach(k => { if (arr.indexOf(k) < 0) arr.push(k); });
+return arr;
+};
+const applyOrder = () => {
+const at = document.getElementById('gc-more-at');
+readOrder().forEach(k => {
+const t = moreTabs.querySelector('.more-tab[data-mcat="' + k + '"]');
+if (t) moreTabs.insertBefore(t, at || null);
+});
+};
+applyOrder();
+let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null, suppressClick = false;
+const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
+const saveOrder = () => {
+const order = Array.from(moreTabs.querySelectorAll('.more-tab')).map(t => t.dataset.mcat).filter(k => k);
+try { const g = gStore(); if (g) g.set('more-tabs-order', JSON.stringify(order)); } catch (e) {}
+};
+function onMove(e) {
+if (!dragTab) {
+if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) clearPress();
+return;
+}
+if (e.cancelable) e.preventDefault();
+const list = Array.from(moreTabs.querySelectorAll('.more-tab')).filter(t => t !== dragTab);
+const at = document.getElementById('gc-more-at');
+let placed = false;
+for (let i = 0; i < list.length; i++) {
+const r = list[i].getBoundingClientRect();
+if (e.clientX < r.left + r.width / 2) { moreTabs.insertBefore(dragTab, list[i]); placed = true; break; }
+}
+if (!placed) { if (at) moreTabs.insertBefore(dragTab, at); else moreTabs.appendChild(dragTab); }
+}
+function endDrag() {
+document.removeEventListener('pointermove', onMove);
+document.removeEventListener('pointerup', endDrag, true);
+document.removeEventListener('pointercancel', endDrag, true);
+if (!dragTab) { clearPress(); return; }
+dragTab.classList.remove('more-tab-dragging');
+moreTabs.classList.remove('more-tabs-dragging');
+dragTab = null;
+saveOrder();
+suppressClick = true;
+setTimeout(() => { suppressClick = false; }, 450);
+}
+moreTabs.addEventListener('pointerdown', (e) => {
+if (moreGroupMode) return;
+const tab = e.target && e.target.closest ? e.target.closest('.more-tab') : null;
+if (!tab) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+clearPress();
+startX = e.clientX; startY = e.clientY; pointerId = e.pointerId;
+pressTimer = setTimeout(() => {
+pressTimer = 0;
+dragTab = tab;
+suppressClick = true;
+tab.classList.add('more-tab-dragging');
+moreTabs.classList.add('more-tabs-dragging');
+try { tab.setPointerCapture(pointerId); } catch (err) {}
+document.addEventListener('pointermove', onMove, { passive: false });
+document.addEventListener('pointerup', endDrag, true);
+document.addEventListener('pointercancel', endDrag, true);
+}, 380);
+});
+moreTabs.addEventListener('click', (e) => {
+if (!suppressClick) return;
+suppressClick = false;
+e.preventDefault();
+e.stopPropagation();
+}, true);
+moreTabs.addEventListener('contextmenu', (e) => { if (dragTab) e.preventDefault(); });
+})();
 moreBtn.addEventListener('click', (e) => {
 e.stopPropagation();
 if (morePanel.hidden) {

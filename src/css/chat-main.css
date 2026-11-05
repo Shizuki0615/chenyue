@@ -755,6 +755,11 @@ body.cs-sys-plain .msg-poke {
 .more-tab svg { width:19px; height:19px; }
 .more-tab:active { opacity:.7; }
 .more-tab.sel { background:rgba(0,0,0,.07); color:#111; }
+/* v8.74.7 长按拖动排序：拖动中的图标浮起；行内让位由 DOM 实时重排完成 */
+.more-tab { touch-action:none; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+.more-tabs-dragging { cursor:grabbing; }
+.more-tab.more-tab-dragging { background:rgba(0,0,0,.12); transform:scale(1.14); position:relative; z-index:2; }
+[data-theme="dark"] .more-tab.more-tab-dragging { background:rgba(255,255,255,.2); }
 /* v3.26.x：flex-wrap 会随屏宽自动换行导致不同手机每行 3~4 个不一；改 4 列 grid 固定每行 4 个 */
 /* v8.74.3 用户 2026-11-05：新版 P2 给网格设 min-height 后，Grid 默认 stretch 会把多出的高度
    摊到行间距上（「好丑，别改间隔」）；align-content:start 让行保持原高，多余高度全留在最下面。 */
