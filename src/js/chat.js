@@ -9413,22 +9413,52 @@ window.__cardSearchFns.push({ name: '聊天系统回应', fn: function (kw) {
 // 亲亲/贴贴申请弹窗，我同意后系统消息里没有相关消息」——口径对齐换头像邀请（avatar-lib replyMeInvite）
 // 与听歌邀请（music-player sm-req-*）：同意/拒绝都写一条 chatAddSystem 留痕。
 // 猜拳/游戏类邀请不传 onDecline，保持原样（对局结束另有系统消息，避免同一件事留痕两次）。
-function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
-const mask = document.getElementById('modal-mask');
-if ((mask && !mask.hidden) || !window.openModal) { onAccept(); return; }
-window.openModal(title, '', (v) => {
-if (v === '1') onAccept();
-else if (typeof onDecline === 'function') onDecline();
+// v8.73.8 FIX（作者 2026-11-05：连着来两个邀请时，第二个还没选，第一个就被自动同意）：
+// 旧守卫是「已有弹窗占屏就 onAccept()」——第二个邀请的确认框弹不出来，直接算成用户同意。
+// 贴贴当年已单独做挂起重投（见下条注释），但猜拳/游戏/读书邀请仍走这里。
+// 现在统一改成排队：占屏时只入队，等 modal/tc/qa/call/applock 全部让开再逐条弹；
+// 层关闭（hidden 变化）由 MutationObserver 泵下一条。任何邀请都必须由用户真点同意/拒绝。
+const INVITE_BUSY_IDS = ['modal-mask', 'tc-mask', 'qa-mask', 'call-mask', 'applock-mask'];
+const _inviteQ = [];
+let _inviteWatch = null;
+function _inviteBusy() {
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el && !el.hidden) return true;
+}
+return false;
+}
+function _invitePump() {
+if (!_inviteQ.length) return;
+// 弹窗组件不可用＝连确认框都没法弹，退回旧口径（立刻同意），别把邀请卡死在队列
+if (!window.openModal) { const job = _inviteQ.shift(); try { job.onAccept(); } catch (e) {} return; }
+if (_inviteBusy()) return;
+const job = _inviteQ.shift();
+window.openModal(job.title, '', (v) => {
+if (v === '1') job.onAccept();
+else if (typeof job.onDecline === 'function') job.onDecline();
 // #1422：婉拒句改从系统预设取（分组名随邀请类型走），整组/逐句关掉就什么都不发——
 //   这句是「我」发的婉拒，关掉后留空比抓别的组顶上去诚实。
-else { const _dl = presetReplyPick(declineGroup || '游戏邀请·婉拒', declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
+else { const _dl = presetReplyPick(job.declineGroup || '游戏邀请·婉拒', job.declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
 }, {
 noInput: true,
 lock: true,
 pills: [{ label: '同意', value: '1' }, { label: '拒绝', value: '0' }],
 pill: '1', // v3.16.x：邀请弹窗默认选中「同意」，无需手动点选直接确定
-staticText: staticText
+staticText: job.staticText
 });
+}
+function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
+_inviteQ.push({ title: title, staticText: staticText, onAccept: onAccept, declinePool: declinePool, declineGroup: declineGroup, onDecline: onDecline });
+if (!_inviteWatch && window.MutationObserver) {
+const onHide = function () { try { _invitePump(); } catch (e) {} };
+_inviteWatch = new MutationObserver(onHide);
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el) { try { _inviteWatch.observe(el, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) {} }
+}
+}
+_invitePump();
 }
 // ==== #1435：贴贴邀请的「挂起等待」：弹窗本体（形态抄 openInviteConfirm，一字不差：锁屏、
 // 默认选中「同意」、不自动关）＋ 挂起状态机（落盘/重投时机/超时）。====

@@ -7064,20 +7064,44 @@ FALLBACK_REPLY_POOL.forEach(c => { if (String(c).toLowerCase().indexOf(kw) >= 0)
 } catch (e) {}
 return out;
 } });
-function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
-const mask = document.getElementById('modal-mask');
-if ((mask && !mask.hidden) || !window.openModal) { onAccept(); return; }
-window.openModal(title, '', (v) => {
-if (v === '1') onAccept();
-else if (typeof onDecline === 'function') onDecline();
-else { const _dl = presetReplyPick(declineGroup || '游戏邀请·婉拒', declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
+const INVITE_BUSY_IDS = ['modal-mask', 'tc-mask', 'qa-mask', 'call-mask', 'applock-mask'];
+const _inviteQ = [];
+let _inviteWatch = null;
+function _inviteBusy() {
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el && !el.hidden) return true;
+}
+return false;
+}
+function _invitePump() {
+if (!_inviteQ.length) return;
+if (!window.openModal) { const job = _inviteQ.shift(); try { job.onAccept(); } catch (e) {} return; }
+if (_inviteBusy()) return;
+const job = _inviteQ.shift();
+window.openModal(job.title, '', (v) => {
+if (v === '1') job.onAccept();
+else if (typeof job.onDecline === 'function') job.onDecline();
+else { const _dl = presetReplyPick(job.declineGroup || '游戏邀请·婉拒', job.declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
 }, {
 noInput: true,
 lock: true,
 pills: [{ label: '同意', value: '1' }, { label: '拒绝', value: '0' }],
 pill: '1', // v3.16.x：邀请弹窗默认选中「同意」，无需手动点选直接确定
-staticText: staticText
+staticText: job.staticText
 });
+}
+function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
+_inviteQ.push({ title: title, staticText: staticText, onAccept: onAccept, declinePool: declinePool, declineGroup: declineGroup, onDecline: onDecline });
+if (!_inviteWatch && window.MutationObserver) {
+const onHide = function () { try { _invitePump(); } catch (e) {} };
+_inviteWatch = new MutationObserver(onHide);
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el) { try { _inviteWatch.observe(el, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) {} }
+}
+}
+_invitePump();
 }
 const CP_KEY = 'records-cuddle-pending';
 const CP_HOLD_MS = 10 * 60 * 1000; // 作者选的那档：10 分钟内回来就还在，超时＝错过未回应

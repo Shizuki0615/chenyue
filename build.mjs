@@ -2384,7 +2384,7 @@ const FIX_SENTINELS = [
   // ==== 2026-09-15 #510 联系人发来的「亲亲/贴贴申请」弹窗同意后系统消息无留痕（用户报「我同意后，系统消息里没有相关消息」）：贴贴邀请（cuddle）原链路同意只震动+TA 回应一句、拒绝只发婉拒话术，聊天记录里没有任何系统消息；口径对齐换头像邀请（avatar-lib replyMeInvite）与听歌邀请（music-player sm-req-*）。猜拳/游戏类邀请不补（对局结果另有系统消息，避免同一件事留痕两次）====
   { name: '#510a 贴贴邀请同意写系统消息（删则同意后聊天无「你接受了 × 的贴贴邀请」留痕＝原报障复发）', file: 'js/chat.js', needle: "你接受了 ' + name + ' 的贴贴邀请" },
   { name: '#510b 贴贴邀请拒绝写系统消息（删则拒绝后只剩婉拒话术、系统消息留痕丢失）', file: 'js/chat.js', needle: "你拒绝了 ' + name + ' 的贴贴邀请" },
-  { name: '#510c openInviteConfirm 支持 onDecline 回调（删则该分支回退「只发婉拒话术」＝#510b 失锚）', file: 'js/chat.js', needle: "else if (typeof onDecline === 'function') onDecline();" },
+  { name: '#510c openInviteConfirm 支持 onDecline 回调（删则该分支回退「只发婉拒话术」＝#510b 失锚；v8.73.8 邀请排队后回调改从 job 取）', file: 'js/chat.js', needle: "else if (typeof job.onDecline === 'function') job.onDecline();" },
   // ==== 2026-09-15 #513「梦角自由造句」与「混合模式」默认打开（用户点名「梦角自由造句和梦角自由造句的混合模式需要默认打开」）：#317 初版把 mjf-en 定为默认关（「可自由选择开关」），#414 混合模式同样默认关；本轮翻案＝装上即生效。仅翻 DEFAULTS 对已写盘设备无效（旧默认 '0' 随「保存设置」全量写盘落盘），故补标记键 reply-mjf-on-migrated 一次性把存量 '0' 收成 '1'（与 #388/#443 同款标记式迁移：值式会在用户之后每次手动关闭时被加载反复改回）====
   { name: '#513a 梦角自由造句总开关默认开（DEFAULTS mjf-en=1；改回 0＝装上仍是关的、用户点名「需要默认打开」落空）', file: 'js/reply-settings.js', needle: "'mjf-en': 1, 'mjf-prob': 20," },
   { name: '#513b 造句混合模式默认开（DEFAULTS mjf-mix=1；改回 0＝默认只走 mjf-style 单一手法、三手法不再交替）', file: 'js/reply-settings.js', needle: "'mjf-mix': 1," },
@@ -7162,6 +7162,8 @@ const FIX_SENTINELS = [
   { name: '#1611a 已答卡/选择卡心形留白改 ::after 占位（删＝自定义卡片 CSS 写 padding 时心形又压到最后一行字上）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after' },
   { name: '#1611b 问卷卡详情钮/心形留白改 ::after 占位（删＝改 padding 后详情钮与收藏心形压字）', file: 'css/chat-main.css', needle: '#page-chat .msg-ask .msg-ask-card.msg-survey-card::after' },
   { name: '#1611c 卡片 CSS 左右分开示例按钮与整套样式（删＝示例入口消失/只剩片段）', file: 'js/chat-settings.js', needle: 'id="cs-card-ex4"' },
+  // ==== 2026-11-05 #1612 邀请确认排队（不再静默同意） ====
+  { name: '#1612 邀请确认排队（删＝已有弹窗占屏时新邀请直接 onAccept，第二个邀请被自动同意）', file: 'js/chat.js', needle: 'const INVITE_BUSY_IDS' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
