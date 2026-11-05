@@ -743,7 +743,7 @@ body.cs-sys-plain .msg-poke {
    甯哥敤/浜掑姩/灏忔父鎴?宸ュ叿/TA鐨勬彁闂紱绐勫睆鏀句笉涓嬫椂妯悜婊氬姩锛?*/
 /* v8.74.5 用户 2026-11-05：四个分类页签改成纯图标按钮（不再用文字胶囊）——
    选中＝深色图标 + 浅色圆底，未选中＝灰色图标；文字只留在 title/aria-label 供读屏与桌面悬停。 */
-.more-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+.more-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; justify-content:center; }
 .more-tabs::-webkit-scrollbar { display:none; }
 .more-tab {
   flex:0 0 auto; width:36px; height:36px; padding:0;

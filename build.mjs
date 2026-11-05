@@ -7182,6 +7182,8 @@ const FIX_SENTINELS = [
   { name: '#1618d 来电类型滑块落盘 reply-call-in-video（删＝拖了不保存，来电仍按旧概率）', file: 'js/reply-settings.js', needle: "saveReplyCfg('call-in-video'" },
   // ==== 2026-11-05 #1619 更多面板四分类改纯图标页签 ====
   { name: '#1619 四分类纯图标页签（删＝又回到文字胶囊）', file: 'template.html', needle: 'aria-label="互动" title="互动"' },
+  // ==== 2026-11-05 #1620 四个分类图标行居中 ====
+  { name: '#1620 四分类图标行居中（删＝又贴左边）', file: 'css/chat-main.css', needle: 'overflow-x:auto; scrollbar-width:none; justify-content:center;' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
