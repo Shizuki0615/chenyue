@@ -7666,7 +7666,7 @@ const moreGridAsk = document.getElementById('more-grid-ask');
 const MORE_CATS = ['chat', 'game', 'tool', 'ask'];
 let moreGroupMode = false;
 const GROUP_MORE_ITEM_IDS = new Set(['more-decide', 'more-gdecide', 'more-search', 'more-divine']);
-function applyMoreCat(cat, group) {
+function applyMoreCat(cat, group, silent) {
 if (group === true || group === false) moreGroupMode = group;
 if (moreGroupMode) cat = 'tool'; // 群聊模式强制锁定「工具」分类
 if (MORE_CATS.indexOf(cat) < 0) cat = 'chat';
@@ -7683,7 +7683,29 @@ if (moreGroupMode) it.hidden = !GROUP_MORE_ITEM_IDS.has(it.id); // 群聊模式�
 else it.hidden = it.dataset.mcat !== cat || (it.id === 'more-ck' && window.checkinEnabled && !window.checkinEnabled()); // #823 寻踪关闭时收起「更多功能」里的寻踪
 });
 }
-if (!moreGroupMode) store.set('more-cat', cat);
+if (!moreGroupMode && !silent) store.set('more-cat', cat);
+}
+function stabilizeMorePanelHeight() {
+if (!morePanel || moreGroupMode) return;
+if (!morePanel.classList.contains('chat-input-v2')) {
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+return;
+}
+const sel = document.querySelector('#more-tabs .more-tab.sel');
+let cur = (sel && MORE_CATS.indexOf(sel.dataset.mcat) >= 0) ? sel.dataset.mcat : 'chat';
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+let max = 0;
+MORE_CATS.forEach((cat) => {
+applyMoreCat(cat, false, true);
+const grid = cat === 'ask' ? moreGridAsk : moreGridFun;
+if (grid) max = Math.max(max, Math.ceil(grid.getBoundingClientRect().height));
+});
+applyMoreCat(cur, false, true);
+const h = max ? max + 'px' : '';
+if (moreGridFun) moreGridFun.style.minHeight = h;
+if (moreGridAsk) moreGridAsk.style.minHeight = h;
 }
 window.applyMoreCat = applyMoreCat;
 window.setMoreGroupMode = (on) => { moreGroupMode = !!on; applyMoreCat('tool', !!on); };
@@ -7703,6 +7725,7 @@ const tb = document.getElementById('gc-more-at');
 if (tb) tb.hidden = true;
 }
 morePanel.hidden = !morePanel.hidden;
+if (!morePanel.hidden) stabilizeMorePanelHeight();
 });
 document.addEventListener('click', (e) => {
 if (!morePanel.hidden && !morePanel.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {

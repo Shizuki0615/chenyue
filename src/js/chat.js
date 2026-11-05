@@ -10255,7 +10255,7 @@ const MORE_CATS = ['chat', 'game', 'tool', 'ask'];
 // 禁止在群聊里使用【小游戏】【TA的提问】【互动】功能。聊天页打开时关闭该模式、恢复全部分类。
 let moreGroupMode = false;
 const GROUP_MORE_ITEM_IDS = new Set(['more-decide', 'more-gdecide', 'more-search', 'more-divine']);
-function applyMoreCat(cat, group) {
+function applyMoreCat(cat, group, silent) {
 if (group === true || group === false) moreGroupMode = group;
 if (moreGroupMode) cat = 'tool'; // 群聊模式强制锁定「工具」分类
 if (MORE_CATS.indexOf(cat) < 0) cat = 'chat';
@@ -10272,7 +10272,32 @@ if (moreGroupMode) it.hidden = !GROUP_MORE_ITEM_IDS.has(it.id); // 群聊模式�
 else it.hidden = it.dataset.mcat !== cat || (it.id === 'more-ck' && window.checkinEnabled && !window.checkinEnabled()); // #823 寻踪关闭时收起「更多功能」里的寻踪
 });
 }
-if (!moreGroupMode) store.set('more-cat', cat);
+if (!moreGroupMode && !silent) store.set('more-cat', cat);
+}
+// v8.74.2 用户 2026-11-05：四个页签内容行数不同，切页签时面板高度跳来跳去。
+// 新版 P2 打开时把四个分类都量一遍（同步切换、不写 more-cat），取最高值写成两个
+// 网格的 min-height——切到短页签只留白、不再缩高；旧版/群聊模式不碰。
+function stabilizeMorePanelHeight() {
+if (!morePanel || moreGroupMode) return;
+if (!morePanel.classList.contains('chat-input-v2')) {
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+return;
+}
+const sel = document.querySelector('#more-tabs .more-tab.sel');
+let cur = (sel && MORE_CATS.indexOf(sel.dataset.mcat) >= 0) ? sel.dataset.mcat : 'chat';
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+let max = 0;
+MORE_CATS.forEach((cat) => {
+applyMoreCat(cat, false, true);
+const grid = cat === 'ask' ? moreGridAsk : moreGridFun;
+if (grid) max = Math.max(max, Math.ceil(grid.getBoundingClientRect().height));
+});
+applyMoreCat(cur, false, true);
+const h = max ? max + 'px' : '';
+if (moreGridFun) moreGridFun.style.minHeight = h;
+if (moreGridAsk) moreGridAsk.style.minHeight = h;
 }
 // v3.16.x：群聊页打开共享更多面板时复用同一分类过滤
 window.applyMoreCat = applyMoreCat;
@@ -10295,6 +10320,7 @@ const tb = document.getElementById('gc-more-at');
 if (tb) tb.hidden = true;
 }
 morePanel.hidden = !morePanel.hidden;
+if (!morePanel.hidden) stabilizeMorePanelHeight();
 });
 document.addEventListener('click', (e) => {
 if (!morePanel.hidden && !morePanel.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {

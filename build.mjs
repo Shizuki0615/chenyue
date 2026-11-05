@@ -7171,6 +7171,8 @@ const FIX_SENTINELS = [
   // ==== 2026-11-05 #1615 新版输入栏 P1/P2（开关 cs-input-v2） ====
   { name: '#1615a 新版输入栏布局与 ⋯/发送槽位（删＝开关开了也不换布局）', file: 'js/chat.js', needle: '(function initChatInputV2() {' },
   { name: '#1615b ⋯ 面板里的图片/语音/继续说/批量代理入口（删＝新版 P2 里没有这些入口）', file: 'template.html', needle: 'id="more-v2-img"' },
+  // ==== 2026-11-05 #1616 新版 P2 四页签高度统一 ====
+  { name: '#1616 新版 P2 打开时按最高页签固定网格高度（删＝切页签面板高度又跳）', file: 'js/chat.js', needle: 'function stabilizeMorePanelHeight()' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
