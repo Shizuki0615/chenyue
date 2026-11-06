@@ -787,6 +787,16 @@ body.cs-sys-plain .msg-poke {
 }
 .more-item svg { width:22px; height:22px; }
 .more-item span { font-size:11px; }
+/* v8.75.5 用户 2026-11-06：功能图标长按拖动（拖到别的分类页签会改属那个分类） */
+.more-item { -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+.more-grid.more-icons-dragging { cursor:grabbing; }
+.more-item.more-item-dragging { position:relative; z-index:3; opacity:.92; }
+.more-item.more-item-dragging .mi-ico {
+  transform:translateY(-2px) scale(1.08);
+  box-shadow:0 10px 22px rgba(0,0,0,.2);
+}
+.more-tab.more-tab-drop { background:rgba(0,0,0,.12); color:#111; transform:scale(1.12); }
+[data-theme="dark"] .more-tab.more-tab-drop { background:rgba(255,255,255,.2); color:#fff; }
 
 /* 閫氳瘽鍗婃锛堝鐢?.poke-card 瀹瑰櫒锛夛細鐘舵€佽 + 鎷ㄦ墦/鎸傛柇澶ф寜閽?*/
 #chat-call-panel .poke-card-scroll { min-height:0; max-height:none; }

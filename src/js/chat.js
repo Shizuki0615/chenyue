@@ -10264,7 +10264,14 @@ const showTab = !moreGroupMode || t.dataset.mcat === 'tool'; // 群聊模式隐�
 t.hidden = !showTab;
 t.classList.toggle('sel', t.dataset.mcat === cat);
 });
-if (moreGridAsk) moreGridAsk.hidden = cat !== 'ask';
+if (moreGridAsk) {
+moreGridAsk.hidden = cat !== 'ask';
+// v8.75.5：功能图标可以跨页签拖进「他的提问」；这一格里现在可能混有拖进来的功能项，
+// 不再只看原生提问项，统一按分类显隐（寻踪关闭时仍然收起）。
+moreGridAsk.querySelectorAll('.more-item').forEach(it => {
+it.hidden = !!(it.id === 'more-ck' && window.checkinEnabled && !window.checkinEnabled());
+});
+}
 if (moreGridFun) {
 moreGridFun.hidden = cat === 'ask';
 moreGridFun.querySelectorAll('.more-item').forEach(it => {
@@ -10304,8 +10311,10 @@ window.applyMoreCat = applyMoreCat;
 // v3.26.x：群聊打开/关闭共享面板时切换群聊过滤模式
 window.setMoreGroupMode = (on) => { moreGroupMode = !!on; applyMoreCat('tool', !!on); };
 document.querySelectorAll('#more-tabs .more-tab').forEach(t => t.addEventListener('click', (e) => { e.stopPropagation(); applyMoreCat(t.dataset.mcat); }));
-// v8.74.7 用户 2026-11-05：四个分类图标长按拖动排序（全局一份，松手落盘 more-tabs-order）。
+// v8.74.7 用户 2026-11-05：四个分类页签长按拖动排序（全局一份，松手落盘 more-tabs-order）。
 // 只做横向排序，不复制桌面图标的自由坐标；群聊模式（只剩工具页签）不启用拖动。
+// v8.75.5 用户 2026-11-06：轻点后 380ms 计时器没清，会误入拖动态并吞掉下一次 click（切页签滞涩）。
+// 保留长按排序，补上按下→抬起之间的取消路径：轻点立即切页，不再残留拖动态。
 (function initMoreTabDrag() {
 const moreTabs = document.getElementById('more-tabs');
 if (!moreTabs) return;
@@ -10326,13 +10335,28 @@ if (t) moreTabs.insertBefore(t, at || null);
 });
 };
 applyOrder();
-let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null, suppressClick = false;
+let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null, suppressClickUntil = 0;
 const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
+const detachPress = () => {
+document.removeEventListener('pointermove', pressMove);
+document.removeEventListener('pointerup', pressEnd, true);
+document.removeEventListener('pointercancel', pressEnd, true);
+};
+function pressMove(e) {
+if (!pressTimer) return;
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+clearPress();
+detachPress();
+}
+}
+function pressEnd() { clearPress(); detachPress(); }
 const saveOrder = () => {
 const order = Array.from(moreTabs.querySelectorAll('.more-tab')).map(t => t.dataset.mcat).filter(k => k);
 try { const g = gStore(); if (g) g.set('more-tabs-order', JSON.stringify(order)); } catch (e) {}
 };
 function onMove(e) {
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
 if (!dragTab) {
 if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) clearPress();
 return;
@@ -10347,17 +10371,19 @@ if (e.clientX < r.left + r.width / 2) { moreTabs.insertBefore(dragTab, list[i]);
 }
 if (!placed) { if (at) moreTabs.insertBefore(dragTab, at); else moreTabs.appendChild(dragTab); }
 }
-function endDrag() {
+function endDrag(e) {
+if (e && e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
 document.removeEventListener('pointermove', onMove);
 document.removeEventListener('pointerup', endDrag, true);
 document.removeEventListener('pointercancel', endDrag, true);
-if (!dragTab) { clearPress(); return; }
+clearPress();
+detachPress();
+if (!dragTab) return;
 dragTab.classList.remove('more-tab-dragging');
 moreTabs.classList.remove('more-tabs-dragging');
 dragTab = null;
 saveOrder();
-suppressClick = true;
-setTimeout(() => { suppressClick = false; }, 450);
+suppressClickUntil = Date.now() + 320;
 }
 moreTabs.addEventListener('pointerdown', (e) => {
 if (moreGroupMode) return;
@@ -10365,11 +10391,15 @@ const tab = e.target && e.target.closest ? e.target.closest('.more-tab') : null;
 if (!tab) return;
 if (e.pointerType === 'mouse' && e.button !== 0) return;
 clearPress();
+detachPress();
 startX = e.clientX; startY = e.clientY; pointerId = e.pointerId;
+document.addEventListener('pointermove', pressMove);
+document.addEventListener('pointerup', pressEnd, true);
+document.addEventListener('pointercancel', pressEnd, true);
 pressTimer = setTimeout(() => {
 pressTimer = 0;
+detachPress();
 dragTab = tab;
-suppressClick = true;
 tab.classList.add('more-tab-dragging');
 moreTabs.classList.add('more-tabs-dragging');
 try { tab.setPointerCapture(pointerId); } catch (err) {}
@@ -10379,12 +10409,204 @@ document.addEventListener('pointercancel', endDrag, true);
 }, 380);
 });
 moreTabs.addEventListener('click', (e) => {
-if (!suppressClick) return;
-suppressClick = false;
+if (!suppressClickUntil || Date.now() >= suppressClickUntil) return;
+suppressClickUntil = 0;
 e.preventDefault();
 e.stopPropagation();
 }, true);
 moreTabs.addEventListener('contextmenu', (e) => { if (dragTab) e.preventDefault(); });
+})();
+
+// v8.75.5 用户 2026-11-06：长按拖动的是「更多」面板里的功能图标（不是分类页签）。
+// 四个分类共用一份图标顺序（more-icons-order）；拖到别的分类页签上停留/松手，
+// 图标改属那个分类（more-icons-cat），跨页签也能保持位置。
+(function initMoreIconDrag() {
+if (!moreGridFun || !moreGridAsk) return;
+const gStore = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const validCat = (k) => MORE_CATS.indexOf(k) >= 0;
+const allItems = () => Array.from(document.querySelectorAll('#more-grid-fun .more-item, #more-grid-ask .more-item'));
+// 原生提问项没有 data-mcat，统一打上 ask，之后跨页签的显隐/保存都按同一口径
+moreGridAsk.querySelectorAll('.more-item').forEach(it => { if (!it.dataset.mcat) it.dataset.mcat = 'ask'; });
+const moveToCat = (item, cat) => {
+const target = cat === 'ask' ? moreGridAsk : moreGridFun;
+if (item.parentElement !== target) target.appendChild(item);
+item.dataset.mcat = cat;
+};
+const applySavedLayout = () => {
+let cats = {};
+try { const g = gStore(); cats = JSON.parse(g.get('more-icons-cat') || '{}') || {}; } catch (e) { cats = {}; }
+allItems().forEach(it => {
+if (!it.id) return;
+let cat = cats[it.id];
+if (!validCat(cat)) cat = it.parentElement === moreGridAsk ? 'ask' : (validCat(it.dataset.mcat) ? it.dataset.mcat : 'chat');
+moveToCat(it, cat);
+});
+let order = [];
+try { const g = gStore(); order = JSON.parse(g.get('more-icons-order') || 'null') || []; } catch (e) { order = []; }
+if (Array.isArray(order) && order.length) {
+const rank = {};
+order.forEach((id, i) => { if (id && rank[id] == null) rank[id] = i; });
+[moreGridFun, moreGridAsk].forEach(grid => {
+const items = Array.from(grid.querySelectorAll('.more-item'));
+items.sort((a, b) => {
+const ra = rank[a.id], rb = rank[b.id];
+if (ra == null && rb == null) return 0;
+if (ra == null) return 1;
+if (rb == null) return -1;
+return ra - rb;
+});
+items.forEach(it => grid.appendChild(it));
+});
+}
+};
+const currentCat = () => {
+const sel = document.querySelector('#more-tabs .more-tab.sel');
+return sel && validCat(sel.dataset.mcat) ? sel.dataset.mcat : 'chat';
+};
+const saveState = () => {
+const order = [];
+[moreGridFun, moreGridAsk].forEach(grid => grid.querySelectorAll('.more-item').forEach(it => { if (it.id) order.push(it.id); }));
+const cats = {};
+allItems().forEach(it => { if (it.id) cats[it.id] = validCat(it.dataset.mcat) ? it.dataset.mcat : (it.parentElement === moreGridAsk ? 'ask' : 'chat'); });
+try {
+const g = gStore();
+if (g) {
+g.set('more-icons-order', JSON.stringify(order));
+g.set('more-icons-cat', JSON.stringify(cats));
+}
+} catch (e) {}
+};
+applySavedLayout();
+try { applyMoreCat(currentCat(), undefined, true); } catch (e) {}
+let pressTimer = 0, dragItem = null, dragCat = '', startX = 0, startY = 0, lastX = 0, lastY = 0, pointerId = null;
+let hoverCat = '', hoverTab = null, hoverTimer = 0, suppressIconClickUntil = 0;
+const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
+const detachPress = () => {
+document.removeEventListener('pointermove', pressMove);
+document.removeEventListener('pointerup', pressEnd, true);
+document.removeEventListener('pointercancel', pressEnd, true);
+};
+function pressMove(e) {
+if (!pressTimer) return;
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+clearPress();
+detachPress();
+}
+}
+function pressEnd() { clearPress(); detachPress(); }
+const clearHover = () => {
+if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = 0; }
+if (hoverTab) { hoverTab.classList.remove('more-tab-drop'); hoverTab = null; }
+hoverCat = '';
+};
+const showHover = (tab) => {
+const cat = tab.dataset.mcat;
+if (!validCat(cat) || hoverCat === cat) return;
+clearHover();
+hoverCat = cat;
+hoverTab = tab;
+tab.classList.add('more-tab-drop');
+hoverTimer = setTimeout(() => {
+hoverTimer = 0;
+if (hoverCat === cat && dragItem) switchToTab(cat);
+clearHover();
+}, 420);
+};
+const switchToTab = (cat) => {
+if (!dragItem || !validCat(cat) || cat === dragCat) return;
+moveToCat(dragItem, cat);
+dragCat = cat;
+applyMoreCat(cat);
+dragItem.hidden = false;
+};
+function onMove(e) {
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (!dragItem) {
+if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) clearPress();
+return;
+}
+if (e.cancelable) e.preventDefault();
+lastX = e.clientX; lastY = e.clientY;
+const under = document.elementFromPoint ? document.elementFromPoint(e.clientX, e.clientY) : null;
+const tabEl = under && under.closest ? under.closest('#more-tabs .more-tab') : null;
+if (tabEl && !tabEl.hidden) {
+if (!moreGroupMode && tabEl.dataset.mcat !== dragCat) showHover(tabEl);
+else if (hoverCat) clearHover();
+return;
+}
+if (hoverCat) clearHover();
+const grid = dragItem.parentElement;
+if (grid !== moreGridFun && grid !== moreGridAsk) return;
+const vis = Array.from(grid.querySelectorAll('.more-item')).filter(it => !it.hidden && it !== dragItem);
+let placed = false;
+for (let i = 0; i < vis.length; i++) {
+const r = vis[i].getBoundingClientRect();
+if (e.clientY < r.top + r.height / 2 || (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2)) {
+grid.insertBefore(dragItem, vis[i]);
+placed = true;
+break;
+}
+}
+if (!placed) grid.appendChild(dragItem);
+}
+function endDrag(e) {
+if (e && e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+document.removeEventListener('pointermove', onMove);
+document.removeEventListener('pointerup', endDrag, true);
+document.removeEventListener('pointercancel', endDrag, true);
+clearPress();
+detachPress();
+clearHover();
+if (!dragItem) return;
+const x = (e && e.clientX != null) ? e.clientX : lastX;
+const y = (e && e.clientY != null) ? e.clientY : lastY;
+const under = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+const tabEl = under && under.closest ? under.closest('#more-tabs .more-tab') : null;
+const overTab = !!(tabEl && !tabEl.hidden);
+if (overTab && tabEl.dataset.mcat !== dragCat && !moreGroupMode) switchToTab(tabEl.dataset.mcat);
+dragItem.classList.remove('more-item-dragging');
+moreGridFun.classList.remove('more-icons-dragging');
+moreGridAsk.classList.remove('more-icons-dragging');
+dragItem = null;
+dragCat = '';
+saveState();
+if (!overTab) suppressIconClickUntil = Date.now() + 320;
+}
+[moreGridFun, moreGridAsk].forEach(grid => {
+grid.addEventListener('pointerdown', (e) => {
+if (moreGroupMode) return;
+const item = e.target && e.target.closest ? e.target.closest('.more-item') : null;
+if (!item || item.hidden) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+clearPress();
+detachPress();
+clearHover();
+startX = e.clientX; startY = e.clientY; lastX = e.clientX; lastY = e.clientY; pointerId = e.pointerId;
+document.addEventListener('pointermove', pressMove);
+document.addEventListener('pointerup', pressEnd, true);
+document.addEventListener('pointercancel', pressEnd, true);
+pressTimer = setTimeout(() => {
+pressTimer = 0;
+detachPress();
+dragItem = item;
+dragCat = currentCat();
+item.classList.add('more-item-dragging');
+moreGridFun.classList.add('more-icons-dragging');
+moreGridAsk.classList.add('more-icons-dragging');
+document.addEventListener('pointermove', onMove, { passive: false });
+document.addEventListener('pointerup', endDrag, true);
+document.addEventListener('pointercancel', endDrag, true);
+}, 380);
+});
+grid.addEventListener('click', (e) => {
+if (!suppressIconClickUntil || Date.now() >= suppressIconClickUntil) return;
+suppressIconClickUntil = 0;
+e.preventDefault();
+e.stopPropagation();
+}, true);
+grid.addEventListener('contextmenu', (e) => { if (dragItem) e.preventDefault(); });
+});
 })();
 moreBtn.addEventListener('click', (e) => {
 e.stopPropagation();

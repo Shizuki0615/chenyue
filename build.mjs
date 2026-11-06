@@ -7204,6 +7204,12 @@ const FIX_SENTINELS = [
   // ==== 2026-11-06 #1627 小窗展开别把手动关掉的摄像头又打开 ====
   { name: '#1627a 展开后屏蔽摄像头占位幽灵点击（删＝点小窗回来摄像头自动开）', file: 'js/call.js', needle: 'VT.suppressTapUntil = Date.now() + 500' },
   { name: '#1627b 展开只在未手动关摄像头时重建流（删＝手动关着也可能被 vtStartCam 重开）', file: 'js/call.js', needle: 'if (!VT.camOff) vtStartCam();' },
+  // ==== 2026-11-06 #1628 更多面板：图标长按拖动（跨页签）+ 分类页签切页不卡 ====
+  { name: '#1628a 功能图标长按拖动（删＝又只能拖分类页签）', file: 'js/chat.js', needle: 'function initMoreIconDrag()' },
+  { name: '#1628b 图标一份共享顺序（删＝切页签位置还原）', file: 'js/chat.js', needle: "g.set('more-icons-order'" },
+  { name: '#1628c 图标跨页签改属分类（删＝拖到别的页签无效）', file: 'js/chat.js', needle: "g.set('more-icons-cat'" },
+  { name: '#1628d 分类页签轻点不再残留长按计时器（删＝切页签滞涩/吞下一次点击）', file: 'js/chat.js', needle: 'function pressEnd() { clearPress(); detachPress(); }' },
+  { name: '#1628e 图标拖动浮起样式（删＝拖起来没反馈）', file: 'css/chat-main.css', needle: '.more-item.more-item-dragging' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
