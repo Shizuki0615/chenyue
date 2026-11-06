@@ -50,14 +50,64 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
   }
   function optEditKey(prefix, q, oi, kind) { return prefix + (kind === 'quick' ? 'qopt:' : 'opt:') + (q.id || '') + ':' + oi; }
+  // TA 回应句的小铅笔（小问题每个选项的「→ …」、好奇的「他回应」整组）
+  function replyPenHtml(prefix, idx, oi) {
+    if (!PT) return '';
+    return '<button type="button" class="preset-edit-btn preset-edit-mini" data-reply-prefix="' + prefix + '" data-reply-qidx="' + idx +
+      '" data-reply-oi="' + oi + '" title="编辑 TA 回应句" aria-label="编辑 TA 回应句">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+  }
+  function bindReplyPens(container, loadFn, rerender) {
+    if (!PT) return;
+    container.querySelectorAll('.preset-edit-mini[data-reply-prefix]').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        const prefix = btn.dataset.replyPrefix;
+        const d2 = loadFn();
+        const q = d2.questions[Number(btn.dataset.replyQidx)];
+        if (!q || q.isPreset !== true) return;
+        const oi = Number(btn.dataset.replyOi);
+        let key, shown, title;
+        if (prefix === 'tc') {
+          const o = Array.isArray(q.options) && q.options[oi];
+          if (!o || !Array.isArray(o.reply)) return;
+          key = 'tcreply:' + (q.id || '') + ':' + oi;
+          shown = o.reply.join('\n');
+          title = '编辑选项的 TA 回应句';
+        } else {
+          if (!Array.isArray(q.replies)) return;
+          key = 'tcureply:' + (q.id || '');
+          shown = q.replies.join('\n');
+          title = '编辑「他回应」句';
+        }
+        PT.open({
+          key: key,
+          shown: shown,
+          multiline: true,
+          rows: 4,
+          title: title,
+          onChanged: function () { syncPresetDefaults(prefix); rerender(); }
+        });
+      });
+    });
+  }
   // 选项覆盖套用（load 后调用；先回原文案再取新文案，重复套用安全）
   function applyOptionEdits(prefix, q) {
     if (!PT || !q || q.isPreset !== true) return;
     if (Array.isArray(q.options)) {
       q.options.forEach(function (o, oi) {
-        if (!o || typeof o.t !== 'string') return;
-        const k = optEditKey(prefix, q, oi, 'opt');
-        o.t = PT.text(k, PT.original(k, o.t));
+        if (!o) return;
+        if (typeof o.t === 'string') {
+          const k = optEditKey(prefix, q, oi, 'opt');
+          o.t = PT.text(k, PT.original(k, o.t));
+        }
+        // 选项自带的 TA 回应句（小问题的「→ …」）
+        if (Array.isArray(o.reply)) {
+          const block = o.reply.join('\n');
+          const k2 = 'tcreply:' + (q.id || '') + ':' + oi;
+          const nv = PT.text(k2, PT.original(k2, block));
+          if (nv !== block) o.reply = nv.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+        }
       });
     }
     if (Array.isArray(q.quick)) {
@@ -67,6 +117,13 @@
         q.quick[qi] = PT.text(k, PT.original(k, t));
       });
     }
+    // 好奇题的「他回应」整组
+    if (Array.isArray(q.replies)) {
+      const block = q.replies.join('\n');
+      const k = 'tcureply:' + (q.id || '');
+      const nv = PT.text(k, PT.original(k, block));
+      if (nv !== block) q.replies = nv.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
   }
   // 写盘副本里的选项还原（返回可能替换过的 q 副本）
   function stripOptionEdits(prefix, q) {
@@ -75,12 +132,23 @@
     if (Array.isArray(q.options)) {
       let changed = false;
       const opts = q.options.map(function (o, oi) {
-        if (!o || typeof o.t !== 'string') return o;
-        const k = optEditKey(prefix, q, oi, 'opt');
-        const orig = PT.original(k, o.t);
-        if (orig === o.t) return o;
-        changed = true;
-        return Object.assign({}, o, { t: orig });
+        if (!o) return o;
+        let no = o;
+        if (typeof o.t === 'string') {
+          const k = optEditKey(prefix, q, oi, 'opt');
+          const orig = PT.original(k, o.t);
+          if (orig !== o.t) { changed = true; no = Object.assign({}, no, { t: orig }); }
+        }
+        if (Array.isArray(o.reply)) {
+          const block = o.reply.join('\n');
+          const k2 = 'tcreply:' + (q.id || '') + ':' + oi;
+          const origBlock = PT.original(k2, block);
+          if (origBlock !== block) {
+            changed = true;
+            no = Object.assign({}, no, { reply: origBlock.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) });
+          }
+        }
+        return no;
       });
       if (changed) out = Object.assign({}, out, { options: opts });
     }
@@ -95,6 +163,12 @@
         return orig;
       });
       if (changed) out = Object.assign({}, out, { quick: quick });
+    }
+    if (Array.isArray(q.replies)) {
+      const block = q.replies.join('\n');
+      const k = 'tcureply:' + (q.id || '');
+      const origBlock = PT.original(k, block);
+      if (origBlock !== block) out = Object.assign({}, out, { replies: origBlock.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) });
     }
     return out;
   }
@@ -167,7 +241,9 @@
         arr: arr,
         texts: arr.map(function (q) { return q && q.text; }),
         opts: arr.map(function (q) { return (q && Array.isArray(q.options)) ? q.options.map(function (o) { return o && o.t; }) : null; }),
-        quicks: arr.map(function (q) { return (q && Array.isArray(q.quick)) ? q.quick.slice() : null; })
+        optReplies: arr.map(function (q) { return (q && Array.isArray(q.options)) ? q.options.map(function (o) { return (o && Array.isArray(o.reply)) ? o.reply.slice() : null; }) : null; }),
+        quicks: arr.map(function (q) { return (q && Array.isArray(q.quick)) ? q.quick.slice() : null; }),
+        qreplies: arr.map(function (q) { return (q && Array.isArray(q.replies)) ? q.replies.slice() : null; })
       };
       PRESET_DEFAULT_ORIG.push(rec);
     }
@@ -178,10 +254,18 @@
       q.text = PT.text(k, base);
       if (Array.isArray(q.options) && rec.opts[i]) {
         q.options.forEach(function (o, oi) {
-          if (!o || typeof o.t !== 'string') return;
-          const okey = optEditKey(prefix, q, oi, 'opt');
-          const obase = rec.opts[i][oi] != null ? rec.opts[i][oi] : o.t;
-          o.t = PT.text(okey, obase);
+          if (!o) return;
+          if (typeof o.t === 'string') {
+            const okey = optEditKey(prefix, q, oi, 'opt');
+            const obase = rec.opts[i][oi] != null ? rec.opts[i][oi] : o.t;
+            o.t = PT.text(okey, obase);
+          }
+          if (Array.isArray(o.reply) && rec.optReplies[i] && rec.optReplies[i][oi]) {
+            const rkey = 'tcreply:' + (q.id || '') + ':' + oi;
+            const rbase = rec.optReplies[i][oi].join('\n');
+            const rnv = PT.text(rkey, rbase);
+            if (rnv !== o.reply.join('\n')) o.reply = rnv.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+          }
         });
       }
       if (Array.isArray(q.quick) && rec.quicks[i]) {
@@ -191,6 +275,12 @@
           const qbase = rec.quicks[i][qi] != null ? rec.quicks[i][qi] : t;
           q.quick[qi] = PT.text(qkey, qbase);
         });
+      }
+      if (Array.isArray(q.replies) && rec.qreplies[i]) {
+        const rkey = 'tcureply:' + (q.id || '');
+        const rbase = rec.qreplies[i].join('\n');
+        const rnv = PT.text(rkey, rbase);
+        if (rnv !== q.replies.join('\n')) q.replies = rnv.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
       }
     });
   }
@@ -2480,18 +2570,22 @@ window.openTCPanel = openTCPanel;
       arr.forEach(q => {
         const idx = d.questions.indexOf(q);
         // #1645：预设题可改文案——题面或任一选项改过都标「已改」，行尾给一支铅笔
-        const optEdited = !!(PT && (q.options || []).some((o, oi) => o && typeof o.t === 'string' && PT.isEdited(optEditKey('tc', q, oi, 'opt'), o.t)));
+        const optEdited = !!(PT && (q.options || []).some((o, oi) =>
+          (o && typeof o.t === 'string' && PT.isEdited(optEditKey('tc', q, oi, 'opt'), o.t)) ||
+          (o && Array.isArray(o.reply) && PT.isEdited('tcreply:' + (q.id || '') + ':' + oi, o.reply.join('\n'))
+        )));
         const edited = !!(PT && (PT.isEdited(presetEditKey('tc', q), q.text) || optEdited));
         html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
           '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
-          '<div class="tc-qopts">选项：' + q.options.map((o, oi) => escT(o.t) + optPenHtml('tc', idx, oi) + (optReplyLabel(o) ? ' <span class="tc-opt-reply">→ ' + escT(optReplyLabel(o)) + '</span>' : '')).join(' / ') + '</div></div>' +
+          '<div class="tc-qopts">选项：' + q.options.map((o, oi) => escT(o.t) + optPenHtml('tc', idx, oi) + (optReplyLabel(o) ? ' <span class="tc-opt-reply">→ ' + escT(optReplyLabel(o)) + '</span>' + replyPenHtml('tc', idx, oi) : '')).join(' / ') + '</div></div>' +
           presetPenHtml(idx) +
           '</div>';
       });
       container.innerHTML = html;
       if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-choose', tcSysCat, function () { renderTCCatsInto(container, true, search); });
       bindOptPens(container, tcLoad, function () { renderTCCatsInto(container, true, search); });
+      bindReplyPens(container, tcLoad, function () { renderTCCatsInto(container, true, search); });
       container.querySelectorAll('.cc-tab[data-cat]').forEach(t => {
         t.addEventListener('click', () => { tcSysCat = t.dataset.cat; renderTCCatsInto(container, true, search); });
       });
@@ -3288,18 +3382,22 @@ window.openTCPanel = openTCPanel;
         const idx = d.questions.indexOf(q);
         const known = q.id && d.known[q.id];
         // #1645：预设题可改文案——题面或任一快捷项改过都标「已改」，行尾给一支铅笔
-        const optEdited = !!(PT && (q.quick || []).some((t, qi) => typeof t === 'string' && PT.isEdited(optEditKey('tcu', q, qi, 'quick'), t)));
+        const optEdited = !!(PT && (
+          (q.quick || []).some((t, qi) => typeof t === 'string' && PT.isEdited(optEditKey('tcu', q, qi, 'quick'), t)) ||
+          (Array.isArray(q.replies) && PT.isEdited('tcureply:' + (q.id || ''), q.replies.join('\n'))
+        )));
         const edited = !!(PT && (PT.isEdited(presetEditKey('tcu', q), q.text) || optEdited));
         html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
           '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
           (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.map((t, qi) => escT(t) + optPenHtml('tcu', idx, qi, 'quick')).join(' / ') + '</div>' : '') +
-          (q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
+          (q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + replyPenHtml('tcu', idx, -1) + '</div>' : '') +
           '</div>' + presetPenHtml(idx) + '</div>';
       });
       container.innerHTML = html;
       if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-curious', tcuSysCat, function () { renderTCUCatsInto(container, true, search); });
       bindOptPens(container, tcuLoad, function () { renderTCUCatsInto(container, true, search); });
+      bindReplyPens(container, tcuLoad, function () { renderTCUCatsInto(container, true, search); });
       container.querySelectorAll('.cc-tab[data-cat]').forEach(t => {
         t.addEventListener('click', () => { tcuSysCat = t.dataset.cat; renderTCUCatsInto(container, true, search); });
       });
