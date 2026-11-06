@@ -7735,7 +7735,8 @@ if (t) moreTabs.insertBefore(t, at || null);
 });
 };
 applyOrder();
-let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null, suppressClickUntil = 0;
+let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null;
+let swallowNextClick = false, pressMoved = false;
 const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
 const detachPress = () => {
 document.removeEventListener('pointermove', pressMove);
@@ -7745,7 +7746,9 @@ document.removeEventListener('pointercancel', pressEnd, true);
 function pressMove(e) {
 if (!pressTimer) return;
 if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
-if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+if (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14) {
+pressMoved = true;
+swallowNextClick = true;
 clearPress();
 detachPress();
 }
@@ -7783,7 +7786,7 @@ dragTab.classList.remove('more-tab-dragging');
 moreTabs.classList.remove('more-tabs-dragging');
 dragTab = null;
 saveOrder();
-suppressClickUntil = Date.now() + 320;
+swallowNextClick = true;
 }
 moreTabs.addEventListener('pointerdown', (e) => {
 if (moreGroupMode) return;
@@ -7792,6 +7795,8 @@ if (!tab) return;
 if (e.pointerType === 'mouse' && e.button !== 0) return;
 clearPress();
 detachPress();
+swallowNextClick = false;
+pressMoved = false;
 startX = e.clientX; startY = e.clientY; pointerId = e.pointerId;
 document.addEventListener('pointermove', pressMove);
 document.addEventListener('pointerup', pressEnd, true);
@@ -7809,11 +7814,18 @@ document.addEventListener('pointercancel', endDrag, true);
 }, 380);
 });
 moreTabs.addEventListener('click', (e) => {
-if (!suppressClickUntil || Date.now() >= suppressClickUntil) return;
-suppressClickUntil = 0;
+if (!swallowNextClick) return;
+swallowNextClick = false;
 e.preventDefault();
 e.stopPropagation();
 }, true);
+moreTabs.addEventListener('pointerup', (e) => {
+if (dragTab || swallowNextClick || pressMoved) return;
+const tab = e.target && e.target.closest ? e.target.closest('.more-tab') : null;
+if (!tab || tab.hidden || moreGroupMode) return;
+applyMoreCat(tab.dataset.mcat);
+swallowNextClick = true;
+});
 moreTabs.addEventListener('contextmenu', (e) => { if (dragTab) e.preventDefault(); });
 })();
 (function initMoreIconDrag() {
@@ -7873,8 +7885,8 @@ g.set('more-icons-cat', JSON.stringify(cats));
 };
 applySavedLayout();
 try { applyMoreCat(currentCat(), undefined, true); } catch (e) {}
-let pressTimer = 0, dragItem = null, dragCat = '', startX = 0, startY = 0, lastX = 0, lastY = 0, pointerId = null;
-let hoverCat = '', hoverTab = null, hoverTimer = 0, suppressIconClickUntil = 0;
+let pressTimer = 0, dragItem = null, dragGhost = null, dragCat = '', startX = 0, startY = 0, lastX = 0, lastY = 0, pointerId = null;
+let hoverCat = '', hoverTab = null, hoverTimer = 0, swallowIconClick = false;
 const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
 const detachPress = () => {
 document.removeEventListener('pointermove', pressMove);
@@ -7884,7 +7896,9 @@ document.removeEventListener('pointercancel', pressEnd, true);
 function pressMove(e) {
 if (!pressTimer) return;
 if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
-if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+lastX = e.clientX; lastY = e.clientY;
+if (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14) {
+swallowIconClick = true;
 clearPress();
 detachPress();
 }
@@ -7906,7 +7920,7 @@ hoverTimer = setTimeout(() => {
 hoverTimer = 0;
 if (hoverCat === cat && dragItem) switchToTab(cat);
 clearHover();
-}, 420);
+}, 220);
 };
 const switchToTab = (cat) => {
 if (!dragItem || !validCat(cat) || cat === dragCat) return;
@@ -7915,16 +7929,58 @@ dragCat = cat;
 applyMoreCat(cat);
 dragItem.hidden = false;
 };
+const tabAt = (x, y) => {
+const hit = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+const direct = hit && hit.closest ? hit.closest('#more-tabs .more-tab') : null;
+if (direct && !direct.hidden) return direct;
+let best = null, bestD = 10;
+document.querySelectorAll('#more-tabs .more-tab').forEach(t => {
+if (t.hidden) return;
+const r = t.getBoundingClientRect();
+const cx = Math.max(r.left, Math.min(x, r.right));
+const cy = Math.max(r.top, Math.min(y, r.bottom));
+const d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+if (d < bestD) { best = t; bestD = d; }
+});
+return best;
+};
+const startGhost = (item) => {
+const g = document.createElement('div');
+g.className = 'more-item more-item-ghost';
+g.innerHTML = item.innerHTML;
+g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+const r = item.getBoundingClientRect();
+g.style.width = (r.width || 64) + 'px';
+g.style.height = (r.height || 80) + 'px';
+g.style.left = lastX + 'px';
+g.style.top = lastY + 'px';
+document.body.appendChild(g);
+return g;
+};
+const moveGhost = () => {
+if (!dragGhost) return;
+dragGhost.style.left = lastX + 'px';
+dragGhost.style.top = lastY + 'px';
+};
+const clearGhost = () => {
+if (dragGhost) {
+try { dragGhost.remove(); } catch (e) {}
+dragGhost = null;
+}
+};
 function onMove(e) {
 if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
 if (!dragItem) {
-if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) clearPress();
+if (pressTimer && (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14)) {
+swallowIconClick = true;
+clearPress();
+}
 return;
 }
 if (e.cancelable) e.preventDefault();
 lastX = e.clientX; lastY = e.clientY;
-const under = document.elementFromPoint ? document.elementFromPoint(e.clientX, e.clientY) : null;
-const tabEl = under && under.closest ? under.closest('#more-tabs .more-tab') : null;
+moveGhost();
+const tabEl = tabAt(lastX, lastY);
 if (tabEl && !tabEl.hidden) {
 if (!moreGroupMode && tabEl.dataset.mcat !== dragCat) showHover(tabEl);
 else if (hoverCat) clearHover();
@@ -7933,11 +7989,20 @@ return;
 if (hoverCat) clearHover();
 const grid = dragItem.parentElement;
 if (grid !== moreGridFun && grid !== moreGridAsk) return;
+const under = document.elementFromPoint ? document.elementFromPoint(lastX, lastY) : null;
+const target = under && under.closest ? under.closest('.more-item') : null;
+if (target === dragItem) return;
+if (target && !target.hidden && target.parentElement === grid) {
+const r = target.getBoundingClientRect();
+if (lastX < r.left + r.width / 2) grid.insertBefore(dragItem, target);
+else grid.insertBefore(dragItem, target.nextSibling);
+return;
+}
 const vis = Array.from(grid.querySelectorAll('.more-item')).filter(it => !it.hidden && it !== dragItem);
 let placed = false;
 for (let i = 0; i < vis.length; i++) {
 const r = vis[i].getBoundingClientRect();
-if (e.clientY < r.top + r.height / 2 || (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2)) {
+if (lastY < r.top + r.height / 2 || (lastY <= r.bottom && lastX < r.left + r.width / 2)) {
 grid.insertBefore(dragItem, vis[i]);
 placed = true;
 break;
@@ -7953,20 +8018,21 @@ document.removeEventListener('pointercancel', endDrag, true);
 clearPress();
 detachPress();
 clearHover();
-if (!dragItem) return;
+if (!dragItem) { clearGhost(); return; }
 const x = (e && e.clientX != null) ? e.clientX : lastX;
 const y = (e && e.clientY != null) ? e.clientY : lastY;
-const under = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
-const tabEl = under && under.closest ? under.closest('#more-tabs .more-tab') : null;
+const tabEl = tabAt(x, y);
 const overTab = !!(tabEl && !tabEl.hidden);
 if (overTab && tabEl.dataset.mcat !== dragCat && !moreGroupMode) switchToTab(tabEl.dataset.mcat);
+clearGhost();
 dragItem.classList.remove('more-item-dragging');
 moreGridFun.classList.remove('more-icons-dragging');
 moreGridAsk.classList.remove('more-icons-dragging');
+try { if (dragItem.releasePointerCapture && pointerId != null) dragItem.releasePointerCapture(pointerId); } catch (err) {}
 dragItem = null;
 dragCat = '';
 saveState();
-if (!overTab) suppressIconClickUntil = Date.now() + 320;
+if (!overTab) swallowIconClick = true;
 }
 [moreGridFun, moreGridAsk].forEach(grid => {
 grid.addEventListener('pointerdown', (e) => {
@@ -7977,6 +8043,7 @@ if (e.pointerType === 'mouse' && e.button !== 0) return;
 clearPress();
 detachPress();
 clearHover();
+swallowIconClick = false;
 startX = e.clientX; startY = e.clientY; lastX = e.clientX; lastY = e.clientY; pointerId = e.pointerId;
 document.addEventListener('pointermove', pressMove);
 document.addEventListener('pointerup', pressEnd, true);
@@ -7989,18 +8056,23 @@ dragCat = currentCat();
 item.classList.add('more-item-dragging');
 moreGridFun.classList.add('more-icons-dragging');
 moreGridAsk.classList.add('more-icons-dragging');
+dragGhost = startGhost(item);
+try { if (item.setPointerCapture && pointerId != null) item.setPointerCapture(pointerId); } catch (err) {}
+try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
 document.addEventListener('pointermove', onMove, { passive: false });
 document.addEventListener('pointerup', endDrag, true);
 document.addEventListener('pointercancel', endDrag, true);
-}, 380);
+}, 300);
 });
 grid.addEventListener('click', (e) => {
-if (!suppressIconClickUntil || Date.now() >= suppressIconClickUntil) return;
-suppressIconClickUntil = 0;
+if (!swallowIconClick) return;
+swallowIconClick = false;
 e.preventDefault();
 e.stopPropagation();
 }, true);
-grid.addEventListener('contextmenu', (e) => { if (dragItem) e.preventDefault(); });
+grid.addEventListener('contextmenu', (e) => {
+if (dragItem || (e.target && e.target.closest && e.target.closest('.more-item'))) e.preventDefault();
+});
 });
 })();
 moreBtn.addEventListener('click', (e) => {

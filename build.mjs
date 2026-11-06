@@ -7213,6 +7213,12 @@ const FIX_SENTINELS = [
   { name: '#1629 通话按钮文字视觉隐藏（删＝按钮上又出现语音/看自己/打开/翻转/挂断）', file: 'css/chat-main.css', needle: '.call-btn, .call-panel.vt .call-btn { font-size:0' },
   // ==== 2026-11-06 #1630 点自己画面不再开摄像头 ====
   { name: '#1630 点占位块不再开摄像头（删＝点一下自己的界面摄像头又打开）', file: 'js/call.js', needle: 'bind(off, false);' },
+  // ==== 2026-11-06 #1631 图标拖动跟手浮层 + 跨页签更快 ====
+  { name: '#1631a 拖动跟手浮层（删＝又只能原地跳）', file: 'js/chat.js', needle: 'const startGhost = (item) => {' },
+  { name: '#1631b 跨页签停留 220ms（删＝又回到 420ms 很难触发）', file: 'js/chat.js', needle: 'hoverTimer = setTimeout(() => {' },
+  { name: '#1631c 拖动时禁浏览器抢手势（删＝移动端长按拖动被滚动/选择打断）', file: 'css/chat-main.css', needle: '.more-grid, .more-item { touch-action:none; }' },
+  { name: '#1631d 跟手浮层样式（删＝拖动时没有浮起视觉）', file: 'css/chat-main.css', needle: '.more-item-ghost {' },
+  { name: '#1632 页签 pointerup 直接切页（删＝又等合成 click，轻微滞涩）', file: 'js/chat.js', needle: "moreTabs.addEventListener('pointerup'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

@@ -789,12 +789,19 @@ body.cs-sys-plain .msg-poke {
 .more-item span { font-size:11px; }
 /* v8.75.5 用户 2026-11-06：功能图标长按拖动（拖到别的分类页签会改属那个分类） */
 .more-item { -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+/* v8.75.10：长按拖动期间不让浏览器把手势抢成滚动/文本选择 */
+.more-grid, .more-item { touch-action:none; }
 .more-grid.more-icons-dragging { cursor:grabbing; }
-.more-item.more-item-dragging { position:relative; z-index:3; opacity:.92; }
-.more-item.more-item-dragging .mi-ico {
-  transform:translateY(-2px) scale(1.08);
-  box-shadow:0 10px 22px rgba(0,0,0,.2);
+/* 拖动时原位只留半透明占位，真正跟手的是 body 上的 .more-item-ghost */
+.more-item.more-item-dragging { position:relative; z-index:1; opacity:.32; }
+.more-item.more-item-dragging .mi-ico { transform:none; box-shadow:none; }
+.more-item-ghost {
+  position:fixed; z-index:9999; pointer-events:none; margin:0;
+  transform:translate(-50%,-50%); opacity:.96;
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.22));
+  will-change:left,top;
 }
+.more-item-ghost .mi-ico { transform:scale(1.08); box-shadow:0 10px 22px rgba(0,0,0,.2); }
 .more-tab.more-tab-drop { background:rgba(0,0,0,.12); color:#111; transform:scale(1.12); }
 [data-theme="dark"] .more-tab.more-tab-drop { background:rgba(255,255,255,.2); color:#fff; }
 
