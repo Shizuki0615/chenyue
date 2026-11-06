@@ -7174,6 +7174,11 @@ const FIX_SENTINELS = [
   { name: '#1647a TA 回应句行内铅笔（删＝小问题选项后的回应句改不了）', file: 'js/ta-ask.js', needle: 'function replyPenHtml(prefix, idx, oi) {' },
   { name: '#1647b TA 回应句覆盖套用/写盘还原（删＝回应改后刷新回原文或污染题库）', file: 'js/ta-ask.js', needle: "const k2 = 'tcreply:' + (q.id || '') + ':' + oi;" },
   { name: '#1647c 好奇「他回应」覆盖键（删＝好奇页回应句改不了）', file: 'js/ta-ask.js', needle: "const k = 'tcureply:' + (q.id || '');" },
+  // ==== 2026-11-07 #1648 系统预设字卡批量管理（勾选停用/启用） ====
+  { name: '#1648a 管理字卡入口（删＝四个预设列表没有批量管理入口）', file: 'js/default-cards.js', needle: 'cc-manage-toggle' },
+  { name: '#1648b 批量停用/启用（删＝管理态按钮点了无效）', file: 'js/default-cards.js', needle: 'function batchSetOff(off) {' },
+  { name: '#1648c 管理态整行勾选（删＝只能看不能选）', file: 'js/default-cards.js', needle: 'const k = selKey(rec.cat || view.cur, rec.c);' },
+  { name: '#1648d 管理态隐藏单卡开关/铅笔（删＝勾选会被开关或编辑打断）', file: 'css/chat-pages.css', needle: '.card-list.cc-managing .cc-item .ccard-toggle,' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

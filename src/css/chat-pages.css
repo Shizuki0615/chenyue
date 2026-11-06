@@ -468,6 +468,11 @@
 }
 
 /* ===== 管理字卡模式 ===== */
+/* #1648 系统预设字卡列表的管理态：批量勾选停用/启用；管理态下隐藏单卡开关与编辑铅笔，
+   点整行只做勾选（分组头开关同样隐藏，避免两种操作混淆） */
+.card-list.cc-managing .cc-item .ccard-toggle,
+.card-list.cc-managing .cc-item .preset-edit-btn,
+.card-list.cc-managing .cc-group-header .ccard-toggle { display:none; }
 .card-list.cc-managing .cc-item { position:relative; padding-left:36px; }
 /* 勾选圈 */
 .card-list.cc-managing .cc-item::before {

@@ -838,6 +838,7 @@
   const V_PAD = 0.8;    // 视口上下各多渲染 0.8 屏（重建频率 ≈ 每滚 0.8 屏一次）
   const V_MINW = 24;    // 窗口条目数下限（小屏/高条目时兜底，避免窗口过窄）
   const V_EST = 55;     // 未实测条目高度初值：.cc-item 13+13 padding + 行高 + 9 margin
+  let activePresetManager = null;   // #1648 同一时间只允许一个预设列表处于管理态
   function mountCardView(ids, allowedKeys, emptyText, searchKeys) {
     const viewList = document.getElementById(ids.list);
     const viewTabs = document.getElementById(ids.tabs);
@@ -855,6 +856,88 @@
       q: '',
       curGroup: ''
     };
+    // #1648 管理字卡：批量勾选停用/启用（系统预设卡只能开关，不提供删除/移动）
+    let manageMode = false;
+    const managed = new Set();
+    let manageBar = null;
+    const toolWrap = document.createElement('div');
+    toolWrap.className = 'cc-toolbar cc-preset-manage-tools';
+    toolWrap.innerHTML = '<button type="button" class="cc-tool cc-manage-toggle">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>管理字卡</button>';
+    viewTabs.parentNode.insertBefore(toolWrap, viewTabs);
+    const manageBtn = toolWrap.querySelector('.cc-manage-toggle');
+    function selKey(cat, c) { return cat + '\u0001' + c; }
+    function updateManageCount() {
+      if (!manageBar) return;
+      const cnt = manageBar.querySelector('.cc-m-count');
+      if (cnt) cnt.textContent = '已选 ' + managed.size + ' 张';
+    }
+    function batchSetOff(off) {
+      if (!managed.size) { toast('请先勾选字卡'); return; }
+      let cnt = 0;
+      managed.forEach(function (k) {
+        const p = k.split('\u0001');
+        if (p.length < 2) return;
+        setCardOff(p[0], p.slice(1).join('\u0001'), off);
+        cnt++;
+      });
+      managed.clear();
+      render();
+      updateManageCount();
+      toast((off ? '已停用 ' : '已启用 ') + cnt + ' 张字卡');
+    }
+    function selectAllVisible() {
+      const all = [];
+      flat.forEach(function (it) { if (!it.header) all.push(selKey(it.cat || view.cur, it.c)); });
+      const every = all.length && all.every(function (k) { return managed.has(k); });
+      if (every) all.forEach(function (k) { managed.delete(k); });
+      else all.forEach(function (k) { managed.add(k); });
+      render();
+      updateManageCount();
+    }
+    function enterManage() {
+      if (manageMode) return;
+      if (activePresetManager && activePresetManager !== manageSelf) activePresetManager.exitManage();
+      activePresetManager = manageSelf;
+      manageMode = true;
+      managed.clear();
+      toolWrap.style.display = 'none';
+      viewList.classList.add('cc-managing');
+      if (!manageBar) {
+        manageBar = document.createElement('div');
+        manageBar.className = 'cc-manage-bar';
+        manageBar.innerHTML = '<span class="cc-m-count">已选 0 张</span>' +
+          '<button type="button" class="cc-m-btn" data-m="all">全选</button>' +
+          '<button type="button" class="cc-m-btn" data-m="off">停用</button>' +
+          '<button type="button" class="cc-m-btn" data-m="on">启用</button>' +
+          '<button type="button" class="cc-m-btn" data-m="exit">退出</button>';
+        document.body.appendChild(manageBar);
+        manageBar.addEventListener('click', function (e) {
+          const b = e.target.closest('.cc-m-btn');
+          if (!b) return;
+          const m = b.dataset.m;
+          if (m === 'all') selectAllVisible();
+          else if (m === 'off') batchSetOff(true);
+          else if (m === 'on') batchSetOff(false);
+          else if (m === 'exit') exitManage();
+        });
+      }
+      manageBar.hidden = false;
+      render();
+      updateManageCount();
+    }
+    function exitManage() {
+      if (!manageMode) return;
+      manageMode = false;
+      managed.clear();
+      viewList.classList.remove('cc-managing');
+      toolWrap.style.display = '';
+      if (manageBar) manageBar.hidden = true;
+      if (activePresetManager === manageSelf) activePresetManager = null;
+      render();
+    }
+    const manageSelf = { exitManage: exitManage };
+    manageBtn.addEventListener('click', function () { if (manageMode) exitManage(); else enterManage(); });
 
     // ================= 虚拟窗口状态 =================
     // 实测（headless 390×844，空数据）：预设字卡 main 分类 4621 张旧版全量渲染 =
@@ -952,7 +1035,8 @@
         d.innerHTML = groupHeaderHTML(it.glabel, it.count, goff);
       } else {
         const off = isCardOff(it.cat, it.c);
-        d.className = 'cc-item glass' + (off ? ' off' : '');
+        d.className = 'cc-item glass' + (off ? ' off' : '') +
+          (manageMode && managed.has(selKey(it.cat || view.cur, it.c)) ? ' sel' : '');
         // 整页为系统预设字卡，统一标【系统】与自定义字卡区分（#301：词典自建词条标「自建」）；
         // #1644 改过文案的系统卡标「已改」并给一支铅笔（自建词条的身份是用户原文，不参与编辑）；
         // 右侧单卡开关——逐张开启/关闭该字卡（关闭后功能/聊天回复不再抽取）
@@ -1094,6 +1178,7 @@
     }
     // change 事件委托——list 单一监听器替代每卡一个；窗口重建后 dataset.idx 仍指向 flat
     viewList.addEventListener('change', (e) => {
+      if (manageMode) return;   // #1648 管理态只做勾选，不直接改开关
       const input = e.target;
       if (!input || input.type !== 'checkbox') return;
       const head = input.closest('.cc-group-header');
@@ -1119,6 +1204,7 @@
     });
     // #1644 行内铅笔：点按钮不进开关、直接打开该卡的编辑弹窗（自建词典词条不渲染此按钮）
     viewList.addEventListener('click', (e) => {
+      if (manageMode) return;
       const btn = e.target.closest('.preset-edit-btn');
       if (!btn) return;
       const item = btn.closest('.cc-item');
@@ -1127,7 +1213,21 @@
       if (!rec || rec.header) return;
       openPresetCardEditor(rec.cat || view.cur, rec.c);
     });
+    // #1648 管理态：点整行 = 勾选/取消（铅笔与开关在 CSS 里已隐藏）
+    viewList.addEventListener('click', (e) => {
+      if (!manageMode) return;
+      if (e.target.closest('.cc-group-header')) return;
+      const item = e.target.closest('.cc-item');
+      if (!item) return;
+      const rec = flat[Number(item.dataset.idx)];
+      if (!rec || rec.header) return;
+      const k = selKey(rec.cat || view.cur, rec.c);
+      if (managed.has(k)) managed.delete(k); else managed.add(k);
+      item.classList.toggle('sel');
+      updateManageCount();
+    });
     viewTabs.addEventListener('click', (e) => {
+      if (manageMode) exitManage();
       const tab = e.target.closest('.cc-tab[data-type]');
       if (!tab) return;
       if (view.keys.indexOf(tab.dataset.type) < 0) return;
@@ -1157,7 +1257,10 @@
       // 页面隐藏时滚动容器的 scrollTop 归零、渲染树销毁：重新显示必须按新滚动位置重排
       if (typeof MutationObserver !== 'undefined') {
         try {
-          new MutationObserver(() => { if (!pageEl.hidden) requestLayout(true); })
+          new MutationObserver(() => {
+            if (pageEl.hidden) { if (manageMode) exitManage(); }
+            else requestLayout(true);
+          })
             .observe(pageEl, { attributes: true, attributeFilter: ['hidden'] });
         } catch (e) {}
       }
