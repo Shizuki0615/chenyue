@@ -1412,6 +1412,7 @@ box-shadow:0 4px 14px rgba(0,0,0,.06); cursor:pointer;
 position:relative; margin:14px 0; padding:8px 8px 0;
 background:var(--photo-frame-paper,#fffaf0); border-radius:10px; overflow:visible;
 box-shadow:0 6px 18px rgba(0,0,0,.10), inset 0 0 0 1px rgba(255,255,255,.75);
+perspective:900px; -webkit-perspective:900px;
 }
 .desk-photo-frame::before {
 content:''; position:absolute; top:-7px; left:50%;
@@ -1431,6 +1432,40 @@ white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 letter-spacing:.02em;
 }
 .desk-photo-frame.dpf-no-cap .dpf-img { border-radius:4px 4px 3px 3px; }
+.dpf-flip {
+position:relative; width:100%;
+transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
+transition:transform .55s cubic-bezier(.2,.8,.2,1);
+}
+.desk-photo-frame.dpf-flipped .dpf-flip { transform:rotateY(180deg); }
+.dpf-front {
+position:relative; width:100%; height:100%; display:flex; flex-direction:column;
+transform:translateZ(1px);
+backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.dpf-back {
+position:absolute; top:0; right:0; bottom:0; left:0; inset:0;
+display:flex; flex-direction:column; overflow:hidden;
+padding:8px 10px 7px; box-sizing:border-box; text-align:center;
+background:var(--photo-frame-paper,#fffaf0); border-radius:4px;
+transform:rotateY(180deg) translateZ(1px);
+backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.dpf-back-note {
+flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;
+padding:2px; overflow:auto; white-space:pre-wrap; word-break:break-word;
+font-family:"Kaiti SC","STKaiti","KaiTi",楷体,cursive,serif;
+font-size:12.5px; line-height:1.65; color:var(--photo-frame-ink,#7b6a58);
+}
+.dpf-back-empty { opacity:.5; }
+.dpf-back-empty::before { content:'—'; font-size:14px; }
+.dpf-back-date {
+flex:none; padding-top:4px; text-align:right;
+font-family:"Kaiti SC","STKaiti","KaiTi",楷体,cursive,serif;
+font-size:10px; letter-spacing:.04em; opacity:.72; color:var(--photo-frame-ink,#7b6a58);
+}
+.dpf-sticker { transition:opacity .2s; }
+.desk-photo-frame.dpf-flipped .dpf-sticker { opacity:0; pointer-events:none !important; }
 .dpf-sticker {
 position:absolute; z-index:3; width:20%; line-height:0; pointer-events:none;
 transform:translate(-50%,-50%) rotate(var(--stk-rot,-4deg));
@@ -11703,6 +11738,22 @@ justify-content: flex-start;
 height: 100% !important;
 overflow: visible;
 }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-flip {
+flex: 1 1 auto;
+height: 100%;
+min-height: 0;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back {
+padding: 5px 7px 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-note {
+font-size: 10.5px;
+line-height: 1.45;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-date {
+font-size: 8.5px;
+padding-top: 2px;
+}
 html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-img {
 flex: 1 1 auto;
 width: 100% !important;
@@ -12571,7 +12622,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793930845696" data-version="v8.76.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793934311988" data-version="v8.76.4">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -14168,7 +14219,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.76.1</div>
+          <div class="val" id="about-ver-val">v8.76.4</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14287,7 +14338,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.76.1</div>
+      <div class="ver">辰光玥影 v8.76.4</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14718,7 +14769,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.76.1</span>
+              <span class="lic-ver">v8.76.4</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -24553,4 +24604,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw4c3vgg -->
+<!-- __MOCHI_EOF__ mw4e662c -->

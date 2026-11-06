@@ -8675,16 +8675,35 @@ img.className = 'dpf-img';
 const fx = Number.isFinite(Number(m.focusX)) ? Math.max(0, Math.min(1, Number(m.focusX))) : 0.5;
 const fy = Number.isFinite(Number(m.focusY)) ? Math.max(0, Math.min(1, Number(m.focusY))) : 0.5;
 img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
-node.appendChild(img);
+const flip = document.createElement('div');
+flip.className = 'dpf-flip';
+const front = document.createElement('div');
+front.className = 'dpf-face dpf-front';
+front.appendChild(img);
 const capText = (m.caption || '').trim();
 if (capText) {
 const cap = document.createElement('div');
 cap.className = 'dpf-cap';
 cap.textContent = capText;
-node.appendChild(cap);
+front.appendChild(cap);
 } else {
 node.classList.add('dpf-no-cap');
 }
+const back = document.createElement('div');
+back.className = 'dpf-face dpf-back';
+const note = document.createElement('div');
+note.className = 'dpf-back-note';
+const noteText = String(m.backNote || '').trim().slice(0, 160);
+if (noteText) note.textContent = noteText;
+else note.classList.add('dpf-back-empty');
+const date = document.createElement('div');
+date.className = 'dpf-back-date';
+date.textContent = photoFrameBackDate(m);
+back.appendChild(note);
+back.appendChild(date);
+flip.appendChild(front);
+flip.appendChild(back);
+node.appendChild(flip);
 const stickers = photoFrameStickersOf(m);
 stickers.forEach((stickerMeta, si) => {
 const sp = document.createElement('span');
@@ -8820,6 +8839,17 @@ function photoFrameDate() {
 const d = new Date();
 const p = n => (n < 10 ? '0' + n : '' + n);
 return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+function photoFrameBackDate(meta) {
+const saved = String((meta && meta.backDate) || '').trim();
+if (saved) return saved.slice(0, 24);
+const ts = Number(meta && meta.addedAt);
+if (Number.isFinite(ts) && ts > 0) {
+const d = new Date(ts);
+const p = n => (n < 10 ? '0' + n : '' + n);
+return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+return photoFrameDate();
 }
 function openPhotoFrameCrop(src, focus, cb) {
 const old = document.getElementById('dpf-crop-overlay');
@@ -9524,6 +9554,8 @@ page: pageIdx,
 addedAt: Date.now(),
 frame: 'polaroid',
 caption: photoFrameDate(),
+backDate: photoFrameDate(),
+backNote: '',
 focusX: focus.focusX,
 focusY: focus.focusY
 });
@@ -9575,9 +9607,32 @@ renderDeskImages();
 toast(txt ? '已更新相框小字' : '已清空相框小字');
 }, { maxlength: 24, placeholder: '留空则不显示' });
 };
+const editBack = () => {
+const cur = loadDeskImagesMeta().find(x => x && x.id === id) || {};
+const curNote = String(cur.backNote || '');
+setTimeout(() => {
+if (!window.openModal) return;
+window.openModal('相框背面', curNote, (v) => {
+if (v == null) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const txt = String(v).replace(/\r/g, '').trim().slice(0, 160);
+mm.backNote = txt;
+if (!mm.backDate) mm.backDate = photoFrameBackDate(mm);
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast(txt ? '已更新相框背面' : '已清空相框背面');
+}, {
+textarea: true, textareaRows: 4,
+textareaPlaceholder: '写一句当时的心情…（留空则只显示日期）'
+});
+}, 0);
+};
 window.openModal('拍立得相框', '', (v) => {
 if (v === 'chg') changeDeskImage(id);
 else if (v === 'stk') openPhotoFrameStickerPicker(id);
+else if (v === 'back') editBack();
 else if (v === 'focus') openCrop();
 else if (v === 'cap') editCaption();
 else if (v === 'del') removeDeskImage(id);
@@ -9586,6 +9641,7 @@ noInput: true,
 pills: [
 { label: '更换照片', value: 'chg' },
 { label: '贴纸', value: 'stk' },
+{ label: '编辑背面', value: 'back' },
 { label: '调整焦点', value: 'focus' },
 { label: '修改小字', value: 'cap' },
 { label: '删除相框', value: 'del' }
@@ -9625,15 +9681,31 @@ if (frameMeta && frameMeta.frame === 'polaroid') {
 if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }
 if (isDecor) {
 e.stopPropagation();
+if (widget.__dpfTapTimer) {
+clearTimeout(widget.__dpfTapTimer);
+widget.__dpfTapTimer = null;
+}
 openPhotoFrameMenu(id);
 return;
 }
+if (widget.__dpfTapTimer) {
+clearTimeout(widget.__dpfTapTimer);
+widget.__dpfTapTimer = null;
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+widget.classList.toggle('dpf-flipped');
+return;
+}
+widget.__dpfTapTimer = setTimeout(() => {
+widget.__dpfTapTimer = null;
+if (!document.body.contains(widget)) return;
+if (widget.classList.contains('dpf-flipped')) return;
 const img0 = widget.querySelector('img');
 if (!img0 || !img0.src) return;
 setupDeskImageViewerClose();
 const viewer0 = document.getElementById('desk-image-viewer');
 const viewerImg0 = document.getElementById('desk-image-viewer-img');
 if (viewer0 && viewerImg0) { viewerImg0.src = img0.src; viewer0.hidden = false; }
+}, 260);
 return;
 }
 if (isDecor) {

@@ -685,6 +685,7 @@ html.desk-hide-dots #desktop-dots { display:none; }
   position:relative; margin:14px 0; padding:8px 8px 0;
   background:var(--photo-frame-paper,#fffaf0); border-radius:10px; overflow:visible;
   box-shadow:0 6px 18px rgba(0,0,0,.10), inset 0 0 0 1px rgba(255,255,255,.75);
+  perspective:900px; -webkit-perspective:900px;
 }
 .desk-photo-frame::before {
   content:''; position:absolute; top:-7px; left:50%;
@@ -704,6 +705,41 @@ html.desk-hide-dots #desktop-dots { display:none; }
   letter-spacing:.02em;
 }
 .desk-photo-frame.dpf-no-cap .dpf-img { border-radius:4px 4px 3px 3px; }
+/* #1643 相框翻面：正面照片+小字，背面奶油相纸+手写便签+日期；双击相框翻转 */
+.dpf-flip {
+  position:relative; width:100%;
+  transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1);
+}
+.desk-photo-frame.dpf-flipped .dpf-flip { transform:rotateY(180deg); }
+.dpf-front {
+  position:relative; width:100%; height:100%; display:flex; flex-direction:column;
+  transform:translateZ(1px);
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.dpf-back {
+  position:absolute; top:0; right:0; bottom:0; left:0; inset:0;
+  display:flex; flex-direction:column; overflow:hidden;
+  padding:8px 10px 7px; box-sizing:border-box; text-align:center;
+  background:var(--photo-frame-paper,#fffaf0); border-radius:4px;
+  transform:rotateY(180deg) translateZ(1px);
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.dpf-back-note {
+  flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;
+  padding:2px; overflow:auto; white-space:pre-wrap; word-break:break-word;
+  font-family:"Kaiti SC","STKaiti","KaiTi",楷体,cursive,serif;
+  font-size:12.5px; line-height:1.65; color:var(--photo-frame-ink,#7b6a58);
+}
+.dpf-back-empty { opacity:.5; }
+.dpf-back-empty::before { content:'—'; font-size:14px; }
+.dpf-back-date {
+  flex:none; padding-top:4px; text-align:right;
+  font-family:"Kaiti SC","STKaiti","KaiTi",楷体,cursive,serif;
+  font-size:10px; letter-spacing:.04em; opacity:.72; color:var(--photo-frame-ink,#7b6a58);
+}
+.dpf-sticker { transition:opacity .2s; }
+.desk-photo-frame.dpf-flipped .dpf-sticker { opacity:0; pointer-events:none !important; }
 /* #1635 拍立得相框贴纸：手绘 SVG + 白色裁切边；位置由 left/top 百分比控制。
    普通状态 pointer-events:none，不挡点照片；装修/网格编辑态才可拖动。 */
 .dpf-sticker {

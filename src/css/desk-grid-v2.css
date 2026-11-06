@@ -109,6 +109,23 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] {
   height: 100% !important;
   overflow: visible;
 }
+/* #1643 翻面：网格内让翻面层吃满相框高度，正面照片继续弹性填满 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-flip {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back {
+  padding: 5px 7px 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-note {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-date {
+  font-size: 8.5px;
+  padding-top: 2px;
+}
 html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-img {
   flex: 1 1 auto;
   width: 100% !important;
