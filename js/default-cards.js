@@ -31,6 +31,153 @@ const enabledEl = document.getElementById('dc-enabled');
 if (!list || !tabsWrap || !enabledEl) return;
 const uid = window.activePrefix();
 const ls = window.activeStore();
+const presetEditStore = window.xyStore('xy-home-v2');
+const PRESET_EDITS_KEY = 'default-card-edits';
+function parsePresetEdits(rawStr) {
+const out = {};
+try {
+const raw = JSON.parse(rawStr || '{}');
+if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+Object.keys(raw).forEach(function (cat) {
+const m = raw[cat];
+if (!m || typeof m !== 'object' || Array.isArray(m)) return;
+Object.keys(m).forEach(function (orig) {
+const v = m[orig];
+if (typeof v === 'string' && v.trim()) {
+if (!out[cat]) out[cat] = {};
+out[cat][orig] = v;
+}
+});
+});
+}
+} catch (e) {}
+return out;
+}
+let presetEditsRaw = null;
+const PRESET_EDITS = (function () {
+try { presetEditsRaw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { presetEditsRaw = null; }
+return parsePresetEdits(presetEditsRaw);
+})();
+document.addEventListener('mochi-restore-done', function () {
+try {
+if (Object.keys(PRESET_EDITS).length) return;
+let raw = null;
+try { raw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { return; }
+if (!raw || raw === presetEditsRaw) return;
+presetEditsRaw = raw;
+const fresh = parsePresetEdits(raw);
+if (!Object.keys(fresh).length) return;
+Object.keys(PRESET_EDITS).forEach(function (k) { delete PRESET_EDITS[k]; });
+Object.keys(fresh).forEach(function (k) { PRESET_EDITS[k] = fresh[k]; });
+applyPresetEditsToData();
+notifyPresetCardEdited();
+} catch (e) {}
+});
+const EDITED_TO_ORIG = {}; // 分类 -> { 新文案 : 原文案 }
+function rebuildPresetEditReverse() {
+Object.keys(EDITED_TO_ORIG).forEach(function (k) { delete EDITED_TO_ORIG[k]; });
+Object.keys(PRESET_EDITS).forEach(function (cat) {
+const map = PRESET_EDITS[cat] || {};
+const rev = {};
+Object.keys(map).forEach(function (orig) { rev[map[orig]] = orig; });
+EDITED_TO_ORIG[cat] = rev;
+});
+}
+function presetOriginalText(cat, text) {
+const rev = EDITED_TO_ORIG[cat];
+return (rev && rev[text]) || text;
+}
+function savePresetEdits() {
+try { presetEditStore.set(PRESET_EDITS_KEY, JSON.stringify(PRESET_EDITS)); } catch (e) {}
+}
+function replacePresetCardInData(cat, oldText, newText) {
+let changed = false;
+((DATA[cat] || [])).forEach(function (g) {
+const arr = g && g[1];
+if (!Array.isArray(arr)) return;
+for (let i = 0; i < arr.length; i++) {
+if (arr[i] === oldText) { arr[i] = newText; changed = true; }
+}
+});
+return changed;
+}
+function applyPresetEditsToData(onlyCat) {
+rebuildPresetEditReverse();
+(onlyCat ? [onlyCat] : Object.keys(PRESET_EDITS)).forEach(function (cat) {
+const map = PRESET_EDITS[cat];
+if (!map) return;
+((DATA[cat] || [])).forEach(function (g) {
+const arr = g && g[1];
+if (!Array.isArray(arr)) return;
+for (let i = 0; i < arr.length; i++) {
+const orig = arr[i];
+if (map[orig]) arr[i] = map[orig];
+}
+});
+});
+}
+function notifyPresetCardEdited() {
+try { document.dispatchEvent(new Event('preset-card-edited')); } catch (e) {}
+}
+function escHtml(s) {
+return String(s == null ? '' : s)
+.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function presetTextTaken(cat, text, except) {
+let hit = false;
+((DATA[cat] || [])).forEach(function (g) {
+((g && g[1]) || []).forEach(function (c) {
+if (!hit && c === text && c !== except) hit = true;
+});
+});
+return hit;
+}
+function commitPresetEdit(cat, shown, next) {
+const orig = presetOriginalText(cat, shown);
+if (next === shown) return true;               // 没改动：不回写、不重绘
+if (next === orig && presetTextTaken(cat, orig, shown)) {
+toast('原文案已被另一张卡使用，先把那张改成别的文案再恢复');
+return false;
+}
+PRESET_EDITS[cat] = PRESET_EDITS[cat] || {};
+if (next === orig) {
+delete PRESET_EDITS[cat][orig];
+if (!Object.keys(PRESET_EDITS[cat]).length) delete PRESET_EDITS[cat];
+} else {
+PRESET_EDITS[cat][orig] = next;
+}
+replacePresetCardInData(cat, shown, next);
+savePresetEdits();
+rebuildPresetEditReverse();
+notifyPresetCardEdited();
+toast(next === orig ? '已恢复系统原文案' : '已更新这张系统字卡（所有桌面共用）');
+return true;
+}
+function openPresetCardEditor(cat, shown, draft) {
+if (!window.openModal) { toast('弹窗组件不可用'); return; }
+const orig = presetOriginalText(cat, shown);
+const edited = orig !== shown;
+window.openModal('编辑系统字卡', typeof draft === 'string' ? draft : shown, function (v) {
+const next = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
+if (!next) { toast('字卡内容不能为空，已保留原文案'); return; }
+if (next !== shown && presetTextTaken(cat, next, shown)) {
+toast('同分类已有这张字卡：' + (next.length > 18 ? next.slice(0, 18) + '…' : next) + '，换一句再试');
+openPresetCardEditor(cat, shown, next);
+return;
+}
+commitPresetEdit(cat, shown, next);
+}, {
+maxlength: 120,
+staticText: '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。',
+extraBtn: edited ? {
+label: '恢复原文',
+fn: function (ctl) {
+if (commitPresetEdit(cat, shown, orig)) ctl.close();
+}
+} : null
+});
+}
 function toast(msg) {
 let t = document.getElementById('cc-toast');
 if (!t) { t = document.createElement('div'); t.id = 'cc-toast'; document.body.appendChild(t); }
@@ -150,7 +297,12 @@ const gP = function (k) { const v = st.get('dc-prob-' + k); return v === null ? 
 const gU = function (k) { const v = st.get('dc-use-' + k); return v === null ? true : v === '1'; };
 const gC = function (k) { const v = st.get('dc-cat-' + k); return v === null ? true : v === '1'; };
 const gOff = function (cat, c) {
-if (st.get('dc-off-' + cat + ':' + c) === '1') return true;
+const direct = st.get('dc-off-' + cat + ':' + c);
+if (direct === '1') return true;
+if (direct !== '0') {
+const orig = presetOriginalText(cat, c);
+if (orig && orig !== c && st.get('dc-off-' + cat + ':' + orig) === '1') return true;
+}
 return groupOffFor(cat, c, st);
 };
 return {
@@ -228,6 +380,7 @@ window.__dictCustomSet = new Set(qs.concat(ws));
 } catch (e) {}
 }
 mergeDictCustom();
+applyPresetEditsToData();
 function dictCustomAdd(kind, text) {
 const v = String(text == null ? '' : text).replace(/\s+/g, '');
 if (!v) return { ok: false, msg: '内容为空，先输入再保存' };
@@ -241,6 +394,7 @@ if (arr.indexOf(v) >= 0) return { ok: false, msg: '已存在这条自建词条' 
 arr.push(v);
 dictCustWrite(key, arr);
 mergeDictCustom();
+applyPresetEditsToData('dict');
 try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
 return { ok: true, msg: (kind === 'quote' ? '已存为语录：' : '已存为词：') + v };
 }
@@ -255,6 +409,7 @@ if (i >= 0) { arr.splice(i, 1); dictCustWrite(k, arr); n++; }
 });
 if (n) {
 mergeDictCustom();
+applyPresetEditsToData('dict');
 try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
 }
 return n > 0;
@@ -680,7 +835,13 @@ d.innerHTML = groupHeaderHTML(it.glabel, it.count, goff);
 } else {
 const off = isCardOff(it.cat, it.c);
 d.className = 'cc-item glass' + (off ? ' off' : '');
-d.innerHTML = '<div class="cc-txt"><div class="t">' + it.c + ' <span class="tc-known">' + (window.__dictCustomSet && window.__dictCustomSet.has(it.c) ? '自建' : '系统') + '</span></div></div>' +
+const isCustom = !!(window.__dictCustomSet && window.__dictCustomSet.has(it.c));
+const rev = EDITED_TO_ORIG[it.cat];
+const isEdited = !isCustom && !!(rev && rev[it.c]);
+d.innerHTML = '<div class="cc-txt"><div class="t">' + escHtml(it.c) + ' <span class="tc-known' +
+(isEdited ? ' edited' : '') + '">' + (isCustom ? '自建' : isEdited ? '已改' : '系统') + '</span></div></div>' +
+(isCustom ? '' : '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>') +
 '<label class="toggle ccard-toggle"><input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span></label>';
 }
 d.dataset.idx = i;
@@ -823,6 +984,15 @@ const nowOff = !input.checked;
 setCardOff(rec.cat || view.cur, rec.c, nowOff);
 item.classList.toggle('off', nowOff);
 toastCard(rec.c, nowOff);
+});
+viewList.addEventListener('click', (e) => {
+const btn = e.target.closest('.preset-edit-btn');
+if (!btn) return;
+const item = btn.closest('.cc-item');
+if (!item) return;
+const rec = flat[Number(item.dataset.idx)];
+if (!rec || rec.header) return;
+openPresetCardEditor(rec.cat || view.cur, rec.c);
 });
 viewTabs.addEventListener('click', (e) => {
 const tab = e.target.closest('.cc-tab[data-type]');
@@ -1025,6 +1195,11 @@ tabs.appendChild(b);
 const dkView = mountCardView({
 list: 'dk-list', tabs: 'dk-tabs', groupsBar: 'dk-groups-bar', search: 'dk-search-input', page: 'page-deskcheck'
 }, ['deskcheck'], '暂无联系人跨桌面查岗字卡', ['deskcheck']);
+document.addEventListener('preset-card-edited', function () {
+[dcView, dictView, fcView, dkView].forEach(function (v) {
+if (v && v.render) { try { v.render(); } catch (e) {} }
+});
+});
 const li = document.getElementById('li-default-cards');
 if (li) {
 li.addEventListener('click', () => {

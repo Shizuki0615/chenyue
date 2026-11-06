@@ -7142,6 +7142,16 @@ const FIX_SENTINELS = [
   { name: '#1643j 双击判定定时器（删＝双击被当成两次单击，永远打不开背面）', file: 'js/personalize.js', needle: 'clearTimeout(widget.__dpfTapTimer);' },
   { name: '#1643k 双击翻面（删＝双击没有任何反应）', file: 'js/personalize.js', needle: "widget.classList.toggle('dpf-flipped');" },
   { name: '#1643l 网格内翻面层吃满高度（删＝网格相框翻面层塌成半截）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-flip {' },
+  // ==== 2026-11-06 #1644 系统预设字卡文案可编辑（直接改系统卡·所有桌面共用） ====
+  { name: '#1644a 系统字卡编辑覆盖表（删＝改过的文案存不住，刷新即回原文）', file: 'js/default-cards.js', needle: "const PRESET_EDITS_KEY = 'default-card-edits';" },
+  { name: '#1644b 词典重建后重放编辑（删＝增删自建词条会把词典里改过的文案冲回原文）', file: 'js/default-cards.js', needle: 'applyPresetEditsToData();' },
+  { name: '#1644c 编辑后沿用原文案的关闭键（删＝改文案会把原本关掉的卡悄悄重新启用）', file: 'js/default-cards.js', needle: 'const orig = presetOriginalText(cat, c);' },
+  { name: '#1644d 行内编辑铅笔（删＝系统卡只能开关、不能改文案）', file: 'js/default-cards.js', needle: 'class="preset-edit-btn"' },
+  { name: '#1644e 文案 HTML 转义（删＝颜文字里的 < > & 拼进列表会错位/吞字）', file: 'js/default-cards.js', needle: 'function escHtml(s) {' },
+  { name: '#1644f 系统字卡编辑弹窗（删＝没有改文案/恢复原文入口）', file: 'js/default-cards.js', needle: 'function openPresetCardEditor(cat, shown, draft) {' },
+  { name: '#1644g 改文案后刷新四个预设列表（删＝保存成功但列表仍显示旧文案）', file: 'js/default-cards.js', needle: "document.addEventListener('preset-card-edited'" },
+  { name: '#1644h 已改徽标样式（删＝改过的系统卡与未改的分不出来）', file: 'css/chat-pages.css', needle: '.tc-known.edited {' },
+  { name: '#1644i 铅笔按钮样式（删＝行内按钮变浏览器默认灰按钮、挤压右侧开关）', file: 'css/chat-pages.css', needle: '.preset-edit-btn {' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

@@ -147,6 +147,17 @@
   transition:transform .12s ease;
 }
 .cc-item:active { transform:scale(.98); }
+/* #1644 系统预设字卡行内编辑入口（铅笔）：只改这一张卡的文案，与右侧开关分开放 */
+.preset-edit-btn {
+  flex-shrink:0; width:28px; height:28px; padding:0; margin-right:-4px;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line,#e6e6e6); border-radius:9px;
+  background:var(--static-bg,#fafafa); color:var(--muted,#8a8a8a);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.preset-edit-btn svg { width:14px; height:14px; }
+.preset-edit-btn:active { background:#111; border-color:#111; color:#fff; }
+[data-theme="dark"] .preset-edit-btn:active { background:#f0f0f0; border-color:#f0f0f0; color:#111; }
 .cc-ico {
   width:42px; height:42px; border-radius:13px; flex-shrink:0;
   background:rgba(0,0,0,.045); display:flex; align-items:center; justify-content:center;
@@ -2283,6 +2294,8 @@
 .tc-li-match { font-size:11px; color:#8a6d3b; margin-top:6px; }
 .tc-li-time { font-size:11px; color:var(--muted); margin-top:6px; }
 .tc-known { font-size:10px; color:#4e7a54; border:1px solid #bcd8c2; border-radius:6px; padding:0 5px; margin-left:4px; }
+/* #1644 改过文案的系统字卡：徽标换成「已改」，与未改的系统卡区分 */
+.tc-known.edited { color:#8a5a00; border-color:#e2c48f; background:rgba(226,196,143,.2); }
 /* v3.26.x：通话中断记录区分正常挂断——红色左边框 + 浅红底 + 中断标签 */
 .tc-call-interrupt { border-left:3px solid #e05555; background:#fff5f5; }
 .tc-li-interrupt-tag { font-size:10px; font-weight:600; color:#fff; background:#e05555; border-radius:5px; padding:1px 6px; flex-shrink:0; line-height:1.6; }
