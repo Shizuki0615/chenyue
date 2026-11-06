@@ -7210,6 +7210,8 @@ const FIX_SENTINELS = [
   { name: '#1628c 图标跨页签改属分类（删＝拖到别的页签无效）', file: 'js/chat.js', needle: "g.set('more-icons-cat'" },
   { name: '#1628d 分类页签轻点不再残留长按计时器（删＝切页签滞涩/吞下一次点击）', file: 'js/chat.js', needle: 'function pressEnd() { clearPress(); detachPress(); }' },
   { name: '#1628e 图标拖动浮起样式（删＝拖起来没反馈）', file: 'css/chat-main.css', needle: '.more-item.more-item-dragging' },
+  // ==== 2026-11-06 #1629 通话控制按钮只留图标 ====
+  { name: '#1629 通话按钮文字视觉隐藏（删＝按钮上又出现语音/看自己/打开/翻转/挂断）', file: 'css/chat-main.css', needle: '.call-btn, .call-panel.vt .call-btn { font-size:0' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

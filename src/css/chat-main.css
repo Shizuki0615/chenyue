@@ -2217,6 +2217,9 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 .call-panel.vt .call-btns { position:relative; z-index:3; gap:10px; margin-top:14px; padding:0 12px 18px; }
 .call-panel.vt .call-btn { width:54px; height:54px; font-size:9px; }
 .call-panel.vt .call-btn svg { width:21px; height:21px; }
+/* v8.75.7 用户 2026-11-06：通话控制按钮只留图标，去掉按钮文字（语音/看自己/打开/翻转/挂断/接听/拒绝）。
+   文字仍留在 DOM 里供读屏识别；这里只做视觉隐藏，不动按钮逻辑与点击区域。 */
+.call-btn, .call-panel.vt .call-btn { font-size:0; line-height:0; gap:0; }
 .vt-stage { position:absolute; inset:0; z-index:1; overflow:hidden; background:#111; }
 .vt-stage[hidden] { display:none; }
 /* TA 的画面：极慢的呼吸缩放，静态图看起来才不「卡住」 */
