@@ -7237,6 +7237,8 @@ const FIX_SENTINELS = [
   { name: '#1633b 浮层用 translate3d 跟手（删＝又改 left/top 慢半拍）', file: 'js/chat.js', needle: "g.style.transform = 'translate3d('" },
   { name: '#1633c 落点按上下半区判定（删＝又只按左右，落点偏一位）', file: 'js/chat.js', needle: 'const band = r.height * 0.3;' },
   { name: '#1633d 拖动占位落点描边（删＝落点看不清）', file: 'css/chat-main.css', needle: 'outline:2px dashed rgba(0,0,0,.28)' },
+  // ==== 2026-11-06 #1634 聊天输入区加独立输入框 ====
+  { name: '#1634 输入区独立输入框（删＝文字又直接贴在栏位底上）', file: 'css/chat-main.css', needle: '.chat-input-row > .chat-input {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

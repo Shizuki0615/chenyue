@@ -544,6 +544,30 @@ body.cs-typing-capsule #chat-typing {
   scrollbar-width:none; -ms-overflow-style:none;
 }
 .chat-input::-webkit-scrollbar { display:none; }
+/* v8.76.6 用户 2026-11-06：给真正输入文字的区域加一个独立输入框（按钮留在输入栏、不圈进去）。
+   外层 .chat-input-row 仍保留可调的栏位底色；这一层只负责让输入区看起来像输入框。 */
+.chat-input-row > .chat-input {
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:18px;
+  padding:7px 12px;
+  min-height:36px;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.04);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.chat-input-row > .chat-input:focus {
+  border-color:rgba(0,0,0,.28);
+  box-shadow:0 0 0 3px rgba(0,0,0,.06);
+}
+[data-theme="dark"] .chat-input-row > .chat-input {
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.2);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.18);
+}
+[data-theme="dark"] .chat-input-row > .chat-input:focus {
+  border-color:rgba(255,255,255,.42);
+  box-shadow:0 0 0 3px rgba(255,255,255,.08);
+}
 /* 绌哄唴瀹规椂鏄剧ず placeholder锛坈ontenteditable 鏃?placeholder 灞炴€э紝鐢?:empty 浼厓绱狅級 */
 .chat-input:empty::before,
 #page-chat .chat-input:empty::before,
