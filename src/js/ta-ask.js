@@ -32,6 +32,70 @@
     if (q && q.type === 'multi') return ' <span class="tc-known">多选' + (q.multiMax >= 2 ? '·限' + q.multiMax : '') + '·' + n + '选项</span>';
     return '';
   }
+  // ================= #1645：系统预设题「编辑文案」（询问/小问题/好奇/调侃共用 preset-edit.js） =================
+  // 键按「题库前缀:分类」拆开（ask:cat / tc:cat / tcu:cat / tr:cat），四本题库互不串改。
+  // 约定：store 里永远只留原文案——load 时把覆盖套进内存题，save 前用原文案还原一份副本再序列化。
+  const PT = window.presetTextEdit;
+  function presetEditKey(prefix, q) { return prefix + ':' + ((q && q.cat) || 'daily'); }
+  function presetPenHtml(idx) {
+    if (!PT) return '';
+    return '<button type="button" class="preset-edit-btn" data-edit-idx="' + idx + '" title="编辑这张系统预设" aria-label="编辑这张系统预设">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+  }
+  // 把覆盖套到内存题库（只认 isPreset 且文案命中）；先 original 回到原文案再取当前新文案，重复套用也安全
+  function applyPresetEdits(prefix, d) {
+    if (!PT || !d || !Array.isArray(d.questions)) return;
+    d.questions.forEach(function (q) {
+      if (!q || q.isPreset !== true || typeof q.text !== 'string') return;
+      const k = presetEditKey(prefix, q);
+      q.text = PT.text(k, PT.original(k, q.text));
+    });
+  }
+  // 写盘副本：预设题文案还原成原文案（不改 d 本身，store 保持原文案，各桌面 load 时再套覆盖）
+  function presetStoreCopy(prefix, d) {
+    if (!PT || !d || !Array.isArray(d.questions)) return d;
+    return Object.assign({}, d, {
+      questions: d.questions.map(function (q) {
+        if (!q || q.isPreset !== true || typeof q.text !== 'string') return q;
+        const k = presetEditKey(prefix, q);
+        const orig = PT.original(k, q.text);
+        return orig === q.text ? q : Object.assign({}, q, { text: orig });
+      })
+    });
+  }
+  // 默认表（DEFAULT_*）同样套覆盖：window.MOCHI_TA_ASK_CARE 等直接读默认表的消费方也能看到新文案。
+  // 首次调用记下原文案：恢复原文后重放时从原文重新套，默认表不会残留旧的新文案。
+  const PRESET_DEFAULT_ORIG = [];
+  function applyDefaultEdits(prefix, arr) {
+    if (!PT || !Array.isArray(arr)) return;
+    let rec = PRESET_DEFAULT_ORIG.find(function (x) { return x.arr === arr; });
+    if (!rec) {
+      rec = { arr: arr, texts: arr.map(function (q) { return q && q.text; }) };
+      PRESET_DEFAULT_ORIG.push(rec);
+    }
+    arr.forEach(function (q, i) {
+      if (!q || typeof q.text !== 'string') return;
+      const k = presetEditKey(prefix, q);
+      const base = rec.texts[i] != null ? rec.texts[i] : q.text;
+      q.text = PT.text(k, base);
+    });
+  }
+  // 打开系统预设题编辑弹窗：exists 只查同库同分类的其他预设题（按稳定 id 排除当前这张）
+  function openPresetQuestionEditor(prefix, loadFn, q, rerender) {
+    if (!PT) return;
+    PT.open({
+      key: presetEditKey(prefix, q),
+      shown: q.text,
+      title: '编辑系统预设题',
+      exists: function (next) {
+        const d = loadFn();
+        return (d.questions || []).some(function (x) {
+          return x && x.isPreset === true && x.cat === q.cat && x.id !== q.id && x.text === next;
+        });
+      },
+      onChanged: function () { rerender(); }
+    });
+  }
   // FIX 2026-09-17 #648 问答/收藏记录页「TA回应」列——存量落库的媒体卡回应（@@m: 令牌/
   // 「名称|||data:」/图链）先清洗为 [图片]/名称再转义；此前这些列表直拼 f.reply/x.reply
   //（连转义都没有），既直出令牌串又可能把导入数据里的 HTML 当标签执行
@@ -712,14 +776,16 @@
       // 全新用户不立即写盘——防「localStorage 配额写失败/大键被移除 → 本地为空」的时序下，
       // 用纯默认题库覆盖 IndexedDB 里含用户自定义的权威数据；已有数据（如用户删空后）则写回
       // #1520：加载期这三发都是**自动**写（播种默认/合并默认/旧数据迁移），按站内铁律走静默闸 xyBigWriteHold（不许凭空弹 toast）；读数没确认时宁可不落笔，也不许把半份表写回去
-      if (!isNew && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+      if (!isNew && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {} }
     } else {
       // 已有题库：增量合并默认题库新增的题，合并结果持久化（用户自定义永远保留）
-      if (taAskMerge(d) && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+      if (taAskMerge(d) && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {} }
     }
     if (!Array.isArray(d.history)) d.history = [];
     // v3.7.x：我的添加自定义分组
     if (!Array.isArray(d.groups)) d.groups = [];
+    // #1645：套上系统预设题的文案覆盖（只改内存显示，不写回 store）
+    applyPresetEdits('ask', d);
     return d;
   }
   function taAskSave(d) {
@@ -729,7 +795,8 @@
     // 判据用数据层那把唯一的尺 xyBigWriteBlocked（#1342d awaitingBigKey 五格证据，含回填未落定），
     // 拦下时照实 toast、绝不落笔；等库回填后再点一次即可（#1342「不把闸变成新的存不进去」）。
     if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '他的提问题库')) return false;
-    try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
+    // #1645：预设题写盘前还原成原文案（store 永远留原文案，各桌面 load 时再套覆盖）
+    try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {}
     return true;
   }
 
@@ -1297,9 +1364,12 @@
       const arr = d.questions.filter(q => q.cat === askSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
       arr.forEach(q => {
         const idx = d.questions.indexOf(q);
+        // #1645：预设题可改文案——改过的徽标写「已改」，行尾给一支铅笔
+        const edited = !!(PT && PT.isEdited(presetEditKey('ask', q), q.text));
         html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
-          '<span class="ta-txt">' + q.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + askTypeBadge(q) + ' <span class="tc-known">系统</span></span>' +
+          '<span class="ta-txt">' + escG(q.text) + askTypeBadge(q) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
+          presetPenHtml(idx) +
           '</div>';
         html += interactPoolInlineHtml('询问·回应');
       });
@@ -1314,6 +1384,15 @@
           const q = d2.questions[Number(cb.dataset.idx)];
           if (q) q.enabled = cb.checked;
           taAskSave(d2);
+        });
+      });
+      // #1645：铅笔按钮在 innerHTML 之后按 data-edit-idx 绑定（避免点按钮触发开关/其它行操作）
+      container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          const q = d.questions[Number(btn.dataset.editIdx)];
+          if (!q || q.isPreset !== true) return;
+          openPresetQuestionEditor('ask', taAskLoad, q, function () { renderAskCatsInto(container, true, search); });
         });
       });
       return;
@@ -1891,22 +1970,25 @@ const TC_DEFAULT = [
         return nq;
       });
       d.mergedIds = TC_DEFAULT.map(q => q.id);
-      if (!isNew && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(d)); } catch (e) {} }
+      if (!isNew && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {} }
     } else {
       // 增量合并默认题库新增的题并持久化（用户自定义永远保留）
-      if (tcMerge(d) && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(d)); } catch (e) {} }
+      if (tcMerge(d) && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {} }
     }
     if (!Array.isArray(d.history)) d.history = [];
     if (!Array.isArray(d.favs)) d.favs = [];
     // v3.7.x：我的添加自定义分组
     if (!Array.isArray(d.groups)) d.groups = [];
+    // #1645：套上系统预设题的文案覆盖（只改内存显示，不写回 store）
+    applyPresetEdits('tc', d);
     return d;
   }
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function tcSave(d) {
     if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, '他的小问题库')) return false;
-    try { store.set(KEY2, JSON.stringify(d)); } catch (e) {}
+    // #1645：预设题写盘前还原成原文案（store 永远留原文案，各桌面 load 时再套覆盖）
+    try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {}
     return true;
   }
   // v3.6.x：useDefault=false 时不抽取系统预设（isPreset）题
@@ -2283,10 +2365,13 @@ window.openTCPanel = openTCPanel;
       const arr = d.questions.filter(q => q.cat === tcSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
       arr.forEach(q => {
         const idx = d.questions.indexOf(q);
+        // #1645：预设题可改文案——改过的徽标写「已改」，行尾给一支铅笔
+        const edited = !!(PT && PT.isEdited(presetEditKey('tc', q), q.text));
         html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known">系统</span></div>' +
+          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
           '<div class="tc-qopts">选项：' + q.options.map(o => escT(o.t) + (optReplyLabel(o) ? ' <span class="tc-opt-reply">→ ' + escT(optReplyLabel(o)) + '</span>' : '')).join(' / ') + '</div></div>' +
+          presetPenHtml(idx) +
           '</div>';
       });
       container.innerHTML = html;
@@ -2300,6 +2385,15 @@ window.openTCPanel = openTCPanel;
           const q = d2.questions[Number(cb.dataset.idx)];
           if (q) q.enabled = cb.checked;
           tcSave(d2);
+        });
+      });
+      // #1645：铅笔按钮在 innerHTML 之后按 data-edit-idx 绑定（避免点按钮触发开关/其它行操作）
+      container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          const q = d.questions[Number(btn.dataset.editIdx)];
+          if (!q || q.isPreset !== true) return;
+          openPresetQuestionEditor('tc', tcLoad, q, function () { renderTCCatsInto(container, true, search); });
         });
       });
       return;
@@ -2846,22 +2940,25 @@ window.openTCPanel = openTCPanel;
         return nq;
       });
       d.mergedIds = TCU_DEFAULT.map(q => q.id);
-      if (!isNew && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(d)); } catch (e) {} }
+      if (!isNew && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {} }
     } else {
       // 增量合并默认题库新增的题并持久化（用户自定义永远保留）
-      if (tcuMerge(d) && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(d)); } catch (e) {} }
+      if (tcuMerge(d) && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {} }
     }
     if (!Array.isArray(d.history)) d.history = [];
     if (!d.known || typeof d.known !== 'object') d.known = {};
     // v3.7.x：我的添加自定义分组
     if (!Array.isArray(d.groups)) d.groups = [];
+    // #1645：套上系统预设题的文案覆盖（只改内存显示，不写回 store）
+    applyPresetEdits('tcu', d);
     return d;
   }
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function tcuSave(d) {
     if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, '他的好奇题库')) return false;
-    try { store.set(KEY3, JSON.stringify(d)); } catch (e) {}
+    // #1645：预设题写盘前还原成原文案（store 永远留原文案，各桌面 load 时再套覆盖）
+    try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {}
     return true;
   }
   // v3.6.x：useDefault=false 时不抽取系统预设（isPreset）题
@@ -3074,12 +3171,14 @@ window.openTCPanel = openTCPanel;
       arr.forEach(q => {
         const idx = d.questions.indexOf(q);
         const known = q.id && d.known[q.id];
+        // #1645：预设题可改文案——改过的徽标写「已改」，行尾给一支铅笔
+        const edited = !!(PT && PT.isEdited(presetEditKey('tcu', q), q.text));
         html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known">系统</span></div>' +
+          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
           (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
           (q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
-          '</div></div>';
+          '</div>' + presetPenHtml(idx) + '</div>';
       });
       container.innerHTML = html;
       if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-curious', tcuSysCat, function () { renderTCUCatsInto(container, true, search); });
@@ -3092,6 +3191,15 @@ window.openTCPanel = openTCPanel;
           const q = d2.questions[Number(cb.dataset.idx)];
           if (q) q.enabled = cb.checked;
           tcuSave(d2);
+        });
+      });
+      // #1645：铅笔按钮在 innerHTML 之后按 data-edit-idx 绑定（避免点按钮触发开关/其它行操作）
+      container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          const q = d.questions[Number(btn.dataset.editIdx)];
+          if (!q || q.isPreset !== true) return;
+          openPresetQuestionEditor('tcu', tcuLoad, q, function () { renderTCUCatsInto(container, true, search); });
         });
       });
       return;
@@ -3455,21 +3563,24 @@ window.openTCPanel = openTCPanel;
         return nq;
       });
       d.mergedIds = TR_DEFAULT.map(q => q.id);
-      if (!isNew && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(d)); } catch (e) {} }
+      if (!isNew && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {} }
     } else {
       // 增量合并默认题库新增的字卡并持久化（用户自定义永远保留）
-      if (trMerge(d) && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(d)); } catch (e) {} }
+      if (trMerge(d) && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {} }
     }
     if (!Array.isArray(d.history)) d.history = [];
     // v3.7.x：我的添加自定义分组
     if (!Array.isArray(d.groups)) d.groups = [];
+    // #1645：套上系统预设题的文案覆盖（只改内存显示，不写回 store）
+    applyPresetEdits('tr', d);
     return d;
   }
   // #1520：与 ta-ask 同款的整包写闸（#1519 只覆盖了同一文件里的 ta-ask 键，这三本当时漏了）：
   //   大键盲窗里读空播种纯预设 → 这一发整包写回＝自定义内容被清空。拦下照实 toast、绝不落笔。
   function trSave(d) {
     if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他的调侃题库')) return false;
-    try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
+    // #1645：预设题写盘前还原成原文案（store 永远留原文案，各桌面 load 时再套覆盖）
+    try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {}
     return true;
   }
   // v3.6.x：useDefault=false 时不抽取系统预设（isPreset）字卡
@@ -3724,12 +3835,14 @@ window.openTCPanel = openTCPanel;
       const arr = d.questions.filter(q => q.cat === trSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
       arr.forEach(q => {
         const idx = d.questions.indexOf(q);
+        // #1645：预设题可改文案——改过的徽标写「已改」，行尾给一支铅笔
+        const edited = !!(PT && PT.isEdited(presetEditKey('tr', q), q.text));
         html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
           '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known">系统</span></div>' +
+          '<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
           (q.match && q.match.length ? '<div class="tc-qopts">触发：' + q.match.join(' / ') + '</div>' : '') +
           interactPoolInlineHtml('吐槽·回应') +
-          '</div></div>';
+          '</div>' + presetPenHtml(idx) + '</div>';
       });
       container.innerHTML = html;
       if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-roast', trSysCat, function () { renderTRCatsInto(container, true, search); });
@@ -3742,6 +3855,15 @@ window.openTCPanel = openTCPanel;
           const q = d2.questions[Number(cb.dataset.idx)];
           if (q) q.enabled = cb.checked;
           trSave(d2);
+        });
+      });
+      // #1645：铅笔按钮在 innerHTML 之后按 data-edit-idx 绑定（避免点按钮触发开关/其它行操作）
+      container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          const q = d.questions[Number(btn.dataset.editIdx)];
+          if (!q || q.isPreset !== true) return;
+          openPresetQuestionEditor('tr', trLoad, q, function () { renderTRCatsInto(container, true, search); });
         });
       });
       return;
@@ -4771,4 +4893,16 @@ window.openTCPanel = openTCPanel;
   });
   // v3.28.x：全站原生分组/分类下拉统一换成自定义样式（含未走 bindNewGrp 的 .ta-type）
   try { if (window.cardGroups) window.cardGroups.ensureCustomSelects(); } catch (e) {}
+  // #1645：默认表同样套上文案覆盖——window.MOCHI_TA_ASK_CARE 等直接读 DEFAULT_* 的消费方同步生效；
+  // 覆盖表整体重载（IDB 回填）后再套一次（applyDefaultEdits 内部按原文案取新文案，重复套用安全）
+  applyDefaultEdits('ask', DEFAULT_QUESTIONS);
+  applyDefaultEdits('tc', TC_DEFAULT);
+  applyDefaultEdits('tcu', TCU_DEFAULT);
+  applyDefaultEdits('tr', TR_DEFAULT);
+  if (PT) PT.onRebuild(function () {
+    applyDefaultEdits('ask', DEFAULT_QUESTIONS);
+    applyDefaultEdits('tc', TC_DEFAULT);
+    applyDefaultEdits('tcu', TCU_DEFAULT);
+    applyDefaultEdits('tr', TR_DEFAULT);
+  });
 })();

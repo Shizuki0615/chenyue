@@ -10,6 +10,37 @@
   const ls = window.activeStore();
   const DATA = (window.MOOD_FOLLOWUP_DATA) || {};
   const W = DATA.weights || {};
+  // #1645 系统预设文案编辑：情绪/心意/交流意图按「类型」记覆盖（同类型同文共享身份，
+  // 与 mc-off-<类型> 键同粒度）；回应字卡按分类记覆盖（与 rc-off-<分类> 键同粒度）。
+  const PT = window.presetTextEdit;
+  const MC_EDIT = function (type) { return 'mc:' + type; };
+  const RC_EDIT = function (cat) { return 'rc:' + cat; };
+  function mcTypeGroups(type) {
+    return type === 'heart' ? (DATA.heart || []).concat(DATA.specialHeart || [])
+      : type === 'intent' ? (DATA.intent || []) : (DATA.mood || []);
+  }
+  function applyMoodEdits() {
+    if (!PT) return;
+    ['mood', 'heart', 'intent'].forEach(function (type) {
+      PT.apply(MC_EDIT(type), function (newText, orig) {
+        mcTypeGroups(type).forEach(function (g) {
+          (g.cards || []).forEach(function (c) { if (c.content === orig) c.content = newText; });
+        });
+      });
+    });
+  }
+  function applyReplyEdits() {
+    if (!PT) return;
+    const f = DATA.followup || {};
+    Object.keys(f).forEach(function (cat) {
+      PT.apply(RC_EDIT(cat), function (newText, orig) {
+        const arr = f[cat];
+        for (let i = 0; i < arr.length; i++) if (arr[i] === orig) arr[i] = newText;
+      });
+    });
+  }
+  applyMoodEdits();
+  applyReplyEdits();
 
   // ---- 状态（星言对应 emotionStreak / heartHistory / specialCooldown）----
   let emotionStreak = 0;
@@ -32,6 +63,10 @@
   function toastCard(txt, off) {
     const s = String(txt == null ? '' : txt);
     toast((off ? '已关闭：' : '已开启：') + (s.length > 18 ? s.slice(0, 18) + '…' : s));
+  }
+  function escMr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function weightedPick(items) {
     const total = items.reduce((a, it) => a + Math.max(0, it[1]), 0);
@@ -111,7 +146,8 @@
   //   （getMoodCard/getHeartCard/getIntentCard）与各页 UI 全部自动跟上，无需逐处加分支；
   //   组内逐张开关的存值一字不动，重新启用分组即恢复原状（同 #926 口径）。
   const PG_ID_MC = { mood: 'mc:mood', heart: 'mc:heart', intent: 'mc:intent' };
-  let pgIdx = null;   // 内容 -> [分组名,…]：预设数据静态，索引只建一次
+  let pgIdx = null;   // 内容 -> [分组名,…]：预设数据静态，索引只建一次（改文案后置空重建）
+  if (PT) PT.onRebuild(function () { applyMoodEdits(); applyReplyEdits(); pgIdx = null; });
   function pgGroupsOf(type, content) {
     if (!pgIdx) {
       pgIdx = {};
@@ -139,7 +175,13 @@
     return false;
   }
   // 回应字卡的「分组」就是分类本身，故判据按分类问一次（叠在 rc-off-<分类>:* 之上）
-  function rcOff(cat, t) { return isCardOff('rc-off-' + cat, t) || !!(window.presetGroup && window.presetGroup.isOff('rc', cat)); }
+  function rcOff(cat, t) {
+    if (window.presetGroup && window.presetGroup.isOff('rc', cat)) return true;
+    if (isCardOff('rc-off-' + cat, t)) return true;
+    // #1645 改过文案的卡仍沿用原文案的关闭键
+    const orig = PT ? PT.original(RC_EDIT(cat), t) : t;
+    return orig !== t && isCardOff('rc-off-' + cat, orig);
+  }
 
   // #500 三级链各持独立开关键 + 心意/交流意图卡补单卡开关：
   //   ①此前三类字卡共用 mc-off-mood:<内容>，同名卡（「想念」「分享」「陪伴」等 20+ 张
@@ -158,9 +200,13 @@
   }
   function typeOff(type, content) {
     if (pgOff(type, content)) return true;   // #1315：分组闸先判——单卡「重新打开」也不许越过整组停用
-    const own = ls.get(OFF_KEY[type] + ':' + content);
+    // #1645 改过文案的卡仍沿用原文案的关闭键（新文案没有显式值时回退查原文）
+    const orig = PT ? PT.original(MC_EDIT(type), content) : content;
+    let own = ls.get(OFF_KEY[type] + ':' + content);
+    if ((own === null || own === '') && orig !== content) own = ls.get(OFF_KEY[type] + ':' + orig);
     if (own !== null && own !== '') return own === '1';
-    if (type !== 'mood' && !hasMoodCard(content) && ls.get('mc-off-mood:' + content) === '1') return true;
+    if (type !== 'mood' && !hasMoodCard(content)
+      && (ls.get('mc-off-mood:' + content) === '1' || (orig !== content && ls.get('mc-off-mood:' + orig) === '1'))) return true;
     return false;
   }
   function setTypeOff(type, content, off) {
@@ -392,13 +438,29 @@
         });
         arr.forEach(t => {
           const off = rcOff(key, t);
+          const edited = !!(PT && PT.isEdited(RC_EDIT(key), t));
           const d = document.createElement('div');
           d.className = 'cc-item glass' + (off ? ' off' : '');
           // v3.6.x：整页为系统预设字卡，统一标【系统】与自定义字卡区分；
           // 右侧单卡开关——逐张开启/关闭该字卡（关闭后回复不再抽取）
-          d.innerHTML = '<div class="cc-txt"><div class="t">' + t + ' <span class="tc-known">系统</span></div></div>' +
+          d.innerHTML = '<div class="cc-txt"><div class="t">' + escMr(t) + ' <span class="tc-known' +
+            (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>' +
+            (PT ? '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
             '<label class="toggle ccard-toggle"><input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span></label>';
           rcList.appendChild(d);
+          if (PT) d.querySelector('.preset-edit-btn').addEventListener('click', () => {
+            PT.open({
+              key: RC_EDIT(key),
+              shown: t,
+              exists: function (next) { return arr.some(y => y === next && y !== t); },
+              onChanged: function (next) {
+                const a = (DATA.followup || {})[key] || [];
+                for (let i = 0; i < a.length; i++) if (a[i] === t) a[i] = next;
+                renderReply();
+              }
+            });
+          });
           d.querySelector('input').addEventListener('change', () => {
             const nowOff = !d.querySelector('input').checked;
             setCardOff('rc-off-' + key, t, nowOff);
@@ -543,18 +605,40 @@
           toast(nowOff ? '已停用分组：' + g.group + '（本组 ' + g.cards.length + ' 张字卡不再使用）' : '已启用分组：' + g.group);
         });
         g.cards.forEach(c => {
-          const off = typeOff(g.type || mcType, c.content);
+          const type = g.type || mcType;
+          const off = typeOff(type, c.content);
+          const ekey = MC_EDIT(type);
+          const edited = !!(PT && PT.isEdited(ekey, c.content));
           const d = document.createElement('div');
           d.className = 'cc-item glass' + (off ? ' off' : '');
           // v3.6.x：整页为系统预设字卡，统一标【系统】与自定义字卡区分；
           // 右侧单卡开关——逐张开启/关闭该字卡（关闭后该类字卡不再被抽取）
-          d.innerHTML = '<div class="cc-txt"><div class="t">' + c.content + ' <span class="tc-known">系统</span></div></div>' +
+          d.innerHTML = '<div class="cc-txt"><div class="t">' + escMr(c.content) + ' <span class="tc-known' +
+            (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>' +
+            (PT ? '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
             '<span class="cc-type">' + (c.rarity === 'rare' ? '稀有' : c.rarity === 'special' ? '特殊' : '普通') + '</span>' +
             '<label class="toggle ccard-toggle"><input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span></label>';
           mcList.appendChild(d);
+          if (PT) d.querySelector('.preset-edit-btn').addEventListener('click', () => {
+            PT.open({
+              key: ekey,
+              shown: c.content,
+              exists: function (next) {
+                return mcTypeGroups(type).some(function (gg) {
+                  return (gg.cards || []).some(function (cc) { return cc.content === next && cc !== c; });
+                });
+              },
+              onChanged: function (next) {
+                c.content = next;
+                pgIdx = null;   // 内容→分组索引按原文案建的，改文案后置空重建
+                renderMood();
+              }
+            });
+          });
           d.querySelector('input').addEventListener('change', () => {
             const nowOff = !d.querySelector('input').checked;
-            setTypeOff(g.type || mcType, c.content, nowOff);
+            setTypeOff(type, c.content, nowOff);
             d.classList.toggle('off', nowOff);
             toastCard(c.content, nowOff);
           });

@@ -45,70 +45,10 @@
 
   const uid = window.activePrefix();
   const ls = window.activeStore();
-  // #1644 系统预设字卡编辑：全局覆盖表（xy-home-v2:default-card-edits），所有桌面共用。
-  // 结构 { 分类: { 原文案: 新文案 } }；原文案永远作为稳定身份，改文案不换身份。
-  const presetEditStore = window.xyStore('xy-home-v2');
-  const PRESET_EDITS_KEY = 'default-card-edits';
-  function parsePresetEdits(rawStr) {
-    const out = {};
-    try {
-      const raw = JSON.parse(rawStr || '{}');
-      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-        Object.keys(raw).forEach(function (cat) {
-          const m = raw[cat];
-          if (!m || typeof m !== 'object' || Array.isArray(m)) return;
-          Object.keys(m).forEach(function (orig) {
-            const v = m[orig];
-            if (typeof v === 'string' && v.trim()) {
-              if (!out[cat]) out[cat] = {};
-              out[cat][orig] = v;
-            }
-          });
-        });
-      }
-    } catch (e) {}
-    return out;
-  }
-  let presetEditsRaw = null;
-  const PRESET_EDITS = (function () {
-    try { presetEditsRaw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { presetEditsRaw = null; }
-    return parsePresetEdits(presetEditsRaw);
-  })();
-  // LS 不可用设备（写不进/localStorage 读空）启动时读不到覆盖表，覆盖只在 IndexedDB 里：
-  // IDB 回填完成后再读一次。仅当启动时一条覆盖都没读到才整表重放（此时 DATA 仍是原始文案，
-  // 重放安全）；启动已有覆盖时 DATA 已是新文案，再重放会把链式改名二次套用（见 applyPresetEditsToData 注释）。
-  document.addEventListener('mochi-restore-done', function () {
-    try {
-      if (Object.keys(PRESET_EDITS).length) return;
-      let raw = null;
-      try { raw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { return; }
-      if (!raw || raw === presetEditsRaw) return;
-      presetEditsRaw = raw;
-      const fresh = parsePresetEdits(raw);
-      if (!Object.keys(fresh).length) return;
-      Object.keys(PRESET_EDITS).forEach(function (k) { delete PRESET_EDITS[k]; });
-      Object.keys(fresh).forEach(function (k) { PRESET_EDITS[k] = fresh[k]; });
-      applyPresetEditsToData();
-      notifyPresetCardEdited();
-    } catch (e) {}
-  });
-  const EDITED_TO_ORIG = {}; // 分类 -> { 新文案 : 原文案 }
-  function rebuildPresetEditReverse() {
-    Object.keys(EDITED_TO_ORIG).forEach(function (k) { delete EDITED_TO_ORIG[k]; });
-    Object.keys(PRESET_EDITS).forEach(function (cat) {
-      const map = PRESET_EDITS[cat] || {};
-      const rev = {};
-      Object.keys(map).forEach(function (orig) { rev[map[orig]] = orig; });
-      EDITED_TO_ORIG[cat] = rev;
-    });
-  }
-  function presetOriginalText(cat, text) {
-    const rev = EDITED_TO_ORIG[cat];
-    return (rev && rev[text]) || text;
-  }
-  function savePresetEdits() {
-    try { presetEditStore.set(PRESET_EDITS_KEY, JSON.stringify(PRESET_EDITS)); } catch (e) {}
-  }
+  // #1644 系统预设字卡编辑：覆盖表/弹窗/恢复/重名逻辑收在 preset-edit.js 公共层
+  //（全局 xy-home-v2:default-card-edits，所有桌面共用）；本文件只负责把覆盖套进
+  // DEFAULT_CARD_DATA 的四个主列表并刷新它们。
+  const PT = window.presetTextEdit;
   function replacePresetCardInData(cat, oldText, newText) {
     let changed = false;
     ((DATA[cat] || [])).forEach(function (g) {
@@ -122,19 +62,17 @@
   }
   // 只用于「从原始数据重建后」重放覆盖（启动 / 词典重建）：对已是新文案的列表再跑一次
   // 会把 A→B、C→A 这类链式改名的 B 再套成别的文案，故编辑保存后不再整表重放，
-  // 只在编辑点就地替换一条（见 commitPresetEdit）。
+  // 只在编辑点就地替换一条（见 openPresetCardEditor 的 onChanged）。
   function applyPresetEditsToData(onlyCat) {
-    rebuildPresetEditReverse();
-    (onlyCat ? [onlyCat] : Object.keys(PRESET_EDITS)).forEach(function (cat) {
-      const map = PRESET_EDITS[cat];
-      if (!map) return;
-      ((DATA[cat] || [])).forEach(function (g) {
-        const arr = g && g[1];
-        if (!Array.isArray(arr)) return;
-        for (let i = 0; i < arr.length; i++) {
-          const orig = arr[i];
-          if (map[orig]) arr[i] = map[orig];
-        }
+    (onlyCat ? [onlyCat] : Object.keys(DATA)).forEach(function (cat) {
+      PT.apply(cat, function (newText, orig) {
+        ((DATA[cat] || [])).forEach(function (g) {
+          const arr = g && g[1];
+          if (!Array.isArray(arr)) return;
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i] === orig) arr[i] = newText;
+          }
+        });
       });
     });
   }
@@ -158,56 +96,20 @@
     });
     return hit;
   }
-  function commitPresetEdit(cat, shown, next) {
-    const orig = presetOriginalText(cat, shown);
-    if (next === shown) return true;               // 没改动：不回写、不重绘
-    // 恢复时原文案可能已被另一张卡改成同名（先 A→B、再把 C→A、最后把 B 改回 A）：
-    // 两张卡同名会让关闭键/反向映射认错卡，挡住并让用户先处理那张
-    if (next === orig && presetTextTaken(cat, orig, shown)) {
-      toast('原文案已被另一张卡使用，先把那张改成别的文案再恢复');
-      return false;
-    }
-    PRESET_EDITS[cat] = PRESET_EDITS[cat] || {};
-    if (next === orig) {
-      // 改回原文案＝恢复：删掉覆盖项，原始系统文案重新可见
-      delete PRESET_EDITS[cat][orig];
-      if (!Object.keys(PRESET_EDITS[cat]).length) delete PRESET_EDITS[cat];
-    } else {
-      PRESET_EDITS[cat][orig] = next;
-    }
-    replacePresetCardInData(cat, shown, next);
-    savePresetEdits();
-    rebuildPresetEditReverse();
-    notifyPresetCardEdited();
-    toast(next === orig ? '已恢复系统原文案' : '已更新这张系统字卡（所有桌面共用）');
-    return true;
-  }
   function openPresetCardEditor(cat, shown, draft) {
-    if (!window.openModal) { toast('弹窗组件不可用'); return; }
-    const orig = presetOriginalText(cat, shown);
-    const edited = orig !== shown;
-    window.openModal('编辑系统字卡', typeof draft === 'string' ? draft : shown, function (v) {
-      const next = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
-      if (!next) { toast('字卡内容不能为空，已保留原文案'); return; }
-      if (next !== shown && presetTextTaken(cat, next, shown)) {
-        toast('同分类已有这张字卡：' + (next.length > 18 ? next.slice(0, 18) + '…' : next) + '，换一句再试');
-        // 把刚输入的内容带回编辑框（openModal 内部按打开序号跳过外层关闭，新弹窗保持打开）
-        openPresetCardEditor(cat, shown, next);
-        return;
+    PT.open({
+      key: cat,
+      shown: shown,
+      draft: draft,
+      exists: function (next) { return presetTextTaken(cat, next, shown); },
+      onChanged: function (next) {
+        replacePresetCardInData(cat, shown, next);
+        notifyPresetCardEdited();
       }
-      commitPresetEdit(cat, shown, next);
-    }, {
-      maxlength: 120,
-      staticText: '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。',
-      extraBtn: edited ? {
-        label: '恢复原文',
-        fn: function (ctl) {
-          // 恢复被占用时不关窗（toast 已说明原因），让用户能改用输入框再存
-          if (commitPresetEdit(cat, shown, orig)) ctl.close();
-        }
-      } : null
     });
   }
+  // 覆盖表在 IDB 回填后整体重载时（LS 不可用设备），重新套回主列表
+  if (PT && PT.onRebuild) PT.onRebuild(function () { applyPresetEditsToData(); notifyPresetCardEdited(); });
   // v3.6.x：轻提示（复用 cc-toast 风格）
   function toast(msg) {
     let t = document.getElementById('cc-toast');
@@ -360,7 +262,7 @@
       const direct = st.get('dc-off-' + cat + ':' + c);
       if (direct === '1') return true;
       if (direct !== '0') {
-        const orig = presetOriginalText(cat, c);
+        const orig = PT.original(cat, c);
         if (orig && orig !== c && st.get('dc-off-' + cat + ':' + orig) === '1') return true;
       }
       return groupOffFor(cat, c, st);
@@ -1055,8 +957,7 @@
         // #1644 改过文案的系统卡标「已改」并给一支铅笔（自建词条的身份是用户原文，不参与编辑）；
         // 右侧单卡开关——逐张开启/关闭该字卡（关闭后功能/聊天回复不再抽取）
         const isCustom = !!(window.__dictCustomSet && window.__dictCustomSet.has(it.c));
-        const rev = EDITED_TO_ORIG[it.cat];
-        const isEdited = !isCustom && !!(rev && rev[it.c]);
+        const isEdited = !isCustom && !!(PT && PT.isEdited(it.cat, it.c));
         d.innerHTML = '<div class="cc-txt"><div class="t">' + escHtml(it.c) + ' <span class="tc-known' +
           (isEdited ? ' edited' : '') + '">' + (isCustom ? '自建' : isEdited ? '已改' : '系统') + '</span></div></div>' +
           (isCustom ? '' : '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +

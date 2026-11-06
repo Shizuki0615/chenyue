@@ -12,6 +12,25 @@
 (function () {
   const ls = window.activeStore();
   const DATA = window.TA_MOOD_DATA || { groups: [], cards: [] };
+  // #1645 系统预设文案编辑：按「分组」记覆盖（同组同文的卡共享一个身份，与 tm-off 键同粒度）
+  const PT = window.presetTextEdit;
+  const TM_EDIT = function (g) { return 'tm:' + g; };
+  function applyTmEdits() {
+    if (!PT) return;
+    (DATA.groups || []).forEach(function (g) {
+      PT.apply(TM_EDIT(g.group), function (newText, orig) {
+        (DATA.cards || []).forEach(function (c) {
+          if (c && c.group === g.group && c.content === orig) c.content = newText;
+        });
+      });
+    });
+  }
+  applyTmEdits();
+  if (PT) PT.onRebuild(applyTmEdits);
+  function escTm(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   function toast(msg) {
     let t = document.getElementById('cc-toast');
@@ -35,7 +54,10 @@
   //   选组处（:68/:85）与本函数导出的 isCardOff 全部自动跟上，组内逐张开关存值一字不改。
   function isCardOff(g, c) {
     if (window.presetGroup && window.presetGroup.isOff('tm', g)) return true;
-    return ls.get('tm-off-' + g + ':' + c) === '1';
+    if (ls.get('tm-off-' + g + ':' + c) === '1') return true;
+    // 改过文案的卡仍沿用原文案的关闭键（新文案没有显式值时回退查原文）
+    const orig = PT ? PT.original(TM_EDIT(g), c) : c;
+    return orig !== c && ls.get('tm-off-' + g + ':' + orig) === '1';
   }
   function setCardOff(g, c, off) { ls.set('tm-off-' + g + ':' + c, off ? '1' : '0'); }
 
@@ -190,11 +212,29 @@
       }
       const c = it.card;
       const off = isCardOff(c.group, c.content);
+      const ekey = TM_EDIT(c.group);
+      const edited = !!(PT && PT.isEdited(ekey, c.content));
       const d = document.createElement('div');
       d.className = 'cc-item glass' + (off ? ' off' : '');
-      d.innerHTML = '<div class="cc-txt"><div class="t">' + c.content + ' <span class="tc-known">系统</span></div></div>' +
+      d.innerHTML = '<div class="cc-txt"><div class="t">' + escTm(c.content) + ' <span class="tc-known' +
+        (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>' +
+        (PT ? '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
         '<label class="toggle ccard-toggle"><input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span></label>';
       frag.appendChild(d);
+      if (PT) d.querySelector('.preset-edit-btn').addEventListener('click', function () {
+        PT.open({
+          key: ekey,
+          shown: c.content,
+          exists: function (next) {
+            return (DATA.cards || []).some(function (x) { return x && x.group === c.group && x.content === next && x !== c; });
+          },
+          onChanged: function (next) {
+            c.content = next;
+            renderTM();
+          }
+        });
+      });
       d.querySelector('input').addEventListener('change', () => {
         const nowOff = !d.querySelector('input').checked;
         setCardOff(c.group, c.content, nowOff);

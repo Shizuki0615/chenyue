@@ -100,6 +100,29 @@ reject: ['脸会红', '不要贴', '太近了'] }
 const CATS_CKQ = [['single', '单选查岗'], ['text', '文字查岗'], ['action', '互动动作']];
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function toast(t) { if (typeof window.toast === 'function') window.toast(t); }
+const PT = window.presetTextEdit;
+function ckEditKey(cat) { return 'ckq:' + (cat || 'daily'); }
+function ckApplyEdits(d) {
+if (!PT || !d || !Array.isArray(d.questions)) return;
+const plan = [];
+d.questions.forEach(function (q) {
+if (!q || q.isPreset !== true || !q.text) return;
+const base = q.text; // 只拿读盘时的原文案去匹配，避免链式改名自己套自己
+let next = base;
+PT.apply(ckEditKey(q.cat), function (nv, orig) { if (orig === base) next = nv; });
+if (next !== base) plan.push([q, next]);
+});
+plan.forEach(function (p) { p[0].text = p[1]; });
+}
+function ckStoreData(d) {
+if (!PT || !d || !Array.isArray(d.questions)) return d;
+const qs = d.questions.map(function (q) {
+if (!q || q.isPreset !== true || !q.text) return q;
+const orig = PT.original(ckEditKey(q.cat), q.text);
+return orig === q.text ? q : Object.assign({}, q, { text: orig });
+});
+return Object.assign({}, d, { questions: qs });
+}
 function cardPopupBusy() {
 return ['modal-mask', 'tc-mask', 'qa-mask'].some(function (id) {
 const el = document.getElementById(id);
@@ -161,6 +184,7 @@ if (!isNew && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } cat
 if (ckMerge(d) && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
 }
 if (!Array.isArray(d.groups)) d.groups = [];
+ckApplyEdits(d); // 覆盖只在返回的内存数据上生效（上面的写盘仍用原文）
 return d;
 }
 function ckLoadFrom(s) {
@@ -183,11 +207,12 @@ if (!isNew && !ckAutoHoldIn(s, KEY)) { try { s.set(KEY, JSON.stringify(d)); } ca
 if (ckMerge(d) && !ckAutoHoldIn(s, KEY)) { try { s.set(KEY, JSON.stringify(d)); } catch (e) {} }
 }
 if (!Array.isArray(d.groups)) d.groups = [];
+ckApplyEdits(d); // 跨桌面抽题也按新文案；目标桌面 store 仍留原文
 return d;
 }
 function ckSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '查岗问题库')) return false;
-try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY, JSON.stringify(ckStoreData(d))); } catch (e) {}
 return true;
 }
 function pgCatOff(ns, cat) { return !!(window.presetGroup && window.presetGroup.isOff(ns, cat || 'daily')); }
@@ -384,9 +409,11 @@ const idx = d.questions.indexOf(q);
 const isSingle = q.type === 'single' && Array.isArray(q.options) && q.options.length;
 const isAction = q.type === 'action';
 const tag = isAction ? '互动动作' : (isSingle ? '单选·' + q.options.length + '选项' : '文字');
+const edited = !!(PT && PT.isEdited(ckEditKey(q.cat), q.text));
 html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
-'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known">系统</span></span>' +
+'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
+(PT ? '<button type="button" class="preset-edit-btn" data-idx="' + idx + '" title="编辑这张系统字卡" aria-label="编辑这张系统字卡"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
 '</div>';
 if (isSingle) {
 html += '<div class="tc-qopts">选项：' + q.options.map(o => esc(o.t)).join(' / ') + '</div>';
@@ -405,6 +432,23 @@ const d2 = ckLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 ckSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+const d2 = ckLoad();
+const q = d2.questions[Number(btn.dataset.idx)];
+if (!q || q.isPreset !== true) return;
+PT.open({
+key: ckEditKey(q.cat),
+shown: q.text,
+exists: function (next) {
+return d2.questions.some(function (x) {
+return x && x !== q && (x.cat || 'daily') === (q.cat || 'daily') && x.text === next;
+});
+},
+onChanged: function () { renderCkSysInto(container, search); }
+});
 });
 });
 }
@@ -626,6 +670,10 @@ if (ckTab === 'sys') renderCkSysInto(document.getElementById('ckq-sys-cats'), ck
 else renderCkMineInto(document.getElementById('ckq-mine-cats'), ckSearch);
 });
 }
+if (PT) PT.onRebuild(function () {
+if (ckTab !== 'sys') return;
+renderCkSysInto(document.getElementById('ckq-sys-cats'), ckSearch);
+});
 function renderCkSettings() {
 const el = document.getElementById('ckq-default');
 if (el) el.checked = (ckLoad().settings || {}).useDefault !== false;
@@ -710,7 +758,7 @@ if (!Array.isArray(idbData.questions) || !idbData.questions.length) return;
 const local = ckLoad();
 if (idbData.questions.length > (Array.isArray(local.questions) ? local.questions.length : 0)) {
 ckMerge(idbData);
-try { store.set(KEY, JSON.stringify(idbData)); } catch (e) {}
+try { store.set(KEY, JSON.stringify(ckStoreData(idbData))); } catch (e) {}
 try { window.refreshCkCardCounts(); } catch (e) {}
 }
 } catch (e) {}

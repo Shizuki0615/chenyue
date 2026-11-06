@@ -18,6 +18,62 @@ if (q && q.type === 'single') return ' <span class="tc-known">单选·' + n + '�
 if (q && q.type === 'multi') return ' <span class="tc-known">多选' + (q.multiMax >= 2 ? '·限' + q.multiMax : '') + '·' + n + '选项</span>';
 return '';
 }
+const PT = window.presetTextEdit;
+function presetEditKey(prefix, q) { return prefix + ':' + ((q && q.cat) || 'daily'); }
+function presetPenHtml(idx) {
+if (!PT) return '';
+return '<button type="button" class="preset-edit-btn" data-edit-idx="' + idx + '" title="编辑这张系统预设" aria-label="编辑这张系统预设">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+}
+function applyPresetEdits(prefix, d) {
+if (!PT || !d || !Array.isArray(d.questions)) return;
+d.questions.forEach(function (q) {
+if (!q || q.isPreset !== true || typeof q.text !== 'string') return;
+const k = presetEditKey(prefix, q);
+q.text = PT.text(k, PT.original(k, q.text));
+});
+}
+function presetStoreCopy(prefix, d) {
+if (!PT || !d || !Array.isArray(d.questions)) return d;
+return Object.assign({}, d, {
+questions: d.questions.map(function (q) {
+if (!q || q.isPreset !== true || typeof q.text !== 'string') return q;
+const k = presetEditKey(prefix, q);
+const orig = PT.original(k, q.text);
+return orig === q.text ? q : Object.assign({}, q, { text: orig });
+})
+});
+}
+const PRESET_DEFAULT_ORIG = [];
+function applyDefaultEdits(prefix, arr) {
+if (!PT || !Array.isArray(arr)) return;
+let rec = PRESET_DEFAULT_ORIG.find(function (x) { return x.arr === arr; });
+if (!rec) {
+rec = { arr: arr, texts: arr.map(function (q) { return q && q.text; }) };
+PRESET_DEFAULT_ORIG.push(rec);
+}
+arr.forEach(function (q, i) {
+if (!q || typeof q.text !== 'string') return;
+const k = presetEditKey(prefix, q);
+const base = rec.texts[i] != null ? rec.texts[i] : q.text;
+q.text = PT.text(k, base);
+});
+}
+function openPresetQuestionEditor(prefix, loadFn, q, rerender) {
+if (!PT) return;
+PT.open({
+key: presetEditKey(prefix, q),
+shown: q.text,
+title: '编辑系统预设题',
+exists: function (next) {
+const d = loadFn();
+return (d.questions || []).some(function (x) {
+return x && x.isPreset === true && x.cat === q.cat && x.id !== q.id && x.text === next;
+});
+},
+onChanged: function () { rerender(); }
+});
+}
 function taReplyShow(s) {
 const t = (window.askCardReplyClean ? window.askCardReplyClean(s) : String(s == null ? '' : s));
 return escG(window.taFit ? window.taFit(t) : t);
@@ -545,17 +601,18 @@ nq.isPreset = true;
 return nq;
 });
 d.mergedIds = DEFAULT_QUESTIONS.map(q => q.id);
-if (!isNew && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+if (!isNew && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {} }
 } else {
-if (taAskMerge(d) && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+if (taAskMerge(d) && !ckHold(KEY)) { try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {} }
 }
 if (!Array.isArray(d.history)) d.history = [];
 if (!Array.isArray(d.groups)) d.groups = [];
+applyPresetEdits('ask', d);
 return d;
 }
 function taAskSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '他的提问题库')) return false;
-try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY, JSON.stringify(presetStoreCopy('ask', d))); } catch (e) {}
 return true;
 }
 function askDeadlineMs(d) {
@@ -1009,9 +1066,11 @@ html += window.presetGroup ? window.presetGroup.catBar('ta-ask', askSysCat, Stri
 const arr = d.questions.filter(q => q.cat === askSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
 arr.forEach(q => {
 const idx = d.questions.indexOf(q);
+const edited = !!(PT && PT.isEdited(presetEditKey('ask', q), q.text));
 html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
-'<span class="ta-txt">' + q.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') + askTypeBadge(q) + ' <span class="tc-known">系统</span></span>' +
+'<span class="ta-txt">' + escG(q.text) + askTypeBadge(q) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
+presetPenHtml(idx) +
 '</div>';
 html += interactPoolInlineHtml('询问·回应');
 });
@@ -1026,6 +1085,14 @@ const d2 = taAskLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 taAskSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+btn.addEventListener('click', (ev) => {
+ev.preventDefault(); ev.stopPropagation();
+const q = d.questions[Number(btn.dataset.editIdx)];
+if (!q || q.isPreset !== true) return;
+openPresetQuestionEditor('ask', taAskLoad, q, function () { renderAskCatsInto(container, true, search); });
 });
 });
 return;
@@ -1566,18 +1633,19 @@ nq.isPreset = true;
 return nq;
 });
 d.mergedIds = TC_DEFAULT.map(q => q.id);
-if (!isNew && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(d)); } catch (e) {} }
+if (!isNew && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {} }
 } else {
-if (tcMerge(d) && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(d)); } catch (e) {} }
+if (tcMerge(d) && !ckHold(KEY2)) { try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {} }
 }
 if (!Array.isArray(d.history)) d.history = [];
 if (!Array.isArray(d.favs)) d.favs = [];
 if (!Array.isArray(d.groups)) d.groups = [];
+applyPresetEdits('tc', d);
 return d;
 }
 function tcSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY2, '他的小问题库')) return false;
-try { store.set(KEY2, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY2, JSON.stringify(presetStoreCopy('tc', d))); } catch (e) {}
 return true;
 }
 function tcPick(d) {
@@ -1889,10 +1957,12 @@ html += window.presetGroup ? window.presetGroup.catBar('ta-choose', tcSysCat, St
 const arr = d.questions.filter(q => q.cat === tcSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
 arr.forEach(q => {
 const idx = d.questions.indexOf(q);
+const edited = !!(PT && PT.isEdited(presetEditKey('tc', q), q.text));
 html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known">系统</span></div>' +
+'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
 '<div class="tc-qopts">选项：' + q.options.map(o => escT(o.t) + (optReplyLabel(o) ? ' <span class="tc-opt-reply">→ ' + escT(optReplyLabel(o)) + '</span>' : '')).join(' / ') + '</div></div>' +
+presetPenHtml(idx) +
 '</div>';
 });
 container.innerHTML = html;
@@ -1906,6 +1976,14 @@ const d2 = tcLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 tcSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+btn.addEventListener('click', (ev) => {
+ev.preventDefault(); ev.stopPropagation();
+const q = d.questions[Number(btn.dataset.editIdx)];
+if (!q || q.isPreset !== true) return;
+openPresetQuestionEditor('tc', tcLoad, q, function () { renderTCCatsInto(container, true, search); });
 });
 });
 return;
@@ -2415,18 +2493,19 @@ nq.isPreset = true;
 return nq;
 });
 d.mergedIds = TCU_DEFAULT.map(q => q.id);
-if (!isNew && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(d)); } catch (e) {} }
+if (!isNew && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {} }
 } else {
-if (tcuMerge(d) && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(d)); } catch (e) {} }
+if (tcuMerge(d) && !ckHold(KEY3)) { try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {} }
 }
 if (!Array.isArray(d.history)) d.history = [];
 if (!d.known || typeof d.known !== 'object') d.known = {};
 if (!Array.isArray(d.groups)) d.groups = [];
+applyPresetEdits('tcu', d);
 return d;
 }
 function tcuSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY3, '他的好奇题库')) return false;
-try { store.set(KEY3, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY3, JSON.stringify(presetStoreCopy('tcu', d))); } catch (e) {}
 return true;
 }
 function tcuPick(d) {
@@ -2614,12 +2693,13 @@ const arr = d.questions.filter(q => q.cat === tcuSysCat && q.isPreset === true &
 arr.forEach(q => {
 const idx = d.questions.indexOf(q);
 const known = q.id && d.known[q.id];
+const edited = !!(PT && PT.isEdited(presetEditKey('tcu', q), q.text));
 html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known">系统</span></div>' +
+'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + (known ? ' <span class="tc-known">✓已了解</span>' : '') + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
 (q.quick && q.quick.length ? '<div class="tc-qopts">快捷：' + q.quick.join(' / ') + '</div>' : '') +
 (q.replies && q.replies.length ? '<div class="tc-qopts">他回应：' + q.replies.map(escT).join(' / ') + '</div>' : '') +
-'</div></div>';
+'</div>' + presetPenHtml(idx) + '</div>';
 });
 container.innerHTML = html;
 if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-curious', tcuSysCat, function () { renderTCUCatsInto(container, true, search); });
@@ -2632,6 +2712,14 @@ const d2 = tcuLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 tcuSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+btn.addEventListener('click', (ev) => {
+ev.preventDefault(); ev.stopPropagation();
+const q = d.questions[Number(btn.dataset.editIdx)];
+if (!q || q.isPreset !== true) return;
+openPresetQuestionEditor('tcu', tcuLoad, q, function () { renderTCUCatsInto(container, true, search); });
 });
 });
 return;
@@ -2969,17 +3057,18 @@ nq.isPreset = true;
 return nq;
 });
 d.mergedIds = TR_DEFAULT.map(q => q.id);
-if (!isNew && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(d)); } catch (e) {} }
+if (!isNew && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {} }
 } else {
-if (trMerge(d) && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(d)); } catch (e) {} }
+if (trMerge(d) && !ckHold(KEY4)) { try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {} }
 }
 if (!Array.isArray(d.history)) d.history = [];
 if (!Array.isArray(d.groups)) d.groups = [];
+applyPresetEdits('tr', d);
 return d;
 }
 function trSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY4, '他的调侃题库')) return false;
-try { store.set(KEY4, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY4, JSON.stringify(presetStoreCopy('tr', d))); } catch (e) {}
 return true;
 }
 function trPick(d, lastUserText) {
@@ -3201,12 +3290,13 @@ html += window.presetGroup ? window.presetGroup.catBar('ta-roast', trSysCat, Str
 const arr = d.questions.filter(q => q.cat === trSysCat && q.isPreset === true && (search === '' || q.text.indexOf(search) >= 0));
 arr.forEach(q => {
 const idx = d.questions.indexOf(q);
+const edited = !!(PT && PT.isEdited(presetEditKey('tr', q), q.text));
 html += '<div class="tc-qrow' + (q.enabled === false || !useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox" data-idx="' + idx + '"' + (q.enabled !== false ? ' checked' : '') + '><span class="tk"></span></label>' +
-'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known">系统</span></div>' +
+'<div class="tc-qmain"><div class="tc-qtext">' + escT(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div>' +
 (q.match && q.match.length ? '<div class="tc-qopts">触发：' + q.match.join(' / ') + '</div>' : '') +
 interactPoolInlineHtml('吐槽·回应') +
-'</div></div>';
+'</div>' + presetPenHtml(idx) + '</div>';
 });
 container.innerHTML = html;
 if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-roast', trSysCat, function () { renderTRCatsInto(container, true, search); });
@@ -3219,6 +3309,14 @@ const d2 = trLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 trSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn[data-edit-idx]').forEach(btn => {
+btn.addEventListener('click', (ev) => {
+ev.preventDefault(); ev.stopPropagation();
+const q = d.questions[Number(btn.dataset.editIdx)];
+if (!q || q.isPreset !== true) return;
+openPresetQuestionEditor('tr', trLoad, q, function () { renderTRCatsInto(container, true, search); });
 });
 });
 return;
@@ -4108,6 +4206,16 @@ _tcuSessionTriggered = false;
 _trSessionTriggered = false;
 });
 try { if (window.cardGroups) window.cardGroups.ensureCustomSelects(); } catch (e) {}
+applyDefaultEdits('ask', DEFAULT_QUESTIONS);
+applyDefaultEdits('tc', TC_DEFAULT);
+applyDefaultEdits('tcu', TCU_DEFAULT);
+applyDefaultEdits('tr', TR_DEFAULT);
+if (PT) PT.onRebuild(function () {
+applyDefaultEdits('ask', DEFAULT_QUESTIONS);
+applyDefaultEdits('tc', TC_DEFAULT);
+applyDefaultEdits('tcu', TCU_DEFAULT);
+applyDefaultEdits('tr', TR_DEFAULT);
+});
 })();
 if (window.__mochiLoaded) window.__mochiLoaded.push("ta-ask.js");
 } catch (__e) { if (window.__mochiErrLoaded) window.__mochiErrLoaded.push("ta-ask.js"); try { console.error("[JS] ta-ask.js", __e && __e.message || __e); } catch (x) {} if (window.__jsErrors) window.__jsErrors.push("[ta-ask.js] " + String(__e && __e.message || __e)); } })();

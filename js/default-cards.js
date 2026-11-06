@@ -31,65 +31,7 @@ const enabledEl = document.getElementById('dc-enabled');
 if (!list || !tabsWrap || !enabledEl) return;
 const uid = window.activePrefix();
 const ls = window.activeStore();
-const presetEditStore = window.xyStore('xy-home-v2');
-const PRESET_EDITS_KEY = 'default-card-edits';
-function parsePresetEdits(rawStr) {
-const out = {};
-try {
-const raw = JSON.parse(rawStr || '{}');
-if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-Object.keys(raw).forEach(function (cat) {
-const m = raw[cat];
-if (!m || typeof m !== 'object' || Array.isArray(m)) return;
-Object.keys(m).forEach(function (orig) {
-const v = m[orig];
-if (typeof v === 'string' && v.trim()) {
-if (!out[cat]) out[cat] = {};
-out[cat][orig] = v;
-}
-});
-});
-}
-} catch (e) {}
-return out;
-}
-let presetEditsRaw = null;
-const PRESET_EDITS = (function () {
-try { presetEditsRaw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { presetEditsRaw = null; }
-return parsePresetEdits(presetEditsRaw);
-})();
-document.addEventListener('mochi-restore-done', function () {
-try {
-if (Object.keys(PRESET_EDITS).length) return;
-let raw = null;
-try { raw = presetEditStore.get(PRESET_EDITS_KEY); } catch (e) { return; }
-if (!raw || raw === presetEditsRaw) return;
-presetEditsRaw = raw;
-const fresh = parsePresetEdits(raw);
-if (!Object.keys(fresh).length) return;
-Object.keys(PRESET_EDITS).forEach(function (k) { delete PRESET_EDITS[k]; });
-Object.keys(fresh).forEach(function (k) { PRESET_EDITS[k] = fresh[k]; });
-applyPresetEditsToData();
-notifyPresetCardEdited();
-} catch (e) {}
-});
-const EDITED_TO_ORIG = {}; // 分类 -> { 新文案 : 原文案 }
-function rebuildPresetEditReverse() {
-Object.keys(EDITED_TO_ORIG).forEach(function (k) { delete EDITED_TO_ORIG[k]; });
-Object.keys(PRESET_EDITS).forEach(function (cat) {
-const map = PRESET_EDITS[cat] || {};
-const rev = {};
-Object.keys(map).forEach(function (orig) { rev[map[orig]] = orig; });
-EDITED_TO_ORIG[cat] = rev;
-});
-}
-function presetOriginalText(cat, text) {
-const rev = EDITED_TO_ORIG[cat];
-return (rev && rev[text]) || text;
-}
-function savePresetEdits() {
-try { presetEditStore.set(PRESET_EDITS_KEY, JSON.stringify(PRESET_EDITS)); } catch (e) {}
-}
+const PT = window.presetTextEdit;
 function replacePresetCardInData(cat, oldText, newText) {
 let changed = false;
 ((DATA[cat] || [])).forEach(function (g) {
@@ -102,17 +44,15 @@ if (arr[i] === oldText) { arr[i] = newText; changed = true; }
 return changed;
 }
 function applyPresetEditsToData(onlyCat) {
-rebuildPresetEditReverse();
-(onlyCat ? [onlyCat] : Object.keys(PRESET_EDITS)).forEach(function (cat) {
-const map = PRESET_EDITS[cat];
-if (!map) return;
+(onlyCat ? [onlyCat] : Object.keys(DATA)).forEach(function (cat) {
+PT.apply(cat, function (newText, orig) {
 ((DATA[cat] || [])).forEach(function (g) {
 const arr = g && g[1];
 if (!Array.isArray(arr)) return;
 for (let i = 0; i < arr.length; i++) {
-const orig = arr[i];
-if (map[orig]) arr[i] = map[orig];
+if (arr[i] === orig) arr[i] = newText;
 }
+});
 });
 });
 }
@@ -133,51 +73,19 @@ if (!hit && c === text && c !== except) hit = true;
 });
 return hit;
 }
-function commitPresetEdit(cat, shown, next) {
-const orig = presetOriginalText(cat, shown);
-if (next === shown) return true;               // 没改动：不回写、不重绘
-if (next === orig && presetTextTaken(cat, orig, shown)) {
-toast('原文案已被另一张卡使用，先把那张改成别的文案再恢复');
-return false;
-}
-PRESET_EDITS[cat] = PRESET_EDITS[cat] || {};
-if (next === orig) {
-delete PRESET_EDITS[cat][orig];
-if (!Object.keys(PRESET_EDITS[cat]).length) delete PRESET_EDITS[cat];
-} else {
-PRESET_EDITS[cat][orig] = next;
-}
-replacePresetCardInData(cat, shown, next);
-savePresetEdits();
-rebuildPresetEditReverse();
-notifyPresetCardEdited();
-toast(next === orig ? '已恢复系统原文案' : '已更新这张系统字卡（所有桌面共用）');
-return true;
-}
 function openPresetCardEditor(cat, shown, draft) {
-if (!window.openModal) { toast('弹窗组件不可用'); return; }
-const orig = presetOriginalText(cat, shown);
-const edited = orig !== shown;
-window.openModal('编辑系统字卡', typeof draft === 'string' ? draft : shown, function (v) {
-const next = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
-if (!next) { toast('字卡内容不能为空，已保留原文案'); return; }
-if (next !== shown && presetTextTaken(cat, next, shown)) {
-toast('同分类已有这张字卡：' + (next.length > 18 ? next.slice(0, 18) + '…' : next) + '，换一句再试');
-openPresetCardEditor(cat, shown, next);
-return;
+PT.open({
+key: cat,
+shown: shown,
+draft: draft,
+exists: function (next) { return presetTextTaken(cat, next, shown); },
+onChanged: function (next) {
+replacePresetCardInData(cat, shown, next);
+notifyPresetCardEdited();
 }
-commitPresetEdit(cat, shown, next);
-}, {
-maxlength: 120,
-staticText: '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。',
-extraBtn: edited ? {
-label: '恢复原文',
-fn: function (ctl) {
-if (commitPresetEdit(cat, shown, orig)) ctl.close();
-}
-} : null
 });
 }
+if (PT && PT.onRebuild) PT.onRebuild(function () { applyPresetEditsToData(); notifyPresetCardEdited(); });
 function toast(msg) {
 let t = document.getElementById('cc-toast');
 if (!t) { t = document.createElement('div'); t.id = 'cc-toast'; document.body.appendChild(t); }
@@ -300,7 +208,7 @@ const gOff = function (cat, c) {
 const direct = st.get('dc-off-' + cat + ':' + c);
 if (direct === '1') return true;
 if (direct !== '0') {
-const orig = presetOriginalText(cat, c);
+const orig = PT.original(cat, c);
 if (orig && orig !== c && st.get('dc-off-' + cat + ':' + orig) === '1') return true;
 }
 return groupOffFor(cat, c, st);
@@ -836,8 +744,7 @@ d.innerHTML = groupHeaderHTML(it.glabel, it.count, goff);
 const off = isCardOff(it.cat, it.c);
 d.className = 'cc-item glass' + (off ? ' off' : '');
 const isCustom = !!(window.__dictCustomSet && window.__dictCustomSet.has(it.c));
-const rev = EDITED_TO_ORIG[it.cat];
-const isEdited = !isCustom && !!(rev && rev[it.c]);
+const isEdited = !isCustom && !!(PT && PT.isEdited(it.cat, it.c));
 d.innerHTML = '<div class="cc-txt"><div class="t">' + escHtml(it.c) + ' <span class="tc-known' +
 (isEdited ? ' edited' : '') + '">' + (isCustom ? '自建' : isEdited ? '已改' : '系统') + '</span></div></div>' +
 (isCustom ? '' : '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +

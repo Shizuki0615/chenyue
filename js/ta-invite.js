@@ -29,6 +29,25 @@ const KIND_OF = {};
 CATS_TI.forEach(([k]) => { KIND_OF[k] = k; });
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function toast(t) { if (typeof window.toast === 'function') window.toast(t); }
+const PT = window.presetTextEdit;
+function tiEditKey(q) {
+const c = q && (q.cat || q.kind);
+return 'ti:' + (c ? String(c) : 'default');
+}
+const DEFAULT_ORIG = {};
+DEFAULT_QUESTIONS.forEach(q => { DEFAULT_ORIG[q.id] = q.text; });
+function tiApplyDefaults() {
+if (!PT) return;
+DEFAULT_QUESTIONS.forEach(q => { q.text = PT.text(tiEditKey(q), DEFAULT_ORIG[q.id] != null ? DEFAULT_ORIG[q.id] : q.text); });
+}
+tiApplyDefaults();
+if (PT) PT.onRebuild(tiApplyDefaults);
+function tiApplyEdits(d) {
+if (!PT) return;
+(d.questions || []).forEach(q => {
+if (q && q.isPreset === true && q.text) q.text = PT.text(tiEditKey(q), PT.original(tiEditKey(q), q.text));
+});
+}
 function kindLabel(kind) {
 const hit = CATS_TI.filter(function (c) { return c[0] === kind; })[0];
 return hit ? hit[1] : '邀请';
@@ -76,16 +95,29 @@ nq.isPreset = true;
 return nq;
 });
 d.mergedIds = DEFAULT_QUESTIONS.map(q => q.id);
-if (!isNew && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+if (!isNew && !ckAutoHold(KEY)) { try { store.set(KEY, tiSerialize(d)); } catch (e) {} }
 } else {
-if (tiMerge(d) && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
+if (tiMerge(d) && !ckAutoHold(KEY)) { try { store.set(KEY, tiSerialize(d)); } catch (e) {} }
 }
 if (!Array.isArray(d.groups)) d.groups = [];
+tiApplyEdits(d);
 return d;
+}
+function tiSerialize(d) {
+if (!PT || !d || !Array.isArray(d.questions)) return JSON.stringify(d);
+const out = Object.assign({}, d);
+out.questions = d.questions.map(q => {
+if (q && q.isPreset === true && q.text) {
+const orig = PT.original(tiEditKey(q), q.text);
+if (orig !== q.text) return Object.assign({}, q, { text: orig });
+}
+return q;
+});
+return JSON.stringify(out);
 }
 function tiSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '邀请字卡库')) return false;
-try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY, tiSerialize(d)); } catch (e) {}
 return true;
 }
 function pickFrom(pool, lastId) {
@@ -174,13 +206,32 @@ html += window.presetGroup ? window.presetGroup.catBar('ta-invite', tiSysCat, es
 d.questions.forEach(q => {
 if (!(hitKw(q) && q.kind === tiSysCat)) return;
 const idx = d.questions.indexOf(q);
+const ekey = tiEditKey(q);
+const edited = !!(PT && PT.isEdited(ekey, q.text));
 html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
-'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">系统</span></span>' +
+'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
+(PT ? '<button type="button" class="preset-edit-btn" data-idx="' + idx + '" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
 '</div>';
 });
 container.innerHTML = html;
 if (window.presetGroup) window.presetGroup.bindBar(container.querySelector('.preset-cat-bar'), 'ta-invite', tiSysCat, function () { renderTiSysInto(container, search); });
+container.querySelectorAll('.preset-edit-btn').forEach(b => {
+b.addEventListener('click', () => {
+const q = d.questions[Number(b.dataset.idx)];
+if (!q) return;
+const ekey = tiEditKey(q);
+PT.open({
+key: ekey,
+shown: q.text,
+exists: function (next) {
+return d.questions.some(x => x && x.isPreset === true && tiEditKey(x) === ekey && (x.id ? x.id !== q.id : x !== q) && x.text === next);
+},
+onChanged: function () { tiApplyDefaults(); renderTiSysInto(container, search); }
+});
+});
+});
 container.querySelectorAll('.cc-tab[data-cat]').forEach(t => {
 t.addEventListener('click', () => { tiSysCat = t.dataset.cat; renderTiSysInto(container, search); });
 });
@@ -642,7 +693,7 @@ if (!Array.isArray(idbData.questions) || !idbData.questions.length) return;
 const local = tiLoad();
 if (idbData.questions.length > (Array.isArray(local.questions) ? local.questions.length : 0)) {
 tiMerge(idbData);
-try { store.set(KEY, JSON.stringify(idbData)); } catch (e) {}
+try { store.set(KEY, tiSerialize(idbData)); } catch (e) {}
 try { window.refreshTiCardCounts(); } catch (e) {}
 }
 } catch (e) {}

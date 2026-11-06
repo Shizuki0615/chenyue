@@ -570,10 +570,28 @@ function ckList(k, def) {
 //   逐张那条按文案存键，连同文的自建卡也被顺手关掉。口径收口＝**预设开关只管预设卡**：判据先问
 //   「这张是不是预设卡」（DEF 文本命中），自建卡只由它自己的分组与删除管，与预设开关互不相干。
 const CK_DEF_LIST = { place: DEF_PLACES, action: DEF_ACTIONS, msg: DEF_CHECK_MSGS };
+// #1645 寻踪日常系统预设文案编辑：按三类（地点/做的事/说的话）记覆盖，与 ck-off 键同粒度
+const CK_PT = window.presetTextEdit;
+const CK_EDIT = function (k) { return 'cck:' + k; };
+function applyCkEdits() {
+  if (!CK_PT) return;
+  Object.keys(CK_DEF_LIST).forEach(function (k) {
+    CK_PT.apply(CK_EDIT(k), function (newText, orig) {
+      const arr = CK_DEF_LIST[k];
+      for (let i = 0; i < arr.length; i++) if (arr[i] === orig) arr[i] = newText;
+    });
+  });
+}
+applyCkEdits();
+if (CK_PT) CK_PT.onRebuild(applyCkEdits);
 function isCkCardOff(k, x) {
   if (!CK_DEF_LIST[k]) return false; // #1520：k 不属于三类（防御：旧写法会静默拼出 ck-off-undefined 键）
   if (CK_DEF_LIST[k].indexOf(x) < 0) return false; // #1519a：不是预设卡 ⇒ 预设开关一律不认
-  return store.get('ck-off-' + k + ':' + x) === '1' || !!(window.presetGroup && window.presetGroup.isOff('cck', k));
+  if (window.presetGroup && window.presetGroup.isOff('cck', k)) return true;
+  if (store.get('ck-off-' + k + ':' + x) === '1') return true;
+  // 改过文案的卡仍沿用原文案的关闭键
+  const orig = CK_PT ? CK_PT.original(CK_EDIT(k), x) : x;
+  return orig !== x && store.get('ck-off-' + k + ':' + orig) === '1';
 }
 function setCkCardOff(k, x, off) { store.set('ck-off-' + k + ':' + x, off ? '1' : '0'); }
 // v3.27.x #823：寻踪总开关（per-cid 键 checkin-en，从未写过＝默认开启）。关闭＝日常侧全静：
@@ -1137,11 +1155,35 @@ if (ckRefresh) {
         window.presetGroup.bindBar(bar, 'cck', ckTab, function () { renderCkSysList(); updateCkCount(); });
       }
     }
-    def.forEach(x => {
+    def.forEach((x, xi) => {
       const off = isCkCardOff(ckTab, x);
+      const ekey = CK_EDIT(ckTab);
+      const edited = !!(CK_PT && CK_PT.isEdited(ekey, x));
       const row = document.createElement('div');
       row.className = 'tc-qrow' + (off ? ' off' : '');
-      row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + escCk(x) + ' <span class="tc-known">系统</span></div></div>';
+      row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + escCk(x) + ' <span class="tc-known' +
+        (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>';
+      if (CK_PT) {
+        const pencil = document.createElement('button');
+        pencil.type = 'button';
+        pencil.className = 'preset-edit-btn';
+        pencil.title = '编辑这张系统字卡';
+        pencil.setAttribute('aria-label', '编辑这张系统字卡');
+        pencil.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+        pencil.addEventListener('click', () => {
+          CK_PT.open({
+            key: ekey,
+            shown: x,
+            exists: function (next) { return def.some(y => y === next && y !== x); },
+            onChanged: function (next) {
+              def[xi] = next;
+              renderCkSysList();
+              updateCkCount();
+            }
+          });
+        });
+        row.appendChild(pencil);
+      }
       const lab = document.createElement('label');
       lab.className = 'toggle ccard-toggle';
       lab.innerHTML = '<input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span>';

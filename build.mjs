@@ -121,7 +121,7 @@ function minifyCss(code) {
 
 // ===== 按顺序拼接样式 / 脚本（顺序即生效顺序） =====
 const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css', 'desk-grid-v2.css'];
-const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
+const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'preset-edit.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
 
 // ===== PERF-PLAN 阶段 1：JS 外置化（2026-09-18）=====
 // 首开「3.8MB 内联 JS 主线程整段解析执行」是 iOS/中低端安卓卡顿的结构性大头
@@ -1745,10 +1745,10 @@ const FIX_SENTINELS = [
   { name: '#499 TA的心情豁免锁定（#365 锁闸按新需求移除；锚点=函数首个守卫是 enabled 而非锁，锁闸被加回开头即失配；构建拼接剥行首缩进，锚不带缩进＝#496 同款教训）', file: 'js/ta-mood.js', needle: "window.tryTaMoodShare = function () {\nif (!enabled()) return null;" },
   // ==== 2026-09-15 #500 三级链单卡开关补全：心意卡（9 组 + 特殊 4 组）与交流意图卡（8 组）在字卡库里没有列表＝没有关闭入口，且三类共用 mc-off-mood 键（「想念」「分享」等 20+ 张同名卡跨类互相误伤）——用户反馈「手动关闭没有用，会频繁使用」。修=三类分栏 UI + 各自独立开关键（旧键仍作兼容读，存量关闭不复活）====
   { name: '#500 三级链独立开关键（回到共用 mc-off-mood ＝同名卡跨类互相误伤，关情绪卡会连心意卡一起消失）', file: 'js/mood-reply-cards.js', needle: "const OFF_KEY = { mood: 'mc-off-mood', heart: 'mc-off-heart', intent: 'mc-off-intent' };" },
-  { name: '#500 心意/意图卡旧键兼容读（删兼容行＝老用户此前关掉的心意/意图卡全部复活）', file: 'js/mood-reply-cards.js', needle: "if (type !== 'mood' && !hasMoodCard(content) && ls.get('mc-off-mood:' + content) === '1') return true;" },
+  { name: '#500 心意/意图卡旧键兼容读（删兼容行＝老用户此前关掉的心意/意图卡全部复活）', file: 'js/mood-reply-cards.js', needle: "&& (ls.get('mc-off-mood:' + content) === '1' || (orig !== content && ls.get('mc-off-mood:' + orig) === '1'))) return true;" },
   { name: '#500 心意卡单卡开关入口（该行消失＝心意卡在字卡库里又没有列表，用户无从关闭）', file: 'js/mood-reply-cards.js', needle: ".concat((DATA.specialHeart || []).map(g => ({ ...g, type: 'heart', special: true })));" },
   { name: '#500 三类分栏容器（删＝心意/交流意图分栏 UI 丢失）', file: 'template.html', needle: 'id="mc-type-bar"' },
-  { name: '#500 逐张关闭写入本类键（回写成 mc-off-mood ＝跨类误伤回归）', file: 'js/mood-reply-cards.js', needle: 'setTypeOff(g.type || mcType, c.content, nowOff);' },
+  { name: '#500 逐张关闭写入本类键（回写成 mc-off-mood ＝跨类误伤回归）', file: 'js/mood-reply-cards.js', needle: 'setTypeOff(type, c.content, nowOff);' },
   // ==== 2026-09-12 #367 诊断红点：AbortError 类未处理 rejection（音乐/通话流超时兜底、切页取消的主动 abort）入错误环刷屏——Safari「Fetch is aborted」iOS 实录 ×41 条；修复=unhandledrejection 采集层按 AbortError 名/已知 abort 文案放行，与 fetch 包装层网络失败口径对齐 ====
   { name: '#367 AbortError rejection 放行（删放行＝主动 abort 取消照旧刷诊断红点，Safari 报「Fetch is aborted」）', file: 'js/device.js', needle: "r.name === 'AbortError')\n|| /^(Fetch is aborted|signal is aborted without reason" },
   // ==== 2026-09-12 #368 跨桌面串数据两件（iOS Safari 用户反馈，多机型同现）====
@@ -5449,14 +5449,14 @@ const FIX_SENTINELS = [
   { name: '#1315a 预设字卡「整组停用」共用件的独立键（塞回 dc-groups-off＝改动 #926/#932 的口径与账；删则各页无处存）', file: 'js/default-cards.js', needle: "const PG_KEY = 'pg-groups-off';" },
   { name: '#1315b 共用出口本身（12 页全靠它，删＝整组停用没有判据可问）', file: 'js/default-cards.js', needle: 'window.presetGroup = {' },
   { name: '#1315c 情绪三级链的组闸叠在 typeOff 出口首行（挪到单卡判定之后＝单卡「重新打开」会越过整组停用，用户报的关不掉复发）', file: 'js/mood-reply-cards.js', needle: 'if (pgOff(type, content)) return true;' },
-  { name: '#1315d 回应字卡的合并判据（分类闸 OR 单卡闸，一个函数收口；拆开写＝getReplyCard 与 getFollowupWord 两路会漏掉一路）', file: 'js/mood-reply-cards.js', needle: "function rcOff(cat, t) { return isCardOff('rc-off-' + cat, t) ||" },
+  { name: '#1315d 回应字卡的合并判据（分类闸 OR 单卡闸，一个函数收口；拆开写＝getReplyCard 与 getFollowupWord 两路会漏掉一路）', file: 'js/mood-reply-cards.js', needle: 'function rcOff(cat, t) {' },
   { name: '#1315e 情绪卡选组处也按组过滤（只闸 typeOff 时抽组权重仍会把停用组选进来再抽空，等于白抽）', file: 'js/mood-reply-cards.js', needle: 'presetGroup.isOff(PG_ID_MC.mood, g.group)' },
   { name: '#1315f TA 的心情组闸叠在自己的 isCardOff 出口（该函数同时供选组处与页面用，改成就两处漏一处）', file: 'js/ta-mood.js', needle: "presetGroup.isOff('tm', g)) return true;" },
-  { name: '#1315g 寻踪三类整类停用叠在 isCkCardOff 出口（genCheckin 与页面同源）', file: 'js/p2-features.js', needle: "=== '1' || !!(window.presetGroup && window.presetGroup.isOff('cck', k));" },
+  { name: '#1315g 寻踪三类整类停用叠在 isCkCardOff 出口（genCheckin 与页面同源）', file: 'js/p2-features.js', needle: "if (window.presetGroup && window.presetGroup.isOff('cck', k)) return true;" },
   { name: '#1315h 寻踪「三类全空」兜底重新过闸（改回 place = places 整表塞回＝三类全停用照样生成日常，本批要修的就是这一发）', file: 'js/p2-features.js', needle: "place = places.filter(p => !isCkCardOff('place', p.t));" },
   { name: '#1315i 自动换位的内置陪伴句按所属分类反查同一条闸（那五行字面量从不过闸＝停用「状态/感知」后 TA 照发）', file: 'js/p2-features.js', needle: '!(window.locLibTextOff && window.locLibTextOff(t))' },
   { name: '#1315j 词源关空不再凭空造出一句用户刚关掉的话（删除型＝写回旧形态即复发）', file: 'js/p2-features.js', needle: "all.push('在你身边')", absent: true },
-  { name: '#1315k 位置卡组闸叠在 isOff 出口（面板/角标/词源同源）', file: 'js/loc-lib.js', needle: "presetGroup.isOff('loc', cat));" },
+  { name: '#1315k 位置卡组闸叠在 isOff 出口（面板/角标/词源同源）', file: 'js/loc-lib.js', needle: "if (window.presetGroup && window.presetGroup.isOff('loc', cat)) return true;" },
   { name: '#1315l 按文案反查所属分类的出口（陪伴句那一路的唯一凭据）', file: 'js/loc-lib.js', needle: 'window.locLibTextOff = function (text) {' },
   { name: '#1315m TA 六类的类闸只作用于系统预设（连自建条目一起闸＝把用户自己加的话术也关掉）', file: 'js/ta-ask.js', needle: 'function presetCatOpen(ns, q) { return !(q && q.isPreset === true && pgCatOff(ns, q.cat)); }' },
   { name: '#1315n 小问题的内置兜底只补「库里没预设数据」（改回 qs.length ? qs : TC_DEFAULT＝逐张关光与整类停用全被越过）', file: 'js/ta-ask.js', needle: 'const presetInStore = d.questions.some(q => q.isPreset === true && ready(q));' },
@@ -7143,15 +7143,28 @@ const FIX_SENTINELS = [
   { name: '#1643k 双击翻面（删＝双击没有任何反应）', file: 'js/personalize.js', needle: "widget.classList.toggle('dpf-flipped');" },
   { name: '#1643l 网格内翻面层吃满高度（删＝网格相框翻面层塌成半截）', file: 'css/desk-grid-v2.css', needle: 'html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-flip {' },
   // ==== 2026-11-06 #1644 系统预设字卡文案可编辑（直接改系统卡·所有桌面共用） ====
-  { name: '#1644a 系统字卡编辑覆盖表（删＝改过的文案存不住，刷新即回原文）', file: 'js/default-cards.js', needle: "const PRESET_EDITS_KEY = 'default-card-edits';" },
+  { name: '#1644a 系统字卡编辑覆盖表（删＝改过的文案存不住，刷新即回原文）', file: 'js/preset-edit.js', needle: "const KEY = 'default-card-edits';" },
   { name: '#1644b 词典重建后重放编辑（删＝增删自建词条会把词典里改过的文案冲回原文）', file: 'js/default-cards.js', needle: 'applyPresetEditsToData();' },
-  { name: '#1644c 编辑后沿用原文案的关闭键（删＝改文案会把原本关掉的卡悄悄重新启用）', file: 'js/default-cards.js', needle: 'const orig = presetOriginalText(cat, c);' },
+  { name: '#1644c 编辑后沿用原文案的关闭键（删＝改文案会把原本关掉的卡悄悄重新启用）', file: 'js/default-cards.js', needle: 'const orig = PT.original(cat, c);' },
   { name: '#1644d 行内编辑铅笔（删＝系统卡只能开关、不能改文案）', file: 'js/default-cards.js', needle: 'class="preset-edit-btn"' },
   { name: '#1644e 文案 HTML 转义（删＝颜文字里的 < > & 拼进列表会错位/吞字）', file: 'js/default-cards.js', needle: 'function escHtml(s) {' },
   { name: '#1644f 系统字卡编辑弹窗（删＝没有改文案/恢复原文入口）', file: 'js/default-cards.js', needle: 'function openPresetCardEditor(cat, shown, draft) {' },
   { name: '#1644g 改文案后刷新四个预设列表（删＝保存成功但列表仍显示旧文案）', file: 'js/default-cards.js', needle: "document.addEventListener('preset-card-edited'" },
   { name: '#1644h 已改徽标样式（删＝改过的系统卡与未改的分不出来）', file: 'css/chat-pages.css', needle: '.tc-known.edited {' },
   { name: '#1644i 铅笔按钮样式（删＝行内按钮变浏览器默认灰按钮、挤压右侧开关）', file: 'css/chat-pages.css', needle: '.preset-edit-btn {' },
+  // ==== 2026-11-06 #1645 其余系统预设页共用文案编辑（情绪/心情/回应/寻踪/情话/位置/提问/查岗/邀请） ====
+  { name: '#1645a 公共编辑层挂到全局（删＝其余预设页没有 PT 可用，铅笔全部消失）', file: 'js/preset-edit.js', needle: 'window.presetTextEdit = api;' },
+  { name: '#1645b 公共编辑弹窗（删＝其余预设页点铅笔没反应）', file: 'js/preset-edit.js', needle: 'open: function (o) {' },
+  { name: '#1645c 覆盖表 IDB 回填重放登记（删＝LS 不可用设备上编辑不显示）', file: 'js/preset-edit.js', needle: 'onRebuild: function (fn) {' },
+  { name: '#1645d 公共层进构建（删＝index 不加载 preset-edit.js，PT 缺失）', file: 'index.html', needle: 'js/preset-edit.js' },
+  { name: '#1645e 今日情话编辑接入（删＝系统预设情话又没有铅笔）', file: 'js/quote-cards.js', needle: "const EDIT_KEY = 'quote:sys';" },
+  { name: '#1645f 他的心情编辑接入（删＝心情卡没有铅笔）', file: 'js/ta-mood.js', needle: "return 'tm:' + g;" },
+  { name: '#1645g 位置卡编辑接入（删＝位置卡没有铅笔）', file: 'js/loc-lib.js', needle: "return 'loc:' + c;" },
+  { name: '#1645h 寻踪日常编辑接入（删＝地点/做的事/说的话没有铅笔）', file: 'js/p2-features.js', needle: "return 'cck:' + k;" },
+  { name: '#1645i 情绪/回应字卡编辑接入（删＝情绪与回应页没有铅笔）', file: 'js/mood-reply-cards.js', needle: "return 'mc:' + type;" },
+  { name: '#1645j 他的询问/小问题/好奇/调侃编辑接入（删＝四本题库没有铅笔）', file: 'js/ta-ask.js', needle: 'function presetEditKey(prefix, q)' },
+  { name: '#1645k 他的查岗编辑接入（删＝查岗题库没有铅笔）', file: 'js/ck-question.js', needle: 'function ckApplyEdits(d) {' },
+  { name: '#1645l 他的邀请编辑接入（删＝邀请话术没有铅笔）', file: 'js/ta-invite.js', needle: 'function tiApplyEdits(d) {' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

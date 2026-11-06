@@ -158,6 +158,9 @@
 .preset-edit-btn svg { width:14px; height:14px; }
 .preset-edit-btn:active { background:#111; border-color:#111; color:#fff; }
 [data-theme="dark"] .preset-edit-btn:active { background:#f0f0f0; border-color:#f0f0f0; color:#111; }
+/* 题库/情话/位置/邀请等窄行（.ta-row/.tc-qrow）里再收小一号，给文案和「系统」徽标留宽度 */
+.ta-row .preset-edit-btn, .tc-qrow .preset-edit-btn { width:24px; height:24px; margin-right:-2px; }
+.ta-row .preset-edit-btn svg, .tc-qrow .preset-edit-btn svg { width:12px; height:12px; }
 .cc-ico {
   width:42px; height:42px; border-radius:13px; flex-shrink:0;
   background:rgba(0,0,0,.045); display:flex; align-items:center; justify-content:center;
@@ -2293,7 +2296,7 @@
 .tc-li-line { font-size:12px; color:var(--muted); margin-top:6px; }
 .tc-li-match { font-size:11px; color:#8a6d3b; margin-top:6px; }
 .tc-li-time { font-size:11px; color:var(--muted); margin-top:6px; }
-.tc-known { font-size:10px; color:#4e7a54; border:1px solid #bcd8c2; border-radius:6px; padding:0 5px; margin-left:4px; }
+.tc-known { font-size:10px; color:#4e7a54; border:1px solid #bcd8c2; border-radius:6px; padding:0 5px; margin-left:4px; white-space:nowrap; }
 /* #1644 改过文案的系统字卡：徽标换成「已改」，与未改的系统卡区分 */
 .tc-known.edited { color:#8a5a00; border-color:#e2c48f; background:rgba(226,196,143,.2); }
 /* v3.26.x：通话中断记录区分正常挂断——红色左边框 + 浅红底 + 中断标签 */
