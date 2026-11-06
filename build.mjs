@@ -7196,7 +7196,11 @@ const FIX_SENTINELS = [
   { name: '#1625a 通话快照记录视频模式（删＝刷新后一律恢复成语音）', file: 'js/call.js', needle: 'vt: VT.mode ? 1 : 0' },
   { name: '#1625b 刷新恢复视频界面（删＝走回语音面板）', file: 'js/call.js', needle: 'function vtRestoreFromSnapshot()' },
   { name: '#1625c 语音/视频切换按钮两种接通态都常驻（删＝恢复的视频界面没有切回语音的按钮）', file: 'js/call.js', needle: 'if (vtBtn) vtBtn.hidden = !(mode === \'active\');' },
-  { name: '#1625d 视频态切换按钮改文案/图标为「语音」（删＝摄像机图标配「语音」）', file: 'js/call.js', needle: "vTxt.textContent = on ? '语音' : '视频'" },
+  { name: '#1626d 视频态切换按钮改文案/图标为「语音」（删＝摄像机图标配「语音」）', file: 'js/call.js', needle: "vTxt.textContent = on ? '语音' : '视频'" },
+  // ==== 2026-11-06 #1626 视频小窗缩小后不再是黑块 ====
+  { name: '#1626a 小窗 TA 头像模糊背景层（删＝缩小后又是一块黑）', file: 'template.html', needle: 'id="call-mini-blur"' },
+  { name: '#1626b 小窗我不开摄像头时头像占位（删＝黑 video 直接露出来）', file: 'template.html', needle: 'id="call-mini-selfoff"' },
+  { name: '#1626c 小窗模糊层填 TA/我的头像（删＝图层永远空着）', file: 'js/call.js', needle: 'function paintMiniSelfOff()' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

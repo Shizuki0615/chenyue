@@ -3798,6 +3798,12 @@ display:block; overflow:hidden; border-radius:14px;
 background:#111; border-color:rgba(255,255,255,.14);
 box-shadow:0 8px 24px rgba(0,0,0,.32);
 }
+.call-mini-blur { display:none; }
+.call-mini.vt .call-mini-blur {
+display:block; position:absolute; inset:-18px; z-index:0;
+background-size:cover; background-position:center; background-repeat:no-repeat;
+filter:blur(20px) saturate(1.1); transform:scale(1.06);
+}
 .call-mini.vt .call-mini-frame {
 position:absolute; inset:0; z-index:1; width:100%; height:100%;
 object-fit:cover; display:block;
@@ -3805,10 +3811,31 @@ object-fit:cover; display:block;
 .call-mini.vt .call-mini-frame[hidden] { display:none; }
 .call-mini.vt .call-mini-av {
 position:absolute; inset:0; z-index:1; width:100%; height:100%;
-border-radius:0; background:#16161c;
+border-radius:0; background:linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.34));
 }
 .call-mini.vt .call-mini-av[hidden] { display:none; }
 .call-mini.vt .call-mini-av img { width:48px; height:48px; border-radius:50%; object-fit:cover; }
+.call-mini-selfoff {
+position:absolute; top:6px; right:6px; z-index:2;
+width:26px; height:36px; border-radius:7px; overflow:hidden;
+background:#16161c; box-shadow:0 2px 8px rgba(0,0,0,.45);
+display:flex; align-items:center; justify-content:center; color:#fff;
+}
+.call-mini-selfoff[hidden] { display:none; }
+.call-mini-selfoff::after {
+content:''; position:absolute; inset:0; z-index:1; background:rgba(0,0,0,.22);
+}
+.call-mini-selfoff-blur {
+position:absolute; inset:-10px; background-size:cover; background-position:center;
+background-repeat:no-repeat; filter:blur(9px) saturate(1.1);
+}
+.call-mini-selfoff svg { position:relative; z-index:2; width:12px; height:12px; opacity:.85; }
+.call-mini.vt.swap .call-mini-selfoff {
+top:0; left:0; right:auto; width:100%; height:100%; border-radius:0; box-shadow:none;
+z-index:1;
+}
+.call-mini.vt.swap .call-mini-selfoff-blur { filter:blur(26px) saturate(1.12); }
+.call-mini.vt.swap .call-mini-selfoff svg { width:24px; height:24px; }
 .call-mini.vt .call-mini-self {
 position:absolute; top:6px; right:6px; z-index:2;
 width:26px; height:36px; border-radius:7px; object-fit:cover;
@@ -12529,7 +12556,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793886409766" data-version="v8.75.1">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793924011289" data-version="v8.75.3">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13625,8 +13652,13 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
 
 <!-- 通话小框（接通后最小化；视频态是一块真正的视频小窗：他画面铺满 + 我的摄像头右上角） -->
 <div class="call-mini" id="call-mini" hidden>
+  <div class="call-mini-blur" id="call-mini-blur" aria-hidden="true"></div>
   <img class="call-mini-frame" id="call-mini-frame" alt="" hidden>
   <video class="call-mini-self" id="call-mini-self" playsinline muted autoplay hidden></video>
+  <div class="call-mini-selfoff" id="call-mini-selfoff" hidden>
+    <div class="call-mini-selfoff-blur" id="call-mini-selfoff-blur" aria-hidden="true"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
+  </div>
   <div class="call-mini-av" id="call-mini-av"></div>
   <div class="call-mini-info">
     <div class="call-mini-name" id="call-mini-name">通话中</div>
@@ -14121,7 +14153,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.75.1</div>
+          <div class="val" id="about-ver-val">v8.75.3</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14240,7 +14272,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.75.1</div>
+      <div class="ver">辰光玥影 v8.75.3</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14671,7 +14703,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.75.1</span>
+              <span class="lic-ver">v8.75.3</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -24506,4 +24538,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw3lngh2 -->
+<!-- __MOCHI_EOF__ mw481dzt -->

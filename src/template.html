@@ -1614,8 +1614,13 @@
 
 <!-- 通话小框（接通后最小化；视频态是一块真正的视频小窗：他画面铺满 + 我的摄像头右上角） -->
 <div class="call-mini" id="call-mini" hidden>
+  <div class="call-mini-blur" id="call-mini-blur" aria-hidden="true"></div>
   <img class="call-mini-frame" id="call-mini-frame" alt="" hidden>
   <video class="call-mini-self" id="call-mini-self" playsinline muted autoplay hidden></video>
+  <div class="call-mini-selfoff" id="call-mini-selfoff" hidden>
+    <div class="call-mini-selfoff-blur" id="call-mini-selfoff-blur" aria-hidden="true"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M15 10.5V7a2 2 0 00-2-2H6.5"/><path d="M2 8v9a2 2 0 002 2h11a2 2 0 001.7-.9"/><path d="M22 8.5v7l-4-2.4"/></svg>
+  </div>
   <div class="call-mini-av" id="call-mini-av"></div>
   <div class="call-mini-info">
     <div class="call-mini-name" id="call-mini-name">通话中</div>

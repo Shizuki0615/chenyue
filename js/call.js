@@ -1098,7 +1098,14 @@ return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
 }
 function myAvOf(cid) {
 const s = vtStoreFor(cid);
-return s.get('cs-avatar-user') || s.get('avatar-user') || '';
+let av = s.get('cs-avatar-user') || s.get('avatar-user') || '';
+if (!av) {
+try {
+const a = window.activeStore && window.activeStore();
+if (a) av = a.get('cs-avatar-user') || a.get('avatar-user') || '';
+} catch (e) {}
+}
+return av;
 }
 function paintSelfOff() {
 const avBox = document.getElementById('vt-self-off-av');
@@ -1274,6 +1281,15 @@ const t = document.getElementById('call-swap-txt');
 if (t) t.textContent = next ? '看对方' : '看自己';
 if (VT.minimized) vtPaintMini();
 }
+function paintMiniSelfOff() {
+const blur = document.getElementById('call-mini-selfoff-blur');
+let av = '';
+try { av = myAvOf(vtCid()); } catch (e) { av = ''; }
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
+}
+}
 function vtPaintMini() {
 if (!mini) return;
 const on = !!(VT.mode && VT.minimized);
@@ -1282,6 +1298,7 @@ mini.classList.toggle('swap', on && !!VT.swap);
 if (!on) { vtClearMini(); return; }
 const frame = document.getElementById('call-mini-frame');
 const avBox = document.getElementById('call-mini-av');
+const blur = document.getElementById('call-mini-blur');
 const hasFrame = !!(VT.taCam && VT.taBg);
 if (frame) {
 if (hasFrame) { frame.src = VT.taBg; frame.hidden = false; }
@@ -1293,7 +1310,18 @@ if (!hasFrame) {
 let av = '';
 try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
 fillAv(avBox, av);
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
 }
+}
+}
+if (blur && hasFrame) blur.style.backgroundImage = '';
+const selfOff = document.getElementById('call-mini-selfoff');
+if (selfOff) {
+const offSelf = !VT.stream;
+selfOff.hidden = !offSelf;
+if (offSelf) paintMiniSelfOff();
 }
 const ms = document.getElementById('call-mini-self');
 if (ms) {
@@ -1319,6 +1347,10 @@ ms.hidden = true;
 }
 const avBox = document.getElementById('call-mini-av');
 if (avBox) avBox.hidden = false;
+const blur = document.getElementById('call-mini-blur');
+if (blur) blur.style.backgroundImage = '';
+const selfOff = document.getElementById('call-mini-selfoff');
+if (selfOff) selfOff.hidden = true;
 if (mini) mini.classList.remove('vt', 'swap');
 }
 function vtMinimize() {
