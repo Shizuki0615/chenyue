@@ -106,13 +106,18 @@ toast(next === orig ? '已恢复系统原文案' : '已更新这张系统字卡�
 return true;
 }
 window.openModal(o.title || '编辑系统字卡', typeof o.draft === 'string' ? o.draft : shown, function (v) {
-const next = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
+const raw = String(v == null ? '' : v);
+const next = o.multiline ? raw.replace(/\r\n?/g, '\n').trim() : raw.replace(/[\r\n]+/g, ' ').trim();
 if (!finish(next)) {
 if (next) api.open(Object.assign({}, o, { draft: next }));
 }
 }, {
-maxlength: o.maxlength || 120,
-staticText: o.staticText || '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。',
+maxlength: o.multiline ? 0 : (o.maxlength || 120),
+textarea: !!o.multiline,
+textareaRows: o.rows || 4,
+staticText: o.staticText || (o.multiline
+? '每行一句，保存后立即生效；原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。'
+: '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。'),
 extraBtn: edited ? {
 label: '恢复原文',
 fn: function (ctl) { if (finish(orig)) ctl.close(); }

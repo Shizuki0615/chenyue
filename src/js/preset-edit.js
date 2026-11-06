@@ -118,14 +118,20 @@
         return true;
       }
       window.openModal(o.title || '编辑系统字卡', typeof o.draft === 'string' ? o.draft : shown, function (v) {
-        const next = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
+        const raw = String(v == null ? '' : v);
+        // 多行模式（题库的一组回应句等）保留换行；单行卡文案仍压成一行
+        const next = o.multiline ? raw.replace(/\r\n?/g, '\n').trim() : raw.replace(/[\r\n]+/g, ' ').trim();
         if (!finish(next)) {
           // 重名/恢复被占用：把刚输入的内容带回编辑框（外层弹窗按打开序号跳过关闭）
           if (next) api.open(Object.assign({}, o, { draft: next }));
         }
       }, {
-        maxlength: o.maxlength || 120,
-        staticText: o.staticText || '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。',
+        maxlength: o.multiline ? 0 : (o.maxlength || 120),
+        textarea: !!o.multiline,
+        textareaRows: o.rows || 4,
+        staticText: o.staticText || (o.multiline
+          ? '每行一句，保存后立即生效；原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。'
+          : '只改这一张系统预设字卡：保存后列表和回复都立即用新文案，原文案仍保留，可随时「恢复原文」。改动保存在本机，所有联系人桌面共用。'),
         extraBtn: edited ? {
           label: '恢复原文',
           fn: function (ctl) { if (finish(orig)) ctl.close(); }

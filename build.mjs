@@ -7165,6 +7165,11 @@ const FIX_SENTINELS = [
   { name: '#1645j 他的询问/小问题/好奇/调侃编辑接入（删＝四本题库没有铅笔）', file: 'js/ta-ask.js', needle: 'function presetEditKey(prefix, q)' },
   { name: '#1645k 他的查岗编辑接入（删＝查岗题库没有铅笔）', file: 'js/ck-question.js', needle: 'function ckApplyEdits(d) {' },
   { name: '#1645l 他的邀请编辑接入（删＝邀请话术没有铅笔）', file: 'js/ta-invite.js', needle: 'function tiApplyEdits(d) {' },
+  // ==== 2026-11-06 #1646 选择题选项 + 查岗互动动作回应句也可编辑 ====
+  { name: '#1646a 选择题选项行内铅笔（删＝选项文本改不了）', file: 'js/ta-ask.js', needle: 'function optPenHtml(prefix, idx, oi, kind)' },
+  { name: '#1646b 选项覆盖套用/写盘还原（删＝选项改后刷新回原文或污染题库）', file: 'js/ta-ask.js', needle: 'function stripOptionEdits(prefix, q)' },
+  { name: '#1646c 查岗选择题选项与「好呀/不要」回应句铅笔（删＝这两类文案没有编辑入口）', file: 'js/ck-question.js', needle: 'function respMiniPen(idx, field)' },
+  { name: '#1646d 编辑弹窗多行模式（删＝一组回应句只能压成一行，没法逐句编辑）', file: 'js/preset-edit.js', needle: 'textarea: !!o.multiline,' },
   // ==== 2026-10-30 #1604 歌词卡挑句句数可调（默认 1~4） ====
   { name: '#1604a 歌词挑句范围默认值（删＝设置页读不到新键，恒按老 2~3 句）', file: 'js/music-player.js', needle: 'taLyricMin: 1, taLyricMax: 4' },
   { name: '#1604b 挑句按设置范围（删＝又写死 2~3 句）', file: 'js/music-player.js', needle: 'const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));' },

@@ -123,8 +123,16 @@
   // 内存副本（ckLoad / ckLoadFrom 每次读盘后都套），落盘前再用原文案还原，store/IDB 永远留原文。
   const PT = window.presetTextEdit;
   function ckEditKey(cat) { return 'ckq:' + (cat || 'daily'); }
+  function CK_OPT_KEY(q, oi) { return 'ckqopt:' + (q.id || '') + ':' + oi; }
   // 互动动作卡另有两句实际发卡文案（他对我 / 我对他），各自独立覆盖
   const CK_ACT_FIELDS = [['taToMe', 'ckqa:'], ['meToTa', 'ckqb:']];
+  function ckMiniPen(attr, val, title) {
+    if (!PT) return '';
+    return '<button type="button" class="preset-edit-btn preset-edit-mini" ' + attr + '="' + val + '" title="' + title + '" aria-label="' + title + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+  }
+  function optMiniPen(idx, oi) { return ckMiniPen('data-opt-ck-idx', idx + '|' + oi, '编辑这个选项'); }
+  function respMiniPen(idx, field) { return ckMiniPen('data-resp-ck-idx', idx + '|' + field, field === 'accept' ? '编辑「好呀」回应句' : '编辑「不要」回应句'); }
   function ckApplyEdits(d) {
     if (!PT || !d || !Array.isArray(d.questions)) return;
     const plan = [];
@@ -134,6 +142,17 @@
       let next = base;
       PT.apply(ckEditKey(q.cat), function (nv, orig) { if (orig === base) next = nv; });
       const act = [];
+      // 选择题选项文案（每个选项独立覆盖）
+      if (Array.isArray(q.options)) {
+        q.options.forEach(function (o, oi) {
+          if (!o || typeof o.t !== 'string') return;
+          const ok = CK_OPT_KEY(q, oi);
+          const cur = o.t;
+          let nv2 = cur;
+          PT.apply(ok, function (v, orig) { if (orig === cur) nv2 = v; });
+          if (nv2 !== cur) act.push(['option', oi, nv2]);
+        });
+      }
       if (q.type === 'action') {
         CK_ACT_FIELDS.forEach(function (pair) {
           const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
@@ -143,13 +162,30 @@
           PT.apply(pfx, function (v, orig) { if (orig === cur) nv2 = v; });
           if (nv2 !== cur) act.push([field, nv2]);
         });
+        // 「好呀 / 不要」整组回应句（每行一句，按整块认身份）
+        [['accept', 'ckqacc:'], ['reject', 'ckqrej:']].forEach(function (pair) {
+          const field = pair[0], pfx = pair[1] + (q.id || '');
+          if (!Array.isArray(q[field])) return;
+          const block = q[field].join('\n');
+          let nv3 = block;
+          PT.apply(pfx, function (v, orig) { if (orig === block) nv3 = v; });
+          if (nv3 !== block) act.push(['lines', field, nv3]);
+        });
       }
       if (next !== base || act.length) plan.push([q, next, act]);
     });
     // 先算后写：重复读取/二次套用都幂等，不会把刚改成的新文案再套一遍
     plan.forEach(function (p) {
       p[0].text = p[1];
-      p[2].forEach(function (a) { p[0][a[0]] = a[1]; });
+      p[2].forEach(function (a) {
+        if (a[0] === 'option') {
+          if (p[0].options && p[0].options[a[1]]) p[0].options[a[1]].t = a[2];
+        } else if (a[0] === 'lines') {
+          p[0][a[1]] = a[2].split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+        } else {
+          p[0][a[0]] = a[1];
+        }
+      });
     });
   }
   // 序列化前把预设文案还原成原文案：「原文→新文」的链式改名不会写回 store
@@ -159,6 +195,17 @@
       if (!q || q.isPreset !== true || !q.text) return q;
       const orig = PT.original(ckEditKey(q.cat), q.text);
       let out = orig === q.text ? q : Object.assign({}, q, { text: orig });
+      if (Array.isArray(q.options)) {
+        let optChanged = false;
+        const opts = q.options.map(function (o, oi) {
+          if (!o || typeof o.t !== 'string') return o;
+          const o2 = PT.original(CK_OPT_KEY(q, oi), o.t);
+          if (o2 === o.t) return o;
+          optChanged = true;
+          return Object.assign({}, o, { t: o2 });
+        });
+        if (optChanged) out = Object.assign({}, out, { options: opts });
+      }
       if (q.type === 'action') {
         CK_ACT_FIELDS.forEach(function (pair) {
           const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
@@ -166,6 +213,14 @@
           if (typeof cur !== 'string') return;
           const o2 = PT.original(pfx, cur);
           if (o2 !== cur) out = Object.assign({}, out, { [field]: o2 });
+        });
+        [['accept', 'ckqacc:'], ['reject', 'ckqrej:']].forEach(function (pair) {
+          const field = pair[0], pfx = pair[1] + (q.id || '');
+          if (!Array.isArray(q[field])) return;
+          const block = q[field].join('\n');
+          const o2 = PT.original(pfx, block);
+          if (o2 === block) return;
+          out = Object.assign({}, out, { [field]: o2.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) });
         });
       }
       return out;
@@ -187,6 +242,17 @@
     return !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
   }
 
+  // 默认题库条目深拷贝：选项/回应数组不能与 DEFAULT_QUESTIONS 共用引用，
+  // 否则覆盖套到内存题时会顺手改写默认模板，恢复原文后新播种的题库仍带旧的新文案
+  function ckCopyQuestion(q) {
+    const nq = Object.assign({}, q);
+    if (Array.isArray(q.options)) nq.options = q.options.map(function (o) {
+      return Object.assign({}, o, { reply: Array.isArray(o.reply) ? o.reply.slice() : o.reply });
+    });
+    if (Array.isArray(q.accept)) nq.accept = q.accept.slice();
+    if (Array.isArray(q.reject)) nq.reject = q.reject.slice();
+    return nq;
+  }
   // ---------- 数据读写（增量合并 + 持久化，与 ta-ask.js taAskMerge 同款） ----------
   // ① 只追加从未合并过的新预设（旧预设被删后不复活——预设本身不可删，此处防未来扩充丢项）；
   // ② 绝不动用户自定义；③ 合并结果立即写回固化
@@ -199,7 +265,7 @@
     let changed = false;
     DEFAULT_QUESTIONS.forEach(q => {
       if (!mergedSet[q.id] && !ids[q.id]) {
-        const nq = Object.assign({}, q);
+        const nq = ckCopyQuestion(q);
         nq.isPreset = true;
         d.questions.push(nq);
         changed = true;
@@ -234,7 +300,7 @@
     if (!Array.isArray(d.questions) || !d.questions.length) {
       const isNew = !store.get(KEY);
       d.questions = DEFAULT_QUESTIONS.map(q => {
-        const nq = Object.assign({}, q);
+        const nq = ckCopyQuestion(q);
         nq.isPreset = true;
         return nq;
       });
@@ -264,7 +330,7 @@
     if (!Array.isArray(d.questions) || !d.questions.length) {
       const isNew = !s.get(KEY);
       d.questions = DEFAULT_QUESTIONS.map(q => {
-        const nq = Object.assign({}, q);
+        const nq = ckCopyQuestion(q);
         nq.isPreset = true;
         return nq;
       });
@@ -541,16 +607,19 @@
       const tag = isAction ? '互动动作' : (isSingle ? '单选·' + q.options.length + '选项' : '文字');
       const actEdited = !!(PT && isAction && (
         PT.isEdited('ckqa:' + (q.cat || 'daily'), q.taToMe || '') ||
-        PT.isEdited('ckqb:' + (q.cat || 'daily'), q.meToTa || '')
+        PT.isEdited('ckqb:' + (q.cat || 'daily'), q.meToTa || '') ||
+        PT.isEdited('ckqacc:' + (q.id || ''), (q.accept || []).join('\n')) ||
+        PT.isEdited('ckqrej:' + (q.id || ''), (q.reject || []).join('\n'))
       ));
-      const edited = !!(PT && (PT.isEdited(ckEditKey(q.cat), q.text) || actEdited));
+      const optEdited = !!(PT && (q.options || []).some((o, oi) => o && typeof o.t === 'string' && PT.isEdited(CK_OPT_KEY(q, oi), o.t)));
+      const edited = !!(PT && (PT.isEdited(ckEditKey(q.cat), q.text) || actEdited || optEdited));
       html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
         '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
         '<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
         (PT ? '<button type="button" class="preset-edit-btn" data-idx="' + idx + '" title="编辑这张系统字卡" aria-label="编辑这张系统字卡"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
         '</div>';
       if (isSingle) {
-        html += '<div class="tc-qopts">选项：' + q.options.map(o => esc(o.t)).join(' / ') + '</div>';
+        html += '<div class="tc-qopts">选项：' + q.options.map((o, oi) => esc(o.t) + optMiniPen(idx, oi)).join(' / ') + '</div>';
       } else if (isAction) {
         const miniPen = function (field) {
           if (!PT) return '';
@@ -559,6 +628,8 @@
         };
         html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + miniPen('taToMe') +
           ' / 我对他：' + esc(q.meToTa || q.text) + miniPen('meToTa') + '</div>';
+        html += '<div class="tc-qopts">好呀：' + (q.accept || []).map(esc).join(' / ') + respMiniPen(idx, 'accept') +
+          ' / 不要：' + (q.reject || []).map(esc).join(' / ') + respMiniPen(idx, 'reject') + '</div>';
       }
     });
     container.innerHTML = html;
@@ -592,8 +663,44 @@
         });
       });
     });
+    // 选择题每个选项一支小铅笔（只改选项文本，选项的回应/权重原样保留）
+    container.querySelectorAll('.preset-edit-mini[data-opt-ck-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d2 = ckLoad();
+        const pair = String(btn.dataset.optCkIdx || '').split('|');
+        const q = d2.questions[Number(pair[0])];
+        const oi = Number(pair[1]);
+        if (!q || q.isPreset !== true || !Array.isArray(q.options) || !q.options[oi]) return;
+        PT.open({
+          key: CK_OPT_KEY(q, oi),
+          shown: q.options[oi].t || '',
+          exists: function (next) {
+            return q.options.some(function (o, j) { return j !== oi && o && o.t === next; });
+          },
+          onChanged: function () { renderCkSysInto(container, search); }
+        });
+      });
+    });
+    // 互动动作卡的「好呀 / 不要」整组回应句：多行编辑（每行一句）
+    container.querySelectorAll('.preset-edit-mini[data-resp-ck-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d2 = ckLoad();
+        const pair = String(btn.dataset.respCkIdx || '').split('|');
+        const q = d2.questions[Number(pair[0])];
+        const field = pair[1];
+        if (!q || q.isPreset !== true || !Array.isArray(q[field])) return;
+        PT.open({
+          key: (field === 'accept' ? 'ckqacc:' : 'ckqrej:') + (q.id || ''),
+          shown: q[field].join('\n'),
+          multiline: true,
+          rows: 5,
+          title: field === 'accept' ? '编辑「好呀」回应句' : '编辑「不要」回应句',
+          onChanged: function () { renderCkSysInto(container, search); }
+        });
+      });
+    });
     // 互动动作卡的两句实际发卡文案（他对我 / 我对他）各给一支小铅笔
-    container.querySelectorAll('.preset-edit-mini').forEach(btn => {
+    container.querySelectorAll('.preset-edit-mini[data-act-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
         const d2 = ckLoad();
         const q = d2.questions[Number(btn.dataset.actIdx)];
