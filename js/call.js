@@ -260,7 +260,6 @@ startAsVideo: false, // 本通去电是否以视频方式发起（接通后自�
 swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
 swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
 minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
-suppressTapUntil: 0, // 点小窗展开的瞬间屏蔽「摄像头已关」占位上的幽灵点击，防自动开摄像头
 poolAsked: false  // 画面库等待回填只问一次，防递归
 };
 let _miniSafeTopCache = -1;
@@ -1371,7 +1370,6 @@ VT.minimized = false;
 if (mini) mini.hidden = true;
 if (mask) mask.hidden = false;
 if (cdEl) cdEl.hidden = true;
-VT.suppressTapUntil = Date.now() + 500;
 try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
 setMaskBtns('active');
 vtSetPanel(true);
@@ -1649,17 +1647,7 @@ const taAv = document.getElementById('vt-ta-av');
 const tapTaBack = function () { if (VT.swap) vtSwap(false); };
 if (taImg) taImg.addEventListener('click', tapTaBack);
 if (taAv) taAv.addEventListener('click', tapTaBack);
-const offMoved = bind(off, false);
-if (off) {
-off.addEventListener('click', function (ev) {
-if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
-if (VT.suppressTapUntil && Date.now() < VT.suppressTapUntil) {
-try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
-return;
-}
-if (VT.camOff) vtToggleCam(); else vtStartCam();
-});
-}
+bind(off, false); // 只用于拖动定位，不再兼任「点一下开摄像头」
 })();
 const vtRow = document.getElementById('call-vt-row');
 if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });

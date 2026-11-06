@@ -340,7 +340,6 @@
     swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
     swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
     minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
-    suppressTapUntil: 0, // 点小窗展开的瞬间屏蔽「摄像头已关」占位上的幽灵点击，防自动开摄像头
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -1848,9 +1847,6 @@
     if (mini) mini.hidden = true;
     if (mask) mask.hidden = false;
     if (cdEl) cdEl.hidden = true;
-    // v8.75.4：点小窗展开的那一下 pointerup 会顺带合成一个 click，落在刚铺开的
-    // 「摄像头已关」占位上就会走开摄像头逻辑——展开后 500ms 内先屏蔽这个幽灵点击
-    VT.suppressTapUntil = Date.now() + 500;
     try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
     setMaskBtns('active');
     vtSetPanel(true);
@@ -2070,7 +2066,7 @@
   if (flipBtn) flipBtn.addEventListener('click', vtFlip);
   if (swapBtn) swapBtn.addEventListener('click', function () { vtSwap(); });
   // 摄像头小窗拖动：视频画面 + 关摄像头占位块共用一套（两个元素位置同步）。
-  // 占位块同时是「点一下重试」的按钮 ⇒ 位移超过阈值才算拖，没动就交还给 click 重试。
+  // v8.75.8：开摄像头只走底部「打开」按钮——点占位块不再触发摄像头，避免误触。
   (function initVtSelfDrag() {
     const v = document.getElementById('vt-self');
     const off = document.getElementById('vt-self-off');
@@ -2149,19 +2145,7 @@
     const tapTaBack = function () { if (VT.swap) vtSwap(false); };
     if (taImg) taImg.addEventListener('click', tapTaBack);
     if (taAv) taAv.addEventListener('click', tapTaBack);
-    const offMoved = bind(off, false);
-    if (off) {
-      off.addEventListener('click', function (ev) {
-        // 刚刚是真拖动：这一下抬起不当点击用（否则松手就把摄像头又打开了）
-        if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
-        // v8.75.4：从小窗展开的那一下会在新面板上补一个 click，别把它当成「点自己开摄像头」
-        if (VT.suppressTapUntil && Date.now() < VT.suppressTapUntil) {
-          try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
-          return;
-        }
-        if (VT.camOff) vtToggleCam(); else vtStartCam();
-      });
-    }
+    bind(off, false); // 只用于拖动定位，不再兼任「点一下开摄像头」
   })();
   const vtRow = document.getElementById('call-vt-row');
   if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
