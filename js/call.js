@@ -260,6 +260,7 @@ startAsVideo: false, // 本通去电是否以视频方式发起（接通后自�
 swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
 swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
 minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
+suppressTapUntil: 0, // 点小窗展开的瞬间屏蔽「摄像头已关」占位上的幽灵点击，防自动开摄像头
 poolAsked: false  // 画面库等待回填只问一次，防递归
 };
 let _miniSafeTopCache = -1;
@@ -1370,11 +1371,12 @@ VT.minimized = false;
 if (mini) mini.hidden = true;
 if (mask) mask.hidden = false;
 if (cdEl) cdEl.hidden = true;
+VT.suppressTapUntil = Date.now() + 500;
 try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
 setMaskBtns('active');
 vtSetPanel(true);
 vtPaintMini(); // minimized=false → 顺手清掉小窗里的视频元素/缩略图
-vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
+if (!VT.camOff) vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建；手动关着的绝不重开
 return true;
 }
 function vtEnter() {
@@ -1651,6 +1653,10 @@ const offMoved = bind(off, false);
 if (off) {
 off.addEventListener('click', function (ev) {
 if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
+if (VT.suppressTapUntil && Date.now() < VT.suppressTapUntil) {
+try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
+return;
+}
 if (VT.camOff) vtToggleCam(); else vtStartCam();
 });
 }

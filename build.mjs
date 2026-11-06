@@ -7201,6 +7201,9 @@ const FIX_SENTINELS = [
   { name: '#1626a 小窗 TA 头像模糊背景层（删＝缩小后又是一块黑）', file: 'template.html', needle: 'id="call-mini-blur"' },
   { name: '#1626b 小窗我不开摄像头时头像占位（删＝黑 video 直接露出来）', file: 'template.html', needle: 'id="call-mini-selfoff"' },
   { name: '#1626c 小窗模糊层填 TA/我的头像（删＝图层永远空着）', file: 'js/call.js', needle: 'function paintMiniSelfOff()' },
+  // ==== 2026-11-06 #1627 小窗展开别把手动关掉的摄像头又打开 ====
+  { name: '#1627a 展开后屏蔽摄像头占位幽灵点击（删＝点小窗回来摄像头自动开）', file: 'js/call.js', needle: 'VT.suppressTapUntil = Date.now() + 500' },
+  { name: '#1627b 展开只在未手动关摄像头时重建流（删＝手动关着也可能被 vtStartCam 重开）', file: 'js/call.js', needle: 'if (!VT.camOff) vtStartCam();' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

@@ -340,6 +340,7 @@
     swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
     swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
     minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
+    suppressTapUntil: 0, // 点小窗展开的瞬间屏蔽「摄像头已关」占位上的幽灵点击，防自动开摄像头
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -1847,11 +1848,14 @@
     if (mini) mini.hidden = true;
     if (mask) mask.hidden = false;
     if (cdEl) cdEl.hidden = true;
+    // v8.75.4：点小窗展开的那一下 pointerup 会顺带合成一个 click，落在刚铺开的
+    // 「摄像头已关」占位上就会走开摄像头逻辑——展开后 500ms 内先屏蔽这个幽灵点击
+    VT.suppressTapUntil = Date.now() + 500;
     try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden = true; } catch (e) {}
     setMaskBtns('active');
     vtSetPanel(true);
     vtPaintMini(); // minimized=false → 顺手清掉小窗里的视频元素/缩略图
-    vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
+    if (!VT.camOff) vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建；手动关着的绝不重开
     return true;
   }
   function vtEnter() {
@@ -2150,6 +2154,11 @@
       off.addEventListener('click', function (ev) {
         // 刚刚是真拖动：这一下抬起不当点击用（否则松手就把摄像头又打开了）
         if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
+        // v8.75.4：从小窗展开的那一下会在新面板上补一个 click，别把它当成「点自己开摄像头」
+        if (VT.suppressTapUntil && Date.now() < VT.suppressTapUntil) {
+          try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {}
+          return;
+        }
         if (VT.camOff) vtToggleCam(); else vtStartCam();
       });
     }
