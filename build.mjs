@@ -7232,6 +7232,11 @@ const FIX_SENTINELS = [
   { name: '#1631c 拖动时禁浏览器抢手势（删＝移动端长按拖动被滚动/选择打断）', file: 'css/chat-main.css', needle: '.more-grid, .more-item { touch-action:none; }' },
   { name: '#1631d 跟手浮层样式（删＝拖动时没有浮起视觉）', file: 'css/chat-main.css', needle: '.more-item-ghost {' },
   { name: '#1632 页签 pointerup 直接切页（删＝又等合成 click，轻微滞涩）', file: 'js/chat.js', needle: "moreTabs.addEventListener('pointerup'" },
+  // ==== 2026-11-06 #1633 浮层跟手与落点精度 ====
+  { name: '#1633a 浮层按抓取点定位（删＝浮层又在指下跳位）', file: 'js/chat.js', needle: 'let grabDX = 0, grabDY = 0;' },
+  { name: '#1633b 浮层用 translate3d 跟手（删＝又改 left/top 慢半拍）', file: 'js/chat.js', needle: "g.style.transform = 'translate3d('" },
+  { name: '#1633c 落点按上下半区判定（删＝又只按左右，落点偏一位）', file: 'js/chat.js', needle: 'const band = r.height * 0.3;' },
+  { name: '#1633d 拖动占位落点描边（删＝落点看不清）', file: 'css/chat-main.css', needle: 'outline:2px dashed rgba(0,0,0,.28)' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

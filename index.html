@@ -2484,12 +2484,14 @@ box-shadow:0 1px 3px rgba(0,0,0,.06);
 .more-grid, .more-item { touch-action:none; }
 .more-grid.more-icons-dragging { cursor:grabbing; }
 .more-item.more-item-dragging { position:relative; z-index:1; opacity:.32; }
-.more-item.more-item-dragging .mi-ico { transform:none; box-shadow:none; }
+.more-item.more-item-dragging .mi-ico {
+transform:none; box-shadow:none;
+outline:2px dashed rgba(0,0,0,.28); outline-offset:2px;
+}
+[data-theme="dark"] .more-item.more-item-dragging .mi-ico { outline-color:rgba(255,255,255,.4); }
 .more-item-ghost {
-position:fixed; z-index:9999; pointer-events:none; margin:0;
-transform:translate(-50%,-50%); opacity:.96;
-filter:drop-shadow(0 12px 20px rgba(0,0,0,.22));
-will-change:left,top;
+position:fixed; left:0; top:0; z-index:9999; pointer-events:none; margin:0;
+opacity:.96; will-change:transform; backface-visibility:hidden;
 }
 .more-item-ghost .mi-ico { transform:scale(1.08); box-shadow:0 10px 22px rgba(0,0,0,.2); }
 .more-tab.more-tab-drop { background:rgba(0,0,0,.12); color:#111; transform:scale(1.12); }
@@ -12622,7 +12624,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1793934311988" data-version="v8.76.4">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1793951791854" data-version="v8.76.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -14219,7 +14221,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.76.4</div>
+          <div class="val" id="about-ver-val">v8.76.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14338,7 +14340,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.76.4</div>
+      <div class="ver">辰光玥影 v8.76.5</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14769,7 +14771,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.76.4</span>
+              <span class="lic-ver">v8.76.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -24604,4 +24606,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw4e662c -->
+<!-- __MOCHI_EOF__ mw4oktm6 -->

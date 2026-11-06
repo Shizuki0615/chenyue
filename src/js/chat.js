@@ -10493,6 +10493,7 @@ g.set('more-icons-cat', JSON.stringify(cats));
 applySavedLayout();
 try { applyMoreCat(currentCat(), undefined, true); } catch (e) {}
 let pressTimer = 0, dragItem = null, dragGhost = null, dragCat = '', startX = 0, startY = 0, lastX = 0, lastY = 0, pointerId = null;
+let grabDX = 0, grabDY = 0;
 let hoverCat = '', hoverTab = null, hoverTimer = 0, swallowIconClick = false;
 const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
 const detachPress = () => {
@@ -10559,15 +10560,13 @@ g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
 const r = item.getBoundingClientRect();
 g.style.width = (r.width || 64) + 'px';
 g.style.height = (r.height || 80) + 'px';
-g.style.left = lastX + 'px';
-g.style.top = lastY + 'px';
+g.style.transform = 'translate3d(' + (lastX - grabDX) + 'px,' + (lastY - grabDY) + 'px,0)';
 document.body.appendChild(g);
 return g;
 };
 const moveGhost = () => {
 if (!dragGhost) return;
-dragGhost.style.left = lastX + 'px';
-dragGhost.style.top = lastY + 'px';
+dragGhost.style.transform = 'translate3d(' + (lastX - grabDX) + 'px,' + (lastY - grabDY) + 'px,0)';
 };
 const clearGhost = () => {
 if (dragGhost) {
@@ -10601,8 +10600,14 @@ const target = under && under.closest ? under.closest('.more-item') : null;
 if (target === dragItem) return;
 if (target && !target.hidden && target.parentElement === grid) {
 const r = target.getBoundingClientRect();
-if (lastX < r.left + r.width / 2) grid.insertBefore(dragItem, target);
-else grid.insertBefore(dragItem, target.nextSibling);
+const cx = r.left + r.width / 2;
+const band = r.height * 0.3;
+let after;
+if (lastY < r.top + band) after = false;
+else if (lastY > r.bottom - band) after = true;
+else after = lastX >= cx;
+if (after) grid.insertBefore(dragItem, target.nextSibling);
+else grid.insertBefore(dragItem, target);
 return;
 }
 const vis = Array.from(grid.querySelectorAll('.more-item')).filter(it => !it.hidden && it !== dragItem);
@@ -10660,6 +10665,9 @@ pressTimer = 0;
 detachPress();
 dragItem = item;
 dragCat = currentCat();
+const ir = item.getBoundingClientRect();
+grabDX = Math.min(Math.max(0, lastX - ir.left), ir.width || 0);
+grabDY = Math.min(Math.max(0, lastY - ir.top), ir.height || 0);
 item.classList.add('more-item-dragging');
 moreGridFun.classList.add('more-icons-dragging');
 moreGridAsk.classList.add('more-icons-dragging');
