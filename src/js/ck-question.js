@@ -123,6 +123,8 @@
   // 内存副本（ckLoad / ckLoadFrom 每次读盘后都套），落盘前再用原文案还原，store/IDB 永远留原文。
   const PT = window.presetTextEdit;
   function ckEditKey(cat) { return 'ckq:' + (cat || 'daily'); }
+  // 互动动作卡另有两句实际发卡文案（他对我 / 我对他），各自独立覆盖
+  const CK_ACT_FIELDS = [['taToMe', 'ckqa:'], ['meToTa', 'ckqb:']];
   function ckApplyEdits(d) {
     if (!PT || !d || !Array.isArray(d.questions)) return;
     const plan = [];
@@ -131,10 +133,24 @@
       const base = q.text; // 只拿读盘时的原文案去匹配，避免链式改名自己套自己
       let next = base;
       PT.apply(ckEditKey(q.cat), function (nv, orig) { if (orig === base) next = nv; });
-      if (next !== base) plan.push([q, next]);
+      const act = [];
+      if (q.type === 'action') {
+        CK_ACT_FIELDS.forEach(function (pair) {
+          const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
+          const cur = q[field];
+          if (typeof cur !== 'string') return;
+          let nv2 = cur;
+          PT.apply(pfx, function (v, orig) { if (orig === cur) nv2 = v; });
+          if (nv2 !== cur) act.push([field, nv2]);
+        });
+      }
+      if (next !== base || act.length) plan.push([q, next, act]);
     });
     // 先算后写：重复读取/二次套用都幂等，不会把刚改成的新文案再套一遍
-    plan.forEach(function (p) { p[0].text = p[1]; });
+    plan.forEach(function (p) {
+      p[0].text = p[1];
+      p[2].forEach(function (a) { p[0][a[0]] = a[1]; });
+    });
   }
   // 序列化前把预设文案还原成原文案：「原文→新文」的链式改名不会写回 store
   function ckStoreData(d) {
@@ -142,7 +158,17 @@
     const qs = d.questions.map(function (q) {
       if (!q || q.isPreset !== true || !q.text) return q;
       const orig = PT.original(ckEditKey(q.cat), q.text);
-      return orig === q.text ? q : Object.assign({}, q, { text: orig });
+      let out = orig === q.text ? q : Object.assign({}, q, { text: orig });
+      if (q.type === 'action') {
+        CK_ACT_FIELDS.forEach(function (pair) {
+          const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
+          const cur = q[field];
+          if (typeof cur !== 'string') return;
+          const o2 = PT.original(pfx, cur);
+          if (o2 !== cur) out = Object.assign({}, out, { [field]: o2 });
+        });
+      }
+      return out;
     });
     return Object.assign({}, d, { questions: qs });
   }
@@ -513,7 +539,11 @@
       const isSingle = q.type === 'single' && Array.isArray(q.options) && q.options.length;
       const isAction = q.type === 'action';
       const tag = isAction ? '互动动作' : (isSingle ? '单选·' + q.options.length + '选项' : '文字');
-      const edited = !!(PT && PT.isEdited(ckEditKey(q.cat), q.text));
+      const actEdited = !!(PT && isAction && (
+        PT.isEdited('ckqa:' + (q.cat || 'daily'), q.taToMe || '') ||
+        PT.isEdited('ckqb:' + (q.cat || 'daily'), q.meToTa || '')
+      ));
+      const edited = !!(PT && (PT.isEdited(ckEditKey(q.cat), q.text) || actEdited));
       html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
         '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
         '<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
@@ -522,7 +552,13 @@
       if (isSingle) {
         html += '<div class="tc-qopts">选项：' + q.options.map(o => esc(o.t)).join(' / ') + '</div>';
       } else if (isAction) {
-        html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + ' / 我对他：' + esc(q.meToTa || q.text) + '</div>';
+        const miniPen = function (field) {
+          if (!PT) return '';
+          return '<button type="button" class="preset-edit-btn preset-edit-mini" data-act-idx="' + idx + '" data-act-field="' + field +
+            '" title="编辑这句系统文案" aria-label="编辑这句系统文案"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+        };
+        html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + miniPen('taToMe') +
+          ' / 我对他：' + esc(q.meToTa || q.text) + miniPen('meToTa') + '</div>';
       }
     });
     container.innerHTML = html;
@@ -539,7 +575,7 @@
       });
     });
     // 行内铅笔：只编辑系统预设题；exists 按同分类判重并排除当前这张（自建题不参与）
-    container.querySelectorAll('.preset-edit-btn').forEach(btn => {
+    container.querySelectorAll('.preset-edit-btn[data-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
         const d2 = ckLoad();
         const q = d2.questions[Number(btn.dataset.idx)];
@@ -550,6 +586,27 @@
           exists: function (next) {
             return d2.questions.some(function (x) {
               return x && x !== q && (x.cat || 'daily') === (q.cat || 'daily') && x.text === next;
+            });
+          },
+          onChanged: function () { renderCkSysInto(container, search); }
+        });
+      });
+    });
+    // 互动动作卡的两句实际发卡文案（他对我 / 我对他）各给一支小铅笔
+    container.querySelectorAll('.preset-edit-mini').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d2 = ckLoad();
+        const q = d2.questions[Number(btn.dataset.actIdx)];
+        const field = btn.dataset.actField;
+        if (!q || q.isPreset !== true || !field) return;
+        const pfx = (field === 'taToMe' ? 'ckqa:' : 'ckqb:') + (q.cat || 'daily');
+        PT.open({
+          key: pfx,
+          shown: q[field] || '',
+          title: field === 'taToMe' ? '编辑「他对我」文案' : '编辑「我对他」文案',
+          exists: function (next) {
+            return d2.questions.some(function (x) {
+              return x && x !== q && x.type === 'action' && (x.cat || 'daily') === (q.cat || 'daily') && x[field] === next;
             });
           },
           onChanged: function () { renderCkSysInto(container, search); }
