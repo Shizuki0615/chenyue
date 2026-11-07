@@ -16,6 +16,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'period-records', 'period-cfg', 'period-daily', 'period-notify', 'period-migrated',
 'cc-groups-public', 'cc-groups-public-off', 'cc-scope-migrated', 'cc-media-names-public',
 'cc-scope-notice-done',
+'default-card-edits', 'default-card-overrides',
 'my-emoji-groups', 'mye-global-migrated',
 'emoji-recent',
 'emoji-recent-kaomoji', 'emoji-recent-emoji',
@@ -357,6 +358,13 @@ try { def.remove(k); } catch (e) {}
 }
 });
 ['age-confirmed', 'storage-guide-shown'].forEach(function (k) {
+const v = def.get(k);
+if (v !== null && v !== undefined && v !== '') {
+try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}
+try { def.remove(k); } catch (e) {}
+}
+});
+['default-card-edits', 'default-card-overrides'].forEach(function (k) {
 const v = def.get(k);
 if (v !== null && v !== undefined && v !== '') {
 try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}

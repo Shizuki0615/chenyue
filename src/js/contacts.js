@@ -71,6 +71,11 @@
     'cc-groups-public', 'cc-groups-public-off', 'cc-scope-migrated', 'cc-media-names-public',
     // v3.11.x：字卡库公用/专属变动一次性提醒的已读标记（chatcard.js 弹窗），同为全局根键
     'cc-scope-notice-done',
+    // #1649：系统预设字卡的全局覆盖表（default-cards.js / preset-edit.js）——文案编辑与
+    // 移除/移动/分组改名/分组排序都是所有联系人桌面共用一份，存根命名空间 xy-home-v2:<键>。
+    // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键：非 default 桌面看不到改动，
+    // 表现为「在这个桌面改的系统字卡，切到另一个桌面完全没变」。
+    'default-card-edits', 'default-card-overrides',
     // v3.12.x：我的表情包改全局共享（chat.js）——键 xy-home-v2:my-emoji-groups 走根命名
     // 空间，所有联系人桌面共用一份；mye-global-migrated 为存量桌面数据合并迁移的幂等标记。
     // 都是全局根键，绝不能被 migrateLegacy 当旧顶层业务键迁进 default 桌面
@@ -743,6 +748,15 @@
     // 不找回＝已确认过年龄的存量用户每次开屏仍要重新勾、引导标记仍缺。splash-seen 副本
     // 是过期日期标记，只删不回（当日根键由 clock.js 自己重写）。
     ['age-confirmed', 'storage-guide-shown'].forEach(function (k) {
+      const v = def.get(k);
+      if (v !== null && v !== undefined && v !== '') {
+        try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}
+        try { def.remove(k); } catch (e) {}
+      }
+    });
+    // #1649：系统预设字卡覆盖表的存量回收——早期版本漏排除，已被迁进 default 桌面的副本
+    // 写回根键（根键已有值只删副本，同 pomo-* 口径），保证所有桌面立刻看到同一份改动。
+    ['default-card-edits', 'default-card-overrides'].forEach(function (k) {
       const v = def.get(k);
       if (v !== null && v !== undefined && v !== '') {
         try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}

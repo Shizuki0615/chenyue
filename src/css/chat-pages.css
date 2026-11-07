@@ -505,6 +505,15 @@
   cursor:pointer; font-family:inherit;
 }
 .cc-m-btn:active { background:rgba(0,0,0,.05); }
+/* #1649：系统预设卡的批量操作条——删除红字、移动常规 */
+.cc-m-btn.cc-m-del { color:#d64545; border-color:rgba(214,69,69,.35); }
+.cc-m-btn.cc-m-del:active { background:rgba(214,69,69,.12); }
+/* 管理分组 → 已移除的字卡：行尾「恢复」胶囊按钮（复用 .mg-rn 的底，但按文字宽度） */
+.mg-rn.mg-restore {
+  width:auto; height:26px; padding:0 10px; border-radius:13px;
+  font-size:12px; font-weight:600; font-family:inherit;
+}
+.mg-foot { flex-shrink:0; }
 
 /* 拍一拍卡片：内容项白纸卡片 */
 #poke-list .cc-item,

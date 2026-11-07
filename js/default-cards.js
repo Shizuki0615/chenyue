@@ -86,6 +86,153 @@ notifyPresetCardEdited();
 });
 }
 if (PT && PT.onRebuild) PT.onRebuild(function () { applyPresetEditsToData(); notifyPresetCardEdited(); });
+const ovStore = window.xyStore('xy-home-v2');
+const OV_KEY = 'default-card-overrides';
+function parseOverrides(rawStr) {
+const out = { removed: {}, moved: {}, renames: {}, order: {}, groups: {} };
+try {
+const raw = JSON.parse(rawStr || '{}');
+if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+['removed', 'moved', 'renames'].forEach(function (k) {
+const src = raw[k];
+if (!src || typeof src !== 'object' || Array.isArray(src)) return;
+Object.keys(src).forEach(function (cat) {
+const m = src[cat];
+if (!m || typeof m !== 'object' || Array.isArray(m)) return;
+const dst = {};
+Object.keys(m).forEach(function (t) {
+const v = m[t];
+if (k === 'renames') {
+if (typeof v === 'string' && v.trim()) dst[t] = v;
+} else if (v && typeof v === 'object') {
+const g = typeof v.g === 'string' ? v.g : '';
+const from = typeof v.from === 'string' ? v.from : '';
+if (k === 'moved' && g) dst[t] = { g: g, from: from };
+if (k === 'removed') dst[t] = { from: from };
+} else if (typeof v === 'string') {
+if (k === 'moved') dst[t] = { g: v, from: '' };
+if (k === 'removed') dst[t] = { from: '' };
+}
+});
+out[k][cat] = dst;
+});
+});
+const ord = raw.order;
+if (ord && typeof ord === 'object' && !Array.isArray(ord)) {
+Object.keys(ord).forEach(function (cat) {
+if (Array.isArray(ord[cat])) out.order[cat] = ord[cat].filter(function (x) { return typeof x === 'string'; });
+});
+}
+const gp = raw.groups;
+if (gp && typeof gp === 'object' && !Array.isArray(gp)) {
+Object.keys(gp).forEach(function (cat) {
+const m = gp[cat];
+if (m && typeof m === 'object' && !Array.isArray(m)) out.groups[cat] = m;
+});
+}
+} catch (e) {}
+return out;
+}
+let ovRawAtBoot = null;
+const OV = (function () {
+try { ovRawAtBoot = ovStore.get(OV_KEY); } catch (e) { ovRawAtBoot = null; }
+return parseOverrides(ovRawAtBoot);
+})();
+function saveOverrides() {
+try { ovStore.set(OV_KEY, JSON.stringify(OV)); } catch (e) {}
+}
+function presetGroupOrigin(cat, name) {
+const rn = OV.renames[cat] || {};
+const keys = Object.keys(rn);
+for (let i = 0; i < keys.length; i++) if (rn[keys[i]] === name) return keys[i];
+return name;
+}
+function presetTakeAll(cat, text) {
+const out = [];
+((DATA[cat]) || []).forEach(function (g) {
+const arr = g && g[1];
+if (!Array.isArray(arr)) return;
+for (let i = arr.length - 1; i >= 0; i--) {
+if (arr[i] === text) { arr.splice(i, 1); out.push(g[0]); }
+}
+});
+return out;
+}
+function presetTakeCard(cat, text) {
+const hit = presetTakeAll(cat, text);
+return hit.length ? hit[0] : null;
+}
+function presetEnsureGroup(cat, name) {
+if (!Array.isArray(DATA[cat])) DATA[cat] = [];
+const groups = DATA[cat];
+let g = null;
+for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i][0] === name) { g = groups[i]; break; }
+if (!g) { g = [name, []]; groups.push(g); }
+return g;
+}
+function presetShownText(cat, orig) { return PT ? PT.text(cat, orig) : orig; }
+function applyPresetOverridesToData(onlyCat) {
+Object.keys(goffExp).forEach(function (k) { delete goffExp[k]; });
+(onlyCat ? [onlyCat] : Object.keys(DATA)).forEach(function (cat) {
+const groups = DATA[cat];
+if (!Array.isArray(groups)) return;
+const rn = OV.renames[cat] || {};
+if (Object.keys(rn).length) {
+groups.forEach(function (g) {
+if (!g) return;
+const orig = presetGroupOrigin(cat, g[0]);
+g[0] = rn[orig] || orig;
+});
+}
+const mv = OV.moved[cat] || {};
+Object.keys(mv).forEach(function (origText) {
+const rec = mv[origText];
+const shown = presetShownText(cat, origText);
+let resolved = shown;
+let taken = presetTakeAll(cat, shown);
+if (!taken.length && shown !== origText) { resolved = origText; taken = presetTakeAll(cat, origText); }
+if (!taken.length) return;
+const tg = presetEnsureGroup(cat, rec.g || '');
+taken.forEach(function () { tg[1].push(resolved); });
+});
+const rm = OV.removed[cat] || {};
+Object.keys(rm).forEach(function (origText) {
+const shown = presetShownText(cat, origText);
+presetTakeAll(cat, shown);
+if (shown !== origText) presetTakeAll(cat, origText);
+});
+Object.keys(OV.groups[cat] || {}).forEach(function (name) { presetEnsureGroup(cat, name); });
+const order = OV.order[cat];
+if (Array.isArray(order) && order.length) {
+const slots = {};
+order.forEach(function (nm, i) { (slots[nm] || (slots[nm] = [])).push(i); });
+const keyed = groups.map(function (g, i) {
+const q = slots[g[0]];
+const k = q && q.length ? q.shift() : 1e9 + i;
+return { g: g, k: k };
+});
+keyed.sort(function (a, b) { return a.k - b.k; });
+groups.length = 0;
+keyed.forEach(function (x) { groups.push(x.g); });
+}
+});
+}
+document.addEventListener('mochi-restore-done', function () {
+try {
+const empty = !Object.keys(OV.removed).length && !Object.keys(OV.moved).length &&
+!Object.keys(OV.renames).length && !Object.keys(OV.order).length && !Object.keys(OV.groups).length;
+if (!empty) return;
+let raw = null;
+try { raw = ovStore.get(OV_KEY); } catch (e) { return; }
+if (!raw || raw === ovRawAtBoot) return;
+ovRawAtBoot = raw;
+const fresh = parseOverrides(raw);
+Object.keys(OV).forEach(function (k) { OV[k] = fresh[k]; });
+applyPresetOverridesToData();
+applyPresetEditsToData();
+notifyPresetCardEdited();
+} catch (e) {}
+});
 function toast(msg) {
 let t = document.getElementById('cc-toast');
 if (!t) { t = document.createElement('div'); t.id = 'cc-toast'; document.body.appendChild(t); }
@@ -118,7 +265,11 @@ const src = DATA[cat] || [];
 const e = goffExp[cat];
 if (e && e.src === src && e.names === names) return e.set;
 const kill = new Set(names), set = new Set();
-src.forEach(g => { if (kill.has(g[0])) (g[1] || []).forEach(c => set.add(c)); });
+src.forEach(g => {
+if (!g) return;
+const orig = presetGroupOrigin(cat, g[0]);
+if (kill.has(g[0]) || (orig !== g[0] && kill.has(orig))) (g[1] || []).forEach(c => set.add(c));
+});
 goffExp[cat] = { src, names, set };
 return set;
 }
@@ -288,6 +439,7 @@ window.__dictCustomSet = new Set(qs.concat(ws));
 } catch (e) {}
 }
 mergeDictCustom();
+applyPresetOverridesToData();
 applyPresetEditsToData();
 function dictCustomAdd(kind, text) {
 const v = String(text == null ? '' : text).replace(/\s+/g, '');
@@ -302,6 +454,7 @@ if (arr.indexOf(v) >= 0) return { ok: false, msg: '已存在这条自建词条' 
 arr.push(v);
 dictCustWrite(key, arr);
 mergeDictCustom();
+applyPresetOverridesToData('dict');
 applyPresetEditsToData('dict');
 try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
 return { ok: true, msg: (kind === 'quote' ? '已存为语录：' : '已存为词：') + v };
@@ -317,6 +470,7 @@ if (i >= 0) { arr.splice(i, 1); dictCustWrite(k, arr); n++; }
 });
 if (n) {
 mergeDictCustom();
+applyPresetOverridesToData('dict');
 applyPresetEditsToData('dict');
 try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
 }
@@ -357,14 +511,18 @@ window.isDefaultCardOff = function (cat, c) { return isCardOff(cat, c); };
 function isGroupOff(cat, gname) {
 const o = groupOffRecord(ls);
 const names = o && o[cat];
-return !!(names && names.indexOf(gname) >= 0);
+if (!names || !names.length) return false;
+if (names.indexOf(gname) >= 0) return true;
+const orig = presetGroupOrigin(cat, gname);
+return orig !== gname && names.indexOf(orig) >= 0;
 }
 function setGroupOff(cat, gname, off) {
 const cur = groupOffRecord(ls) || {};
 const arr = (cur[cat] || []).slice();
-const i = arr.indexOf(gname);
-if (off && i < 0) arr.push(gname);
-if (!off && i >= 0) arr.splice(i, 1);
+const orig = presetGroupOrigin(cat, gname);
+const drop = function (nm) { const i = arr.indexOf(nm); if (i >= 0) arr.splice(i, 1); };
+if (off) { if (arr.indexOf(gname) < 0 && arr.indexOf(orig) < 0) arr.push(gname); }
+else { drop(gname); drop(orig); }
 const next = {};
 Object.keys(cur).forEach(k => { if (k !== cat && Array.isArray(cur[k]) && cur[k].length) next[k] = cur[k].slice(); });
 if (arr.length) next[cat] = arr;
@@ -673,29 +831,151 @@ const managed = new Set();
 let manageBar = null;
 const toolWrap = document.createElement('div');
 toolWrap.className = 'cc-toolbar cc-preset-manage-tools';
-toolWrap.innerHTML = '<button type="button" class="cc-tool cc-manage-toggle">' +
-'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>管理字卡</button>';
+const manageIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>';
+const groupIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M8 13h8"/></svg>';
+toolWrap.innerHTML = '<button type="button" class="cc-tool cc-manage-toggle">' + manageIcon + '管理字卡</button>' +
+'<button type="button" class="cc-tool cc-group-toggle">' + groupIcon + '管理分组</button>';
 viewTabs.parentNode.insertBefore(toolWrap, viewTabs);
 const manageBtn = toolWrap.querySelector('.cc-manage-toggle');
+const groupBtn = toolWrap.querySelector('.cc-group-toggle');
 function selKey(cat, c) { return cat + '\u0001' + c; }
+function selectedItems() {
+const out = [];
+managed.forEach(function (k) {
+const p = k.split('\u0001');
+if (p.length < 2) return;
+out.push({ cat: p[0], c: p.slice(1).join('\u0001') });
+});
+return out;
+}
 function updateManageCount() {
 if (!manageBar) return;
 const cnt = manageBar.querySelector('.cc-m-count');
 if (cnt) cnt.textContent = '已选 ' + managed.size + ' 张';
 }
-function batchSetOff(off) {
-if (!managed.size) { toast('请先勾选字卡'); return; }
+function afterPresetDataChange() {
+Object.keys(goffExp).forEach(function (k) { delete goffExp[k]; });
+refreshLibCount();
+renderGroupsBar();
+notifyPresetCardEdited();
+updateManageCount();
+}
+function locateCard(cat, c) {
+const groups = DATA[cat] || [];
+for (let gi = 0; gi < groups.length; gi++) {
+const g = groups[gi];
+const arr = g && g[1];
+if (!Array.isArray(arr)) continue;
+const i = arr.indexOf(c);
+if (i >= 0) return { group: g[0], arr: arr, idx: i };
+}
+return null;
+}
+function deleteSelected() {
+const items = selectedItems();
+if (!items.length) { toast('请先勾选字卡'); return; }
+if (!window.openModal) { toast('弹窗组件不可用'); return; }
+window.openModal('移除选中的 ' + items.length + ' 张字卡？', '', function () {
 let cnt = 0;
-managed.forEach(function (k) {
-const p = k.split('\u0001');
-if (p.length < 2) return;
-setCardOff(p[0], p.slice(1).join('\u0001'), off);
+items.forEach(function (it) {
+const from = presetTakeCard(it.cat, it.c);
+if (from === null) return;
+const orig = PT ? PT.original(it.cat, it.c) : it.c;
+OV.removed[it.cat] = OV.removed[it.cat] || {};
+OV.removed[it.cat][orig] = { from: from };
 cnt++;
 });
+if (!cnt) { toast('选中的字卡已不在列表里'); return; }
+saveOverrides();
 managed.clear();
-render();
-updateManageCount();
-toast((off ? '已停用 ' : '已启用 ') + cnt + ' 张字卡');
+afterPresetDataChange();
+toast('已移除 ' + cnt + ' 张，可在「管理分组」里恢复');
+}, { noInput: true, staticText: '系统预设卡是内置数据，这里只做「移除」：从列表与回复抽取池里消失，不会真的删除；随时可以在「管理分组 → 已移除的字卡」恢复。' });
+}
+function moveSelectedTo(target) {
+const items = selectedItems();
+if (!items.length) { toast('请先勾选字卡'); return; }
+if (!target) return;
+let cnt = 0;
+items.forEach(function (it) {
+const hit = locateCard(it.cat, it.c);
+if (!hit || hit.group === target) return;
+hit.arr.splice(hit.idx, 1);
+const orig = PT ? PT.original(it.cat, it.c) : it.c;
+OV.moved[it.cat] = OV.moved[it.cat] || {};
+OV.moved[it.cat][orig] = { g: target, from: hit.group };
+const existed = (DATA[it.cat] || []).some(function (g) { return g && g[0] === target; });
+presetEnsureGroup(it.cat, target)[1].push(it.c);
+if (!existed) {
+OV.groups[it.cat] = OV.groups[it.cat] || {};
+OV.groups[it.cat][target] = 1;
+}
+cnt++;
+});
+if (!cnt) { toast('选中的字卡已经在这个分组里'); return; }
+saveOverrides();
+managed.clear();
+afterPresetDataChange();
+toast('已移动 ' + cnt + ' 张到「' + target + '」');
+}
+let moveMask = null;
+function renderMoveList() {
+const listEl = moveMask.querySelector('.mg-list');
+const cats = {};
+selectedItems().forEach(function (it) { cats[it.cat] = 1; });
+const catOrder = [view.cur].concat(Object.keys(cats).filter(function (c) { return c !== view.cur; }));
+listEl.innerHTML = '';
+let shown = 0;
+const seen = {};
+catOrder.forEach(function (cat) {
+((DATA[cat]) || []).forEach(function (g) {
+if (!g || !g[0] || seen[g[0]]) return;
+seen[g[0]] = 1;
+shown++;
+const row = document.createElement('div');
+row.className = 'mg-row';
+row.innerHTML = '<span class="mg-name">' + escHtml(g[0]) + '</span>' +
+'<span class="mg-count">' + ((g[1] || []).length) + ' 张</span>';
+row.addEventListener('click', function () {
+moveSelectedTo(g[0]);
+moveMask.hidden = true;
+});
+listEl.appendChild(row);
+});
+});
+if (!shown) listEl.innerHTML = '<div class="mg-empty">暂无分组，先新建一个</div>';
+}
+function openMovePanel() {
+if (!selectedItems().length) { toast('请先勾选字卡'); return; }
+if (!moveMask) {
+moveMask = document.createElement('div');
+moveMask.className = 'mg-mask';
+moveMask.hidden = true;
+moveMask.innerHTML = '<div class="mg-panel"><div class="mg-head"><span>移动到分组</span>' +
+'<button type="button" class="mg-close">✕</button></div>' +
+'<div class="mg-list"></div>' +
+'<button type="button" class="mg-add">＋ 新建分组并移入</button></div>';
+document.body.appendChild(moveMask);
+moveMask.querySelector('.mg-close').addEventListener('click', function () { moveMask.hidden = true; });
+moveMask.addEventListener('click', function (e) { if (e.target === moveMask) moveMask.hidden = true; });
+moveMask.querySelector('.mg-add').addEventListener('click', function () {
+if (!window.openModal) return;
+window.openModal('新建分组并移入', '', function (v) {
+const name = String(v == null ? '' : v).trim();
+if (!name) return;
+const cats = {};
+selectedItems().forEach(function (it) { cats[it.cat] = 1; });
+Object.keys(cats).forEach(function (c) {
+OV.groups[c] = OV.groups[c] || {};
+OV.groups[c][name] = 1;
+});
+moveSelectedTo(name);
+moveMask.hidden = true;
+}, { maxlength: 20 });
+});
+}
+renderMoveList();
+moveMask.hidden = false;
 }
 function selectAllVisible() {
 const all = [];
@@ -719,8 +999,8 @@ manageBar = document.createElement('div');
 manageBar.className = 'cc-manage-bar';
 manageBar.innerHTML = '<span class="cc-m-count">已选 0 张</span>' +
 '<button type="button" class="cc-m-btn" data-m="all">全选</button>' +
-'<button type="button" class="cc-m-btn" data-m="off">停用</button>' +
-'<button type="button" class="cc-m-btn" data-m="on">启用</button>' +
+'<button type="button" class="cc-m-btn cc-m-del" data-m="del">删除</button>' +
+'<button type="button" class="cc-m-btn" data-m="move">移动</button>' +
 '<button type="button" class="cc-m-btn" data-m="exit">退出</button>';
 document.body.appendChild(manageBar);
 manageBar.addEventListener('click', function (e) {
@@ -728,8 +1008,8 @@ const b = e.target.closest('.cc-m-btn');
 if (!b) return;
 const m = b.dataset.m;
 if (m === 'all') selectAllVisible();
-else if (m === 'off') batchSetOff(true);
-else if (m === 'on') batchSetOff(false);
+else if (m === 'del') deleteSelected();
+else if (m === 'move') openMovePanel();
 else if (m === 'exit') exitManage();
 });
 }
@@ -747,8 +1027,255 @@ if (manageBar) manageBar.hidden = true;
 if (activePresetManager === manageSelf) activePresetManager = null;
 render();
 }
+let mgMask = null;
+let mgMode = 'groups';
+function ensureMgPanel() {
+if (mgMask) return;
+mgMask = document.createElement('div');
+mgMask.className = 'mg-mask';
+mgMask.hidden = true;
+mgMask.innerHTML = '<div class="mg-panel"><div class="mg-head"><span class="mg-title">管理分组</span>' +
+'<button type="button" class="mg-close">✕</button></div>' +
+'<div class="mg-list"></div><div class="mg-foot"></div></div>';
+document.body.appendChild(mgMask);
+mgMask.querySelector('.mg-close').addEventListener('click', function () { mgMask.hidden = true; });
+mgMask.addEventListener('click', function (e) { if (e.target === mgMask) mgMask.hidden = true; });
+}
+function removedCountOf() {
+let n = 0;
+Object.keys(OV.removed).forEach(function (c) { n += Object.keys(OV.removed[c] || {}).length; });
+return n;
+}
+function attachMgDrag(row, gi) {
+const handle = row.querySelector('.mg-handle');
+if (!handle) return;
+handle.addEventListener('pointerdown', function (e) {
+if (e.button !== 0 && e.pointerType === 'mouse') return;
+const listEl = mgMask.querySelector('.mg-list');
+const rect = row.getBoundingClientRect();
+const offsetY = e.clientY - rect.top;
+const clone = row.cloneNode(true);
+clone.classList.add('mg-drag-clone');
+clone.style.position = 'fixed';
+clone.style.left = rect.left + 'px';
+clone.style.top = rect.top + 'px';
+clone.style.width = rect.width + 'px';
+clone.style.margin = '0';
+document.body.appendChild(clone);
+row.classList.add('mg-dragging');
+let dropIdx = gi;
+const onMove = function (ev) {
+ev.preventDefault();
+clone.style.top = (ev.clientY - offsetY) + 'px';
+const rows = Array.from(listEl.querySelectorAll('.mg-row'));
+dropIdx = rows.length;
+for (let i = 0; i < rows.length; i++) {
+if (rows[i] === row) continue;
+const r = rows[i].getBoundingClientRect();
+if (ev.clientY < r.top + r.height / 2) { dropIdx = i; break; }
+}
+listEl.querySelectorAll('.mg-drop-line').forEach(function (el) { el.remove(); });
+const line = document.createElement('div');
+line.className = 'mg-drop-line';
+if (dropIdx >= rows.length) listEl.appendChild(line);
+else listEl.insertBefore(line, rows[dropIdx]);
+};
+const onUp = function () {
+document.removeEventListener('pointermove', onMove);
+document.removeEventListener('pointerup', onUp);
+document.removeEventListener('pointercancel', onUp);
+clone.remove();
+row.classList.remove('mg-dragging');
+listEl.querySelectorAll('.mg-drop-line').forEach(function (el) { el.remove(); });
+if (dropIdx === gi || dropIdx === gi + 1) return;
+const groups = DATA[view.cur] || [];
+let target = dropIdx < gi ? dropIdx : dropIdx - 1;
+if (target < 0) target = 0;
+if (target > groups.length - 1) target = groups.length - 1;
+if (target === gi) return;
+const moved = groups.splice(gi, 1)[0];
+groups.splice(target, 0, moved);
+OV.order[view.cur] = groups.map(function (g) { return g && g[0]; }).filter(Boolean);
+saveOverrides();
+afterPresetDataChange();
+renderGroupPanel();
+toast('分组顺序已保存');
+};
+document.addEventListener('pointermove', onMove, { passive: false });
+document.addEventListener('pointerup', onUp);
+document.addEventListener('pointercancel', onUp);
+e.preventDefault();
+});
+}
+function renameGroup(oldName) {
+if (!window.openModal) return;
+const cat = view.cur;
+window.openModal('重命名分组', oldName, function (v) {
+const name = String(v == null ? '' : v).trim();
+if (!name || name === oldName) return;
+const groups = DATA[cat] || [];
+if (groups.some(function (g) { return g && g[0] === name; })) { toast('分组「' + name + '」已存在'); return; }
+const g = groups.filter(function (x) { return x && x[0] === oldName; })[0];
+if (!g) return;
+g[0] = name;
+const orig = presetGroupOrigin(cat, oldName);
+OV.renames[cat] = OV.renames[cat] || {};
+OV.renames[cat][orig] = name;
+if (OV.groups[cat] && OV.groups[cat][oldName]) {
+delete OV.groups[cat][oldName];
+OV.groups[cat][name] = 1;
+}
+const mv = OV.moved[cat] || {};
+Object.keys(mv).forEach(function (t) {
+if (!mv[t]) return;
+if (mv[t].g === oldName) mv[t].g = name;
+if (mv[t].from === oldName) mv[t].from = name;
+});
+if (Array.isArray(OV.order[cat])) OV.order[cat] = OV.order[cat].map(function (x) { return x === oldName ? name : x; });
+if (view.curGroup === oldName) view.curGroup = name;
+saveOverrides();
+afterPresetDataChange();
+renderGroupPanel();
+toast('已重命名为「' + name + '」');
+}, { maxlength: 20, staticText: '只改显示名：整组开关、已改文案与移动记录都会跟着新名字继续生效。' });
+}
+function deleteCustomGroup(name) {
+const cat = view.cur;
+if (!(OV.groups[cat] && OV.groups[cat][name])) return;
+if (!window.openModal) return;
+window.openModal('删除分组「' + name + '」？', '', function () {
+const groups = DATA[cat] || [];
+const g = groups.filter(function (x) { return x && x[0] === name; })[0];
+const mv = OV.moved[cat] || {};
+if (g) {
+(g[1] || []).forEach(function (c) {
+const orig = PT ? PT.original(cat, c) : c;
+const rec = mv[orig];
+if (rec && rec.g === name) {
+const back = rec.from && rec.from !== name ? rec.from : '';
+delete mv[orig];
+if (back) presetEnsureGroup(cat, back)[1].push(c);
+else if (groups[0] && groups[0] !== g) groups[0][1].push(c);
+} else if (groups[0] && groups[0] !== g) {
+groups[0][1].push(c);
+}
+});
+}
+const rm = OV.removed[cat] || {};
+Object.keys(rm).forEach(function (t) {
+if (rm[t] && rm[t].from === name) {
+const rec = mv[t];
+rm[t].from = rec && rec.from ? rec.from : '';
+}
+});
+Object.keys(mv).forEach(function (t) { if (mv[t] && mv[t].g === name) delete mv[t]; });
+DATA[cat] = groups.filter(function (x) { return x !== g; });
+delete OV.groups[cat][name];
+if (Array.isArray(OV.order[cat])) OV.order[cat] = OV.order[cat].filter(function (x) { return x !== name; });
+if (view.curGroup === name) view.curGroup = '';
+saveOverrides();
+afterPresetDataChange();
+renderGroupPanel();
+toast('已删除分组「' + name + '」');
+}, { noInput: true, staticText: '组内的系统字卡会退回原分组，不会丢失；内置系统分组不可删除。' });
+}
+function restoreRemoved(cat, origText) {
+const rec = (OV.removed[cat] || {})[origText];
+if (!rec) return;
+delete OV.removed[cat][origText];
+if (!Object.keys(OV.removed[cat]).length) delete OV.removed[cat];
+const shown = presetShownText(cat, origText);
+const groups = Array.isArray(DATA[cat]) ? DATA[cat] : (DATA[cat] = []);
+let target = rec.from;
+if (!target || !groups.some(function (g) { return g && g[0] === target; })) target = groups.length ? groups[0][0] : '常用';
+presetEnsureGroup(cat, target)[1].push(shown);
+saveOverrides();
+afterPresetDataChange();
+renderGroupPanel();
+toast('已恢复：' + (shown.length > 16 ? shown.slice(0, 16) + '…' : shown));
+}
+function renderGroupPanel() {
+ensureMgPanel();
+const titleEl = mgMask.querySelector('.mg-title');
+const listEl = mgMask.querySelector('.mg-list');
+const footEl = mgMask.querySelector('.mg-foot');
+const cat = view.cur;
+if (mgMode === 'restore') {
+titleEl.textContent = '已移除的字卡';
+listEl.innerHTML = '';
+let total = 0;
+Object.keys(OV.removed).forEach(function (c) {
+const m = OV.removed[c] || {};
+Object.keys(m).forEach(function (origText) {
+total++;
+const row = document.createElement('div');
+row.className = 'mg-row';
+row.innerHTML = '<span class="mg-name">' + escHtml(presetShownText(c, origText)) + '</span>' +
+'<span class="mg-tag">' + escHtml(tabLabel(c)) + '</span>';
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'mg-rn mg-restore';
+btn.textContent = '恢复';
+btn.addEventListener('click', function () { restoreRemoved(c, origText); });
+row.appendChild(btn);
+listEl.appendChild(row);
+});
+});
+if (!total) listEl.innerHTML = '<div class="mg-empty">没有已移除的字卡</div>';
+footEl.innerHTML = '';
+const back = document.createElement('button');
+back.type = 'button';
+back.className = 'mg-add';
+back.textContent = '返回分组列表';
+back.addEventListener('click', function () { mgMode = 'groups'; renderGroupPanel(); });
+footEl.appendChild(back);
+return;
+}
+titleEl.textContent = '管理分组';
+const groups = DATA[cat] || [];
+listEl.innerHTML = '';
+const handleSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>';
+groups.forEach(function (g, gi) {
+if (!g) return;
+const custom = !!(OV.groups[cat] && OV.groups[cat][g[0]]);
+const row = document.createElement('div');
+row.className = 'mg-row';
+row.dataset.gidx = String(gi);
+row.innerHTML = '<button type="button" class="mg-handle" aria-label="拖动排序">' + handleSvg + '</button>' +
+'<span class="mg-name">' + escHtml(g[0]) + '</span>' +
+'<span class="mg-count">' + ((g[1] || []).length) + ' 张</span>' +
+'<button type="button" class="mg-rn" aria-label="重命名">' + editSvg + '</button>' +
+(custom ? '<button type="button" class="mg-del" aria-label="删除分组">✕</button>' : '<span class="mg-tag">系统</span>');
+attachMgDrag(row, gi);
+row.querySelector('.mg-rn').addEventListener('click', function (e) { e.stopPropagation(); renameGroup(g[0]); });
+if (custom) row.querySelector('.mg-del').addEventListener('click', function (e) { e.stopPropagation(); deleteCustomGroup(g[0]); });
+listEl.appendChild(row);
+});
+if (!groups.length) listEl.innerHTML = '<div class="mg-empty">暂无分组</div>';
+footEl.innerHTML = '';
+const nRemoved = removedCountOf();
+const add = document.createElement('button');
+add.type = 'button';
+add.className = 'mg-add';
+add.textContent = '已移除的字卡（' + nRemoved + '）';
+if (!nRemoved) { add.disabled = true; add.style.opacity = '.45'; }
+add.addEventListener('click', function () {
+if (!nRemoved) return;
+mgMode = 'restore';
+renderGroupPanel();
+});
+footEl.appendChild(add);
+}
+function openGroupsPanel() {
+if (manageMode) exitManage();
+mgMode = 'groups';
+renderGroupPanel();
+mgMask.hidden = false;
+}
 const manageSelf = { exitManage: exitManage };
 manageBtn.addEventListener('click', function () { if (manageMode) exitManage(); else enterManage(); });
+groupBtn.addEventListener('click', openGroupsPanel);
 let flat = [];                    // 当前列表数据（分组头 + 字卡）
 let n = 0;
 let hts = new Float64Array(0);    // 每条占位高度（实测或估计）
