@@ -2850,7 +2850,7 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 /* ===== #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ===== */
 .ch-name-wrap {
   flex:1; min-width:0;
-  display:flex; align-items:baseline; gap:7px;
+  display:flex; align-items:flex-end; gap:7px;
 }
 .ch-name-wrap .ch-name { flex:0 1 auto; }
 .ch-meta {
