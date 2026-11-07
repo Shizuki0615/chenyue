@@ -1061,6 +1061,9 @@
     }
     return t;
   }
+  // #1650：聊天顶栏「他那边的时间」只读出口——顶栏以此快照为基准每分钟往前走，
+  // 到 next 到期时本函数自己会重抽（与「此间」页完全同源，不另存一份时间）。
+  try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
   function renderTaTime() {
     const listEl = document.getElementById('cj-list');
     if (!listEl) return;

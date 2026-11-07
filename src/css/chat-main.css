@@ -2846,3 +2846,37 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 [data-theme="dark"] .voice-rec-btn { border-color:rgba(255,255,255,.28); color:#fff; }
 
 
+
+/* ===== #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ===== */
+.ch-name-wrap {
+  flex:1; min-width:0;
+  display:flex; align-items:baseline; gap:7px;
+}
+.ch-name-wrap .ch-name { flex:0 1 auto; }
+.ch-meta {
+  flex:1 1 auto; min-width:0;
+  font-size:11px; font-weight:400; line-height:1.2; letter-spacing:.2px;
+  color:var(--chat-name-ink, inherit);
+  opacity:.55;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  -webkit-tap-highlight-color:transparent;
+}
+.ch-meta[hidden] { display:none; }
+/* 仿微信布局：隐藏头像，昵称居中，状态行在昵称下方第二行 */
+#page-chat.ch-head-wx .ch-av { display:none; }
+#page-chat.ch-head-wx .ch-settings { margin-left:auto; }
+#page-chat.ch-head-wx .ch-name-wrap {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:max-content; max-width:calc(100% - 128px);
+  flex-direction:column; align-items:center; gap:1px;
+  pointer-events:none;
+}
+#page-chat.ch-head-wx .ch-name-wrap .ch-name {
+  max-width:100%;
+  pointer-events:auto;
+  text-align:center;
+}
+#page-chat.ch-head-wx .ch-meta {
+  flex:0 0 auto; width:100%; max-width:100%;
+  text-align:center; font-size:11px;
+}

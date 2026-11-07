@@ -5020,3 +5020,24 @@ select.mochi-custom-select-native { display:none; }
 .au-ed-foot { display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:2px; }
 .au-ed-foot .pong-overlay-btn { min-width:0; flex:1; }
 .au-ed-del { color:#ff8f8f !important; }
+
+/* ===== #1650 他的状态/情绪页 ===== */
+.ts-now { margin:10px 12px 0; padding:10px 14px 8px; border-radius:14px; }
+.ts-now-row { display:flex; align-items:center; gap:8px; padding:7px 0; }
+.ts-now-row + .ts-now-row { border-top:1px solid rgba(0,0,0,.05); }
+.ts-now-k { width:30px; flex-shrink:0; font-size:12px; color:var(--muted); }
+.ts-now-v {
+  flex:1; min-width:0; font-size:15px; font-weight:600; color:var(--ink, #111);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ts-act {
+  flex-shrink:0; padding:4px 10px; border-radius:999px;
+  border:1px solid rgba(0,0,0,.12); background:transparent;
+  font-size:11px; color:var(--ink, #111); font-family:inherit; cursor:pointer;
+}
+.ts-act:active { opacity:.6; }
+.ts-act.on { background:#111; border-color:#111; color:#fff; }
+.ts-now-hint { padding:4px 0 2px; font-size:11px; line-height:1.5; color:var(--muted); }
+[data-theme="dark"] .ts-now-row + .ts-now-row { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .ts-act { border-color:rgba(255,255,255,.2); color:#fff; }
+[data-theme="dark"] .ts-act.on { background:#fff; border-color:#fff; color:#111; }

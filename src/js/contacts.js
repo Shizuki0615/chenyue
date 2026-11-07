@@ -237,6 +237,11 @@
     // EXCLUDE ⇒ migrateLegacy 每次数据就绪把它当旧顶层业务键迁进 default 并删根键＝#315c 的
     // 「确认一次永久记住」自上线起就被每次启动吃掉（用户每次开屏都要重新勾选）。#1475 起该键
     // 存「时间戳＋声明版本」JSON（改版自动重确认），是同意举证链的本体，必须留在根命名空间。
+    // #1650：聊天顶栏「他那边的时间 · 状态 · 情绪」的三个全局偏好——
+    //   顶栏布局（经典/仿微信）、是否显示状态行、状态是否按作息加权。
+    //   都是全桌面共用的外观/词库偏好，走根命名空间；漏排除会被 migrateLegacy
+    //   当旧顶层业务键迁进 default 并删根键（非 default 桌面切了布局又自己变回去）。
+    'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
     'age-confirmed'];
   function isExcluded(k) {
     const r = k.slice(G.length + 1);

@@ -4251,6 +4251,37 @@ border:1.5px solid transparent; background:var(--btn-bg,#111); color:var(--btn-i
 [data-theme="dark"] .voice-card.recording .voice-wave i { opacity:.9; }
 [data-theme="dark"] .msg-voice-play.voice-play-btn { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.16); }
 [data-theme="dark"] .voice-rec-btn { border-color:rgba(255,255,255,.28); color:#fff; }
+.ch-name-wrap {
+flex:1; min-width:0;
+display:flex; align-items:baseline; gap:7px;
+}
+.ch-name-wrap .ch-name { flex:0 1 auto; }
+.ch-meta {
+flex:1 1 auto; min-width:0;
+font-size:11px; font-weight:400; line-height:1.2; letter-spacing:.2px;
+color:var(--chat-name-ink, inherit);
+opacity:.55;
+white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+-webkit-tap-highlight-color:transparent;
+}
+.ch-meta[hidden] { display:none; }
+#page-chat.ch-head-wx .ch-av { display:none; }
+#page-chat.ch-head-wx .ch-settings { margin-left:auto; }
+#page-chat.ch-head-wx .ch-name-wrap {
+position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+width:max-content; max-width:calc(100% - 128px);
+flex-direction:column; align-items:center; gap:1px;
+pointer-events:none;
+}
+#page-chat.ch-head-wx .ch-name-wrap .ch-name {
+max-width:100%;
+pointer-events:auto;
+text-align:center;
+}
+#page-chat.ch-head-wx .ch-meta {
+flex:0 0 auto; width:100%; max-width:100%;
+text-align:center; font-size:11px;
+}
 #page-chatcard { scrollbar-width:none; -ms-overflow-style:none; }
 #page-chatcard::-webkit-scrollbar { display:none; }
 .chat-title { font-size:22px; font-weight:700; padding:4px 2px 8px; letter-spacing:1px; }
@@ -8525,6 +8556,25 @@ justify-content:safe center;
 .au-ed-foot { display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:2px; }
 .au-ed-foot .pong-overlay-btn { min-width:0; flex:1; }
 .au-ed-del { color:#ff8f8f !important; }
+.ts-now { margin:10px 12px 0; padding:10px 14px 8px; border-radius:14px; }
+.ts-now-row { display:flex; align-items:center; gap:8px; padding:7px 0; }
+.ts-now-row + .ts-now-row { border-top:1px solid rgba(0,0,0,.05); }
+.ts-now-k { width:30px; flex-shrink:0; font-size:12px; color:var(--muted); }
+.ts-now-v {
+flex:1; min-width:0; font-size:15px; font-weight:600; color:var(--ink, #111);
+white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ts-act {
+flex-shrink:0; padding:4px 10px; border-radius:999px;
+border:1px solid rgba(0,0,0,.12); background:transparent;
+font-size:11px; color:var(--ink, #111); font-family:inherit; cursor:pointer;
+}
+.ts-act:active { opacity:.6; }
+.ts-act.on { background:#111; border-color:#111; color:#fff; }
+.ts-now-hint { padding:4px 0 2px; font-size:11px; line-height:1.5; color:var(--muted); }
+[data-theme="dark"] .ts-now-row + .ts-now-row { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .ts-act { border-color:rgba(255,255,255,.2); color:#fff; }
+[data-theme="dark"] .ts-act.on { background:#fff; border-color:#fff; color:#111; }
 .msg-gift { align-self: center; width: 100%; display: flex; justify-content: center; margin: 8px 0; }
 .msg-gift-card {
 width: min(260px, 80vw); padding: 22px 18px 14px; border-radius: 20px; box-sizing: border-box;
@@ -12674,7 +12724,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1794035592731" data-version="v8.78.3">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1794041056644" data-version="v8.78.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13109,6 +13159,12 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0112 6.4 5.3 5.3 0 0121.3 12c-1.8 4.3-9.3 9-9.3 9z"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/><path d="M8.5 14.5a4 4 0 007 0"/></svg></div>
         <div class="ci"><div class="n">他的心情</div><div class="m">他偶尔主动分享 · 心情/近况/状态</div></div>
         <div class="t" id="cc-ta-mood-count">235</div>
+      </div>
+      <!-- #1650：他的状态/情绪——聊天顶栏昵称后的「时间 · 状态 · 情绪」词库，可逐张开关/编辑 -->
+      <div class="chat-item glass" id="li-ta-status">
+        <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M4.5 4.5l2 2M19.5 4.5l-2 2"/></svg></div>
+        <div class="ci"><div class="n">他的状态</div><div class="m">聊天顶栏显示 · 此刻的状态与情绪</div></div>
+        <div class="t" id="cc-ta-status-count">0</div>
       </div>
       <div class="chat-item glass" id="li-reply-cards">
         <div class="av"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
@@ -14271,7 +14327,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.78.3</div>
+          <div class="val" id="about-ver-val">v8.78.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14390,7 +14446,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.78.3</div>
+      <div class="ver">辰光玥影 v8.78.5</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14821,7 +14877,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.78.3</span>
+              <span class="lic-ver">v8.78.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -16494,6 +16550,51 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
       </div>
     </div>
 
+    <!-- #1650 他的状态/情绪（聊天顶栏「时间 · 状态 · 情绪」的词库页） -->
+    <div class="page" id="page-ta-status" hidden>
+      <div class="chat-head">
+        <span class="ch-back" id="ts-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </span>
+        <span class="ch-name">他的状态</span>
+      </div>
+      <div class="ts-now glass" id="ts-now">
+        <div class="ts-now-row">
+          <span class="ts-now-k">状态</span>
+          <span class="ts-now-v" id="ts-now-status">—</span>
+          <button type="button" class="ts-act" id="ts-reroll-status">换一个</button>
+          <button type="button" class="ts-act" id="ts-lock-status">锁定</button>
+        </div>
+        <div class="ts-now-row">
+          <span class="ts-now-k">情绪</span>
+          <span class="ts-now-v" id="ts-now-emo">—</span>
+          <button type="button" class="ts-act" id="ts-reroll-emo">换一个</button>
+          <button type="button" class="ts-act" id="ts-lock-emo">锁定</button>
+        </div>
+        <div class="ts-now-hint" id="ts-now-hint">自动更换：状态与情绪每 1~8 小时换一次</div>
+      </div>
+      <div class="dc-toggle glass">
+        <div class="dc-toggle-txt">
+          <div class="dc-toggle-name">状态按作息加权</div>
+          <div class="dc-toggle-sub">开启后，睡觉 / 上班 / 吃饭等状态会按「他那边」此刻的时间出现得更多；关闭后全部平均随机。情绪始终平均随机。</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="ts-weighted"><span class="tk"></span></label>
+      </div>
+      <div class="them-tabs sub" id="ts-tabs">
+        <div class="them-tab active" data-ts="status">状态库</div>
+        <div class="them-tab" data-ts="emo">情绪库</div>
+      </div>
+      <div class="gs-title" id="ts-groups-title">状态分组</div>
+      <div class="cc-groups-bar" id="ts-groups-bar"></div>
+      <div class="card-search glass" id="ts-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input class="card-search-input" id="ts-search-input" placeholder="搜索状态字卡" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div class="card-list" id="ts-list">
+        <!-- 状态/情绪字卡按分组渲染 -->
+      </div>
+    </div>
+
     <!-- 聊天回应字卡（独立页面，可开关） -->
     <div class="page" id="page-reply-cards" hidden>
       <div class="chat-head">
@@ -17649,7 +17750,11 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
           <svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </span>
         <span class="ch-av" id="chat-partner-av" title="点击查看他的日常"></span>
-        <span class="ch-name" id="chat-partner-name" title="点击让对方继续说">他</span>
+        <!-- #1650：昵称与「他那边的时间 · 状态 · 情绪」包一层——经典布局同一行、仿微信布局昵称居中+状态第二行 -->
+        <span class="ch-name-wrap" id="chat-name-wrap">
+          <span class="ch-name" id="chat-partner-name" title="点击让对方继续说">他</span>
+          <span class="ch-meta" id="chat-meta" hidden></span>
+        </span>
         <span class="ch-settings" id="chat-settings-btn" title="聊天设置">
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
         </span>
@@ -19323,6 +19428,17 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
           <div class="txt">系统事件文字颜色<span class="sub">修改聊天中「已切换歌曲 / 申请了心意币 / 接受了邀请」等提示文字的颜色</span></div>
           <div class="val" id="cs-event-ink-val">默认 #111111</div>
         </div>
+        <!-- #1650：顶栏布局与状态行（全局偏好，所有桌面共用） -->
+        <div class="set-row" id="cs-head-layout">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="5" rx="2"/><rect x="6" y="14" width="12" height="5" rx="2"/></svg></div>
+          <div class="txt">顶栏布局<span class="sub">经典：保留头像，昵称与「时间 · 状态 · 情绪」同一行；仿微信：隐藏头像、昵称居中，这一行在下方第二行</span></div>
+          <div class="val" id="cs-head-layout-val">经典</div>
+        </div>
+        <div class="set-row" id="cs-head-meta-row">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="txt">顶栏显示他的状态<span class="sub">昵称后显示「他那边的时间 · 状态 · 情绪」；关闭后只保留时间。状态词库在字卡库「他的状态」</span></div>
+          <label class="toggle"><input type="checkbox" id="cs-head-meta"><span class="tk"></span></label>
+        </div>
         <div class="set-row" id="cs-name-ink">
           <div class="txt">顶部昵称颜色<span class="sub">修改聊天页顶栏中间昵称（如「老公」）的颜色；同时取消默认加粗</span></div>
           <div class="val" id="cs-name-ink-val">默认 #111111</div>
@@ -19759,7 +19875,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
   // v3.5.123：readonly 起手（防 Chrome 密码弹条破坏表单签名）——这里立即解除，
   // 早于所有功能模块，任何设备都不会出现输入框不可用的情况
   (function () { var _ci = document.getElementById('chat-input'); if (_ci) _ci.readOnly = false; })();
-window.__jsErrors = window.__jsErrors || []; window.__mochiLoaded = window.__mochiLoaded || []; window.__mochiErrLoaded = window.__mochiErrLoaded || []; window.__mochiBootAt = Date.now(); window.__mochiJsFiles = ["device.js","idb.js","contacts.js","applock.js","card-lock.js","dcp-master.js","media-pool.js","storage-slim.js","perf-check.js","energy-check.js","flash-check.js","img-compress.js","img-ingest.js","clock.js","tabs.js","desktop-slider.js","preset-edit.js","quote-cards.js","personalize.js","chat.js","group-chat.js","chatcard.js","chat-settings.js","reply-settings.js","fav-settings.js","default-cards-data.js","dict-ext-data.js","default-cards.js","quote-spell.js","dream-free.js","mood-followup-data.js","mood-reply-cards.js","ta-mood-data.js","ta-mood.js","music-player.js","calendar.js","divination.js","avatar-lib.js","ta-ask.js","ck-question.js","incoming-requests.js","ta-invite.js","bg-keep.js","records.js","call.js","mail.js","feed.js","loc-lib.js","p2-features.js","gift-shop.js","memo-app.js","memo-arc.js","my-arc.js","period.js","accounting.js","room.js","drift-bottle.js","decision.js","group-decision.js","pong.js","snake-game.js","breakout.js","connect-four.js","coop-mine.js","fishing.js","memory-game.js","gomoku.js","linkup.js","match3.js","auction.js","arcade.js","mood-diary.js","reading.js","sfx.js","fullscreen.js","data-backup.js","feature-data.js","pwa.js","cjian.js","feature-hub.js","settings-help.js","onboarding.js","page-coach.js","card-audit.js","storage-guide.js","mobile-adapt.js"]; window.__mochiExtFiles = ["idb.js","contacts.js","applock.js","card-lock.js","dcp-master.js","media-pool.js","storage-slim.js","perf-check.js","energy-check.js","flash-check.js","img-compress.js","img-ingest.js","clock.js","tabs.js","desktop-slider.js","preset-edit.js","quote-cards.js","personalize.js","chat.js","group-chat.js","chatcard.js","chat-settings.js","reply-settings.js","fav-settings.js","default-cards-data.js","dict-ext-data.js","default-cards.js","quote-spell.js","dream-free.js","mood-followup-data.js","mood-reply-cards.js","ta-mood-data.js","ta-mood.js","music-player.js","calendar.js","divination.js","avatar-lib.js","ta-ask.js","ck-question.js","incoming-requests.js","ta-invite.js","bg-keep.js","records.js","call.js","mail.js","feed.js","loc-lib.js","p2-features.js","gift-shop.js","memo-app.js","memo-arc.js","my-arc.js","period.js","accounting.js","room.js","drift-bottle.js","decision.js","group-decision.js","pong.js","snake-game.js","breakout.js","connect-four.js","coop-mine.js","fishing.js","memory-game.js","gomoku.js","linkup.js","match3.js","auction.js","arcade.js","mood-diary.js","reading.js","sfx.js","fullscreen.js","data-backup.js","feature-data.js","cjian.js","feature-hub.js","settings-help.js","onboarding.js","page-coach.js","card-audit.js","storage-guide.js","mobile-adapt.js"];
+window.__jsErrors = window.__jsErrors || []; window.__mochiLoaded = window.__mochiLoaded || []; window.__mochiErrLoaded = window.__mochiErrLoaded || []; window.__mochiBootAt = Date.now(); window.__mochiJsFiles = ["device.js","idb.js","contacts.js","applock.js","card-lock.js","dcp-master.js","media-pool.js","storage-slim.js","perf-check.js","energy-check.js","flash-check.js","img-compress.js","img-ingest.js","clock.js","tabs.js","desktop-slider.js","preset-edit.js","quote-cards.js","personalize.js","chat.js","group-chat.js","chatcard.js","chat-settings.js","reply-settings.js","fav-settings.js","default-cards-data.js","dict-ext-data.js","default-cards.js","quote-spell.js","dream-free.js","mood-followup-data.js","mood-reply-cards.js","ta-mood-data.js","ta-mood.js","ta-status-data.js","music-player.js","calendar.js","divination.js","avatar-lib.js","ta-ask.js","ck-question.js","incoming-requests.js","ta-invite.js","bg-keep.js","records.js","call.js","mail.js","feed.js","loc-lib.js","p2-features.js","gift-shop.js","memo-app.js","memo-arc.js","my-arc.js","period.js","accounting.js","room.js","drift-bottle.js","decision.js","group-decision.js","pong.js","snake-game.js","breakout.js","connect-four.js","coop-mine.js","fishing.js","memory-game.js","gomoku.js","linkup.js","match3.js","auction.js","arcade.js","mood-diary.js","reading.js","sfx.js","fullscreen.js","data-backup.js","feature-data.js","pwa.js","cjian.js","ta-status.js","feature-hub.js","settings-help.js","onboarding.js","page-coach.js","card-audit.js","storage-guide.js","mobile-adapt.js"]; window.__mochiExtFiles = ["idb.js","contacts.js","applock.js","card-lock.js","dcp-master.js","media-pool.js","storage-slim.js","perf-check.js","energy-check.js","flash-check.js","img-compress.js","img-ingest.js","clock.js","tabs.js","desktop-slider.js","preset-edit.js","quote-cards.js","personalize.js","chat.js","group-chat.js","chatcard.js","chat-settings.js","reply-settings.js","fav-settings.js","default-cards-data.js","dict-ext-data.js","default-cards.js","quote-spell.js","dream-free.js","mood-followup-data.js","mood-reply-cards.js","ta-mood-data.js","ta-mood.js","ta-status-data.js","music-player.js","calendar.js","divination.js","avatar-lib.js","ta-ask.js","ck-question.js","incoming-requests.js","ta-invite.js","bg-keep.js","records.js","call.js","mail.js","feed.js","loc-lib.js","p2-features.js","gift-shop.js","memo-app.js","memo-arc.js","my-arc.js","period.js","accounting.js","room.js","drift-bottle.js","decision.js","group-decision.js","pong.js","snake-game.js","breakout.js","connect-four.js","coop-mine.js","fishing.js","memory-game.js","gomoku.js","linkup.js","match3.js","auction.js","arcade.js","mood-diary.js","reading.js","sfx.js","fullscreen.js","data-backup.js","feature-data.js","cjian.js","ta-status.js","feature-hub.js","settings-help.js","onboarding.js","page-coach.js","card-audit.js","storage-guide.js","mobile-adapt.js"];
 (function () { try {
 (function () {
 try { window.__jsErrors = window.__jsErrors || []; } catch (e0) {}
@@ -24584,6 +24700,7 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 <script defer src="js/mood-reply-cards.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('mood-reply-cards.js')"></script>
 <script defer src="js/ta-mood-data.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('ta-mood-data.js')"></script>
 <script defer src="js/ta-mood.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('ta-mood.js')"></script>
+<script defer src="js/ta-status-data.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('ta-status-data.js')"></script>
 <script defer src="js/music-player.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('music-player.js')"></script>
 <script defer src="js/calendar.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('calendar.js')"></script>
 <script defer src="js/divination.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('divination.js')"></script>
@@ -24628,6 +24745,7 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 <script defer src="js/data-backup.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('data-backup.js')"></script>
 <script defer src="js/feature-data.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('feature-data.js')"></script>
 <script defer src="js/cjian.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('cjian.js')"></script>
+<script defer src="js/ta-status.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('ta-status.js')"></script>
 <script defer src="js/feature-hub.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('feature-hub.js')"></script>
 <script defer src="js/settings-help.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('settings-help.js')"></script>
 <script defer src="js/onboarding.js" onerror="window.__mochiExtFail=(window.__mochiExtFail||[]).concat('onboarding.js')"></script>
@@ -24657,4 +24775,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw62gysb -->
+<!-- __MOCHI_EOF__ mw65q2ro -->

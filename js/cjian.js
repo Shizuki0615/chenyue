@@ -886,6 +886,7 @@ saveTaTime(cid, t);
 }
 return t;
 }
+try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
 function renderTaTime() {
 const listEl = document.getElementById('cj-list');
 if (!listEl) return;

@@ -121,7 +121,7 @@ function minifyCss(code) {
 
 // ===== 按顺序拼接样式 / 脚本（顺序即生效顺序） =====
 const cssFiles = ['base.css', 'home.css', 'chat-main.css', 'chat-pages.css', 'market.css', 'group-chat.css', 'setting.css', 'tabbar.css', 'dark.css', 'memo.css', 'memo-arc.css', 'room.css', 'drift-bottle.css', 'applock.css', 'feature-data.css', 'display-tune.css', 'reading.css', 'desk-grid-v2.css'];
-const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'preset-edit.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
+const jsFiles = ['device.js', 'idb.js', 'contacts.js', 'applock.js', 'card-lock.js', 'dcp-master.js', 'media-pool.js','storage-slim.js', 'perf-check.js', 'energy-check.js', 'flash-check.js', 'img-compress.js', 'img-ingest.js', 'clock.js', 'tabs.js', 'desktop-slider.js', 'preset-edit.js', 'quote-cards.js', 'personalize.js', 'chat.js', 'group-chat.js', 'chatcard.js', 'chat-settings.js', 'reply-settings.js', 'fav-settings.js', 'default-cards-data.js', 'dict-ext-data.js', 'default-cards.js', 'quote-spell.js', 'dream-free.js', 'mood-followup-data.js', 'mood-reply-cards.js', 'ta-mood-data.js', 'ta-mood.js', 'ta-status-data.js', 'music-player.js', 'calendar.js', 'divination.js', 'avatar-lib.js', 'ta-ask.js', 'ck-question.js', 'incoming-requests.js', 'ta-invite.js', 'bg-keep.js', 'records.js', 'call.js', 'mail.js', 'feed.js', 'loc-lib.js', 'p2-features.js', 'gift-shop.js', 'memo-app.js', 'memo-arc.js', 'my-arc.js', 'period.js', 'accounting.js', 'room.js', 'drift-bottle.js', 'decision.js', 'group-decision.js', 'pong.js', 'snake-game.js', 'breakout.js', 'connect-four.js', 'coop-mine.js', 'fishing.js', 'memory-game.js', 'gomoku.js', 'linkup.js', 'match3.js', 'auction.js', 'arcade.js', 'mood-diary.js', 'reading.js', 'sfx.js', 'fullscreen.js', 'data-backup.js', 'feature-data.js', 'pwa.js', 'cjian.js', 'ta-status.js', 'feature-hub.js', 'settings-help.js', 'onboarding.js', 'page-coach.js', 'card-audit.js', 'storage-guide.js', 'mobile-adapt.js'];
 
 // ===== PERF-PLAN 阶段 1：JS 外置化（2026-09-18）=====
 // 首开「3.8MB 内联 JS 主线程整段解析执行」是 iOS/中低端安卓卡顿的结构性大头
@@ -7290,6 +7290,22 @@ const FIX_SENTINELS = [
   { name: '#1633d 拖动占位落点描边（删＝落点看不清）', file: 'css/chat-main.css', needle: 'outline:2px dashed rgba(0,0,0,.28)' },
   // ==== 2026-11-06 #1634 聊天输入区加独立输入框 ====
   { name: '#1634 输入区独立输入框（删＝文字又直接贴在栏位底上）', file: 'css/chat-main.css', needle: '.chat-input-row > .chat-input {' },
+  // ==== 2026-11-07 #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ====
+  { name: '#1650a 状态/情绪词库（删＝顶栏 B/C 无词可抽）', file: 'js/ta-status-data.js', needle: 'window.TA_STATUS_DATA = {' },
+  { name: '#1650b 顶栏状态行标记（删＝昵称后没有 A · B · C）', file: 'template.html', needle: 'id="chat-meta"' },
+  { name: '#1650c 时间每分钟走动（删＝A 停在抽取时刻不走）', file: 'js/ta-status.js', needle: 'Math.floor((now - base) / 60000)' },
+  { name: '#1650d 状态/情绪自动换的 1~8 小时周期（删＝到点不自动更换）', file: 'js/ta-status.js', needle: 'next: 1 + Math.random() * 7' },
+  { name: '#1650e 状态按作息加权（删＝词库里的加权开关点了没效果）', file: 'js/ta-status.js', needle: 'hs.indexOf(hour) >= 0 ? w * 3 : w * 0.4' },
+  { name: '#1650f 顶栏两套布局切换（删＝聊天设置里选经典/仿微信不生效）', file: 'js/ta-status.js', needle: "page.classList.toggle('ch-head-wx'" },
+  { name: '#1650g 字卡库「他的状态」入口（删＝没有状态/情绪词库页）', file: 'template.html', needle: 'id="li-ta-status"' },
+  { name: '#1650h 全局偏好键不被迁进 default 桌面（删＝非 default 桌面切了布局又自己变回去）', file: 'js/contacts.js', needle: "'chat-head-layout', 'chat-head-meta', 'ta-status-weighted'" },
+  { name: '#1650i 常驻 1 分钟调度（删＝A 不走、1~8 小时到点也不自动换）', file: 'js/ta-status.js', needle: 'setInterval(tick, 60000)' },
+  { name: '#1650j 此间时间只读出口（删＝顶栏拿不到他那边的时间）', file: 'js/cjian.js', needle: 'window.cjianTaTimeOf = taTimeOf' },
+  { name: '#1650k 仿微信顶栏隐藏头像、昵称居中、状态第二行（删＝仿微信只去了头像）', file: 'css/chat-main.css', needle: '#page-chat.ch-head-wx .ch-name-wrap' },
+  { name: '#1650l 聊天设置里顶栏布局入口（删＝用户找不到布局切换）', file: 'template.html', needle: 'id="cs-head-layout"' },
+  { name: '#1650m 聊天设置里状态行开关（删＝关不掉状态行）', file: 'template.html', needle: 'id="cs-head-meta"' },
+  { name: '#1650n 手动换一个/锁定（删＝只能等自动更换）', file: 'js/ta-status.js', needle: 'function rerollNow(kind) {' },
+  { name: '#1650o 新文件接入产物（他的状态）', file: 'index.html', needle: 'ta-status' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

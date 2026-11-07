@@ -55,6 +55,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'flash-check-last',
 'ver-retry',
 'fhub-freq', 'fhub-seen',
+'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
 'age-confirmed'];
 function isExcluded(k) {
 const r = k.slice(G.length + 1);

@@ -4027,6 +4027,46 @@ cb.scrollTop = cb.scrollHeight;
 }
 } catch (e) {}
 }
+(function initChatHeadPrefs() {
+const gs = (function () { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } })();
+if (!gs) return;
+const rowEl = document.getElementById('cs-head-layout');
+const valEl = document.getElementById('cs-head-layout-val');
+const chkEl = document.getElementById('cs-head-meta');
+function get(k, d) {
+try { const v = gs.get(k); return (v === null || v === undefined || v === '') ? d : v; } catch (e) { return d; }
+}
+function set(k, v) { try { gs.set(k, String(v)); } catch (e) {} }
+function paint() {
+if (valEl) valEl.textContent = get('chat-head-layout', 'classic') === 'wx' ? '仿微信' : '经典';
+if (chkEl) chkEl.checked = get('chat-head-meta', '1') !== '0';
+}
+paint();
+if (rowEl) {
+rowEl.addEventListener('click', () => {
+if (!window.openModal) return;
+const cur = get('chat-head-layout', 'classic') === 'wx' ? 'wx' : 'classic';
+window.openModal('顶栏布局', '', (v) => {
+if (v !== 'classic' && v !== 'wx') return;
+set('chat-head-layout', v);
+paint();
+if (window.applyChatHeadPrefs) window.applyChatHeadPrefs();
+toast(v === 'wx' ? '已切换：仿微信顶栏（昵称居中，状态在第二行）' : '已切换：经典顶栏（头像 + 昵称与状态同一行）');
+}, {
+noInput: true,
+pill: cur,
+pills: [{ label: '经典', value: 'classic' }, { label: '仿微信', value: 'wx' }]
+});
+});
+}
+if (chkEl) {
+chkEl.addEventListener('change', () => {
+set('chat-head-meta', chkEl.checked ? '1' : '0');
+if (window.applyChatHeadPrefs) window.applyChatHeadPrefs();
+toast(chkEl.checked ? '顶栏显示：时间 · 状态 · 情绪' : '顶栏只显示他那边的时间');
+});
+}
+})();
 (function injectCsLiveAdjust() {
 const sec = document.querySelector('#page-chat-settings .them-sec[data-sec="beautify"]');
 if (!sec || document.getElementById('cs-live-adjust')) return;
