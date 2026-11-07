@@ -254,6 +254,7 @@ gen: 0,           // 摄像头请求代次：切后台/关摄像头时 +1，让�
 watchdog: null,
 taCam: false,     // 本次 TA 是否开摄像头（掷骰结果）
 taBg: '',         // 本次 TA 的画面
+taIdx: -1,        // 本次 TA 画面在图片池里的下标（刷新恢复按它取回同一张）
 rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
 entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
 startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
@@ -355,6 +356,10 @@ cid: currentCall.cid, direction: currentCall.direction, status: currentCall.stat
 startTime: currentCall.startTime, connectedTime: currentCall.connectedTime || 0,
 hangupAt: currentCall.hangupAt || 0,
 vt: VT.mode ? 1 : 0,
+vtCam: (VT.mode && !VT.camOff) ? 1 : 0,
+vtFace: VT.facing === 'environment' ? 'e' : 'u',
+taCam: VT.taCam ? 1 : 0,
+taIdx: VT.taIdx,
 name: currentCall.name || '', av: '', ts: Date.now()
 });
 }
@@ -951,7 +956,7 @@ try {
 currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
 shownAv = null; shownName = null;
 if (info.vt) {
-try { vtRestoreFromSnapshot(); } catch (e3) {
+try { vtRestoreFromSnapshot(info); } catch (e3) {
 if (mask) mask.hidden = false;
 if (mini) mini.hidden = true;
 if (cdEl) cdEl.hidden = true;
@@ -1057,6 +1062,7 @@ try { last = parseInt(vtStoreFor(cid).get(VT_LAST_KEY), 10); } catch (e) { last 
 let idx = Math.floor(Math.random() * pool.length);
 if (pool.length > 1 && idx === last) idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
 try { vtStoreFor(cid).set(VT_LAST_KEY, String(idx)); } catch (e) {}
+VT.taIdx = idx;
 return pool[idx] || '';
 }
 function vtRollTaCam(cid) {
@@ -1180,7 +1186,7 @@ settled = true;
 VT.gen++;
 VT.starting = false;
 VT.watchdog = null;
-vtCamFail('摄像头没有响应，点这里重试');
+vtCamFail('摄像头没有响应，点下方「打开」重试');
 vtCamToast('摄像头没有响应');
 }, 9000);
 const constraints = {
@@ -1217,7 +1223,7 @@ let msg = '摄像头打不开';
 if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
 else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
 else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
-vtCamFail(msg + '，点这里重试');
+vtCamFail(msg + '，点下方「打开」重试');
 if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') toast(msg + '（可在手机设置里给浏览器 / App 开摄像头权限）');
 else vtCamToast(msg);
 });
@@ -1421,19 +1427,35 @@ syncCallAv();
 syncCallName();
 }
 }
-function vtRestoreFromSnapshot() {
+function vtRestoreFromSnapshot(info) {
 if (!currentCall) return;
 vtStopCam();
 VT.mode = true;
-VT.camOff = true;
+const wantCam = !!(info && info.vtCam);
+VT.camOff = !wantCam;
+if (info && info.vtFace === 'u') VT.facing = 'user';
 VT.minimized = false;
 VT.startAsVideo = false;
 VT.swap = false;
 VT.taCam = false;
 VT.taBg = '';
+VT.taIdx = -1;
+if (info && info.taCam) {
+const pool = vtReadPool(vtCid());
+let idx = Number(info.taIdx);
+if (!isFinite(idx) || idx < 0 || idx >= pool.length) {
+try { idx = parseInt(vtStoreFor(vtCid()).get(VT_LAST_KEY), 10); } catch (e) { idx = -1; }
+}
+if (pool.length && isFinite(idx) && idx >= 0 && idx < pool.length) {
+VT.taCam = true;
+VT.taBg = pool[idx];
+VT.taIdx = idx;
+VT.rolled = true;
+}
+}
 vtClearMini();
 vtSetPanel(true);
-vtSelfState('off', '摄像头已关');
+vtSelfState(wantCam ? 'opening' : 'off', wantCam ? '正在打开…' : '摄像头已关');
 vtSyncCamBtn();
 vtPaintTa();
 if (nameEl) nameEl.textContent = currentCall.name || partnerName();
@@ -1442,6 +1464,7 @@ if (mini) mini.hidden = true;
 if (cdEl) cdEl.hidden = true;
 setMaskBtns('active');
 syncCallName();
+if (wantCam) vtStartCam();
 }
 function vtTeardown() {
 vtSwap(false);

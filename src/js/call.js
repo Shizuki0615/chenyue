@@ -334,6 +334,7 @@
     watchdog: null,
     taCam: false,     // 本次 TA 是否开摄像头（掷骰结果）
     taBg: '',         // 本次 TA 的画面
+    taIdx: -1,        // 本次 TA 画面在图片池里的下标（刷新恢复按它取回同一张）
     rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
     entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
     startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
@@ -490,6 +491,11 @@
       hangupAt: currentCall.hangupAt || 0,
       // v8.75.1：刷新恢复要能回到视频态；只记模式，不记摄像头流/画面（恢复时先关摄像头占位）
       vt: VT.mode ? 1 : 0,
+      // v8.76.7：刷新后两边的摄像头都别丢——记下我方开关/朝向、TA 是否开着和画面下标
+      vtCam: (VT.mode && !VT.camOff) ? 1 : 0,
+      vtFace: VT.facing === 'environment' ? 'e' : 'u',
+      taCam: VT.taCam ? 1 : 0,
+      taIdx: VT.taIdx,
       name: currentCall.name || '', av: '', ts: Date.now()
     });
   }
@@ -1385,8 +1391,8 @@
         currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
         shownAv = null; shownName = null;
         if (info.vt) {
-          // v8.75.1：上次是视频通话 → 恢复视频界面（摄像头先关着，等用户点「打开」）
-          try { vtRestoreFromSnapshot(); } catch (e3) {
+          // v8.75.1：上次是视频通话 → 恢复视频界面
+          try { vtRestoreFromSnapshot(info); } catch (e3) {
             if (mask) mask.hidden = false;
             if (mini) mini.hidden = true;
             if (cdEl) cdEl.hidden = true;
@@ -1510,6 +1516,7 @@
     // 不连续用同一张（池里只有 1 张时无解，允许重复）
     if (pool.length > 1 && idx === last) idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
     try { vtStoreFor(cid).set(VT_LAST_KEY, String(idx)); } catch (e) {}
+    VT.taIdx = idx;
     return pool[idx] || '';
   }
   function vtRollTaCam(cid) {
@@ -1642,7 +1649,7 @@
       VT.gen++;
       VT.starting = false;
       VT.watchdog = null;
-      vtCamFail('摄像头没有响应，点这里重试');
+      vtCamFail('摄像头没有响应，点下方「打开」重试');
       vtCamToast('摄像头没有响应');
     }, 9000);
     const constraints = {
@@ -1680,7 +1687,7 @@
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
       else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
       else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
-      vtCamFail(msg + '，点这里重试');
+      vtCamFail(msg + '，点下方「打开」重试');
       // 权限被拒是系统设置问题；其余（被占用/没有设备）与环境无关，不再啰嗦 App/HTTPS 那段
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') toast(msg + '（可在手机设置里给浏览器 / App 开摄像头权限）');
       else vtCamToast(msg);
@@ -1902,22 +1909,39 @@
       syncCallName();
     }
   }
-  // v8.75.1：刷新/重开后恢复视频态——不自动开摄像头（无用户手势），先显示
-  // 「头像模糊 + 摄像头已关」的视频界面，点「打开」再由用户手动启动；
-  // 语音/视频切换按钮由 setMaskBtns('active') + vtSetPanel(true) 一并亮出。
-  function vtRestoreFromSnapshot() {
+  // v8.75.1：刷新/重开后恢复视频态；
+  // v8.76.7：两边摄像头都按刷新前的状态恢复——TA 开着就取回同一张画面（taCam/taIdx），
+  //   我这边开着就自动重连摄像头（失败会回落成「摄像头已关」占位，仍可点按钮重试）。
+  function vtRestoreFromSnapshot(info) {
     if (!currentCall) return;
     vtStopCam();
     VT.mode = true;
-    VT.camOff = true;
+    const wantCam = !!(info && info.vtCam);
+    VT.camOff = !wantCam;
+    if (info && info.vtFace === 'u') VT.facing = 'user';
     VT.minimized = false;
     VT.startAsVideo = false;
     VT.swap = false;
     VT.taCam = false;
     VT.taBg = '';
+    VT.taIdx = -1;
+    // TA 那侧：刷新前开着摄像头就把同一张画面取回来（池子被清空/下标越界才回落头像）
+    if (info && info.taCam) {
+      const pool = vtReadPool(vtCid());
+      let idx = Number(info.taIdx);
+      if (!isFinite(idx) || idx < 0 || idx >= pool.length) {
+        try { idx = parseInt(vtStoreFor(vtCid()).get(VT_LAST_KEY), 10); } catch (e) { idx = -1; }
+      }
+      if (pool.length && isFinite(idx) && idx >= 0 && idx < pool.length) {
+        VT.taCam = true;
+        VT.taBg = pool[idx];
+        VT.taIdx = idx;
+        VT.rolled = true;
+      }
+    }
     vtClearMini();
     vtSetPanel(true);
-    vtSelfState('off', '摄像头已关');
+    vtSelfState(wantCam ? 'opening' : 'off', wantCam ? '正在打开…' : '摄像头已关');
     vtSyncCamBtn();
     vtPaintTa();
     if (nameEl) nameEl.textContent = currentCall.name || partnerName();
@@ -1926,6 +1950,8 @@
     if (cdEl) cdEl.hidden = true;
     setMaskBtns('active');
     syncCallName();
+    // 最后再真的去要流（要在面板/按钮都铺好之后；失败由 vtCamFail 回落成占位）
+    if (wantCam) vtStartCam();
   }
   function vtTeardown() {
     vtSwap(false);
