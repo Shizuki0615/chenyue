@@ -7258,7 +7258,10 @@ const FIX_SENTINELS = [
   { name: '#1623b 小窗关闭时填我的头像与模糊背景（删＝模糊层空着）', file: 'js/call.js', needle: 'function paintSelfOff()' },
   // ==== 2026-11-05 #1625 刷新恢复保留视频态 + 面板内语音/视频切换 ====
   { name: '#1625a 通话快照记录视频模式（删＝刷新后一律恢复成语音）', file: 'js/call.js', needle: 'vt: VT.mode ? 1 : 0' },
-  { name: '#1625b 刷新恢复视频界面（删＝走回语音面板）', file: 'js/call.js', needle: 'function vtRestoreFromSnapshot()' },
+  { name: '#1625b 刷新恢复视频界面（删＝走回语音面板）', file: 'js/call.js', needle: 'function vtRestoreFromSnapshot(info)' },
+  { name: '#1644a 刷新后恢复 TA 摄像头画面（删＝恢复后 TA 那侧变回头像）', file: 'js/call.js', needle: 'if (info && info.taCam) {' },
+  { name: '#1644b 刷新后自动重连我的摄像头（删＝恢复后我这边又是关着）', file: 'js/call.js', needle: 'if (wantCam) vtStartCam();' },
+  { name: '#1644c 快照记下两边摄像头状态（删＝刷新前状态无从恢复）', file: 'js/call.js', needle: 'vtCam: (VT.mode && !VT.camOff) ? 1 : 0,' },
   { name: '#1625c 语音/视频切换按钮两种接通态都常驻（删＝恢复的视频界面没有切回语音的按钮）', file: 'js/call.js', needle: 'if (vtBtn) vtBtn.hidden = !(mode === \'active\');' },
   { name: '#1626d 视频态切换按钮改文案/图标为「语音」（删＝摄像机图标配「语音」）', file: 'js/call.js', needle: "vTxt.textContent = on ? '语音' : '视频'" },
   // ==== 2026-11-06 #1626 视频小窗缩小后不再是黑块 ====
