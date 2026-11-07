@@ -340,6 +340,11 @@
     swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
     swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
     minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
+    native: null,     // #1651 App 内原生美颜控件（plus.video.LivePusher）；网页/PWA 恒为 null
+    nativeReady: false,   // 原生预览已出图（此时 HTML <video> 让位）
+    nativeStarting: false,// 原生控件正在启动（防重入）
+    nativeFailed: false,  // 本通电话内原生启动失败过：同一通不再反复等 9 秒
+    nativeRect: '',   // 上次同步给原生控件的矩形（同值不重写，防每次 setStyles 闪一下）
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -1462,6 +1467,41 @@
   function vtSupported() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   }
+  // ===== #1651 前置美颜 =====
+  // 存储：全局根键（美颜是关于「我的脸」的设备偏好，不随联系人隔离）——
+  //   call-beauty＝'1'/'0'（默认开）、call-beauty-whiteness＝0~5（默认 4）。
+  // 两条实现：
+  //   ① App（HBuilderX 打包，window.plus 可用）：plus.video.LivePusher 原生控件，
+  //      自带磨皮 + 美白（beauty/whiteness），只在前置摄像头时接管画面；
+  //   ② 网页/PWA：CSS 柔光兜底（提亮/红润/轻微柔化），同样只作用于前置。
+  const BEAUTY_KEY = 'call-beauty';
+  const BEAUTY_WHITE_KEY = 'call-beauty-whiteness';
+  function beautyStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
+  function beautyOn() {
+    try {
+      const s = beautyStore();
+      const v = s ? s.get(BEAUTY_KEY) : null;
+      return (v === null || v === undefined || v === '') ? true : v === '1';
+    } catch (e) { return true; }
+  }
+  function beautyWhite() {
+    try {
+      const s = beautyStore();
+      const n = parseInt(s ? s.get(BEAUTY_WHITE_KEY) : '', 10);
+      return isNaN(n) ? 4 : Math.max(0, Math.min(5, n));
+    } catch (e) { return 4; }
+  }
+  function beautyNativeSupported() {
+    try { return !!(window.plus && window.plus.video && window.plus.video.LivePusher); } catch (e) { return false; }
+  }
+  // 只有「前置 + 美颜开 + App 原生可用 + 本通没失败过」才走原生；其余走 HTML 摄像头
+  function beautyUseNative() {
+    return beautyOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
+  }
+  function vtSyncBeautyClass() {
+    const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
+    if (document.body.classList.contains('vt-beauty') !== on) document.body.classList.toggle('vt-beauty', on);
+  }
   // 摄像头打不开时补一句「为什么」：App 壳（HBuilderX 打包）/ 非 HTTPS 页面是手机端最常见的两种环境问题，
   // 光说「没有权限」用户会去翻系统设置，翻完还是打不开。小窗只放大白话短句，长解释走 toast。
   function vtCamHint() {
@@ -1481,9 +1521,12 @@
   function vtAskAppCamPerm(then) {
     let done = false;
     const go = function () { if (done) return; done = true; then(); };
+    // #1651：先落「已问过」再分叉——iOS / 没有 plus.android 的壳里原来会直接 go() 而不置位，
+    // vtStartCam 是「!vtPermAsked && window.plus → 再问一次」的入口，于是无限自递归。
+    if (vtPermAsked) return go();
+    vtPermAsked = true;
     try {
-      if (vtPermAsked || !(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
-      vtPermAsked = true;
+      if (!(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
       plus.android.requestPermissions(['android.permission.CAMERA'], go, go);
       setTimeout(go, 1500);
     } catch (e) { go(); }
@@ -1575,12 +1618,13 @@
       catch (e) { blur.style.backgroundImage = ''; }
     }
   }
-  function vtSelfState(state, txt) {
+  function vtSelfState(state, txt, native) {
     const v = document.getElementById('vt-self');
     const off = document.getElementById('vt-self-off');
     const t = document.getElementById('vt-self-off-txt');
     if (state === 'on') {
-      if (v) v.hidden = false;
+      // #1651：App 原生美颜出图时，HTML <video> 让位（原生控件盖在 WebView 上面）
+      if (v) { v.hidden = !!native; v.style.visibility = native ? 'hidden' : ''; }
       if (off) off.hidden = true;
       return;
     }
@@ -1591,7 +1635,7 @@
       off.style.top = v.style.top || '';
       off.style.right = v.style.left ? 'auto' : '';
     }
-    if (v) v.hidden = true;
+    if (v) { v.hidden = true; v.style.visibility = ''; }
     if (off) off.hidden = false;
     if (t && txt) t.textContent = txt;
   }
@@ -1603,7 +1647,101 @@
     const slash = document.getElementById('call-cam-slash');
     if (slash) slash.style.display = VT.camOff ? '' : 'none';
   }
+  // #1651：原生美颜控件的创建 / 定位 / 关闭
+  function vtNativeClose() {
+    const p = VT.native;
+    VT.native = null;
+    VT.nativeReady = false;
+    VT.nativeStarting = false;
+    VT.nativeRect = '';
+    if (p) { try { p.close(); } catch (e) {} }
+    const v = document.getElementById('vt-self');
+    if (v) { try { v.style.visibility = ''; } catch (e) {} }
+  }
+  // 原生控件不跟 CSS 走：互换 / 展开后按锚点 div 的新矩形重新 setStyles（同矩形不重写）
+  function vtNativeRectSync(force) {
+    if (!VT.native) return;
+    const a = document.getElementById('vt-native-cam');
+    if (!a) return;
+    const r = a.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const sig = [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(',');
+    if (!force && sig === VT.nativeRect) return;
+    VT.nativeRect = sig;
+    try {
+      VT.native.setStyles({
+        top: Math.round(r.top) + 'px',
+        left: Math.round(r.left) + 'px',
+        width: Math.round(r.width) + 'px',
+        height: Math.round(r.height) + 'px'
+      });
+    } catch (e) {}
+  }
+  function vtStartNativeCam() {
+    if (!beautyUseNative() || VT.minimized) { vtStartCam(true); return; }
+    const anchor = document.getElementById('vt-native-cam');
+    if (!anchor) { VT.nativeFailed = true; vtStartCam(true); return; }
+    // 沿用用户拖好的小窗位置（原生控件期间不可拖动，但位置不跳回默认）
+    const v = document.getElementById('vt-self');
+    if (v) { anchor.style.left = v.style.left; anchor.style.top = v.style.top; anchor.style.right = v.style.right; }
+    VT.nativeStarting = true;
+    vtSelfState('opening', '正在打开…');
+    let settled = false;
+    const gen = VT.gen;
+    const fail = function (why) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      VT.nativeStarting = false;
+      VT.nativeFailed = true; // 本通电话内不再重试原生，直接走 HTML 摄像头
+      vtNativeClose();
+      // 失败不静默：说清楚是「原生美颜」没起来，避免用户以为摄像头坏了
+      toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头');
+      vtStartCam(true);
+    };
+    const timer = setTimeout(function () { fail('没有响应'); }, 9000);
+    try {
+      const p = new plus.video.LivePusher('vt-native-cam', {
+        // 只 preview 不 start：url 只是构造参数，不会真的推流（本应用没有对端）
+        url: 'rtmp://127.0.0.1:1935/mochi/preview',
+        mode: 'SD',
+        muted: true,
+        'enable-camera': true,
+        'auto-focus': true,
+        beauty: 1,
+        whiteness: beautyWhite(),
+        aspect: '3:4',
+        position: 'absolute'
+      });
+      VT.native = p;
+      p.addEventListener('statechange', function (e) {
+        const code = e && e.detail && e.detail.code;
+        if (code === 1003) { // 打开摄像头成功
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          VT.nativeStarting = false;
+          if (gen !== VT.gen || !VT.mode || VT.camOff) { vtNativeClose(); return; }
+          VT.nativeReady = true;
+          vtNativeRectSync(true);
+          const v2 = document.getElementById('vt-self');
+          if (v2) { v2.hidden = true; v2.style.visibility = 'hidden'; }
+          vtSelfState('on', '', true);
+          vtSyncCamBtn();
+          vtSyncBeautyClass();
+          if (VT.minimized) vtNativeClose(); // 缩到小框时不留原生层悬浮
+        } else if (code === -1301 || code === -1302) { // 打开摄像头/麦克风失败
+          fail('摄像头打不开');
+        }
+      });
+      p.addEventListener('error', function () { fail('权限或设备问题'); });
+      p.preview();
+    } catch (e) {
+      fail('组件不可用');
+    }
+  }
   function vtStopCam() {
+    vtNativeClose();
     VT.gen++;
     if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
     VT.starting = false;
@@ -1623,9 +1761,12 @@
     vtSelfState('fail', msg);
     vtSyncCamBtn();
   }
-  function vtStartCam() {
+  function vtStartCam(webOnly) {
     if (!VT.mode || VT.camOff) return;
-    if (VT.stream || VT.starting) return;
+    if (VT.stream || VT.starting || VT.native || VT.nativeStarting) return;
+    // #1651：App 内前置 + 美颜开 → 原生 LivePusher（失败自动退回下面的 getUserMedia）；
+    // 缩在小框时不建原生层（它会盖在别的界面上），直接走 HTML 流给小窗预览。
+    if (!webOnly && !VT.minimized && beautyUseNative()) { vtStartNativeCam(); return; }
     if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); vtCamToast('这个浏览器不支持摄像头'); return; }
     // App 里第一次开摄像头：先拉系统授权，再真的去要流（见 vtAskAppCamPerm）
     if (!vtPermAsked && window.plus) { vtAskAppCamPerm(function () { vtStartCam(); }); return; }
@@ -1700,11 +1841,12 @@
     }
   }
   function vtFlip() {
-    if (!VT.mode || VT.camOff || VT.starting) return;
+    if (!VT.mode || VT.camOff || VT.starting || VT.nativeStarting) return;
     VT.facing = VT.facing === 'user' ? 'environment' : 'user';
     vtStopCam();
     const v = document.getElementById('vt-self');
     if (v) v.classList.toggle('rear', VT.facing === 'environment');
+    vtSyncBeautyClass();
     vtStartCam();
   }
   function vtSetPanel(on) {
@@ -1748,6 +1890,8 @@
     if (t) t.textContent = next ? '看对方' : '看自己';
     // 小窗跟着大画面一起换：大画面里谁占满屏，缩下去的小窗里就谁占满屏
     if (VT.minimized) vtPaintMini();
+    // #1651：原生控件不认 CSS，互换后按锚点新矩形重新落位
+    vtNativeRectSync(true);
   }
   // 视频态的小框＝一块正在播的视频小窗：TA 的画面铺满 + 自己的摄像头缩在右上角。
   // 这是「视频缩小之后还是视频」的观感来源（另一部分是 VT.mode/摄像头流一直不停）。
@@ -1789,9 +1933,10 @@
     }
     if (blur && hasFrame) blur.style.backgroundImage = '';
     // 我自己关摄像头时：小镜/整块互换位显示我的头像模糊，而不是黑 video
+    // #1651：原生美颜出图时 VT.stream 是空的，但摄像头其实开着，不能误判成「已关」
     const selfOff = document.getElementById('call-mini-selfoff');
     if (selfOff) {
-      const offSelf = !VT.stream;
+      const offSelf = !(VT.stream || VT.nativeReady);
       selfOff.hidden = !offSelf;
       if (offSelf) paintMiniSelfOff();
     }
@@ -1832,6 +1977,9 @@
     if (!currentCall) return;
     // 小框被用户关掉时不能缩：否则视频界面没有任何入口回去（半框里那行只会「切回语音」）
     if (!mini || !callMiniEnabled()) { toast('通话小框已关闭，视频通话不能缩小'); return; }
+    // #1651：原生控件是盖在 WebView 上面的一层，缩到小框后不跟着走 → 先关掉；
+    // 展开时 vtStartCam 会按需重建（原生美颜本通没失败过就还是原生）。
+    vtNativeClose();
     if (mask) mask.hidden = true;
     if (cdEl) cdEl.hidden = true;
     VT.minimized = true;
@@ -1856,7 +2004,7 @@
   }
   function vtEnter() {
     if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
-    if (!vtSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
+    if (!vtSupported() && !beautyNativeSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
     if (VT.mode) return;
     // 本通第一次进视频沿用接通时那次掷骰；之后再切进来重掷一次。
     // 刷新恢复的通话没有接通钩子（rolled 还是 false）→ 这里补掷，否则恢复后永远显示头像
@@ -1864,6 +2012,7 @@
     VT.entered = true;
     VT.mode = true;
     VT.camOff = false;
+    VT.nativeFailed = false; // #1651：每通电话重新给原生美颜一次机会
     // 默认后置：进视频先给背面视角，用户点「切换」再翻到前置
     VT.facing = 'environment';
     VT.minimized = false;
@@ -1872,6 +2021,7 @@
     vtSetPanel(true);
     vtSelfState('opening', '正在打开…');
     vtSyncCamBtn();
+    vtSyncBeautyClass();
     vtPaintTa();
     if (mask) mask.hidden = false;
     if (mini) mini.hidden = true;
@@ -1889,6 +2039,7 @@
     VT.minimized = false;
     vtClearMini();
     vtStopCam();
+    vtSyncBeautyClass();
     vtSetPanel(false);
     if (statusEl) statusEl.textContent = '正在通话...';
     setMaskBtns('active');
@@ -1913,12 +2064,14 @@
     VT.minimized = false;
     VT.startAsVideo = false;
     VT.swap = false;
+    VT.nativeFailed = false; // #1651：恢复出来的视频界面，用户点「打开」时重新尝试原生美颜
     VT.taCam = false;
     VT.taBg = '';
     vtClearMini();
     vtSetPanel(true);
     vtSelfState('off', '摄像头已关');
     vtSyncCamBtn();
+    vtSyncBeautyClass();
     vtPaintTa();
     if (nameEl) nameEl.textContent = currentCall.name || partnerName();
     if (mask) mask.hidden = false;
@@ -1941,10 +2094,14 @@
     VT.taCam = false;
     VT.taBg = '';
     vtStopCam();
+    VT.nativeFailed = false;
+    vtSyncBeautyClass();
     vtSetPanel(false);
     // 下一通从默认右上角开始（拖动位置只在本次通话内保留）
     const selfV = document.getElementById('vt-self');
     if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; selfV.classList.remove('rear'); }
+    const natV = document.getElementById('vt-native-cam');
+    if (natV) { natV.style.left = ''; natV.style.top = ''; natV.style.right = ''; }
     vtSelfState('off', '摄像头已关');
     const img = document.getElementById('vt-ta-img');
     if (img) { img.hidden = true; img.removeAttribute('src'); }
@@ -2160,6 +2317,48 @@
   const vtSettingsRow = document.getElementById('row-call-settings');
   if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTimeout(vtRenderPool, 0); });
   vtRenderPool();
+  // ===== #1651 通话设置：前置美颜开关 + 美白档位（全局偏好，所有桌面共用） =====
+  (function initCallBeauty() {
+    const cb = document.getElementById('call-beauty');
+    const val = document.getElementById('call-beauty-whiteness-val');
+    const step = val ? val.closest('.stepper') : null;
+    function paint() {
+      if (cb) cb.checked = beautyOn();
+      if (val) val.value = String(beautyWhite());
+    }
+    paint();
+    // 改设置时如果正在前置视频：停掉再按新设置重建（原生 ↔ HTML 互切也只走这一条路）
+    function restartForBeauty() {
+      if (!VT.mode || VT.camOff) return;
+      VT.nativeFailed = false;
+      vtStopCam();
+      vtStartCam();
+    }
+    if (cb) cb.addEventListener('change', function () {
+      const s = beautyStore();
+      try { if (s) s.set(BEAUTY_KEY, cb.checked ? '1' : '0'); } catch (e) {}
+      paint();
+      vtSyncBeautyClass();
+      if (VT.facing === 'user') restartForBeauty();
+      toast(cb.checked ? '已开启前置美颜' : '已关闭前置美颜');
+    });
+    function stepWhite(delta) {
+      const n = Math.max(0, Math.min(5, beautyWhite() + delta));
+      const s = beautyStore();
+      try { if (s) s.set(BEAUTY_WHITE_KEY, String(n)); } catch (e) {}
+      paint();
+      // 原生控件支持动态 setStyles 时即时生效；不支持也不影响下一次进视频
+      if (VT.native) { try { VT.native.setStyles({ whiteness: n }); } catch (e) {} }
+      toast('美白程度：' + n);
+    }
+    if (step) {
+      const minus = step.querySelector('.stp-min');
+      const plus = step.querySelector('.stp-max');
+      if (minus) minus.addEventListener('click', function () { stepWhite(-1); });
+      if (plus) plus.addEventListener('click', function () { stepWhite(1); });
+    }
+    document.addEventListener('mochi-restore-done', paint);
+  })();
   // 切后台/锁屏：摄像头必须停（系统也会掐断，不停会黑屏；回来再按需重建）
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {

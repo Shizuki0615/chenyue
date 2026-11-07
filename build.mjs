@@ -7306,6 +7306,18 @@ const FIX_SENTINELS = [
   { name: '#1650m 聊天设置里状态行开关（删＝关不掉状态行）', file: 'template.html', needle: 'id="cs-head-meta"' },
   { name: '#1650n 手动换一个/锁定（删＝只能等自动更换）', file: 'js/ta-status.js', needle: 'function rerollNow(kind) {' },
   { name: '#1650o 新文件接入产物（他的状态）', file: 'index.html', needle: 'ta-status' },
+  // ==== 2026-11-07 #1651 视频通话前置美颜（App 原生 LivePusher + 网页 CSS 柔光） ====
+  { name: '#1651a 通话设置「前置美颜」开关（删＝用户没有美颜入口）', file: 'template.html', needle: 'id="call-beauty"' },
+  { name: '#1651b App 原生 LivePusher 接入（删＝App 内只剩网页柔光，不是原生美颜）', file: 'js/call.js', needle: 'new plus.video.LivePusher' },
+  { name: '#1651c 原生启动失败自动退回普通摄像头（删＝模块没勾/权限被拒时视频一直卡在「正在打开」）', file: 'js/call.js', needle: 'VT.nativeFailed = true' },
+  { name: '#1651d 网页/PWA 的 CSS 柔光兜底（删＝网页前置没有任何美颜效果）', file: 'css/chat-main.css', needle: 'body.vt-beauty .vt-self:not(.rear)' },
+  { name: '#1651e 原生控件按锚点矩形落位（删＝互换/展开后原生画面还停在右上角小窗）', file: 'js/call.js', needle: 'function vtNativeRectSync(force) {' },
+  { name: '#1651f 缩到小框先关原生层（删＝原生画面悬浮在别的界面上面）', file: 'js/call.js', needle: 'vtNativeClose();\nif (mask) mask.hidden = true;' },
+  { name: '#1651g 原生出图时 HTML video 让位（删＝两层画面叠着/黑帧）', file: 'js/call.js', needle: "vtSelfState('on', '', true)" },
+  { name: '#1651h 小窗不误判摄像头已关（删＝原生美颜时缩到小框显示「摄像头已关」）', file: 'js/call.js', needle: '!(VT.stream || VT.nativeReady)' },
+  { name: '#1651i 美颜偏好键不被迁进 default 桌面（删＝非 default 桌面美颜自己回默认）', file: 'js/contacts.js', needle: "'call-beauty', 'call-beauty-whiteness'" },
+  { name: '#1651j 美白档位入口（删＝原生美颜只能固定一档）', file: 'template.html', needle: 'id="call-beauty-whiteness-val"' },
+  { name: '#1651k 摄像头授权只问一次（删＝iOS/没有 plus.android 的壳里 vtStartCam 无限自递归、视频打不开）', file: 'js/call.js', needle: 'if (vtPermAsked) return go();' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

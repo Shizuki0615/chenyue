@@ -242,6 +242,9 @@
     //   都是全桌面共用的外观/词库偏好，走根命名空间；漏排除会被 migrateLegacy
     //   当旧顶层业务键迁进 default 并删根键（非 default 桌面切了布局又自己变回去）。
     'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
+    // #1651：前置美颜（开关 + 美白档位）是「我的脸」的设备偏好，全局根键、不随联系人隔离；
+    //   漏排除会被 migrateLegacy 迁进 default 并删根键（非 default 桌面美颜自己变回默认）。
+    'call-beauty', 'call-beauty-whiteness',
     'age-confirmed'];
   function isExcluded(k) {
     const r = k.slice(G.length + 1);

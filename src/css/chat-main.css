@@ -2880,3 +2880,21 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   flex:0 0 auto; width:100%; max-width:100%;
   text-align:center; font-size:11px;
 }
+
+/* ===== #1651 前置美颜 ===== */
+/* App 原生美颜控件的定位锚点：几何与 .vt-self 完全一致（原生层按它的矩形落位）。
+   自身不画任何东西，也不吃触摸；真正的画面是盖在 WebView 上面的原生推流控件。 */
+.vt-native-cam {
+  position:absolute; top:52px; right:12px; z-index:3;
+  width:76px; height:104px; border-radius:12px;
+  background:transparent; pointer-events:none;
+}
+.vt-stage.swap .vt-native-cam {
+  inset:0; width:100%; height:100%; border-radius:0;
+}
+/* 网页 / PWA 兜底：前置摄像头时给 HTML <video> 一层柔光（后置 .rear 不加）。
+   与 App 原生美颜同一开关；美白档位只对原生生效，网页固定用这一档轻柔光。 */
+body.vt-beauty .vt-self:not(.rear),
+body.vt-beauty .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.06) saturate(1.08) contrast(.96) sepia(.04) blur(.2px);
+}
