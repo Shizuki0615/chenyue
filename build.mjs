@@ -7328,6 +7328,7 @@ const FIX_SENTINELS = [
   { name: '#1651o 原生启动失败自动关掉原生开关（删＝每次进视频重复等 4 秒再黑一下）', file: 'js/call.js', needle: 's.set(BEAUTY_NATIVE_KEY, \'0\')' },
   { name: '#1651p 页面加载清理上一次残留的原生层（删＝旧版留下的原生层继续盖住新页面）', file: 'js/call.js', needle: 'function vtNativeBootClean()' },
   { name: '#1651q 原生启动超时 4 秒（改回 9 秒＝模块没勾时用户干等更久）', file: 'js/call.js', needle: "fail('没有响应'); }, 4000);" },
+  { name: '#1651r 原生控件创建后延时 500ms 再 preview（删＝官方要求的尺寸就绪窗口被跳过，预览/摄像头启动失败＝「原生无响应」）', file: 'js/call.js', needle: 'previewTimer = setTimeout(function () {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

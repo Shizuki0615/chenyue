@@ -1739,11 +1739,13 @@
     VT.nativeStarting = true;
     vtSelfState('opening', '正在打开…');
     let settled = false;
+    let previewTimer = 0;
     const gen = VT.gen;
     const fail = function (why) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(previewTimer);
       vtNativeFail(why);
     };
     // 原生预览正常 1 秒内出图；4 秒还没回来说明模块/权限有问题，别再让用户干等
@@ -1772,6 +1774,15 @@
       if (!p) { fail('组件不可用'); return; }
       VT.native = p;
       try { plus.webview.currentWebview().append(p); } catch (e) {}
+      // 追加后再按锚点矩形校准一次（部分版本创建时的 top/left 会被 Webview 默认值覆盖）
+      try {
+        p.setStyles({
+          top: Math.round(ar.top) + 'px',
+          left: Math.round(ar.left) + 'px',
+          width: Math.max(1, Math.round(ar.width)) + 'px',
+          height: Math.max(1, Math.round(ar.height)) + 'px'
+        });
+      } catch (e) {}
       p.addEventListener('statechange', function (e) {
         const code = e && e.detail && e.detail.code;
         if (code === 1003) { // 打开摄像头成功
@@ -1793,7 +1804,12 @@
         }
       });
       p.addEventListener('error', function () { fail('权限或设备问题'); });
-      p.preview();
+      // 官方文档明确要求：创建控件后延时约 500ms 再 preview，否则预览窗口尺寸/摄像头启动可能失败
+      // （此前立即 preview 是「原生无响应」的直接原因之一）。
+      previewTimer = setTimeout(function () {
+        if (settled || VT.native !== p) return;
+        try { p.preview(); } catch (e) { fail('组件不可用'); }
+      }, 500);
     } catch (e) {
       fail('组件不可用');
     }

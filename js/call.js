@@ -1257,11 +1257,13 @@ vtNativeClose();
 VT.nativeStarting = true;
 vtSelfState('opening', '正在打开…');
 let settled = false;
+let previewTimer = 0;
 const gen = VT.gen;
 const fail = function (why) {
 if (settled) return;
 settled = true;
 clearTimeout(timer);
+clearTimeout(previewTimer);
 vtNativeFail(why);
 };
 const timer = setTimeout(function () { fail('没有响应'); }, 4000);
@@ -1287,6 +1289,14 @@ else p = new plus.video.LivePusher('vt-native-cam', styles);
 if (!p) { fail('组件不可用'); return; }
 VT.native = p;
 try { plus.webview.currentWebview().append(p); } catch (e) {}
+try {
+p.setStyles({
+top: Math.round(ar.top) + 'px',
+left: Math.round(ar.left) + 'px',
+width: Math.max(1, Math.round(ar.width)) + 'px',
+height: Math.max(1, Math.round(ar.height)) + 'px'
+});
+} catch (e) {}
 p.addEventListener('statechange', function (e) {
 const code = e && e.detail && e.detail.code;
 if (code === 1003) { // 打开摄像头成功
@@ -1308,7 +1318,10 @@ fail('摄像头打不开');
 }
 });
 p.addEventListener('error', function () { fail('权限或设备问题'); });
-p.preview();
+previewTimer = setTimeout(function () {
+if (settled || VT.native !== p) return;
+try { p.preview(); } catch (e) { fail('组件不可用'); }
+}, 500);
 } catch (e) {
 fail('组件不可用');
 }
