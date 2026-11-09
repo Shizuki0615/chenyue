@@ -1029,6 +1029,7 @@ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
 const BEAUTY_KEY = 'call-beauty';
 const BEAUTY_WHITE_KEY = 'call-beauty-whiteness';
+const BEAUTY_NATIVE_KEY = 'call-beauty-native';
 function beautyStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
 function beautyOn() {
 try {
@@ -1044,11 +1045,20 @@ const n = parseInt(s ? s.get(BEAUTY_WHITE_KEY) : '', 10);
 return isNaN(n) ? 4 : Math.max(0, Math.min(5, n));
 } catch (e) { return 4; }
 }
+function beautyNativeOn() {
+try {
+const s = beautyStore();
+return !!(s && s.get(BEAUTY_NATIVE_KEY) === '1');
+} catch (e) { return false; }
+}
 function beautyNativeSupported() {
-try { return !!(window.plus && window.plus.video && window.plus.video.LivePusher); } catch (e) { return false; }
+try {
+return !!(window.plus && window.plus.video && window.plus.video.createLivePusher &&
+window.plus.video.getLivePusherById && window.plus.webview && window.plus.webview.currentWebview);
+} catch (e) { return false; }
 }
 function beautyUseNative() {
-return beautyOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
+return beautyOn() && beautyNativeOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
 }
 function vtSyncBeautyClass() {
 const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
@@ -1184,13 +1194,26 @@ if (t) t.textContent = VT.camOff ? '打开' : '关闭';
 const slash = document.getElementById('call-cam-slash');
 if (slash) slash.style.display = VT.camOff ? '' : 'none';
 }
+function vtNativeRelease(p) {
+if (!p) return;
+try {
+if (window.plus && plus.webview && plus.webview.currentWebview) plus.webview.currentWebview().remove(p);
+} catch (e) {}
+try { p.close(); } catch (e) {}
+}
 function vtNativeClose() {
 const p = VT.native;
 VT.native = null;
 VT.nativeReady = false;
 VT.nativeStarting = false;
 VT.nativeRect = '';
-if (p) { try { p.close(); } catch (e) {} }
+vtNativeRelease(p);
+try {
+if (window.plus && plus.video && plus.video.getLivePusherById) {
+const old = plus.video.getLivePusherById('vt-native-cam');
+if (old && old !== p) vtNativeRelease(old);
+}
+} catch (e) {}
 const v = document.getElementById('vt-self');
 if (v) { try { v.style.visibility = ''; } catch (e) {} }
 }
@@ -1212,12 +1235,25 @@ height: Math.round(r.height) + 'px'
 });
 } catch (e) {}
 }
+function vtNativeFail(why) {
+VT.nativeStarting = false;
+VT.nativeFailed = true;
+vtNativeClose();
+try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+const nb = document.getElementById('call-beauty-native');
+if (nb) nb.checked = false;
+toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头；请确认 HBuilderX 打包时勾选了 LivePusher 模块，再重新打开「App 原生美颜」');
+vtStartCam(true);
+}
 function vtStartNativeCam() {
 if (!beautyUseNative() || VT.minimized) { vtStartCam(true); return; }
 const anchor = document.getElementById('vt-native-cam');
-if (!anchor) { VT.nativeFailed = true; vtStartCam(true); return; }
+if (!anchor) { vtNativeFail('缺少定位锚点'); return; }
 const v = document.getElementById('vt-self');
 if (v) { anchor.style.left = v.style.left; anchor.style.top = v.style.top; anchor.style.right = v.style.right; }
+const ar = anchor.getBoundingClientRect();
+if (!ar.width || !ar.height) { vtNativeFail('预览窗口还没就位'); return; }
+vtNativeClose();
 VT.nativeStarting = true;
 vtSelfState('opening', '正在打开…');
 let settled = false;
@@ -1226,15 +1262,11 @@ const fail = function (why) {
 if (settled) return;
 settled = true;
 clearTimeout(timer);
-VT.nativeStarting = false;
-VT.nativeFailed = true; // 本通电话内不再重试原生，直接走 HTML 摄像头
-vtNativeClose();
-toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头');
-vtStartCam(true);
+vtNativeFail(why);
 };
-const timer = setTimeout(function () { fail('没有响应'); }, 9000);
+const timer = setTimeout(function () { fail('没有响应'); }, 4000);
 try {
-const p = new plus.video.LivePusher('vt-native-cam', {
+const styles = {
 url: 'rtmp://127.0.0.1:1935/mochi/preview',
 mode: 'SD',
 muted: true,
@@ -1243,9 +1275,18 @@ muted: true,
 beauty: 1,
 whiteness: beautyWhite(),
 aspect: '3:4',
-position: 'absolute'
-});
+position: 'absolute',
+top: Math.round(ar.top) + 'px',
+left: Math.round(ar.left) + 'px',
+width: Math.max(1, Math.round(ar.width)) + 'px',
+height: Math.max(1, Math.round(ar.height)) + 'px'
+};
+let p = null;
+if (plus.video.createLivePusher) p = plus.video.createLivePusher('vt-native-cam', styles);
+else p = new plus.video.LivePusher('vt-native-cam', styles);
+if (!p) { fail('组件不可用'); return; }
 VT.native = p;
+try { plus.webview.currentWebview().append(p); } catch (e) {}
 p.addEventListener('statechange', function (e) {
 const code = e && e.detail && e.detail.code;
 if (code === 1003) { // 打开摄像头成功
@@ -1835,10 +1876,15 @@ if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTime
 vtRenderPool();
 (function initCallBeauty() {
 const cb = document.getElementById('call-beauty');
+const cbN = document.getElementById('call-beauty-native');
 const val = document.getElementById('call-beauty-whiteness-val');
 const step = val ? val.closest('.stepper') : null;
 function paint() {
 if (cb) cb.checked = beautyOn();
+if (!beautyNativeSupported() && beautyNativeOn()) {
+try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+}
+if (cbN) cbN.checked = beautyNativeOn() && beautyNativeSupported();
 if (val) val.value = String(beautyWhite());
 }
 paint();
@@ -1856,6 +1902,18 @@ vtSyncBeautyClass();
 if (VT.facing === 'user') restartForBeauty();
 toast(cb.checked ? '已开启前置美颜' : '已关闭前置美颜');
 });
+if (cbN) cbN.addEventListener('change', function () {
+if (cbN.checked && !beautyNativeSupported()) {
+cbN.checked = false;
+toast('当前 App 包没有 LivePusher 模块：请先在 HBuilderX 的 App 模块配置里勾选 LivePusher（直播推流），重新云打包后再打开');
+return;
+}
+const s = beautyStore();
+try { if (s) s.set(BEAUTY_NATIVE_KEY, cbN.checked ? '1' : '0'); } catch (e) {}
+paint();
+if (VT.facing === 'user') restartForBeauty();
+toast(cbN.checked ? '已开启 App 原生美颜' : '已关闭 App 原生美颜（网页柔光仍按「前置美颜」开关生效）');
+});
 function stepWhite(delta) {
 const n = Math.max(0, Math.min(5, beautyWhite() + delta));
 const s = beautyStore();
@@ -1871,6 +1929,12 @@ if (minus) minus.addEventListener('click', function () { stepWhite(-1); });
 if (plus) plus.addEventListener('click', function () { stepWhite(1); });
 }
 document.addEventListener('mochi-restore-done', paint);
+})();
+(function vtNativeBootClean() {
+const clean = function () { try { vtNativeClose(); } catch (e) {} };
+if (window.plus) clean();
+else document.addEventListener('plusready', clean);
+setTimeout(clean, 1200);
 })();
 document.addEventListener('visibilitychange', function () {
 if (document.visibilityState === 'hidden') {

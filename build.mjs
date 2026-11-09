@@ -7321,6 +7321,13 @@ const FIX_SENTINELS = [
   { name: '#1651i 美颜偏好键不被迁进 default 桌面（删＝非 default 桌面美颜自己回默认）', file: 'js/contacts.js', needle: "'call-beauty', 'call-beauty-whiteness'" },
   { name: '#1651j 美白档位入口（删＝原生美颜只能固定一档）', file: 'template.html', needle: 'id="call-beauty-whiteness-val"' },
   { name: '#1651k 摄像头授权只问一次（删＝iOS/没有 plus.android 的壳里 vtStartCam 无限自递归、视频打不开）', file: 'js/call.js', needle: 'if (vtPermAsked) return go();' },
+  // ==== 2026-11-09 #1651 修复：原生美颜没勾模块时黑屏/卡死（用户实报「原生无响应」+ 整站黑屏点不动） ====
+  { name: '#1651l 原生美颜独立开关默认关（删＝没勾 LivePusher 的包每次进视频都先黑一下）', file: 'template.html', needle: 'id="call-beauty-native"' },
+  { name: '#1651m 原生控件 remove+close 双清（删＝模块异常时原生层一直盖在网页上＝黑屏点不动）', file: 'js/call.js', needle: 'plus.webview.currentWebview().remove(p)' },
+  { name: '#1651n 原生控件显式定位（删＝默认 100% 尺寸整屏盖住网页）', file: 'js/call.js', needle: 'width: Math.max(1, Math.round(ar.width))' },
+  { name: '#1651o 原生启动失败自动关掉原生开关（删＝每次进视频重复等 4 秒再黑一下）', file: 'js/call.js', needle: 's.set(BEAUTY_NATIVE_KEY, \'0\')' },
+  { name: '#1651p 页面加载清理上一次残留的原生层（删＝旧版留下的原生层继续盖住新页面）', file: 'js/call.js', needle: 'function vtNativeBootClean()' },
+  { name: '#1651q 原生启动超时 4 秒（改回 9 秒＝模块没勾时用户干等更久）', file: 'js/call.js', needle: "fail('没有响应'); }, 4000);" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

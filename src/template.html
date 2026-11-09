@@ -3956,11 +3956,12 @@
             </div>
           </div>
           <div class="gs-row"><span>他开摄像头概率</span><div class="stepper" data-k="call-ta-cam" data-min="0" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="call-ta-cam-val" readonly><button class="stp-max">+</button></div></div>
-          <!-- #1651 前置美颜：App 内走原生 LivePusher（磨皮 + 美白），网页/PWA 用 CSS 柔光兜底 -->
+          <!-- #1651 前置美颜：网页/PWA 用 CSS 柔光；App 原生美颜需单独打开（打包必须勾 LivePusher） -->
           <div class="gs-row"><span>前置美颜</span><label class="toggle"><input type="checkbox" id="call-beauty"><span class="tk"></span></label></div>
+          <div class="gs-row"><span>App 原生美颜</span><label class="toggle"><input type="checkbox" id="call-beauty-native"><span class="tk"></span></label></div>
           <div class="gs-row"><span>美白程度（仅 App 原生）</span><div class="stepper" data-min="0" data-max="5" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="call-beauty-whiteness-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【前置美颜】只在你把摄像头切到前置时生效，后置保持原样。App（HBuilderX 云打包）里用系统原生美颜控件：自带磨皮 + 美白 0~5 档；网页 / PWA 用 CSS 柔光兜底（提亮、红润、轻微柔化），没有美白档位可调。App 内开启后摄像头预览会变成原生画面（固定右上角、不可拖动，想拖动可先关掉美颜），「看自己 / 看对方」互换与关闭摄像头仍照常可用。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【前置美颜】只在你把摄像头切到前置时生效，后置保持原样。网页 / PWA 用 CSS 柔光兜底（提亮、红润、轻微柔化），没有美白档位可调。【App 原生美颜】默认关闭：HBuilderX 云打包必须先在 App 模块配置里勾选 LivePusher（直播推流）模块，重新打包后再打开；没勾模块就打开会出现「原生无响应」、黑屏或卡住，此时请立刻关闭本开关（原生启动失败也会自动关掉并退回普通摄像头）。App 内开启后摄像头预览会变成原生画面（固定右上角、不可拖动，想拖动可先关掉美颜），「看自己 / 看对方」互换与关闭摄像头仍照常可用。</div>
         <div class="sm-set-hint" style="padding:0 16px 8px">【他来电的类型】滑块最左＝只打语音，最右＝只打视频，中间按百分比随机（例如 30% ＝三成视频来电、七成语音来电）。接听之后你依然可以手动切换视频 / 语音。<br>【他开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里他那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示他的头像，和微信里对方关摄像头一样。</div>
         <div class="gs-title">他的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>

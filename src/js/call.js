@@ -1482,6 +1482,10 @@
   //   ② 网页/PWA：CSS 柔光兜底（提亮/红润/轻微柔化），同样只作用于前置。
   const BEAUTY_KEY = 'call-beauty';
   const BEAUTY_WHITE_KEY = 'call-beauty-whiteness';
+  // #1651 修复：App 原生美颜单独一个开关、默认关闭。
+  // 原因：HBuilderX 云打包没勾 LivePusher 模块时，plus.video 的 JS 壳仍在、原生控件却起不来，
+  // 会先盖住页面再报「原生无响应」。默认关＝现有包不受影响；确认打包包含模块后再手动开。
+  const BEAUTY_NATIVE_KEY = 'call-beauty-native';
   function beautyStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
   function beautyOn() {
     try {
@@ -1497,12 +1501,21 @@
       return isNaN(n) ? 4 : Math.max(0, Math.min(5, n));
     } catch (e) { return 4; }
   }
-  function beautyNativeSupported() {
-    try { return !!(window.plus && window.plus.video && window.plus.video.LivePusher); } catch (e) { return false; }
+  function beautyNativeOn() {
+    try {
+      const s = beautyStore();
+      return !!(s && s.get(BEAUTY_NATIVE_KEY) === '1');
+    } catch (e) { return false; }
   }
-  // 只有「前置 + 美颜开 + App 原生可用 + 本通没失败过」才走原生；其余走 HTML 摄像头
+  function beautyNativeSupported() {
+    try {
+      return !!(window.plus && window.plus.video && window.plus.video.createLivePusher &&
+        window.plus.video.getLivePusherById && window.plus.webview && window.plus.webview.currentWebview);
+    } catch (e) { return false; }
+  }
+  // 只有「前置 + 美颜开 + 原生开关开 + App 原生可用 + 本通没失败过」才走原生；其余走 HTML 摄像头
   function beautyUseNative() {
-    return beautyOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
+    return beautyOn() && beautyNativeOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
   }
   function vtSyncBeautyClass() {
     const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
@@ -1655,13 +1668,29 @@
     if (slash) slash.style.display = VT.camOff ? '' : 'none';
   }
   // #1651：原生美颜控件的创建 / 定位 / 关闭
+  // createLivePusher 是 append 到 Webview 上的原生 View：必须 remove + close 双清，
+  // 否则模块没勾/启动失败时那块原生层会一直盖在网页上（用户实报的黑屏、点不动）。
+  function vtNativeRelease(p) {
+    if (!p) return;
+    try {
+      if (window.plus && plus.webview && plus.webview.currentWebview) plus.webview.currentWebview().remove(p);
+    } catch (e) {}
+    try { p.close(); } catch (e) {}
+  }
   function vtNativeClose() {
     const p = VT.native;
     VT.native = null;
     VT.nativeReady = false;
     VT.nativeStarting = false;
     VT.nativeRect = '';
-    if (p) { try { p.close(); } catch (e) {} }
+    vtNativeRelease(p);
+    // 兜底：上一次异常退出可能留下同名控件，按 id 再清一次
+    try {
+      if (window.plus && plus.video && plus.video.getLivePusherById) {
+        const old = plus.video.getLivePusherById('vt-native-cam');
+        if (old && old !== p) vtNativeRelease(old);
+      }
+    } catch (e) {}
     const v = document.getElementById('vt-self');
     if (v) { try { v.style.visibility = ''; } catch (e) {} }
   }
@@ -1684,13 +1713,29 @@
       });
     } catch (e) {}
   }
+  // 原生失败：关控件、自动关掉原生开关、退回普通摄像头。
+  // 没勾 LivePusher 模块时每次都等 4 秒再黑一下，比「没有原生美颜」更糟，所以这里一次性关死。
+  function vtNativeFail(why) {
+    VT.nativeStarting = false;
+    VT.nativeFailed = true;
+    vtNativeClose();
+    try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+    const nb = document.getElementById('call-beauty-native');
+    if (nb) nb.checked = false;
+    toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头；请确认 HBuilderX 打包时勾选了 LivePusher 模块，再重新打开「App 原生美颜」');
+    vtStartCam(true);
+  }
   function vtStartNativeCam() {
     if (!beautyUseNative() || VT.minimized) { vtStartCam(true); return; }
     const anchor = document.getElementById('vt-native-cam');
-    if (!anchor) { VT.nativeFailed = true; vtStartCam(true); return; }
+    if (!anchor) { vtNativeFail('缺少定位锚点'); return; }
     // 沿用用户拖好的小窗位置（原生控件期间不可拖动，但位置不跳回默认）
     const v = document.getElementById('vt-self');
     if (v) { anchor.style.left = v.style.left; anchor.style.top = v.style.top; anchor.style.right = v.style.right; }
+    const ar = anchor.getBoundingClientRect();
+    if (!ar.width || !ar.height) { vtNativeFail('预览窗口还没就位'); return; }
+    // 上一次异常退出可能留下同名控件：先清干净再建
+    vtNativeClose();
     VT.nativeStarting = true;
     vtSelfState('opening', '正在打开…');
     let settled = false;
@@ -1699,16 +1744,13 @@
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      VT.nativeStarting = false;
-      VT.nativeFailed = true; // 本通电话内不再重试原生，直接走 HTML 摄像头
-      vtNativeClose();
-      // 失败不静默：说清楚是「原生美颜」没起来，避免用户以为摄像头坏了
-      toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头');
-      vtStartCam(true);
+      vtNativeFail(why);
     };
-    const timer = setTimeout(function () { fail('没有响应'); }, 9000);
+    // 原生预览正常 1 秒内出图；4 秒还没回来说明模块/权限有问题，别再让用户干等
+    const timer = setTimeout(function () { fail('没有响应'); }, 4000);
     try {
-      const p = new plus.video.LivePusher('vt-native-cam', {
+      // 显式给 top/left/width/height：绝不依赖原生控件自己算尺寸（默认 100% 会整屏盖住网页）
+      const styles = {
         // 只 preview 不 start：url 只是构造参数，不会真的推流（本应用没有对端）
         url: 'rtmp://127.0.0.1:1935/mochi/preview',
         mode: 'SD',
@@ -1718,9 +1760,18 @@
         beauty: 1,
         whiteness: beautyWhite(),
         aspect: '3:4',
-        position: 'absolute'
-      });
+        position: 'absolute',
+        top: Math.round(ar.top) + 'px',
+        left: Math.round(ar.left) + 'px',
+        width: Math.max(1, Math.round(ar.width)) + 'px',
+        height: Math.max(1, Math.round(ar.height)) + 'px'
+      };
+      let p = null;
+      if (plus.video.createLivePusher) p = plus.video.createLivePusher('vt-native-cam', styles);
+      else p = new plus.video.LivePusher('vt-native-cam', styles);
+      if (!p) { fail('组件不可用'); return; }
       VT.native = p;
+      try { plus.webview.currentWebview().append(p); } catch (e) {}
       p.addEventListener('statechange', function (e) {
         const code = e && e.detail && e.detail.code;
         if (code === 1003) { // 打开摄像头成功
@@ -2363,10 +2414,16 @@
   // ===== #1651 通话设置：前置美颜开关 + 美白档位（全局偏好，所有桌面共用） =====
   (function initCallBeauty() {
     const cb = document.getElementById('call-beauty');
+    const cbN = document.getElementById('call-beauty-native');
     const val = document.getElementById('call-beauty-whiteness-val');
     const step = val ? val.closest('.stepper') : null;
     function paint() {
       if (cb) cb.checked = beautyOn();
+      // 当前包没有 LivePusher 模块时强制关掉原生开关，避免「开关开着但每次进视频都黑一下」
+      if (!beautyNativeSupported() && beautyNativeOn()) {
+        try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+      }
+      if (cbN) cbN.checked = beautyNativeOn() && beautyNativeSupported();
       if (val) val.value = String(beautyWhite());
     }
     paint();
@@ -2385,6 +2442,18 @@
       if (VT.facing === 'user') restartForBeauty();
       toast(cb.checked ? '已开启前置美颜' : '已关闭前置美颜');
     });
+    if (cbN) cbN.addEventListener('change', function () {
+      if (cbN.checked && !beautyNativeSupported()) {
+        cbN.checked = false;
+        toast('当前 App 包没有 LivePusher 模块：请先在 HBuilderX 的 App 模块配置里勾选 LivePusher（直播推流），重新云打包后再打开');
+        return;
+      }
+      const s = beautyStore();
+      try { if (s) s.set(BEAUTY_NATIVE_KEY, cbN.checked ? '1' : '0'); } catch (e) {}
+      paint();
+      if (VT.facing === 'user') restartForBeauty();
+      toast(cbN.checked ? '已开启 App 原生美颜' : '已关闭 App 原生美颜（网页柔光仍按「前置美颜」开关生效）');
+    });
     function stepWhite(delta) {
       const n = Math.max(0, Math.min(5, beautyWhite() + delta));
       const s = beautyStore();
@@ -2401,6 +2470,14 @@
       if (plus) plus.addEventListener('click', function () { stepWhite(1); });
     }
     document.addEventListener('mochi-restore-done', paint);
+  })();
+  // #1651 启动兜底：旧版只 close 不 remove，原生控件可能从上一次会话残留下来盖住网页。
+  // 页面每次加载都按 id 清一次（plusready 前后各一次，毫秒级，正常时无控件可清）。
+  (function vtNativeBootClean() {
+    const clean = function () { try { vtNativeClose(); } catch (e) {} };
+    if (window.plus) clean();
+    else document.addEventListener('plusready', clean);
+    setTimeout(clean, 1200);
   })();
   // 切后台/锁屏：摄像头必须停（系统也会掐断，不停会黑屏；回来再按需重建）
   document.addEventListener('visibilitychange', function () {
