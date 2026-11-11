@@ -7335,6 +7335,13 @@ const FIX_SENTINELS = [
   { name: '#1651u 视频画面「原生/柔光」状态小标（删＝开着却看不出效果时无从判断走的是哪一路）', file: 'template.html', needle: 'id="vt-beauty-tag"' },
   { name: '#1651v 原生生效提示（删＝无法确认原生美颜到底有没有起来）', file: 'js/call.js', needle: "toast('原生美颜已生效（强度 '" },
   { name: '#1651w 强度同时驱动原生美白与网页柔光（删＝两路观感不一致）', file: 'js/call.js', needle: 'beauty: lv > 0 ? 1 : 0,' },
+  // ==== 2026-11-11 #1652 反问收口（用户实报「每次问完他都回发一个」）====
+  { name: '#1652a 反问实现收口到 ta-ask（删＝chat.js 又各自为政，绕过各总开关）', file: 'js/ta-ask.js', needle: 'window.taFollowupAsk = function () {' },
+  { name: '#1652b 反问基准概率 12%（改回 35%＝用户实报的「每次都回发」复发）', file: 'js/ta-ask.js', needle: 'window.icProb ? window.icProb(12) : 12' },
+  { name: '#1652c 反问受 60 分钟总闸门约束（删＝刚问完又发一张）', file: 'js/ta-ask.js', needle: 'followupAt = Date.now();' },
+  { name: '#1652d 反问受各类型总开关与答题截止时间约束（删＝关了「他的询问」照样冒卡）', file: 'js/ta-ask.js', needle: "&& !askDeadlinePassed(d)) cands.push('ask');" },
+  { name: '#1652e 两次反问至少隔 20 分钟（删＝连发卡片时连续触发）', file: 'js/ta-ask.js', needle: 'if (Date.now() - followupAt < icCool(20) * 60000) return false;' },
+  { name: '#1652f chat.js 反问走统一出口（删＝旧的 35% 硬编码回潮）', file: 'js/chat.js', needle: 'window.taFollowupAsk' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

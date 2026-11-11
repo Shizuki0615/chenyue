@@ -4423,6 +4423,35 @@ applyDefaultEdits('tc', TC_DEFAULT);
 applyDefaultEdits('tcu', TCU_DEFAULT);
 applyDefaultEdits('tr', TR_DEFAULT);
 });
+let followupAt = 0;
+window.taFollowupAsk = function () {
+try {
+if (Date.now() - followupAt < icCool(20) * 60000) return false;
+if (!interactGateOk()) return false;
+if (!taAskDcfOk()) return false;
+const p = window.icProb ? window.icProb(12) : 12;
+if (Math.random() * 100 >= p) return false;
+const cands = [];
+let d = null;
+try { d = taAskLoad(); } catch (e) {}
+if (d && !(d.settings && d.settings.enabled === false) && !askDeadlinePassed(d)) cands.push('ask');
+try { d = tcLoad(); } catch (e) { d = null; }
+if (d && !(d.settings && d.settings.enabled === false)) cands.push('choose');
+try { d = tcuLoad(); } catch (e) { d = null; }
+if (d && !(d.settings && d.settings.enabled === false)) cands.push('curious');
+try { d = trLoad(); } catch (e) { d = null; }
+if (d && !(d.settings && d.settings.enabled === false)) cands.push('roast');
+if (!cands.length) return false;
+const pick = cands[Math.floor(Math.random() * cands.length)];
+interactGateMark();
+followupAt = Date.now();
+if (pick === 'ask') { if (window.triggerTaAskNow) window.triggerTaAskNow(); }
+else if (pick === 'choose') { if (window.triggerTaChooseNow) window.triggerTaChooseNow(); }
+else if (pick === 'curious') { if (window.triggerTaCuriousNow) window.triggerTaCuriousNow(); }
+else if (window.triggerTaRoastNow) window.triggerTaRoastNow();
+return true;
+} catch (e) { return false; }
+};
 })();
 if (window.__mochiLoaded) window.__mochiLoaded.push("ta-ask.js");
 } catch (__e) { if (window.__mochiErrLoaded) window.__mochiErrLoaded.push("ta-ask.js"); try { console.error("[JS] ta-ask.js", __e && __e.message || __e); } catch (x) {} if (window.__jsErrors) window.__jsErrors.push("[ta-ask.js] " + String(__e && __e.message || __e)); } })();

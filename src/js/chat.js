@@ -12321,15 +12321,11 @@ const dp = document.getElementById('chat-decision-panel');
 if (dp) dp.hidden = true;
 });
 }
+// #1652：反问（你问完 / 邀请完，他偶尔反过来发一张卡）——实现收口到 ta-ask.js 的
+// window.taFollowupAsk：那边统一受「他的询问」等各总开关、互动卡频率档位、60 分钟总闸门、
+// 夜间静默、答题截止时间约束，基准概率 12%（原实现写死 35% 且全部绕过，用户实报「每次都要回发」）。
 function maybeFollowupAskCard() {
-if (Math.random() >= 0.35) return;
-const roll = Math.random();
-try {
-if (roll < 0.25 && window.triggerTaAskNow) { window.triggerTaAskNow(); return; }
-if (roll < 0.5 && window.triggerTaChooseNow) { window.triggerTaChooseNow(); return; }
-if (roll < 0.75 && window.triggerTaCuriousNow) { window.triggerTaCuriousNow(); return; }
-if (window.triggerTaRoastNow) window.triggerTaRoastNow();
-} catch (e) {}
+try { if (window.taFollowupAsk) window.taFollowupAsk(); } catch (e) {}
 }
 const chatAskPanel = document.getElementById('chat-ask-panel');
 const chatAskTitle = document.getElementById('chat-ask-title');

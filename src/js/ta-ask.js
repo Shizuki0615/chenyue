@@ -5121,4 +5121,44 @@ window.openTCPanel = openTCPanel;
     applyDefaultEdits('tcu', TCU_DEFAULT);
     applyDefaultEdits('tr', TR_DEFAULT);
   });
+
+  // ===== #1652 反问（你问完 / 邀请完，他偶尔反过来也发一张卡）=====
+  // 原实现写在 chat.js 的 maybeFollowupAskCard 里：写死 35%，且【绕过】「他的询问」等各总开关、
+  // 互动卡频率档位、60 分钟总闸门、夜间静默、答题截止时间——用户实报「每次问完他都要回发一个」。
+  // 收口到本文件后：基准 12%，逐条受上面这些约束；每次都只是「有机会」，不再必然发生。
+  // 返回 true 表示这一次真的发出去了（调用方据此做别的收尾）。
+  let followupAt = 0;
+  window.taFollowupAsk = function () {
+    try {
+      // 两次反问之间至少隔 20 分钟：连发几张卡不会连续触发
+      if (Date.now() - followupAt < icCool(20) * 60000) return false;
+      // 夜间静默与其它自动互动卡同一条闸门
+      if (!interactGateOk()) return false;
+      if (!taAskDcfOk()) return false;
+      // 概率：基准 12%，再按「互动卡频率」档位缩放（原频率=12% / 稍安静≈7% / 安静≈5% / 很安静≈2%）
+      const p = window.icProb ? window.icProb(12) : 12;
+      if (Math.random() * 100 >= p) return false;
+      // 只在「自己的总开关开着、且没过答题截止时间」的类型里挑
+      const cands = [];
+      let d = null;
+      try { d = taAskLoad(); } catch (e) {}
+      if (d && !(d.settings && d.settings.enabled === false) && !askDeadlinePassed(d)) cands.push('ask');
+      try { d = tcLoad(); } catch (e) { d = null; }
+      if (d && !(d.settings && d.settings.enabled === false)) cands.push('choose');
+      try { d = tcuLoad(); } catch (e) { d = null; }
+      if (d && !(d.settings && d.settings.enabled === false)) cands.push('curious');
+      try { d = trLoad(); } catch (e) { d = null; }
+      if (d && !(d.settings && d.settings.enabled === false)) cands.push('roast');
+      if (!cands.length) return false;
+      const pick = cands[Math.floor(Math.random() * cands.length)];
+      // 总闸门：发出即盖时间戳，60 分钟内其它自动互动卡不再触发（同各自动触发器的口径）
+      interactGateMark();
+      followupAt = Date.now();
+      if (pick === 'ask') { if (window.triggerTaAskNow) window.triggerTaAskNow(); }
+      else if (pick === 'choose') { if (window.triggerTaChooseNow) window.triggerTaChooseNow(); }
+      else if (pick === 'curious') { if (window.triggerTaCuriousNow) window.triggerTaCuriousNow(); }
+      else if (window.triggerTaRoastNow) window.triggerTaRoastNow();
+      return true;
+    } catch (e) { return false; }
+  };
 })();

@@ -9611,14 +9611,7 @@ if (dp) dp.hidden = true;
 });
 }
 function maybeFollowupAskCard() {
-if (Math.random() >= 0.35) return;
-const roll = Math.random();
-try {
-if (roll < 0.25 && window.triggerTaAskNow) { window.triggerTaAskNow(); return; }
-if (roll < 0.5 && window.triggerTaChooseNow) { window.triggerTaChooseNow(); return; }
-if (roll < 0.75 && window.triggerTaCuriousNow) { window.triggerTaCuriousNow(); return; }
-if (window.triggerTaRoastNow) window.triggerTaRoastNow();
-} catch (e) {}
+try { if (window.taFollowupAsk) window.taFollowupAsk(); } catch (e) {}
 }
 const chatAskPanel = document.getElementById('chat-ask-panel');
 const chatAskTitle = document.getElementById('chat-ask-title');
