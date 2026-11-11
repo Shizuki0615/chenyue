@@ -266,6 +266,7 @@ nativeReady: false,   // 原生预览已出图（此时 HTML <video> 让位）
 nativeStarting: false,// 原生控件正在启动（防重入）
 nativeFailed: false,  // 本通电话内原生启动失败过：同一通不再反复等 9 秒
 nativeRect: '',   // 上次同步给原生控件的矩形（同值不重写，防每次 setStyles 闪一下）
+nativeToastDone: false, // 本通是否已提示过「原生美颜已生效」
 poolAsked: false  // 画面库等待回填只问一次，防递归
 };
 let _miniSafeTopCache = -1;
@@ -1063,6 +1064,23 @@ return beautyOn() && beautyNativeOn() && VT.facing === 'user' && !VT.nativeFaile
 function vtSyncBeautyClass() {
 const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
 if (document.body.classList.contains('vt-beauty') !== on) document.body.classList.toggle('vt-beauty', on);
+const lv = Math.max(0, Math.min(5, beautyWhite()));
+for (let i = 0; i <= 5; i++) {
+const cls = 'vt-beauty-lv' + i;
+const want = on && i === lv;
+if (document.body.classList.contains(cls) !== want) document.body.classList.toggle(cls, want);
+}
+vtUpdateBeautyTag();
+}
+function vtUpdateBeautyTag() {
+const tag = document.getElementById('vt-beauty-tag');
+if (!tag) return;
+const show = !!(VT.mode && !VT.camOff && beautyOn() && VT.facing === 'user');
+if (!show) { tag.hidden = true; return; }
+const lv = Math.max(0, Math.min(5, beautyWhite()));
+const nativeActive = !!(VT.nativeReady && VT.native);
+tag.textContent = (nativeActive ? '原生美颜' : '柔光美颜') + ' · 强度 ' + lv;
+tag.hidden = false;
 }
 function vtCamHint() {
 let h = '';
@@ -1193,6 +1211,7 @@ const t = document.getElementById('call-cam-txt');
 if (t) t.textContent = VT.camOff ? '打开' : '关闭';
 const slash = document.getElementById('call-cam-slash');
 if (slash) slash.style.display = VT.camOff ? '' : 'none';
+vtUpdateBeautyTag();
 }
 function vtNativeRelease(p) {
 if (!p) return;
@@ -1267,6 +1286,7 @@ clearTimeout(previewTimer);
 vtNativeFail(why);
 };
 const timer = setTimeout(function () { fail('没有响应'); }, 4000);
+const lv = Math.max(0, Math.min(5, beautyWhite()));
 try {
 const styles = {
 url: 'rtmp://127.0.0.1:1935/mochi/preview',
@@ -1274,8 +1294,8 @@ mode: 'SD',
 muted: true,
 'enable-camera': true,
 'auto-focus': true,
-beauty: 1,
-whiteness: beautyWhite(),
+beauty: lv > 0 ? 1 : 0,
+whiteness: lv,
 aspect: '3:4',
 position: 'absolute',
 top: Math.round(ar.top) + 'px',
@@ -1312,6 +1332,10 @@ if (v2) { v2.hidden = true; v2.style.visibility = 'hidden'; }
 vtSelfState('on', '', true);
 vtSyncCamBtn();
 vtSyncBeautyClass();
+if (!VT.nativeToastDone) {
+VT.nativeToastDone = true;
+toast('原生美颜已生效（强度 ' + lv + '）');
+}
 if (VT.minimized) vtNativeClose(); // 缩到小框时不留原生层悬浮
 } else if (code === -1301 || code === -1302) { // 打开摄像头/麦克风失败
 fail('摄像头打不开');
@@ -1572,6 +1596,7 @@ VT.entered = true;
 VT.mode = true;
 VT.camOff = false;
 VT.nativeFailed = false; // #1651：每通电话重新给原生美颜一次机会
+VT.nativeToastDone = false;
 VT.facing = 'environment';
 VT.minimized = false;
 vtSwap(false);
@@ -1680,6 +1705,7 @@ VT.taCam = false;
 VT.taBg = '';
 vtStopCam();
 VT.nativeFailed = false;
+VT.nativeToastDone = false;
 vtSyncBeautyClass();
 vtSetPanel(false);
 const selfV = document.getElementById('vt-self');
@@ -1932,8 +1958,9 @@ const n = Math.max(0, Math.min(5, beautyWhite() + delta));
 const s = beautyStore();
 try { if (s) s.set(BEAUTY_WHITE_KEY, String(n)); } catch (e) {}
 paint();
-if (VT.native) { try { VT.native.setStyles({ whiteness: n }); } catch (e) {} }
-toast('美白程度：' + n);
+if (VT.native) { try { VT.native.setStyles({ whiteness: n, beauty: n > 0 ? 1 : 0 }); } catch (e) {} }
+vtSyncBeautyClass();
+toast('美颜强度：' + n + (n ? '' : '（等于关闭）'));
 }
 if (step) {
 const minus = step.querySelector('.stp-min');

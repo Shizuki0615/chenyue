@@ -2893,8 +2893,44 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
   inset:0; width:100%; height:100%; border-radius:0;
 }
 /* 网页 / PWA 兜底：前置摄像头时给 HTML <video> 一层柔光（后置 .rear 不加）。
-   与 App 原生美颜同一开关；美白档位只对原生生效，网页固定用这一档轻柔光。 */
+   #1651：强度分 5 档（设置里「美颜强度」滑杆），档位越高越明显——
+   提亮 + 红润 + 降对比 + 轻模糊（柔焦），一眼能看出开/关差别。 */
 body.vt-beauty .vt-self:not(.rear),
 body.vt-beauty .call-mini.vt .call-mini-self:not(.rear) {
-  filter:brightness(1.06) saturate(1.08) contrast(.96) sepia(.04) blur(.2px);
+  filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
 }
+/* 强度 0＝等于关闭：显式撤掉滤镜（否则会回落到上面那条基础规则） */
+body.vt-beauty.vt-beauty-lv0 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv0 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:none;
+}
+body.vt-beauty.vt-beauty-lv1 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv1 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.04) saturate(1.06) contrast(.97) blur(.3px);
+}
+body.vt-beauty.vt-beauty-lv2 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv2 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
+}
+body.vt-beauty.vt-beauty-lv3 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv3 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.12) saturate(1.18) contrast(.90) blur(1px) sepia(.04);
+}
+body.vt-beauty.vt-beauty-lv4 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv4 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.16) saturate(1.24) contrast(.86) blur(1.5px) sepia(.06);
+}
+body.vt-beauty.vt-beauty-lv5 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv5 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.20) saturate(1.30) contrast(.82) blur(2px) sepia(.08);
+}
+/* #1651：视频舞台左上角的小标——明确告诉你「现在走的是哪一路、强度几档」。
+   原生层只盖住右上角预览区，这个小标在左下角，不会被盖住。 */
+.vt-beauty-tag {
+  position:absolute; left:12px; bottom:96px; z-index:4;
+  padding:3px 9px; border-radius:999px;
+  background:rgba(0,0,0,.62); border:1px solid rgba(255,255,255,.18);
+  color:#fff; font-size:10px; line-height:1.4; letter-spacing:.3px;
+  pointer-events:none; white-space:nowrap;
+}
+.vt-beauty-tag[hidden] { display:none; }

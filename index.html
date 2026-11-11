@@ -4292,8 +4292,40 @@ inset:0; width:100%; height:100%; border-radius:0;
 }
 body.vt-beauty .vt-self:not(.rear),
 body.vt-beauty .call-mini.vt .call-mini-self:not(.rear) {
-filter:brightness(1.06) saturate(1.08) contrast(.96) sepia(.04) blur(.2px);
+filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
 }
+body.vt-beauty.vt-beauty-lv0 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv0 .call-mini.vt .call-mini-self:not(.rear) {
+filter:none;
+}
+body.vt-beauty.vt-beauty-lv1 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv1 .call-mini.vt .call-mini-self:not(.rear) {
+filter:brightness(1.04) saturate(1.06) contrast(.97) blur(.3px);
+}
+body.vt-beauty.vt-beauty-lv2 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv2 .call-mini.vt .call-mini-self:not(.rear) {
+filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
+}
+body.vt-beauty.vt-beauty-lv3 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv3 .call-mini.vt .call-mini-self:not(.rear) {
+filter:brightness(1.12) saturate(1.18) contrast(.90) blur(1px) sepia(.04);
+}
+body.vt-beauty.vt-beauty-lv4 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv4 .call-mini.vt .call-mini-self:not(.rear) {
+filter:brightness(1.16) saturate(1.24) contrast(.86) blur(1.5px) sepia(.06);
+}
+body.vt-beauty.vt-beauty-lv5 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv5 .call-mini.vt .call-mini-self:not(.rear) {
+filter:brightness(1.20) saturate(1.30) contrast(.82) blur(2px) sepia(.08);
+}
+.vt-beauty-tag {
+position:absolute; left:12px; bottom:96px; z-index:4;
+padding:3px 9px; border-radius:999px;
+background:rgba(0,0,0,.62); border:1px solid rgba(255,255,255,.18);
+color:#fff; font-size:10px; line-height:1.4; letter-spacing:.3px;
+pointer-events:none; white-space:nowrap;
+}
+.vt-beauty-tag[hidden] { display:none; }
 #page-chatcard { scrollbar-width:none; -ms-overflow-style:none; }
 #page-chatcard::-webkit-scrollbar { display:none; }
 .chat-title { font-size:22px; font-weight:700; padding:4px 2px 8px; letter-spacing:1px; }
@@ -12736,7 +12768,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1794203477521" data-version="v8.79.3">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1794386256473" data-version="v8.79.5">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13785,6 +13817,8 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="vt-av-ring" id="vt-ta-av-ring"></div>
       </div>
       <div class="vt-shade"></div>
+      <!-- #1651：美颜状态小标——一眼看出当前走「原生美颜」还是「网页柔光」、强度几档 -->
+      <div class="vt-beauty-tag" id="vt-beauty-tag" hidden></div>
       <video class="vt-self" id="vt-self" playsinline muted autoplay></video>
       <!-- #1651 App 原生美颜控件的定位锚点（不显示内容）：原生 LivePusher 按这个 div 的矩形落位 -->
       <div class="vt-native-cam" id="vt-native-cam" aria-hidden="true"></div>
@@ -14341,7 +14375,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.79.3</div>
+          <div class="val" id="about-ver-val">v8.79.5</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14460,7 +14494,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.79.3</div>
+      <div class="ver">辰光玥影 v8.79.5</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14891,7 +14925,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.79.3</span>
+              <span class="lic-ver">v8.79.5</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -16177,9 +16211,9 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
           <!-- #1651 前置美颜：网页/PWA 用 CSS 柔光；App 原生美颜需单独打开（打包必须勾 LivePusher） -->
           <div class="gs-row"><span>前置美颜</span><label class="toggle"><input type="checkbox" id="call-beauty"><span class="tk"></span></label></div>
           <div class="gs-row"><span>App 原生美颜</span><label class="toggle"><input type="checkbox" id="call-beauty-native"><span class="tk"></span></label></div>
-          <div class="gs-row"><span>美白程度（仅 App 原生）</span><div class="stepper" data-min="0" data-max="5" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="call-beauty-whiteness-val" readonly><button class="stp-max">+</button></div></div>
+          <div class="gs-row"><span>美颜强度（0~5）</span><div class="stepper" data-min="0" data-max="5" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="call-beauty-whiteness-val" readonly><button class="stp-max">+</button></div></div>
         </div>
-        <div class="sm-set-hint" style="padding:0 16px 8px">【前置美颜】只在你把摄像头切到前置时生效，后置保持原样。网页 / PWA 用 CSS 柔光兜底（提亮、红润、轻微柔化），没有美白档位可调。【App 原生美颜】默认关闭：HBuilderX 云打包必须先在 App 模块配置里勾选 LivePusher（直播推流）模块，重新打包后再打开；没勾模块就打开会出现「原生无响应」、黑屏或卡住，此时请立刻关闭本开关（原生启动失败也会自动关掉并退回普通摄像头）。App 内开启后摄像头预览会变成原生画面（固定右上角、不可拖动，想拖动可先关掉美颜），「看自己 / 看对方」互换与关闭摄像头仍照常可用。</div>
+        <div class="sm-set-hint" style="padding:0 16px 8px">【前置美颜】只在你把摄像头切到前置时生效，后置保持原样。网页 / PWA 用 CSS 柔光兜底（提亮 + 红润 + 柔焦，0~5 档，越高越明显）。【App 原生美颜】默认关闭：HBuilderX 云打包必须先在 App 模块配置里勾选 LivePusher（直播推流）模块，重新打包后再打开；没勾模块就打开会出现「原生无响应」、黑屏或卡住，此时请立刻关闭本开关（原生启动失败也会自动关掉并退回普通摄像头）。【美颜强度】原生与网页两路共用：原生侧对应磨皮 + 美白档位，网页侧对应柔光档位；停在视频界面时点 ± 可当场看变化。视频画面左下角的小标会写出当前生效的是「原生美颜」还是「柔光美颜」以及档位——开着却看不出变化时，先看这行字。App 内开启原生后预览会变成原生画面（固定右上角、不可拖动，想拖动可先关掉美颜），「看自己 / 看对方」互换与关闭摄像头仍照常可用。</div>
         <div class="sm-set-hint" style="padding:0 16px 8px">【他来电的类型】滑块最左＝只打语音，最右＝只打视频，中间按百分比随机（例如 30% ＝三成视频来电、七成语音来电）。接听之后你依然可以手动切换视频 / 语音。<br>【他开摄像头概率】接通电话时按这个概率再掷一次骰子，决定这一通里他那侧摄像头开不开；每次你按下「视频」切换也会重新掷一次。开摄像头时从下面「他的画面」里随机抽一张（不会连续两次抽到同一张），关了或还没上传图片就显示他的头像，和微信里对方关摄像头一样。</div>
         <div class="gs-title">他的画面</div>
         <div class="avlib-grid" id="vt-pool-grid" style="padding:0 16px 4px"></div>
@@ -24794,4 +24828,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mw8ufbip -->
+<!-- __MOCHI_EOF__ mwbv8wnt -->

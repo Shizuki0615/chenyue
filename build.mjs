@@ -7329,6 +7329,12 @@ const FIX_SENTINELS = [
   { name: '#1651p 页面加载清理上一次残留的原生层（删＝旧版留下的原生层继续盖住新页面）', file: 'js/call.js', needle: 'function vtNativeBootClean()' },
   { name: '#1651q 原生启动超时 4 秒（改回 9 秒＝模块没勾时用户干等更久）', file: 'js/call.js', needle: "fail('没有响应'); }, 4000);" },
   { name: '#1651r 原生控件创建后延时 500ms 再 preview（删＝官方要求的尺寸就绪窗口被跳过，预览/摄像头启动失败＝「原生无响应」）', file: 'js/call.js', needle: 'previewTimer = setTimeout(function () {' },
+  // ==== 2026-11-11 #1651 修复：开/关看不出区别（柔光太轻、路线不明） ====
+  { name: '#1651s 美颜强度 5 档 CSS（删＝网页柔光只剩一档极轻效果，开/关看不出差别）', file: 'css/chat-main.css', needle: 'body.vt-beauty.vt-beauty-lv5 .vt-self:not(.rear)' },
+  { name: '#1651t 强度档位类同步（删＝滑杆改了但画面不跟着变）', file: 'js/call.js', needle: "const cls = 'vt-beauty-lv' + i;" },
+  { name: '#1651u 视频画面「原生/柔光」状态小标（删＝开着却看不出效果时无从判断走的是哪一路）', file: 'template.html', needle: 'id="vt-beauty-tag"' },
+  { name: '#1651v 原生生效提示（删＝无法确认原生美颜到底有没有起来）', file: 'js/call.js', needle: "toast('原生美颜已生效（强度 '" },
+  { name: '#1651w 强度同时驱动原生美白与网页柔光（删＝两路观感不一致）', file: 'js/call.js', needle: 'beauty: lv > 0 ? 1 : 0,' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

@@ -346,6 +346,7 @@
     nativeStarting: false,// 原生控件正在启动（防重入）
     nativeFailed: false,  // 本通电话内原生启动失败过：同一通不再反复等 9 秒
     nativeRect: '',   // 上次同步给原生控件的矩形（同值不重写，防每次 setStyles 闪一下）
+    nativeToastDone: false, // 本通是否已提示过「原生美颜已生效」
     poolAsked: false  // 画面库等待回填只问一次，防递归
   };
   // 小框位置持久化（可拖动）
@@ -1520,6 +1521,26 @@
   function vtSyncBeautyClass() {
     const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
     if (document.body.classList.contains('vt-beauty') !== on) document.body.classList.toggle('vt-beauty', on);
+    // #1651：强度档位（0~5）映射成 CSS 类，网页柔光跟着档位变明显
+    const lv = Math.max(0, Math.min(5, beautyWhite()));
+    for (let i = 0; i <= 5; i++) {
+      const cls = 'vt-beauty-lv' + i;
+      const want = on && i === lv;
+      if (document.body.classList.contains(cls) !== want) document.body.classList.toggle(cls, want);
+    }
+    vtUpdateBeautyTag();
+  }
+  // #1651：舞台左下角的小标——明确显示当前生效的是哪一路、强度几档。
+  // 这是「开和关看不出区别」的第一道诊断：看到标签但没有视觉变化 = 该路本身没生效。
+  function vtUpdateBeautyTag() {
+    const tag = document.getElementById('vt-beauty-tag');
+    if (!tag) return;
+    const show = !!(VT.mode && !VT.camOff && beautyOn() && VT.facing === 'user');
+    if (!show) { tag.hidden = true; return; }
+    const lv = Math.max(0, Math.min(5, beautyWhite()));
+    const nativeActive = !!(VT.nativeReady && VT.native);
+    tag.textContent = (nativeActive ? '原生美颜' : '柔光美颜') + ' · 强度 ' + lv;
+    tag.hidden = false;
   }
   // 摄像头打不开时补一句「为什么」：App 壳（HBuilderX 打包）/ 非 HTTPS 页面是手机端最常见的两种环境问题，
   // 光说「没有权限」用户会去翻系统设置，翻完还是打不开。小窗只放大白话短句，长解释走 toast。
@@ -1666,6 +1687,8 @@
     if (t) t.textContent = VT.camOff ? '打开' : '关闭';
     const slash = document.getElementById('call-cam-slash');
     if (slash) slash.style.display = VT.camOff ? '' : 'none';
+    // 摄像头开关会改变「美颜是否在生效」，状态小标跟着同步
+    vtUpdateBeautyTag();
   }
   // #1651：原生美颜控件的创建 / 定位 / 关闭
   // createLivePusher 是 append 到 Webview 上的原生 View：必须 remove + close 双清，
@@ -1750,6 +1773,8 @@
     };
     // 原生预览正常 1 秒内出图；4 秒还没回来说明模块/权限有问题，别再让用户干等
     const timer = setTimeout(function () { fail('没有响应'); }, 4000);
+    // #1651：同一个「美颜强度」同时驱动原生美白与网页柔光，两路观感才一致
+    const lv = Math.max(0, Math.min(5, beautyWhite()));
     try {
       // 显式给 top/left/width/height：绝不依赖原生控件自己算尺寸（默认 100% 会整屏盖住网页）
       const styles = {
@@ -1759,8 +1784,8 @@
         muted: true,
         'enable-camera': true,
         'auto-focus': true,
-        beauty: 1,
-        whiteness: beautyWhite(),
+        beauty: lv > 0 ? 1 : 0,
+        whiteness: lv,
         aspect: '3:4',
         position: 'absolute',
         top: Math.round(ar.top) + 'px',
@@ -1798,6 +1823,11 @@
           vtSelfState('on', '', true);
           vtSyncCamBtn();
           vtSyncBeautyClass();
+          // 每通只提示一次「原生生效」，避免翻转/展开时反复弹
+          if (!VT.nativeToastDone) {
+            VT.nativeToastDone = true;
+            toast('原生美颜已生效（强度 ' + lv + '）');
+          }
           if (VT.minimized) vtNativeClose(); // 缩到小框时不留原生层悬浮
         } else if (code === -1301 || code === -1302) { // 打开摄像头/麦克风失败
           fail('摄像头打不开');
@@ -2087,6 +2117,7 @@
     VT.mode = true;
     VT.camOff = false;
     VT.nativeFailed = false; // #1651：每通电话重新给原生美颜一次机会
+    VT.nativeToastDone = false;
     // 默认后置：进视频先给背面视角，用户点「切换」再翻到前置
     VT.facing = 'environment';
     VT.minimized = false;
@@ -2205,6 +2236,7 @@
     VT.taBg = '';
     vtStopCam();
     VT.nativeFailed = false;
+    VT.nativeToastDone = false;
     vtSyncBeautyClass();
     vtSetPanel(false);
     // 下一通从默认右上角开始（拖动位置只在本次通话内保留）
@@ -2476,8 +2508,10 @@
       try { if (s) s.set(BEAUTY_WHITE_KEY, String(n)); } catch (e) {}
       paint();
       // 原生控件支持动态 setStyles 时即时生效；不支持也不影响下一次进视频
-      if (VT.native) { try { VT.native.setStyles({ whiteness: n }); } catch (e) {} }
-      toast('美白程度：' + n);
+      if (VT.native) { try { VT.native.setStyles({ whiteness: n, beauty: n > 0 ? 1 : 0 }); } catch (e) {} }
+      // 网页柔光是纯 CSS 档位，改完立即换类（通话中当场能看到变化）
+      vtSyncBeautyClass();
+      toast('美颜强度：' + n + (n ? '' : '（等于关闭）'));
     }
     if (step) {
       const minus = step.querySelector('.stp-min');
