@@ -58,6 +58,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
 'call-beauty', 'call-beauty-whiteness',
 'call-beauty-native',
+'ta-survey-templates',
 'age-confirmed'];
 function isExcluded(k) {
 const r = k.slice(G.length + 1);

@@ -246,6 +246,9 @@
     //   漏排除会被 migrateLegacy 迁进 default 并删根键（非 default 桌面美颜自己变回默认）。
     'call-beauty', 'call-beauty-whiteness',
     'call-beauty-native',
+    // #1653：常用问卷模板（批量问卷页）——所有联系人桌面共用同一套模板，
+    //   漏排除会被 migrateLegacy 迁进 default 并删根键（切到别的桌面模板就看不见了）。
+    'ta-survey-templates',
     'age-confirmed'];
   function isExcluded(k) {
     const r = k.slice(G.length + 1);

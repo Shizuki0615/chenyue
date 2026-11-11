@@ -7342,6 +7342,15 @@ const FIX_SENTINELS = [
   { name: '#1652d 反问受各类型总开关与答题截止时间约束（删＝关了「他的询问」照样冒卡）', file: 'js/ta-ask.js', needle: "&& !askDeadlinePassed(d)) cands.push('ask');" },
   { name: '#1652e 两次反问至少隔 20 分钟（删＝连发卡片时连续触发）', file: 'js/ta-ask.js', needle: 'if (Date.now() - followupAt < icCool(20) * 60000) return false;' },
   { name: '#1652f chat.js 反问走统一出口（删＝旧的 35% 硬编码回潮）', file: 'js/chat.js', needle: 'window.taFollowupAsk' },
+  // ==== 2026-11-11 #1653 常用问卷模板（批量问卷页保存/载入常用题目）====
+  { name: '#1653a 模板区入口（删＝问卷页没有常用模板入口）', file: 'template.html', needle: 'id="tsv-list"' },
+  { name: '#1653b 模板读写与渲染（删＝存了模板看不到、点了载不进去）', file: 'js/ta-ask.js', needle: "const TPL_KEY = 'ta-survey-templates';" },
+  { name: '#1653c 点模板载入题目（删＝模板只是摆设）', file: 'js/ta-ask.js', needle: 'function tplUse(i) {' },
+  { name: '#1653d 保存当前为模板（删＝存不了常用问卷）', file: 'js/ta-ask.js', needle: 'function tplAdd() {' },
+  { name: '#1653e 删除模板（删＝存错只能覆盖不能删）', file: 'js/ta-ask.js', needle: 'function tplDel(i) {' },
+  { name: '#1653f 载入模板后写回草稿并解析题数（删＝载入只改文本框、草稿与题数不更新）', file: 'js/ta-ask.js', needle: 'd.qs = surveyParse(t.text);' },
+  { name: '#1653g 模板不被迁进 default 桌面（删＝切联系人后模板消失）', file: 'js/contacts.js', needle: "'ta-survey-templates'" },
+  { name: '#1653h 模板胶囊样式（删＝模板挤成一团看不清）', file: 'css/chat-pages.css', needle: '.tsv-chip {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

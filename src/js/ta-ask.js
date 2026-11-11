@@ -4855,6 +4855,106 @@ window.openTCPanel = openTCPanel;
   const surveyPage = document.getElementById('page-ta-ask-survey');
   // v3.26.x：标记本次批量问卷「从聊天页半框进入」——返回时回聊天页而非 TA 的询问设置页
   let surveyOpenFromChat = false;
+  // ===== #1653 常用问卷模板 =====
+  // 用户需求（2026-11-11）：问卷题目每次都要重打，想存几套常用的、一键载入。
+  // 口径：只存题目文本（textarea 内容），不存交卷时间/提前交卷概率/是否逐条发聊天——
+  //   那些是「这一次怎么发」的设置，留在页面上按当前值走；
+  // 作用域：全局根键 xy-home-v2:ta-survey-templates（所有联系人桌面共用，
+  //   同一套问卷常要发给不同的人）；contacts.js EXCLUDE 已登记，防 migrateLegacy 迁进 default。
+  // 结构：[{ name, text, ts }]，最多 30 套；同名再存＝覆盖。
+  const TPL_KEY = 'ta-survey-templates';
+  function tplStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
+  function tplLoad() {
+    let a = null;
+    try { const s = tplStore(); a = JSON.parse((s && s.get(TPL_KEY)) || '[]'); } catch (e) { a = null; }
+    if (!Array.isArray(a)) a = [];
+    return a.filter(x => x && typeof x.name === 'string' && x.name && typeof x.text === 'string' && x.text.trim()).slice(0, 30);
+  }
+  function tplSave(a) {
+    try { const s = tplStore(); if (s) s.set(TPL_KEY, JSON.stringify((a || []).slice(0, 30))); } catch (e) {}
+  }
+  function tplRender() {
+    const box = document.getElementById('tsv-list');
+    if (!box) return;
+    const a = tplLoad();
+    box.innerHTML = '';
+    if (!a.length) {
+      const e = document.createElement('div');
+      e.className = 'tsv-empty';
+      e.textContent = '还没有常用问卷。把题目填进上面的输入框后，点「＋ 存为模板」就能存下来。';
+      box.appendChild(e);
+    }
+    a.forEach(function (t, i) {
+      const chip = document.createElement('span');
+      chip.className = 'tsv-chip';
+      chip.title = '载入模板：' + t.name;
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = t.name;
+      chip.appendChild(n);
+      const x = document.createElement('span');
+      x.className = 'x';
+      x.textContent = '✕';
+      x.title = '删除模板';
+      x.addEventListener('click', function (ev) { ev.stopPropagation(); tplDel(i); });
+      chip.appendChild(x);
+      chip.addEventListener('click', function () { tplUse(i); });
+      box.appendChild(chip);
+    });
+    const add = document.createElement('span');
+    add.className = 'tsv-chip tsv-add';
+    add.textContent = '＋ 存为模板';
+    add.addEventListener('click', tplAdd);
+    box.appendChild(add);
+  }
+  // 载入：只改题目（textarea + 草稿 text/qs），不动交卷时间等设置，也不影响正在作答的那一轮
+  function tplUse(i) {
+    const t = tplLoad()[i];
+    if (!t) return;
+    const el = document.getElementById('ta-survey-text');
+    if (el) el.value = t.text;
+    const d = surveyLoad();
+    d.text = t.text;
+    d.qs = surveyParse(t.text);
+    surveySave(d);
+    surveyRender();
+    const n = d.qs.length;
+    const sent = d.status === 'sent';
+    toast('已载入模板「' + t.name + '」' + (n ? '（' + n + ' 题）' : '（题目还没填完整）') +
+      (sent ? '；当前问卷仍在作答，这次载入用于下一轮' : ''));
+  }
+  function tplAdd() {
+    const el = document.getElementById('ta-survey-text');
+    const text = String(el ? el.value : '').trim();
+    if (!text) { toast('先把问卷题目填进上面的输入框，再存为模板'); return; }
+    if (!window.openModal) { toast('弹窗组件不可用'); return; }
+    window.openModal('存为常用问卷', '', function (v) {
+      const name = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+      if (!name) { toast('名字不能为空'); return; }
+      const a = tplLoad();
+      const at = a.findIndex(function (x) { return x.name === name; });
+      const item = { name: name, text: text, ts: Date.now() };
+      if (at >= 0) a[at] = item; else a.unshift(item);
+      tplSave(a);
+      tplRender();
+      toast(at >= 0 ? '已更新模板「' + name + '」' : '已存为模板「' + name + '」');
+    }, {
+      maxlength: 24,
+      staticText: '只保存题目文本（所有桌面共用）；交卷时间、提前交卷概率、是否逐条发聊天仍按本页当前设置。同名会覆盖。'
+    });
+  }
+  function tplDel(i) {
+    const t = tplLoad()[i];
+    if (!t) return;
+    if (!window.openModal) { toast('弹窗组件不可用'); return; }
+    window.openModal('删除模板「' + t.name + '」？', '', function () {
+      const a = tplLoad();
+      const at = a.findIndex(function (x) { return x.name === t.name; });
+      if (at >= 0) { a.splice(at, 1); tplSave(a); }
+      tplRender();
+      toast('已删除模板「' + t.name + '」');
+    }, { noInput: true, staticText: '只删这个模板；已经发到聊天里的问卷不受影响。', pills: [{ label: '删除', value: 'ok' }] });
+  }
   // v3.26.x：供「聊天页 · 问问TA 半框」的「批量设置问卷」按钮调用：打开批量问卷页（返回时回聊天页）
   window.openAskSurvey = function () {
     if (!surveyPage) { toast('批量问卷加载失败'); return; }
@@ -4864,6 +4964,7 @@ window.openTCPanel = openTCPanel;
     document.querySelectorAll('.page').forEach(p => p.hidden = true);
     surveyPage.hidden = false;
     surveyRender();
+    tplRender();
   };
   // v3.33.x #523：只读「问卷详情」弹窗（点聊天里的问卷卡片打开）——题干/选项/TA 逐题作答，
   // 不再跳批量设置问卷页（用户报「点已交卷卡片却打开了批量设置问卷的页面」）。
@@ -4991,6 +5092,7 @@ window.openTCPanel = openTCPanel;
       document.querySelectorAll('.page').forEach(p => p.hidden = true);
       surveyPage.hidden = false;
       surveyRender();
+      tplRender();
     });
     const backS = document.getElementById('ta-survey-back');
     if (backS) backS.addEventListener('click', () => {
@@ -5074,6 +5176,7 @@ window.openTCPanel = openTCPanel;
       toast('问卷已撤回（重置为草稿）');
     });
     surveyRender();
+    tplRender();
   }
 
   // v3.9.x：安卓键盘弹起（viewport interactive-widget=resizes-content）时 layout viewport
