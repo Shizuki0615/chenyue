@@ -7351,6 +7351,12 @@ const FIX_SENTINELS = [
   { name: '#1653f 载入模板后写回草稿并解析题数（删＝载入只改文本框、草稿与题数不更新）', file: 'js/ta-ask.js', needle: 'd.qs = surveyParse(t.text);' },
   { name: '#1653g 模板不被迁进 default 桌面（删＝切联系人后模板消失）', file: 'js/contacts.js', needle: "'ta-survey-templates'" },
   { name: '#1653h 模板胶囊样式（删＝模板挤成一团看不清）', file: 'css/chat-pages.css', needle: '.tsv-chip {' },
+  // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
+  { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },
+  { name: '#1654b 游戏卡类型清单（删＝删除按钮无法判断这张是不是游戏卡）', file: 'js/chat.js', needle: 'const GAME_CARD_SPECIALS = {' },
+  { name: '#1654c 游戏卡操作条只出删除（删＝引用/复制/收藏对游戏卡也冒出来）', file: 'js/chat.js', needle: "if (btn !== gameDelBtn) btn.hidden = true;" },
+  { name: '#1654d 游戏卡删除动作（删＝按钮点了没反应）', file: 'js/chat.js', needle: "} else if (act === 'del-game') {" },
+  { name: '#1654e 游戏卡删除按钮（删＝操作条里没有这一枚）', file: 'template.html', needle: 'class="ma-btn ma-del-game"' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

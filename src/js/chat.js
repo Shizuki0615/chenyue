@@ -14515,6 +14515,12 @@ window.addEventListener('scroll', req, true);
 bar.__maFollowStop = stop;
 return place;
 };
+// #1654：游戏结算卡（猜拳 / Pong / 打砖块 / 记忆翻牌 / 贪吃蛇 / 五子棋 / 四子棋 / 合作扫雷 /
+// 连连看 / 消消乐 / 拍卖会）不是 .msg-bubble，原来长按、右键完全没有反应＝用户删不掉。
+// 这里给它们单独一条「删除」入口（操作条只出这一枚按钮），删的只是聊天里的这张卡，
+// 不影响已结算的金币/战绩账本（那些各自另有记录）。
+const GAME_CARD_SPECIALS = { rps: 1, pong: 1, brick: 1, memory: 1, snake: 1, gomoku: 1, c4: 1, ms: 1, linkup: 1, match3: 1, auction: 1 };
+function isGameCardRec(rec) { return !!(rec && GAME_CARD_SPECIALS[rec.special]); }
 function msgActionEligible(t) {
 // 沿用原「点气泡弹菜单」的判定规则：可弹返回 {item, b}，不可弹返回 null（引用气泡/拍一拍/撤回/已读不回等）
 // FIX 2026-09-15 #507 语音播放按钮不算「点气泡」——否则轻点/长按播放按钮都会布气泡轻点/长按
@@ -14522,7 +14528,12 @@ function msgActionEligible(t) {
 // 不来＝点播永远播不出；健康内核也菜单/播放双触发）。播放走 fillVoiceBubble 的 touch 直驱；
 // 菜单入口保留在同气泡非按钮区（波纹/名称区），长按弹菜单原语义不丢。
 const b = t.closest('.msg-bubble');
-if (!b) return null;
+if (!b) {
+// #1654：游戏结算卡也允许弹操作条（只给「删除」一枚按钮，见 openMsgActionsAt）
+const gc = t.closest('.msg-rps, .msg-pong');
+if (!gc || gc.dataset.idx === undefined) return null;
+return { item: gc, b: gc.querySelector('.msg-rps-card, .msg-pong-card') || gc, game: true };
+}
 if (t.closest('.msg-voice-play')) return null;
 if (t.closest('.msg-quote')) return null;
 const item = b.closest('.msg');
@@ -14551,6 +14562,13 @@ if (_j >= 0) { _qi = _j; _qr = msgs[_j]; }
 activeMsgSnap = { idx: _qi, rec: _qr, mk: _mk, ts: _qr ? (_qr.ts || 0) : 0, side: _qr ? (_qr.side || '') : '', text: _qr ? String(_qr.text || '').slice(0, 80) : '' };
 activeSide = item.classList.contains('msg-out') ? 'out' : 'in';
 if (!msgActions) return;
+// #1654：游戏结算卡只出「删除」一枚按钮——引用/复制/收藏/撤回/编辑对它都不成立
+const isGameCard = isGameCardRec(_qr) || item.classList.contains('msg-rps') || item.classList.contains('msg-pong');
+const gameDelBtn = msgActions.querySelector('.ma-del-game');
+if (isGameCard) {
+msgActions.querySelectorAll('.ma-btn').forEach(function (btn) { if (btn !== gameDelBtn) btn.hidden = true; });
+} else {
+msgActions.querySelectorAll('.ma-btn[data-act="quote"], .ma-btn[data-act="copy"], .ma-btn[data-act="fav"]').forEach(function (btn) { btn.hidden = false; });
 msgActions.querySelectorAll('.ma-mine').forEach(b2 => b2.hidden = activeSide !== 'out');
 const delBtn = msgActions.querySelector('.ma-del-ta');
 if (delBtn) {
@@ -14558,6 +14576,8 @@ let delEn = false;
 try { delEn = store.get('cs-del-ta-msg') === '1'; } catch (e) {}
 delBtn.hidden = !(delEn && activeSide === 'in');
 }
+}
+if (gameDelBtn) gameDelBtn.hidden = !isGameCard;
 msgActions.hidden = false;
 // FIX 2026-09-16 #642 打开即挂「跟随锚点」并立即定位一次：定位算法与旧块一致（上方居中、
 // 放不下换下方、clamp 视口内），此后键盘开合动画/vv 平移/贴底滚动/图片撑高都会实时跟随气泡
@@ -14596,7 +14616,8 @@ return (idx0 >= 0 && msgs[idx0]) ? { idx: idx0, rec: msgs[idx0] } : { idx: -1, r
 }
 body.addEventListener('contextmenu', (e) => {
 // 长按/右键由应用接管：抑制系统默认菜单与文本选中，但不吞掉「引用气泡跳原消息」等其它元素自身行为
-if (e.target.closest('.msg-bubble') && !e.target.closest('.msg-quote')) {
+// #1654：游戏结算卡不是 .msg-bubble，右键/长按同样要放进来（否则外层这道门先挡掉，里面永远收不到）
+if ((e.target.closest('.msg-bubble') || e.target.closest('.msg-rps, .msg-pong')) && !e.target.closest('.msg-quote')) {
 e.preventDefault();
 // FIX 2026-09-14 #G2 长按气泡打不开引用/动作菜单（多机型同报；要求零机型分支防复发）：长按原由
 // touchstart+500ms 定时器触发，但部分内核在按住期间会因手指微移发 touchmove、或长按手势被系统
@@ -14798,6 +14819,17 @@ sessionChangedIdx.clear();
 saveMsgs();
 renderWindow(true);
 toast('已删除该消息');
+}
+closeMsgActions();
+} else if (act === 'del-game') {
+// #1654：删掉这张游戏结算卡（只删聊天里的记录；金币/战绩账本另有记录，不受影响）
+if (activeMsgEl && idx >= 0 && msgs[idx] && isGameCardRec(msgs[idx])) {
+chatTailDrop(msgs[idx]);
+msgs.splice(idx, 1);
+sessionChangedIdx.clear();
+saveMsgs();
+renderWindow(true);
+toast('已删除该游戏卡片');
 }
 closeMsgActions();
 }

@@ -11515,9 +11515,15 @@ window.addEventListener('scroll', req, true);
 bar.__maFollowStop = stop;
 return place;
 };
+const GAME_CARD_SPECIALS = { rps: 1, pong: 1, brick: 1, memory: 1, snake: 1, gomoku: 1, c4: 1, ms: 1, linkup: 1, match3: 1, auction: 1 };
+function isGameCardRec(rec) { return !!(rec && GAME_CARD_SPECIALS[rec.special]); }
 function msgActionEligible(t) {
 const b = t.closest('.msg-bubble');
-if (!b) return null;
+if (!b) {
+const gc = t.closest('.msg-rps, .msg-pong');
+if (!gc || gc.dataset.idx === undefined) return null;
+return { item: gc, b: gc.querySelector('.msg-rps-card, .msg-pong-card') || gc, game: true };
+}
 if (t.closest('.msg-voice-play')) return null;
 if (t.closest('.msg-quote')) return null;
 const item = b.closest('.msg');
@@ -11539,6 +11545,12 @@ if (_j >= 0) { _qi = _j; _qr = msgs[_j]; }
 activeMsgSnap = { idx: _qi, rec: _qr, mk: _mk, ts: _qr ? (_qr.ts || 0) : 0, side: _qr ? (_qr.side || '') : '', text: _qr ? String(_qr.text || '').slice(0, 80) : '' };
 activeSide = item.classList.contains('msg-out') ? 'out' : 'in';
 if (!msgActions) return;
+const isGameCard = isGameCardRec(_qr) || item.classList.contains('msg-rps') || item.classList.contains('msg-pong');
+const gameDelBtn = msgActions.querySelector('.ma-del-game');
+if (isGameCard) {
+msgActions.querySelectorAll('.ma-btn').forEach(function (btn) { if (btn !== gameDelBtn) btn.hidden = true; });
+} else {
+msgActions.querySelectorAll('.ma-btn[data-act="quote"], .ma-btn[data-act="copy"], .ma-btn[data-act="fav"]').forEach(function (btn) { btn.hidden = false; });
 msgActions.querySelectorAll('.ma-mine').forEach(b2 => b2.hidden = activeSide !== 'out');
 const delBtn = msgActions.querySelector('.ma-del-ta');
 if (delBtn) {
@@ -11546,6 +11558,8 @@ let delEn = false;
 try { delEn = store.get('cs-del-ta-msg') === '1'; } catch (e) {}
 delBtn.hidden = !(delEn && activeSide === 'in');
 }
+}
+if (gameDelBtn) gameDelBtn.hidden = !isGameCard;
 msgActions.hidden = false;
 const _maPlace = window.mochiFollowActionBar(msgActions, b, closeMsgActions);
 if (_maPlace) _maPlace();
@@ -11574,7 +11588,7 @@ if (hits === 1 && hit >= 0) return { idx: hit, rec: msgs[hit] };
 return (idx0 >= 0 && msgs[idx0]) ? { idx: idx0, rec: msgs[idx0] } : { idx: -1, rec: null };
 }
 body.addEventListener('contextmenu', (e) => {
-if (e.target.closest('.msg-bubble') && !e.target.closest('.msg-quote')) {
+if ((e.target.closest('.msg-bubble') || e.target.closest('.msg-rps, .msg-pong')) && !e.target.closest('.msg-quote')) {
 e.preventDefault();
 const ctxR = msgActionEligible(e.target);
 if (ctxR) {
@@ -11742,6 +11756,16 @@ sessionChangedIdx.clear();
 saveMsgs();
 renderWindow(true);
 toast('已删除该消息');
+}
+closeMsgActions();
+} else if (act === 'del-game') {
+if (activeMsgEl && idx >= 0 && msgs[idx] && isGameCardRec(msgs[idx])) {
+chatTailDrop(msgs[idx]);
+msgs.splice(idx, 1);
+sessionChangedIdx.clear();
+saveMsgs();
+renderWindow(true);
+toast('已删除该游戏卡片');
 }
 closeMsgActions();
 }
