@@ -1050,7 +1050,13 @@ walletSet(w);
 const rec = { side: side, special: 'gift', rateAllow: true, giftId: gift.id, giftName: gift.name, giftEmoji: gift.emoji, giftImg: gift.img || '', giftPrice: gift.price, giftWish: wish, giftCat: gift.cat, ts: Date.now() };
 const entry = recordBox(gift, side, wish);
 if (entry && entry.id) rec.giftBoxId = entry.id;
+let mergedIntoWish = false;
+if (side === 'out' && window.chatMergeWishGift) {
+try { mergedIntoWish = window.chatMergeWishGift(rec) === true; } catch (e) { mergedIntoWish = false; }
+}
+if (!mergedIntoWish) {
 if (window.chatAddGift) window.chatAddGift(rec); else if (window.chatAddIn) window.chatAddIn('', { special: 'gift' });
+}
 if (window.logFish) window.logFish();
 if (side === 'out') giftReplyFeedback(gift, rec);
 return true;

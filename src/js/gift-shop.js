@@ -1289,7 +1289,15 @@
     // 回复要同步到心意柜那件礼物，反之亦然）
     const entry = recordBox(gift, side, wish);
     if (entry && entry.id) rec.giftBoxId = entry.id;
-    if (window.chatAddGift) window.chatAddGift(rec); else if (window.chatAddIn) window.chatAddIn('', { special: 'gift' });
+    // #1655：兑现他的心愿时不再另发一张「我送出」礼物卡——并进聊天里那张「他的心愿」卡
+    //（赠言/价格/心意柜指针/他的回应都显示在同一张上）；没有对应心愿卡时才照常发礼物卡。
+    let mergedIntoWish = false;
+    if (side === 'out' && window.chatMergeWishGift) {
+      try { mergedIntoWish = window.chatMergeWishGift(rec) === true; } catch (e) { mergedIntoWish = false; }
+    }
+    if (!mergedIntoWish) {
+      if (window.chatAddGift) window.chatAddGift(rec); else if (window.chatAddIn) window.chatAddIn('', { special: 'gift' });
+    }
     if (window.logFish) window.logFish();
     // #848：我送出给 TA 的这一刻起，TA 有概率回一句（走当前桌面的聊天，延迟里切桌面则补投）
     // #985：这句回话拿到之后同时贴到「我送出」那张礼物卡与心意柜那件礼物上（传 rec 给它认领）

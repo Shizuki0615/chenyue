@@ -13,6 +13,8 @@
 .msg-gift-name { font-size: 16px; font-weight: 600; color: #111; letter-spacing: 2px; margin-top: 14px; }
 .msg-gift-divider { width: 46px; height: 1px; background: #e5e5e5; margin: 12px auto 0; }
 .msg-gift-wish { font-size: 13px; color: #8a8a8a; line-height: 1.75; margin-top: 12px; word-break: break-word; }
+/* #1655：心愿兑现后并入的「我的赠言」——与他的心愿分行显示，字号略小、颜色更深一点，一眼分出两句 */
+.msg-gift-mine { margin-top: 6px; font-size: 12.5px; color: #6f6f6f; }
 .msg-gift-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
 .mg-side { font-size: 11px; color: #b5b5b5; letter-spacing: 0.5px; }
 .msg-gift-price { font-size: 11px; color: #c8c8c8; letter-spacing: 0.3px; }

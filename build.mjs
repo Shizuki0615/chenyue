@@ -7357,6 +7357,16 @@ const FIX_SENTINELS = [
   { name: '#1654c 游戏卡操作条只出删除（删＝引用/复制/收藏对游戏卡也冒出来）', file: 'js/chat.js', needle: "if (btn !== gameDelBtn) btn.hidden = true;" },
   { name: '#1654d 游戏卡删除动作（删＝按钮点了没反应）', file: 'js/chat.js', needle: "} else if (act === 'del-game') {" },
   { name: '#1654e 游戏卡删除按钮（删＝操作条里没有这一枚）', file: 'template.html', needle: 'class="ma-btn ma-del-game"' },
+  // ==== 2026-11-11 #1655 心愿兑现只留一张卡（「他的心愿」并入「我送出」赠言与他的回应）====
+  { name: '#1655a 送 TA 心愿时不再另发礼物卡（删＝又出现两张重复卡）', file: 'js/gift-shop.js', needle: 'mergedIntoWish = window.chatMergeWishGift(rec) === true' },
+  { name: '#1655b 并卡实现（删＝礼物信息进不了心愿卡）', file: 'js/chat.js', needle: 'window.chatMergeWishGift = function (giftRec) {' },
+  { name: '#1655c 老聊天重复卡渲染前合并（删＝历史里仍是两张）', file: 'js/chat.js', needle: 'function dedupeWishGiftCards() {' },
+  { name: '#1655d 心愿卡显示并入的赠言（删＝并入后看不到我写的那句）', file: 'js/chat.js', needle: 'const wNote = String(rec.giftWish || \'\').trim();' },
+  { name: '#1655e 心愿卡显示他的回应（删＝他说的话不显示）', file: 'js/chat.js', needle: '(wMerged ? giftCardReplHtml(rec) : \'\')' },
+  { name: '#1655f 回应落点认领并卡后的心愿卡（删＝回应写不进这张卡）', file: 'js/chat.js', needle: "r.special === 'wish' && r.giftTs === giftTs" },
+  { name: '#1655g 赠言行样式（删＝两句赠言糊成一段）', file: 'css/market.css', needle: '.msg-gift-mine {' },
+  { name: '#1655h 心愿卡就地补丁（删＝送出后卡上仍显示「许愿/送他」，要整窗刷新才变）', file: 'js/chat.js', needle: 'function wishPatchCard(idx) {' },
+  { name: '#1655i 跨桌面回执认并入后的心愿卡（删＝切了桌面再回来他的回应丢）', file: 'js/chat.js', needle: "cardSpecial === 'gift' && r.special === 'wish' && r.giftTs === cardTs" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

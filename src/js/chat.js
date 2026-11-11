@@ -4638,7 +4638,10 @@ return true;
 window.__chatPumpDiag = function () { return { flying: batchRendering, stalled: chatPumpStalled(), sinceMs: chatPump ? Date.now() - chatPump.at : -1, incidents: (window.__chatRenderIncidents || []).slice(-3) }; }; // 只观测不改写：供 verify 脚本与真机诊断回读
 function renderWindow(keepScroll, clampTop, forceSync) {
 
-  try { if (!keepScroll && window.__mochiPhase) window.__mochiPhase('chat-renderWindow'); } catch (e0) {}const len = msgs.length;
+  try { if (!keepScroll && window.__mochiPhase) window.__mochiPhase('chat-renderWindow'); } catch (e0) {}
+// #1655：渲染前把老聊天里「他的心愿 + 我送出」的重复卡并成一张（幂等；只在 msgs 变化后跑一次）
+try { dedupeWishGiftCards(); } catch (e0) {}
+const len = msgs.length;
 chatRebuilding = false; // #841e：新一轮渲染先复位空窗标志（被作废的旧分帧轮不得把进度条留在屏上）
 const prevTop = keepScroll ? body.scrollTop : 0;
 const prevHeight = keepScroll ? body.scrollHeight : 0;
@@ -5874,6 +5877,69 @@ if (!rec || rec.special !== 'wish') return false;
 if (rec.wishSent) return false; // 卡片自己记着的既成事实，优先于任何实时推断
 return !window.giftTaWishHas || window.giftTaWishHas(rec.wishGiftId);
 }
+// ===== #1655 心愿兑现只留一张卡 =====
+// 用户反馈（2026-11-11 截图）：「他的心愿」+「我送出」两张同商品卡上下叠着，内容重复；
+// 口径：只留上面那张「他的心愿」，把「我送出 + 我的赠言 + 他的回应」都并进去。
+// 新礼物在 gift-shop 调 chatMergeWishGift 时就地并入；老聊天里的重复卡由 dedupeWishGiftCards
+// 在渲染前补做一次（幂等，按 giftId 把后出现的「我送出」礼物卡并入前面那张心愿卡并删除）。
+let wishDedupeSig = '';
+function mergeGiftIntoWishCard(w, g) {
+if (!w || !g) return false;
+w.giftMerged = true;
+w.wishSent = w.wishSent || g.ts || Date.now();
+if (!w.giftBoxId) w.giftBoxId = g.giftBoxId || '';
+w.giftWish = w.giftWish || g.giftWish || '';
+if (w.giftPrice == null) w.giftPrice = g.giftPrice;
+w.giftTs = w.giftTs || g.ts || 0;
+w.giftCat = w.giftCat || g.giftCat || w.wishGiftCat || '';
+w.giftEmoji = w.giftEmoji || g.giftEmoji || '';
+return true;
+}
+function dedupeWishGiftCards() {
+try {
+if (!Array.isArray(msgs) || !msgs.length) return false;
+const sig = msgs.length + ':' + ((msgs[msgs.length - 1] || {}).ts || 0);
+if (sig === wishDedupeSig) return false;
+wishDedupeSig = sig;
+let changed = false;
+for (let i = 0; i < msgs.length; i++) {
+const g = msgs[i];
+if (!g || g.special !== 'gift' || g.side !== 'out' || !g.giftId) continue;
+let wi = -1;
+for (let j = i - 1; j >= 0; j--) {
+const w = msgs[j];
+if (!w || w.special !== 'wish' || w.wishGiftId !== g.giftId || w.giftMerged) continue;
+wi = j; break;
+}
+if (wi < 0) continue;
+mergeGiftIntoWishCard(msgs[wi], g);
+try { chatTailDrop(g); } catch (e) {}
+msgs.splice(i, 1);
+i--;
+changed = true;
+}
+if (changed) saveMsgs();
+return changed;
+} catch (e) { return false; }
+}
+// gift-shop 送出礼物时调用：若聊天里有同一件商品待兑现的心愿卡，就并入它并返回 true（调用方不再发礼物卡）
+window.chatMergeWishGift = function (giftRec) {
+try {
+if (!giftRec || giftRec.special !== 'gift' || giftRec.side !== 'out' || !giftRec.giftId) return false;
+let wi = -1;
+for (let i = msgs.length - 1; i >= 0; i--) {
+const w = msgs[i];
+if (!w || w.special !== 'wish' || w.wishGiftId !== giftRec.giftId || w.giftMerged) continue;
+wi = i; break;
+}
+if (wi < 0) return false;
+mergeGiftIntoWishCard(msgs[wi], giftRec);
+saveMsgs();
+// 聊天页正看着就重画这一格（市场页里 chat 不可见，回来时 enterChat 会整窗重画）
+try { wishPatchCard(wi); } catch (e) {}
+return true;
+} catch (e) { return false; }
+};
 function wishDoneHtml() {
 // 此处不能用 renderMsg 局部的 T()，用同层其它提示的 taFit 口径（失焦/兜底同理）
 return '<div class="msg-wish-done">\u2713 ' + escTxt(window.taFit ? window.taFit('已送出') : '已送出') + '</div>';
@@ -6473,18 +6539,23 @@ if (rec.special === 'wish') {
 m.className = 'msg-gift msg-wish';
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const wStill = wishCardIsPending(rec); // #1316：卡片自己记的 wishSent 优先，其次才是「TA 心愿单此刻还有这件」
+const wMerged = !!rec.giftMerged; // #1655：已并入「我送出」的赠言/价格/心意柜指针与他的回应
+const wNote = String(rec.giftWish || '').trim();
+const wPrice = wMerged ? (rec.giftPrice != null ? rec.giftPrice : rec.wishGiftPrice) : rec.wishGiftPrice;
 const wgc = ((window.GIFT_CAT_COLOR || {})[rec.wishGiftCat]) || '#f2f2f5';
 m.innerHTML = '<div class="msg-gift-card msg-wish-card">' +
-'<div class="msg-wish-tag">' + escTxt(T('他的心愿')) + '</div>' +
+'<div class="msg-wish-tag">' + escTxt(T(wMerged ? '他的心愿 · 已实现' : '他的心愿')) + '</div>' +
 '<div class="msg-gift-emoji" style="background:' + escTxt(wgc) + '">' + (rec.wishGiftImg ? '<img class="msg-gift-img" src="' + escTxt(rec.wishGiftImg) + '" alt="">' : escTxt(rec.wishGiftEmoji || '\uD83C\uDF81')) + '</div>' +
 '<div class="msg-gift-name">' + escTxt(rec.wishGiftName || '礼物') + '</div>' +
 '<div class="msg-gift-divider"></div>' +
 '<div class="msg-gift-wish">\u201C' + escTxt(T(rec.text || '想要这个')) + '\u201D</div>' +
-'<div class="msg-gift-foot"><span class="mg-side">' + escTxt(chatPartnerName() + T(' 许愿')) + '</span>' +
-'<span class="msg-gift-price">\u00A5' + escTxt(Number(rec.wishGiftPrice || 0).toFixed(2)) + '</span></div>' +
+(wMerged && wNote && wNote !== String(rec.text || '').trim() ? '<div class="msg-gift-wish msg-gift-mine">\u201C' + escTxt(wNote) + '\u201D</div>' : '') +
+'<div class="msg-gift-foot"><span class="mg-side">' + escTxt(wMerged ? T('我 送出') : (chatPartnerName() + T(' 许愿'))) + '</span>' +
+'<span class="msg-gift-price">\u00A5' + escTxt(Number(wPrice || 0).toFixed(2)) + '</span></div>' +
 (wStill
 ? '<div class="msg-wish-acts"><button class="msg-wish-buy" type="button">' + T('送他') + '</button></div>'
 : '<div class="msg-wish-done">\u2713 ' + T('已送出') + '</div>') +
+(wMerged ? giftCardReplHtml(rec) : '') +
 favHeartHtml(rec) +
 '</div>';
 appendMsg(m);
@@ -7736,6 +7807,47 @@ function giftPatchCard(idx) {
   }
   return true;
 }
+// #1655：心愿卡就地打补丁（同 giftPatchCard 口径，不整窗重建）：礼物并入后补赠言行、底栏换
+// 「我 送出」与实付价、动作区换「已送出」、补回复区。卡片不在屏上（虚拟列表外/切了页）＝
+// 不做事，下次渲染自然带上并入态；绝不能因为找不到节点就回退整窗重建（会打断阅读位置）。
+function wishPatchCard(idx) {
+  try {
+    const rec = msgs[idx];
+    if (!rec || rec.special !== 'wish' || !body) return false;
+    const el = body.querySelector('.msg-wish[data-idx="' + idx + '"]');
+    if (!el) return false;
+    const card = el.querySelector('.msg-wish-card');
+    if (!card) return false;
+    const fit = function (s) { return window.taFit ? window.taFit(s) : s; };
+    const tag = card.querySelector('.msg-wish-tag');
+    if (tag) tag.textContent = fit(rec.giftMerged ? '他的心愿 · 已实现' : '他的心愿');
+    const note = String(rec.giftWish || '').trim();
+    const mine = card.querySelector('.msg-gift-mine');
+    if (rec.giftMerged && note && note !== String(rec.text || '').trim()) {
+      if (mine) mine.textContent = '\u201C' + note + '\u201D';
+      else {
+        const wl = card.querySelector('.msg-gift-wish');
+        if (wl) wl.insertAdjacentHTML('afterend', '<div class="msg-gift-wish msg-gift-mine">\u201C' + escTxt(note) + '\u201D</div>');
+      }
+    } else if (mine) mine.remove();
+    const sideEl = card.querySelector('.msg-gift-foot .mg-side');
+    if (sideEl) sideEl.textContent = rec.giftMerged ? fit('我 送出') : (chatPartnerName() + fit(' 许愿'));
+    const priceEl = card.querySelector('.msg-gift-foot .msg-gift-price');
+    if (priceEl) {
+      const p = rec.giftMerged ? (rec.giftPrice != null ? rec.giftPrice : rec.wishGiftPrice) : rec.wishGiftPrice;
+      priceEl.textContent = '\u00A5' + Number(p || 0).toFixed(2);
+    }
+    const acts = card.querySelector('.msg-wish-acts');
+    if (acts && !wishCardIsPending(rec)) acts.outerHTML = wishDoneHtml();
+    const repl = card.querySelector('.msg-gift-repl');
+    if (repl) { repl.innerHTML = giftReplRows(rec); repl.hidden = !giftReplList(rec).length; }
+    else if (rec.giftMerged && giftReplList(rec).length) {
+      const heart = card.querySelector('.msg-fav-heart');
+      if (heart) heart.insertAdjacentHTML('beforebegin', giftCardReplHtml(rec));
+    }
+    return true;
+  } catch (e) { return false; }
+}
 function giftClaimNow(idx) {
   const rec = msgs[idx];
   if (!giftIsIncoming(rec)) return false;
@@ -7801,13 +7913,14 @@ window.chatGiftAttachReplyTo = function (cid, giftTs, who, text, recRef) {
       if (!rec) {
         for (let i = msgs.length - 1; i >= 0; i--) {
           const r = msgs[i];
-          if (r && r.special === 'gift' && r.ts === giftTs) { rec = r; idx = i; break; }
+          // #1655：并卡后「我送出」礼物卡已不存在——按并入时记下的 giftTs 认领那张「他的心愿」卡
+          if (r && ((r.special === 'gift' && r.ts === giftTs) || (r.special === 'wish' && r.giftTs === giftTs))) { rec = r; idx = i; break; }
         }
       }
       if (!rec) return false;
       if (!rec.giftBoxId) return false;   // 存量卡没有心意柜指针＝没有可写的地方（不出动作区，同渲染口径）
       if (window.giftBoxAttachReply) window.giftBoxAttachReply(rec.giftBoxId, whoNorm, text, cid);
-      giftPatchCard(idx);
+      if (rec.special === 'wish') wishPatchCard(idx); else giftPatchCard(idx);
       return true;
     }
     if (!window.chatDeskCardReply) return false;
@@ -8090,6 +8203,8 @@ window.chatDeskCardReply = function (cid, cardSpecial, cardTs, statusKey, patch,
       for (let i = arr.length - 1; i >= 0; i--) {
         const r = arr[i];
         if (r && r.special === cardSpecial && r.ts === cardTs && !r.retracted) { hit = r; break; }
+        // #1655：并卡后的「我送出」回执落在「他的心愿」卡上（giftTs＝送出时刻）
+        if (r && cardSpecial === 'gift' && r.special === 'wish' && r.giftTs === cardTs && !r.retracted) { hit = r; break; }
       }
       // 卡不在 / 已被回答过（幂等闸）＝无事可做，不凭空补气泡
       if (!hit || hit[statusKey] === 'answered') return;
