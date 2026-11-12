@@ -7377,6 +7377,9 @@ const FIX_SENTINELS = [
   { name: '#1657c 只有试听就跳过（删＝播半首又切走）', file: 'js/music-player.js', needle: 'function skipTrialTrack(m, res) {' },
   { name: '#1657d 直链缓存给手势续播/回前台（删＝自动播放被拦后一点就降级成 30 秒）', file: 'js/music-player.js', needle: 'function neaUrlCacheGet(m) {' },
   { name: '#1657e 诊断单识别试听片段（删＝诊断把 30 秒试听报成完整直链）', file: 'js/music-player.js', needle: '降级复核（standard）:' },
+  { name: '#1657f 试听流时长兜底判定（删＝45/60 秒等不带 freeTrialInfo 的试听又被当正常歌播）', file: 'js/music-player.js', needle: 'const previewDur = !!(m && dur > 0 && fullDur >= 120 && dur <= 90 && dur < fullDur * 0.6);' },
+  { name: '#1657g 进度条不被试听短时长覆盖（删＝界面把 200 秒的歌显示成 45 秒）', file: 'js/music-player.js', needle: 'fmtDur(previewDur ? fullDur : dur)' },
+  { name: '#1657h 后端明确无完整版权时不再回落 meting 试听（删＝又播 30~60 秒）', file: 'js/music-player.js', needle: 'restricted: !err' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

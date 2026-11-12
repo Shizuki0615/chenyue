@@ -1501,6 +1501,7 @@
     console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
     const LEVELS = ['exhigh', 'higher', 'standard'];
     let li = 0;
+    let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
     const attempt = function () {
       const lv = LEVELS[li++];
       neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
@@ -1523,6 +1524,7 @@
               reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
               console.log('[VIP-Diag] 后端未给直链(' + lv + '):', reason);
             } else if (trial) {
+              sawTrial = true;
               reason = '仅 30 秒试听片段（' + lv + '）';
               console.log('[VIP-Diag] 只拿到试听片段(' + lv + ') code=' + code + ' fee=' + fee + ' br=' + br + ' size=' + size);
             } else {
@@ -1539,7 +1541,7 @@
         }
         // 试听/没给 url：降一档音质再试（网络错误不重试，避免连打三枪）
         if (!err && li < LEVELS.length) { attempt(); return; }
-        cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: trial, fee: fee, br: br, size: size });
+        cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
       });
     };
     attempt();
@@ -4283,8 +4285,9 @@
           neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也用完整直链
           trialSkipStreak = 0;
           playResolved(url);
-        } else if (res && res.trial) {
-          // #1657：只给 30 秒试听＝这首歌没拿到完整版权，跳下一首，不再放半首
+        } else if (res && (res.trial || res.restricted)) {
+          // #1657：只给试听 / 后端明确说这首没完整版权 → 跳下一首，不再回落公开 meting
+          //（meting 对这类歌给的就是 30~60 秒不等的试听流，回落＝放半首）
           httpsRetrying = false;
           skipTrialTrack(m, res);
         } else {
@@ -4362,7 +4365,8 @@
       if (res && res.fee === 4) why = '（数字专辑需单独购买）';
       else if (!neaCookie()) why = '（登录已失效，请重新扫码）';
       else why = '（会员未生效或该曲受限，可到「网易云账号 → 诊断 VIP 播放」看详情）';
-      try { toast('《' + ((m && m.name) || '这首歌') + '》只能取到 30 秒试听，已跳过' + why); } catch (e) {}
+      const head = (res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段';
+      try { toast('《' + ((m && m.name) || '这首歌') + '》' + head + '，已跳过' + why); } catch (e) {}
     }
     if (trialSkipStreak >= 6) {
       trialSkipStreak = 0; wantPlay = false;
@@ -4490,8 +4494,19 @@
     el.onloadedmetadata = function () {
       if (el !== audio) return;
       const dur = el.duration || 0;
+      // #1657b：试听流长度不固定（30/45/60 秒都有），后端没给 freeTrialInfo 也照样可能是试听。
+      // 用「实际时长 vs 记录时长」兜底判定：真实时长明显短于记录（且不足 90 秒）＝试听片段。
+      // 注意绝不能把这个短时长写回 m.duration——旧实现每次解码都把 m.duration 覆盖成实际时长，
+      // 试听播过一次后记录也变成 45 秒，下一次连「短于记录」都判不出来（用户看到的「有的歌是 45 秒」）。
+      const fullDur = Number(m && m.duration) || 0;
+      const previewDur = !!(m && dur > 0 && fullDur >= 120 && dur <= 90 && dur < fullDur * 0.6);
       const el2 = document.getElementById('sm-pb-dur');
-      if (el2) el2.textContent = fmtDur(dur);
+      if (el2) el2.textContent = fmtDur(previewDur ? fullDur : dur);
+      if (previewDur) {
+        try { console.log('[VIP-Diag] 实际时长 ' + Math.round(dur) + 's 远短于记录 ' + Math.round(fullDur) + 's，判为试听片段，跳过'); } catch (e) {}
+        skipTrialTrack(m, { reason: '实际只有 ' + Math.round(dur) + ' 秒', trial: true });
+        return;
+      }
       if (m && dur) { m.duration = dur; saveLibrary(); updateDurUI(m.id, dur); }
       // v3.6.x：play() 曾被拒绝（自动播放策略/音频未就绪）→ 元数据就绪后补播一次，
       // 同样走 muted 静音解锁（直接 play 非手势仍会被拒）
@@ -4687,8 +4702,8 @@
           neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也优先用完整直链
           trialSkipStreak = 0;
           audio.src = url;
-        } else if (res && res.trial) {
-          console.log('[VIP-Diag] 只拿到 30 秒试听，跳过:', res && res.reason);
+        } else if (res && (res.trial || res.restricted)) {
+          console.log('[VIP-Diag] 试听/无完整版权，跳过:', res && res.reason);
           skipTrialTrack(m, res);
           return;
         } else {

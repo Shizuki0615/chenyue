@@ -1257,6 +1257,7 @@ const ck = neaCookie();
 console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
 const LEVELS = ['exhigh', 'higher', 'standard'];
 let li = 0;
+let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
 const attempt = function () {
 const lv = LEVELS[li++];
 neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
@@ -1277,6 +1278,7 @@ if (!url) {
 reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
 console.log('[VIP-Diag] 后端未给直链(' + lv + '):', reason);
 } else if (trial) {
+sawTrial = true;
 reason = '仅 30 秒试听片段（' + lv + '）';
 console.log('[VIP-Diag] 只拿到试听片段(' + lv + ') code=' + code + ' fee=' + fee + ' br=' + br + ' size=' + size);
 } else {
@@ -1292,7 +1294,7 @@ code: code, reason: '', level: lv, trial: false, fee: fee, br: br, size: size
 return;
 }
 if (!err && li < LEVELS.length) { attempt(); return; }
-cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: trial, fee: fee, br: br, size: size });
+cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
 });
 };
 attempt();
@@ -3523,7 +3525,7 @@ if (url) {
 neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也用完整直链
 trialSkipStreak = 0;
 playResolved(url);
-} else if (res && res.trial) {
+} else if (res && (res.trial || res.restricted)) {
 httpsRetrying = false;
 skipTrialTrack(m, res);
 } else {
@@ -3585,7 +3587,8 @@ let why = '';
 if (res && res.fee === 4) why = '（数字专辑需单独购买）';
 else if (!neaCookie()) why = '（登录已失效，请重新扫码）';
 else why = '（会员未生效或该曲受限，可到「网易云账号 → 诊断 VIP 播放」看详情）';
-try { toast('《' + ((m && m.name) || '这首歌') + '》只能取到 30 秒试听，已跳过' + why); } catch (e) {}
+const head = (res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段';
+try { toast('《' + ((m && m.name) || '这首歌') + '》' + head + '，已跳过' + why); } catch (e) {}
 }
 if (trialSkipStreak >= 6) {
 trialSkipStreak = 0; wantPlay = false;
@@ -3688,8 +3691,15 @@ demoFallbackOrError(m);
 el.onloadedmetadata = function () {
 if (el !== audio) return;
 const dur = el.duration || 0;
+const fullDur = Number(m && m.duration) || 0;
+const previewDur = !!(m && dur > 0 && fullDur >= 120 && dur <= 90 && dur < fullDur * 0.6);
 const el2 = document.getElementById('sm-pb-dur');
-if (el2) el2.textContent = fmtDur(dur);
+if (el2) el2.textContent = fmtDur(previewDur ? fullDur : dur);
+if (previewDur) {
+try { console.log('[VIP-Diag] 实际时长 ' + Math.round(dur) + 's 远短于记录 ' + Math.round(fullDur) + 's，判为试听片段，跳过'); } catch (e) {}
+skipTrialTrack(m, { reason: '实际只有 ' + Math.round(dur) + ' 秒', trial: true });
+return;
+}
 if (m && dur) { m.duration = dur; saveLibrary(); updateDurUI(m.id, dur); }
 if (playRejected && currentId === m.id) {
 playRejected = false;
@@ -3827,8 +3837,8 @@ console.log('[VIP-Diag] 后端给了直链，用它播！code=' + (res && res.co
 neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也优先用完整直链
 trialSkipStreak = 0;
 audio.src = url;
-} else if (res && res.trial) {
-console.log('[VIP-Diag] 只拿到 30 秒试听，跳过:', res && res.reason);
+} else if (res && (res.trial || res.restricted)) {
+console.log('[VIP-Diag] 试听/无完整版权，跳过:', res && res.reason);
 skipTrialTrack(m, res);
 return;
 } else {
