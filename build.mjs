@@ -7371,6 +7371,12 @@ const FIX_SENTINELS = [
   { name: '#1656a 整窗重画挂闸（删＝重画既有 out 记录被当成新消息，pendingOutScroll 把视口拽到底）', file: 'js/chat.js', needle: 'if (bulkPaint) return;' },
   { name: '#1656b 分帧重画挂闸（回退＝大历史删一条仍跳底）', file: 'js/chat.js', needle: 'bulkPaint = true; // #1656：整窗重画既有记录期间挂闸' },
   { name: '#1656c 同步重画挂闸（回退＝小历史删一条仍跳底）', file: 'js/chat.js', needle: 'bulkPaint = true; // #1656：同步整窗重画同样挂闸' },
+  // ==== 2026-11-12 #1657 会员歌不再只播 30 秒试听 ====
+  { name: '#1657a 试听片段判据（删＝freeTrialInfo 的 30 秒流又被当成完整直链）', file: 'js/music-player.js', needle: 'if (url && !trial) {' },
+  { name: '#1657b 音质逐级回退取完整直链（删＝极高无权限时不再降档重试）', file: 'js/music-player.js', needle: "const LEVELS = ['exhigh', 'higher', 'standard'];" },
+  { name: '#1657c 只有试听就跳过（删＝播半首又切走）', file: 'js/music-player.js', needle: 'function skipTrialTrack(m, res) {' },
+  { name: '#1657d 直链缓存给手势续播/回前台（删＝自动播放被拦后一点就降级成 30 秒）', file: 'js/music-player.js', needle: 'function neaUrlCacheGet(m) {' },
+  { name: '#1657e 诊断单识别试听片段（删＝诊断把 30 秒试听报成完整直链）', file: 'js/music-player.js', needle: '降级复核（standard）:' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

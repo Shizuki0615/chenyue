@@ -1489,36 +1489,72 @@
   // 经用户自己的后端取播放直链：NeteaseCloudMusicApi 的 /song/url/v1 带 cookie，
   // 会员歌返回可播 url；取不到（未登录/该曲真失效/后端不通）一律回调 null，由调用方回落旧链路
   // FIX 2026-10-21：返回完整诊断对象 {url, code, reason} 供调用方给用户真实错误提示
+  // #1657（用户实报「会员歌曲只播 30 秒就切了」）：两个真因一起收口——
+  //   ① NetEase 对「帐号没权限」的曲目不是不给 url，而是给一条 **30 秒试听流**（data[0].freeTrialInfo
+  //      非空）。旧实现只看 url 非空就当成完整直链，于是播半首就 ended→自动下一首。
+  //   ② 不同会员档位能拿的音质不同：极高（exhigh）对部分帐号会被判无权限只给试听，
+  //      降一档（higher/standard）反而给完整直链。所以按 exhigh → higher → standard 逐级试。
+  // 只有「url 非空且没有 freeTrialInfo」才算拿到完整直链；否则回报 trial:true 交给调用方跳过。
   function neaFetchSongUrl(id, cb) {
     if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后端' }); return; }
     const ck = neaCookie();
     console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
-    neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=exhigh', function (j, err) {
-      let url = '';
-      let code = 0;
-      let reason = '';
-      try {
-        if (err) { reason = err; console.log('[VIP-Diag] 后端请求失败:', err); }
-        else {
-          const d = j && j.data && j.data[0];
-          code = d ? d.code : (j && j.code) || 0;
-          if (d && typeof d.url === 'string') url = d.url;
-          if (!url) {
-            // 后端返回 code 语义：200=正常但这首歌需要会员/地区限制；404=该歌曲不存在或 VIP 专属；
-            // -462=需要验证码。不管哪种，后端没给 url 说明公开链路也不会给完整直链
-            reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
-            console.log('[VIP-Diag] 后端未给直链:', reason);
-          } else {
-            console.log('[VIP-Diag] 后端给直链成功 br=', d.br, 'size=', d.size);
+    const LEVELS = ['exhigh', 'higher', 'standard'];
+    let li = 0;
+    const attempt = function () {
+      const lv = LEVELS[li++];
+      neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
+        let url = '', code = 0, reason = '', trial = false, fee = null, br = 0, size = 0;
+        try {
+          if (err) { reason = err; console.log('[VIP-Diag] 后端请求失败(' + lv + '):', err); }
+          else {
+            const d = j && j.data && j.data[0];
+            code = d ? d.code : (j && j.code) || 0;
+            if (d && typeof d.url === 'string') url = d.url;
+            if (d) {
+              trial = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
+              fee = typeof d.fee === 'number' ? d.fee : null;
+              br = d.br || 0;
+              size = d.size || 0;
+            }
+            if (!url) {
+              // 后端返回 code 语义：200=正常但这首歌需要会员/地区限制；404=该歌曲不存在或 VIP 专属；
+              // -462=需要验证码。不管哪种，后端没给 url 说明公开链路也不会给完整直链
+              reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
+              console.log('[VIP-Diag] 后端未给直链(' + lv + '):', reason);
+            } else if (trial) {
+              reason = '仅 30 秒试听片段（' + lv + '）';
+              console.log('[VIP-Diag] 只拿到试听片段(' + lv + ') code=' + code + ' fee=' + fee + ' br=' + br + ' size=' + size);
+            } else {
+              console.log('[VIP-Diag] 后端给直链成功 level=' + lv + ' br=' + br + ' size=' + size);
+            }
           }
+        } catch (e) { reason = '解析失败: ' + e.message; }
+        if (url && !trial) {
+          cb && cb({
+            url: String(url).replace(/^http:/i, 'https:'),
+            code: code, reason: '', level: lv, trial: false, fee: fee, br: br, size: size
+          });
+          return;
         }
-      } catch (e) { reason = '解析失败: ' + e.message; }
-      cb && cb({
-        url: url ? String(url).replace(/^http:/i, 'https:') : null,
-        code: code,
-        reason: reason
+        // 试听/没给 url：降一档音质再试（网络错误不重试，避免连打三枪）
+        if (!err && li < LEVELS.length) { attempt(); return; }
+        cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: trial, fee: fee, br: br, size: size });
       });
-    });
+    };
+    attempt();
+  }
+  // #1657：完整直链缓存 10 分钟——浏览器自动播放被拦截后，用户再点一下屏幕走的是
+  // 「用 m.url 直接重建」的手势续播路径（见 armAutoResume/rebuildAndPlay），而 m.url 是
+  // meting 的试听流。缓存后这条路径也能拿到完整直链，会员歌不会一点就被降级成 30 秒。
+  function neaUrlCacheSet(m, url) {
+    try { if (m && url) { m._neaUrl = url; m._neaUrlAt = Date.now(); } } catch (e) {}
+  }
+  function neaUrlCacheGet(m) {
+    try {
+      if (m && m._neaUrl && Date.now() - (m._neaUrlAt || 0) < 10 * 60 * 1000) return m._neaUrl;
+    } catch (e) {}
+    return '';
   }
   // 归一化后端地址：去尾斜杠。显式写了协议就按用户写的走（自建后端常只有 http://IP:端口，
   // 强改成 https 会打到不存在的端口），没写协议才默认补 https://。
@@ -1994,7 +2030,8 @@
           runTest('/login/status?cookie=' + cookieEnc),
           runTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc),
           runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc),
-        ]).then(([ls, free, vip]) => {
+          runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc),
+        ]).then(([ls, free, vip, vipStd]) => {
           // login/status
           out.push('=== /login/status ===');
           if (ls.err) out.push('❌ 请求失败: ' + ls.err);
@@ -2016,7 +2053,8 @@
           if (free.err) out.push('❌ 请求失败: ' + free.err);
           else {
             const d = free.j?.data?.[0] || {};
-            out.push('code=' + (d.code ?? '?') + ' url=' + (d.url ? '✅ 有完整直链 (' + (d.size||0) + ' 字节)' : '❌ 无'));
+            const _tr = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
+            out.push('code=' + (d.code ?? '?') + ' url=' + (d.url ? (_tr ? '⚠️ 只是试听片段' : '✅ 有完整直链 (' + (d.size || 0) + ' 字节)') : '❌ 无'));
           }
           out.push('');
           // VIP 歌
@@ -2024,15 +2062,25 @@
           if (vip.err) out.push('❌ 请求失败: ' + vip.err);
           else {
             const d = vip.j?.data?.[0] || {};
-            if (d.url) {
-              out.push('✅ 后端给了 VIP 完整直链！code=200 br=' + (d.br||0));
+            const _tr = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
+            if (d.url && !_tr) {
+              out.push('✅ 后端给了 VIP 完整直链！code=' + (d.code ?? '?') + ' br=' + (d.br || 0));
               out.push('→ 你播 VIP 歌应该没问题了，刷新页面再试');
+            } else if (d.url && _tr) {
+              out.push('⚠️ 只拿到 30 秒试听片段（freeTrialInfo 非空）code=' + (d.code ?? '?') + ' fee=' + (d.fee ?? '?') + ' br=' + (d.br || 0));
+              out.push('→ 试听片段的三个常见原因：① cookie 失效（重新扫码）② 该曲是数字专辑，会员也只能试听 ③ 会员档位不覆盖当前音质（播放会自动降级重试）');
             } else {
               out.push('❌ 后端没给直链 code=' + d.code);
               if (d.code === 404) out.push('→ VIP 受限！可能 cookie 过期 / 你账号对这首歌没权限 / 后端 NeteaseCloudMusicApi 版本太旧');
               else if (d.code === 200) out.push('→ code=200 但 url 空，这首歌可能是地区限制或下架');
               else out.push('→ 后端返回异常 code=' + d.code);
             }
+          }
+          // 降档复核：exhigh 给试听、standard 可能是完整直链（播放链路会自动降级）
+          if (!vipStd.err) {
+            const d2 = vipStd.j?.data?.[0] || {};
+            const _tr2 = !!(d2.freeTrialInfo && typeof d2.freeTrialInfo === 'object');
+            out.push('降级复核（standard）: ' + (d2.url && !_tr2 ? '✅ 完整直链 br=' + (d2.br || 0) : (d2.url ? '⚠️ 仍是试听片段' : '❌ 无直链 code=' + (d2.code ?? '?'))));
           }
           out.push('');
           out.push('=== 播放路径判定 ===');
@@ -3875,7 +3923,7 @@
       try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
       audio.preload = 'auto';
       setupHandlers(m);
-      audio.src = m.url;
+      audio.src = neaUrlCacheGet(m) || m.url; // #1657：有完整直链缓存就别用手势续播降级成试听
       const p2 = audio.play();
       if (p2 && p2.catch) p2.catch(function () { armAutoResume(); });
     };
@@ -3987,7 +4035,7 @@
     try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
     audio.preload = 'auto';
     setupHandlers(m);
-    audio.src = m.url;
+    audio.src = neaUrlCacheGet(m) || m.url; // #1657：回前台重建同样优先完整直链
     const p = audio.play();
     if (p && p.catch) p.catch(function () { bgResumeFails++; bgResumeFailAt = Date.now(); });
   }
@@ -4232,7 +4280,13 @@
         const url = res && res.url;
         console.log('[VIP-Diag] 后端返回 url=' + !!url + ' code=' + (res && res.code) + ' reason=' + (res && res.reason));
         if (url) {
+          neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也用完整直链
+          trialSkipStreak = 0;
           playResolved(url);
+        } else if (res && res.trial) {
+          // #1657：只给 30 秒试听＝这首歌没拿到完整版权，跳下一首，不再放半首
+          httpsRetrying = false;
+          skipTrialTrack(m, res);
         } else {
           // 后端没给直链 → 回落公开 meting。诊断：cookie 刚重登过还失败？
           // 给用户真实提示，别默默回落让他不知道
@@ -4292,6 +4346,31 @@
     }
     if (idx >= 0) return; // 兜底合成/播放进行中，静默等待结果
     offerRemoveDamagedSong(m);
+  }
+  // #1657：后端只能给 30 秒试听片段时，不再「播半首就切」——直接跳过并说清原因。
+  // 连续跳过设上限，防「整个队列都是会员歌」时无限 next 循环；播到完整直链即清零。
+  let trialSkipStreak = 0;
+  let trialToastAt = 0;
+  function skipTrialTrack(m, res) {
+    trialSkipStreak++;
+    try { if (audio) { audio.onended = null; audio.onerror = null; audio.pause(); } } catch (e) {}
+    teardownAudio();
+    try { syncPlayIcons(false); } catch (e) {}
+    if (Date.now() - trialToastAt > 4000) {
+      trialToastAt = Date.now();
+      let why = '';
+      if (res && res.fee === 4) why = '（数字专辑需单独购买）';
+      else if (!neaCookie()) why = '（登录已失效，请重新扫码）';
+      else why = '（会员未生效或该曲受限，可到「网易云账号 → 诊断 VIP 播放」看详情）';
+      try { toast('《' + ((m && m.name) || '这首歌') + '》只能取到 30 秒试听，已跳过' + why); } catch (e) {}
+    }
+    if (trialSkipStreak >= 6) {
+      trialSkipStreak = 0; wantPlay = false;
+      try { updatePlayerBar(); } catch (e) {}
+      try { toast('连续多首只能取到试听，已停止自动跳过'); } catch (e) {}
+      return;
+    }
+    setTimeout(function () { try { next(); } catch (e) {} }, 350);
   }
   // v3.9.x：onended 兜底——网易云 meting 外链某些流不触发 ended 事件（duration=Infinity
   // 或 chunked 流无 Content-Length），导致自动下一首/循环/随机全失效，只能手动切歌。
@@ -4604,17 +4683,23 @@
         const url = res && res.url;
         if (currentId !== m.id) return; // 空窗期切歌
         if (url) {
-          console.log('[VIP-Diag] 后端给了直链，用它播！br=' + (res && res.code));
+          console.log('[VIP-Diag] 后端给了直链，用它播！code=' + (res && res.code) + ' level=' + (res && res.level));
+          neaUrlCacheSet(m, url); // #1657：手势续播/回前台重建也优先用完整直链
+          trialSkipStreak = 0;
           audio.src = url;
+        } else if (res && res.trial) {
+          console.log('[VIP-Diag] 只拿到 30 秒试听，跳过:', res && res.reason);
+          skipTrialTrack(m, res);
+          return;
         } else {
           console.log('[VIP-Diag] 后端没给直链，回落 meting。原因:', res && res.reason);
-          audio.src = m.url;
+          audio.src = neaUrlCacheGet(m) || m.url; // #1657：有上次取到的完整直链就优先用它
         }
         startPlayback(m);
       });
       return;
     }
-    audio.src = m.url;
+    audio.src = neaUrlCacheGet(m) || m.url;
     startPlayback(m);
   }
   function startProgress() {
