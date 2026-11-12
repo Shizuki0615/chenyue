@@ -2918,6 +2918,7 @@ return chatScrollMax() - cb.scrollTop <= 8;
 // 气泡永远落在视口下方）；TA 自发消息的 #162/#378/#416 不打扰契约零改动。
 let chatUserFollowScroll = false;
 function maybeScrollChatBottom(side) {
+if (bulkPaint) return; // #1656：整窗重画既有消息＝不是新消息到达，绝不据此贴底或置 pendingOutScroll
 if (batchRendering) {
 if (side === 'out') pendingOutScroll = true;
 return; // #492 follow 标记批量渲染期不消费，留待真实追加时生效
@@ -4342,6 +4343,11 @@ cb.scrollTop = Math.min(cb.scrollTop, realMax); // 超界显式钳回；未超�
 }
 let batchRendering = false;
 let pendingOutScroll = false;
+// #1656：整窗重画（既有记录逐条重画）期间置真——renderMsg 每个分支末尾都会叫
+// maybeScrollChatBottom(rec.side)，旧实现把这当成「新到了一条 out 消息」把 pendingOutScroll
+// 置真，于是任何 keepScroll 的整窗重画（删一条消息、原位收口…）在换装时又被拽到最底，
+// 前面刚刚按高度差补回的阅读位置白算。重画既有记录 ≠ 新消息到达，一律不许动滚动位。
+let bulkPaint = false;
 let appendTarget = null;
 // FIX 2026-09-20 #878（用户报障「聊天里发送的礼物卡片没有任何动画缓冲突然出现很突兀，
 // 互动卡片都有这个问题」）：入场动画类原先在 renderMsg 建节点时加（原 4405 行位置），
@@ -4702,6 +4708,8 @@ const myToken = ++_rwToken;
 const myPump = { at: Date.now(), token: myToken, done: false, watch: 0, rescue: null }; // #1313：本轮的泵（进展时间戳＋接管入口＋是否已收装）
 // #1313：分帧链与「接管」共用同一份逐条画（判据与 #919a 一字不差；抛错的下标计入 threwIdx 而不是丢掉本轮）
 const paintRange = function (end) {
+bulkPaint = true; // #1656：整窗重画既有记录期间挂闸（见 maybeScrollChatBottom）
+try {
 for (; i < end; i++) {
 const _rm = msgs[i];
 if (!_rm || typeof _rm !== 'object') { skippedIdx.push(i); continue; } // #919a 记录位空洞/坏记录跳过不画：renderMsg(undefined) 抛 TypeError 打断整轮分帧构建（setTimeout 链断＝不换装不贴底、batchRendering 卡死，屏上停在窗口最旧的几十条、退出重进才恢复；用户设备 buildChunk→renderMsg「reading 'side'」实锤）
@@ -4715,6 +4723,7 @@ const m = renderMsg(_rm, i); // #1326：真实下标要在挂载之前落定，�
 m.dataset.idx = i; // 覆盖 renderMsg 内的 msgs.length-1（批量渲染时必须为真实下标）
 } catch (eThrow) { threwIdx.push(i); } // #1313：单条记录不许带走整轮构建（链断＝永久空白，见上面 #919a 那条真机实锤）
 }
+} finally { bulkPaint = false; }
 };
 const finishSwap = function () {
 if (myPump.done) return; // #1313：本轮已经收过装（正常跑完或看门狗接管），任何迟到的续链不得二次换装
@@ -4782,6 +4791,8 @@ chatPump = myPump; chatPumpArmWatch(myPump); // #1313：登记本轮的泵并排
 setTimeout(buildChunk, 0); // #718 分帧构建
 return;
 }
+bulkPaint = true; // #1656：同步整窗重画同样挂闸（重画既有 out 记录不得把视口拽到底）
+try {
 for (; i < len; i++) {
 const _rm = msgs[i];
 if (!_rm || typeof _rm !== 'object') { skippedIdx.push(i); continue; } // #919b 同 #919a：同步整窗路径也不得被单条空记录打断（异常一路上抛，调用方紧随的贴底/收尾整段跳过）
@@ -4795,6 +4806,7 @@ const m = renderMsg(_rm, i); // #1326：真实下标要在挂载之前落定，�
 m.dataset.idx = i; // 覆盖 renderMsg 内的 msgs.length-1（批量渲染时必须为真实下标）
 } catch (eThrow) { threwIdx.push(i); } // #1313：同步整窗路径同理——单条记录不许把异常抛给调用方（那会连贴底/撤进度条一起跳过，屏上停在被清空的状态）
 }
+} finally { bulkPaint = false; }
 finishSwap();
 }
 // FIX 2026-09-21 #951（用户报障：切换桌面联系人之后打开聊天页面「还是会闪屏一下然后恢复正常，

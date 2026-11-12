@@ -7367,6 +7367,10 @@ const FIX_SENTINELS = [
   { name: '#1655g 赠言行样式（删＝两句赠言糊成一段）', file: 'css/market.css', needle: '.msg-gift-mine {' },
   { name: '#1655h 心愿卡就地补丁（删＝送出后卡上仍显示「许愿/送他」，要整窗刷新才变）', file: 'js/chat.js', needle: 'function wishPatchCard(idx) {' },
   { name: '#1655i 跨桌面回执认并入后的心愿卡（删＝切了桌面再回来他的回应丢）', file: 'js/chat.js', needle: "cardSpecial === 'gift' && r.special === 'wish' && r.giftTs === cardTs" },
+  // ==== 2026-11-12 #1656 删消息后停在原阅读位置（不再被整窗重画拽到最底）====
+  { name: '#1656a 整窗重画挂闸（删＝重画既有 out 记录被当成新消息，pendingOutScroll 把视口拽到底）', file: 'js/chat.js', needle: 'if (bulkPaint) return;' },
+  { name: '#1656b 分帧重画挂闸（回退＝大历史删一条仍跳底）', file: 'js/chat.js', needle: 'bulkPaint = true; // #1656：整窗重画既有记录期间挂闸' },
+  { name: '#1656c 同步重画挂闸（回退＝小历史删一条仍跳底）', file: 'js/chat.js', needle: 'bulkPaint = true; // #1656：同步整窗重画同样挂闸' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
