@@ -59,7 +59,7 @@
     box.style.cssText = 'width:100%;max-width:330px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:18px 16px 14px;box-shadow:0 12px 40px var(--shadow-strong);';
     const h = document.createElement('div');
     h.style.cssText = 'font-weight:700;font-size:15px;margin-bottom:4px;text-align:center;color:var(--ink);';
-    h.textContent = '他 常在哪些时辰出现？';
+    h.textContent = '他常在哪些时辰出现？';
     const sub = document.createElement('div');
     sub.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;';
     sub.textContent = '可多选 · 至少选一个 · 世界时间只在这些时辰里随机';
@@ -1061,6 +1061,9 @@
     }
     return t;
   }
+  // #1650：聊天顶栏「他那边的时间」只读出口——顶栏以此快照为基准每分钟往前走，
+  // 到 next 到期时本函数自己会重抽（与「此间」页完全同源，不另存一份时间）。
+  try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
   function renderTaTime() {
     const listEl = document.getElementById('cj-list');
     if (!listEl) return;
@@ -1072,7 +1075,7 @@
     }
     card.innerHTML = '';
     card.appendChild(el('div', 'cj-ta-time-title', '对方当前时间'));
-    card.appendChild(el('div', 'cj-ta-time-hint', '他 自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
+    card.appendChild(el('div', 'cj-ta-time-hint', '他自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
     const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
     cidList.forEach(function (cid) {
       const t = taTimeOf(cid);
@@ -1448,7 +1451,7 @@
             phase = 'pickSlot';
             ctl.stay();
             ctl.title('给谁设时辰区间');
-            ctl.hint('他 的世界时间会只在这些时辰里随机');
+            ctl.hint('他的世界时间会只在这些时辰里随机');
             ctl.input(false);
             ctl.pills(list.map(c => ({ label: c.name + ((Array.isArray(c.slots) && c.slots.length) ? ' · ' + slotLabel(c.slots) : ''), value: c.id })));
             ctl.okText('设置');
@@ -1471,7 +1474,7 @@
         ctl.stay();
         ctl.title('设定「' + name + '」的世界时间');
         // #611：档案页入口不设时辰区间，提示改指「此间」（否则这句指向下一步会落空）
-        ctl.hint(arcMode ? '选一个时间偏移（想限定 他 常在的时辰，去「此间」设）' : '先选时间偏移，下一步还能限定 他 常在的时辰区间');
+        ctl.hint(arcMode ? '选一个时间偏移（想限定他常在的时辰，去「此间」设）' : '先选时间偏移，下一步还能限定他常在的时辰区间');
         ctl.input(false);
         ctl.pills(OFFSET_PILLS);
         ctl.okText(arcMode ? '完成' : '下一步');

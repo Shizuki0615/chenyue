@@ -119,14 +119,8 @@ applyCallHalfBg();
 toast('已恢复默认通话半框背景');
 });
 }
-const callHalfOpenRow = document.getElementById('call-half-open');
-if (callHalfOpenRow) {
-callHalfOpenRow.addEventListener('click', () => {
-if (!window.enterChat || !window.openChatCallPanel) { toast('通话半框暂不可用'); return; }
-window.enterChat();
-window.openChatCallPanel();
-});
-}
+const callPreviewOpenRow = document.getElementById('call-preview-open');
+if (callPreviewOpenRow) callPreviewOpenRow.addEventListener('click', previewCallPopup);
 const callHalfBgEditRow = document.getElementById('call-half-bg-edit-row');
 if (callHalfBgEditRow) callHalfBgEditRow.addEventListener('click', () => pickCallBg(CALL_HALF_BG_KEY, '通话半框背景已设置'));
 const callHalfBgEditRm = document.getElementById('call-half-bg-edit-remove');
@@ -184,8 +178,6 @@ m.appendChild(catcher);
 callPreviewOn = true;
 toast('预览模式：点击任意处退出');
 }
-const callViewRow = document.getElementById('call-view-row');
-if (callViewRow) callViewRow.addEventListener('click', previewCallPopup);
 document.addEventListener('contact-switched', closeCallPreview);
 try {
 if (window.idbGet) {
@@ -262,12 +254,19 @@ gen: 0,           // 摄像头请求代次：切后台/关摄像头时 +1，让�
 watchdog: null,
 taCam: false,     // 本次 TA 是否开摄像头（掷骰结果）
 taBg: '',         // 本次 TA 的画面
+taIdx: -1,        // 本次 TA 画面在图片池里的下标（刷新恢复按它取回同一张）
 rolled: false,    // 本通电话是否已掷过 TA 摄像头（刷新恢复的通话没有接通钩子，进视频时补掷）
 entered: false,   // 本通电话是否已经进过视频（决定切进来时要不要重掷）
 startAsVideo: false, // 本通去电是否以视频方式发起（接通后自动进视频）
 swap: false,      // 画面互换：true＝我的摄像头铺满、TA 缩到右上小窗
 swapPos: null,    // 互换前小窗的拖动位置（撤回时还原，别把用户摆好的位置弄丢）
 minimized: false, // 视频态缩到小框（仍是视频：摄像头不停、回来还是视频界面）
+native: null,     // #1651 App 内原生美颜控件（plus.video.LivePusher）；网页/PWA 恒为 null
+nativeReady: false,   // 原生预览已出图（此时 HTML <video> 让位）
+nativeStarting: false,// 原生控件正在启动（防重入）
+nativeFailed: false,  // 本通电话内原生启动失败过：同一通不再反复等 9 秒
+nativeRect: '',   // 上次同步给原生控件的矩形（同值不重写，防每次 setStyles 闪一下）
+nativeToastDone: false, // 本通是否已提示过「原生美颜已生效」
 poolAsked: false  // 画面库等待回填只问一次，防递归
 };
 let _miniSafeTopCache = -1;
@@ -362,6 +361,11 @@ return JSON.stringify({
 cid: currentCall.cid, direction: currentCall.direction, status: currentCall.status,
 startTime: currentCall.startTime, connectedTime: currentCall.connectedTime || 0,
 hangupAt: currentCall.hangupAt || 0,
+vt: VT.mode ? 1 : 0,
+vtCam: (VT.mode && !VT.camOff) ? 1 : 0,
+vtFace: VT.facing === 'environment' ? 'e' : 'u',
+taCam: VT.taCam ? 1 : 0,
+taIdx: VT.taIdx,
 name: currentCall.name || '', av: '', ts: Date.now()
 });
 }
@@ -434,7 +438,7 @@ if (hangBtn) hangBtn.hidden = !(mode === 'calling' || mode === 'active');
 if (rejectBtn) rejectBtn.hidden = !(mode === 'ringing');
 if (answerBtn) answerBtn.hidden = !(mode === 'ringing');
 if (miniBtn) miniBtn.hidden = !(mode === 'calling' || mode === 'active');
-if (vtBtn) vtBtn.hidden = !(mode === 'active' && !VT.mode);
+if (vtBtn) vtBtn.hidden = !(mode === 'active');
 if (swapBtn) swapBtn.hidden = !(mode === 'active' && VT.mode);
 if (camBtn) camBtn.hidden = !(mode === 'active' && VT.mode);
 if (flipBtn) flipBtn.hidden = !(mode === 'active' && VT.mode);
@@ -808,12 +812,16 @@ const ownerCid = currentCall.cid || window.__activeCid || 'default';
 if (ownerCid !== (window.__activeCid || 'default')) {
 try { if (window.setActiveContact) window.setActiveContact(ownerCid); } catch (e) {}
 }
-if (!window.enterChat || !window.openChatCallPanel) {
-if (mask) mask.hidden = false; // 半框入口缺失时退回展开通话大面板，不让点击变成没反应
-return;
+if (mask) {
+mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+if (nameEl) nameEl.textContent = partnerName();
+if (statusEl) statusEl.textContent = '正在通话...';
+setMaskBtns('active');
+syncCallAv(); syncCallName();
+toast('通话中·已展开通话面板');
 }
-window.enterChat();
-window.openChatCallPanel();
 }
 if (mini) {
 let dragging = false, moved = false, pressOnHang = false, pressLX = 0, pressLY = 0, startLeft = 0, startTop = 0;
@@ -953,7 +961,17 @@ if (callCfg().resume !== 0) {
 try {
 currentCall = { cid: cid, direction: dir, status: 'connected', startTime: info.startTime || info.connectedTime, connectedTime: info.connectedTime, hangupAt: info.hangupAt || 0, durationSec: 0, name: name, av: info.av || '' };
 shownAv = null; shownName = null;
-if (callMiniEnabled()) {
+if (info.vt) {
+try { vtRestoreFromSnapshot(info); } catch (e3) {
+if (mask) mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+if (nameEl) nameEl.textContent = name;
+if (statusEl) statusEl.textContent = '正在通话...';
+setMaskBtns('active');
+syncCallAv(); syncCallName();
+}
+} else if (callMiniEnabled()) {
 if (mask) mask.hidden = true;
 if (cdEl) cdEl.hidden = true;
 if (mini) { syncCallName(); syncCallAv(); mini.hidden = false; liftMiniIntoSafeArea(); /* v3.26.x #137 显示时校正 */ }
@@ -1010,6 +1028,60 @@ const VT_LAST_KEY = 'call-ta-bg-last';
 function vtSupported() {
 return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
+const BEAUTY_KEY = 'call-beauty';
+const BEAUTY_WHITE_KEY = 'call-beauty-whiteness';
+const BEAUTY_NATIVE_KEY = 'call-beauty-native';
+function beautyStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
+function beautyOn() {
+try {
+const s = beautyStore();
+const v = s ? s.get(BEAUTY_KEY) : null;
+return (v === null || v === undefined || v === '') ? true : v === '1';
+} catch (e) { return true; }
+}
+function beautyWhite() {
+try {
+const s = beautyStore();
+const n = parseInt(s ? s.get(BEAUTY_WHITE_KEY) : '', 10);
+return isNaN(n) ? 4 : Math.max(0, Math.min(5, n));
+} catch (e) { return 4; }
+}
+function beautyNativeOn() {
+try {
+const s = beautyStore();
+return !!(s && s.get(BEAUTY_NATIVE_KEY) === '1');
+} catch (e) { return false; }
+}
+function beautyNativeSupported() {
+try {
+return !!(window.plus && window.plus.video && window.plus.video.createLivePusher &&
+window.plus.video.getLivePusherById && window.plus.webview && window.plus.webview.currentWebview);
+} catch (e) { return false; }
+}
+function beautyUseNative() {
+return beautyOn() && beautyNativeOn() && VT.facing === 'user' && !VT.nativeFailed && beautyNativeSupported();
+}
+function vtSyncBeautyClass() {
+const on = !!(VT.mode && beautyOn() && VT.facing === 'user');
+if (document.body.classList.contains('vt-beauty') !== on) document.body.classList.toggle('vt-beauty', on);
+const lv = Math.max(0, Math.min(5, beautyWhite()));
+for (let i = 0; i <= 5; i++) {
+const cls = 'vt-beauty-lv' + i;
+const want = on && i === lv;
+if (document.body.classList.contains(cls) !== want) document.body.classList.toggle(cls, want);
+}
+vtUpdateBeautyTag();
+}
+function vtUpdateBeautyTag() {
+const tag = document.getElementById('vt-beauty-tag');
+if (!tag) return;
+const show = !!(VT.mode && !VT.camOff && beautyOn() && VT.facing === 'user');
+if (!show) { tag.hidden = true; return; }
+const lv = Math.max(0, Math.min(5, beautyWhite()));
+const nativeActive = !!(VT.nativeReady && VT.native);
+tag.textContent = (nativeActive ? '原生美颜' : '柔光美颜') + ' · 强度 ' + lv;
+tag.hidden = false;
+}
 function vtCamHint() {
 let h = '';
 try { if (!window.isSecureContext) h += '这个页面不是用 HTTPS 打开的，系统不允许网页取摄像头；'; } catch (e) {}
@@ -1023,9 +1095,10 @@ let vtPermAsked = false;
 function vtAskAppCamPerm(then) {
 let done = false;
 const go = function () { if (done) return; done = true; then(); };
-try {
-if (vtPermAsked || !(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
+if (vtPermAsked) return go();
 vtPermAsked = true;
+try {
+if (!(window.plus && window.plus.android && window.plus.android.requestPermissions)) return go();
 plus.android.requestPermissions(['android.permission.CAMERA'], go, go);
 setTimeout(go, 1500);
 } catch (e) { go(); }
@@ -1050,6 +1123,7 @@ try { last = parseInt(vtStoreFor(cid).get(VT_LAST_KEY), 10); } catch (e) { last 
 let idx = Math.floor(Math.random() * pool.length);
 if (pool.length > 1 && idx === last) idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
 try { vtStoreFor(cid).set(VT_LAST_KEY, String(idx)); } catch (e) {}
+VT.taIdx = idx;
 return pool[idx] || '';
 }
 function vtRollTaCam(cid) {
@@ -1063,11 +1137,13 @@ function vtPaintTa() {
 const img = document.getElementById('vt-ta-img');
 const avBox = document.getElementById('vt-ta-av');
 const ring = document.getElementById('vt-ta-av-ring');
+const blur = document.getElementById('vt-ta-av-blur');
 if (!img || !avBox) return;
 if (VT.taCam && VT.taBg) {
 img.src = VT.taBg;
 img.hidden = false;
 avBox.hidden = true;
+if (blur) blur.style.backgroundImage = '';
 } else {
 img.hidden = true;
 img.removeAttribute('src');
@@ -1075,6 +1151,11 @@ avBox.hidden = false;
 let av = '';
 try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
 fillAv(ring, av);
+if (blur) {
+try {
+blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : '';
+} catch (e) { blur.style.backgroundImage = ''; }
+}
 }
 if (statusEl) statusEl.textContent = VT.taCam ? '视频通话中' : '对方未开启摄像头';
 }
@@ -1082,21 +1163,44 @@ function partnerAvOf(cid) {
 const s = vtStoreFor(cid);
 return s.get('cs-avatar-partner') || s.get('avatar-partner') || '';
 }
-function vtSelfState(state, txt) {
+function myAvOf(cid) {
+const s = vtStoreFor(cid);
+let av = s.get('cs-avatar-user') || s.get('avatar-user') || '';
+if (!av) {
+try {
+const a = window.activeStore && window.activeStore();
+if (a) av = a.get('cs-avatar-user') || a.get('avatar-user') || '';
+} catch (e) {}
+}
+return av;
+}
+function paintSelfOff() {
+const avBox = document.getElementById('vt-self-off-av');
+const blur = document.getElementById('vt-self-off-blur');
+let av = '';
+try { av = myAvOf(vtCid()); } catch (e) { av = ''; }
+if (avBox) fillAv(avBox, av);
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
+}
+}
+function vtSelfState(state, txt, native) {
 const v = document.getElementById('vt-self');
 const off = document.getElementById('vt-self-off');
 const t = document.getElementById('vt-self-off-txt');
 if (state === 'on') {
-if (v) v.hidden = false;
+if (v) { v.hidden = !!native; v.style.visibility = native ? 'hidden' : ''; }
 if (off) off.hidden = true;
 return;
 }
+paintSelfOff();
 if (v && off) {
 off.style.left = v.style.left || '';
 off.style.top = v.style.top || '';
 off.style.right = v.style.left ? 'auto' : '';
 }
-if (v) v.hidden = true;
+if (v) { v.hidden = true; v.style.visibility = ''; }
 if (off) off.hidden = false;
 if (t && txt) t.textContent = txt;
 }
@@ -1107,8 +1211,147 @@ const t = document.getElementById('call-cam-txt');
 if (t) t.textContent = VT.camOff ? '打开' : '关闭';
 const slash = document.getElementById('call-cam-slash');
 if (slash) slash.style.display = VT.camOff ? '' : 'none';
+vtUpdateBeautyTag();
+}
+function vtNativeRelease(p) {
+if (!p) return;
+try {
+if (window.plus && plus.webview && plus.webview.currentWebview) plus.webview.currentWebview().remove(p);
+} catch (e) {}
+try { p.close(); } catch (e) {}
+}
+function vtNativeClose() {
+const p = VT.native;
+VT.native = null;
+VT.nativeReady = false;
+VT.nativeStarting = false;
+VT.nativeRect = '';
+vtNativeRelease(p);
+try {
+if (window.plus && plus.video && plus.video.getLivePusherById) {
+const old = plus.video.getLivePusherById('vt-native-cam');
+if (old && old !== p) vtNativeRelease(old);
+}
+} catch (e) {}
+const v = document.getElementById('vt-self');
+if (v) { try { v.style.visibility = ''; } catch (e) {} }
+}
+function vtNativeRectSync(force) {
+if (!VT.native) return;
+const a = document.getElementById('vt-native-cam');
+if (!a) return;
+const r = a.getBoundingClientRect();
+if (!r.width || !r.height) return;
+const sig = [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(',');
+if (!force && sig === VT.nativeRect) return;
+VT.nativeRect = sig;
+try {
+VT.native.setStyles({
+top: Math.round(r.top) + 'px',
+left: Math.round(r.left) + 'px',
+width: Math.round(r.width) + 'px',
+height: Math.round(r.height) + 'px'
+});
+} catch (e) {}
+}
+function vtNativeFail(why) {
+VT.nativeStarting = false;
+VT.nativeFailed = true;
+vtNativeClose();
+try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+const nb = document.getElementById('call-beauty-native');
+if (nb) nb.checked = false;
+toast('原生美颜没有启动' + (why ? '（' + why + '）' : '') + '，已退回普通摄像头；请确认 HBuilderX 打包时勾选了 LivePusher 模块，再重新打开「App 原生美颜」');
+vtStartCam(true);
+}
+function vtStartNativeCam() {
+if (!beautyUseNative() || VT.minimized) { vtStartCam(true); return; }
+const anchor = document.getElementById('vt-native-cam');
+if (!anchor) { vtNativeFail('缺少定位锚点'); return; }
+const v = document.getElementById('vt-self');
+if (v) { anchor.style.left = v.style.left; anchor.style.top = v.style.top; anchor.style.right = v.style.right; }
+const ar = anchor.getBoundingClientRect();
+if (!ar.width || !ar.height) { vtNativeFail('预览窗口还没就位'); return; }
+vtNativeClose();
+VT.nativeStarting = true;
+vtSelfState('opening', '正在打开…');
+let settled = false;
+let previewTimer = 0;
+const gen = VT.gen;
+const fail = function (why) {
+if (settled) return;
+settled = true;
+clearTimeout(timer);
+clearTimeout(previewTimer);
+vtNativeFail(why);
+};
+const timer = setTimeout(function () { fail('没有响应'); }, 4000);
+const lv = Math.max(0, Math.min(5, beautyWhite()));
+try {
+const styles = {
+url: 'rtmp://127.0.0.1:1935/mochi/preview',
+mode: 'SD',
+muted: true,
+'enable-camera': true,
+'auto-focus': true,
+beauty: lv > 0 ? 1 : 0,
+whiteness: lv,
+aspect: '3:4',
+position: 'absolute',
+top: Math.round(ar.top) + 'px',
+left: Math.round(ar.left) + 'px',
+width: Math.max(1, Math.round(ar.width)) + 'px',
+height: Math.max(1, Math.round(ar.height)) + 'px'
+};
+let p = null;
+if (plus.video.createLivePusher) p = plus.video.createLivePusher('vt-native-cam', styles);
+else p = new plus.video.LivePusher('vt-native-cam', styles);
+if (!p) { fail('组件不可用'); return; }
+VT.native = p;
+try { plus.webview.currentWebview().append(p); } catch (e) {}
+try {
+p.setStyles({
+top: Math.round(ar.top) + 'px',
+left: Math.round(ar.left) + 'px',
+width: Math.max(1, Math.round(ar.width)) + 'px',
+height: Math.max(1, Math.round(ar.height)) + 'px'
+});
+} catch (e) {}
+p.addEventListener('statechange', function (e) {
+const code = e && e.detail && e.detail.code;
+if (code === 1003) { // 打开摄像头成功
+if (settled) return;
+settled = true;
+clearTimeout(timer);
+VT.nativeStarting = false;
+if (gen !== VT.gen || !VT.mode || VT.camOff) { vtNativeClose(); return; }
+VT.nativeReady = true;
+vtNativeRectSync(true);
+const v2 = document.getElementById('vt-self');
+if (v2) { v2.hidden = true; v2.style.visibility = 'hidden'; }
+vtSelfState('on', '', true);
+vtSyncCamBtn();
+vtSyncBeautyClass();
+if (!VT.nativeToastDone) {
+VT.nativeToastDone = true;
+toast('原生美颜已生效（强度 ' + lv + '）');
+}
+if (VT.minimized) vtNativeClose(); // 缩到小框时不留原生层悬浮
+} else if (code === -1301 || code === -1302) { // 打开摄像头/麦克风失败
+fail('摄像头打不开');
+}
+});
+p.addEventListener('error', function () { fail('权限或设备问题'); });
+previewTimer = setTimeout(function () {
+if (settled || VT.native !== p) return;
+try { p.preview(); } catch (e) { fail('组件不可用'); }
+}, 500);
+} catch (e) {
+fail('组件不可用');
+}
 }
 function vtStopCam() {
+vtNativeClose();
 VT.gen++;
 if (VT.watchdog) { clearTimeout(VT.watchdog); VT.watchdog = null; }
 VT.starting = false;
@@ -1126,9 +1369,10 @@ VT.camOff = true;
 vtSelfState('fail', msg);
 vtSyncCamBtn();
 }
-function vtStartCam() {
+function vtStartCam(webOnly) {
 if (!VT.mode || VT.camOff) return;
-if (VT.stream || VT.starting) return;
+if (VT.stream || VT.starting || VT.native || VT.nativeStarting) return;
+if (!webOnly && !VT.minimized && beautyUseNative()) { vtStartNativeCam(); return; }
 if (!vtSupported()) { vtCamFail('这个浏览器不支持摄像头'); vtCamToast('这个浏览器不支持摄像头'); return; }
 if (!vtPermAsked && window.plus) { vtAskAppCamPerm(function () { vtStartCam(); }); return; }
 const v = document.getElementById('vt-self');
@@ -1143,7 +1387,7 @@ settled = true;
 VT.gen++;
 VT.starting = false;
 VT.watchdog = null;
-vtCamFail('摄像头没有响应，点这里重试');
+vtCamFail('摄像头没有响应，点下方「打开」重试');
 vtCamToast('摄像头没有响应');
 }, 9000);
 const constraints = {
@@ -1180,7 +1424,7 @@ let msg = '摄像头打不开';
 if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') msg = '没有摄像头权限';
 else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') msg = '这台设备没有摄像头';
 else if (name === 'NotReadableError' || name === 'TrackStartError') msg = '摄像头被其他应用占用';
-vtCamFail(msg + '，点这里重试');
+vtCamFail(msg + '，点下方「打开」重试');
 if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') toast(msg + '（可在手机设置里给浏览器 / App 开摄像头权限）');
 else vtCamToast(msg);
 });
@@ -1199,11 +1443,12 @@ vtSyncCamBtn();
 }
 }
 function vtFlip() {
-if (!VT.mode || VT.camOff || VT.starting) return;
+if (!VT.mode || VT.camOff || VT.starting || VT.nativeStarting) return;
 VT.facing = VT.facing === 'user' ? 'environment' : 'user';
 vtStopCam();
 const v = document.getElementById('vt-self');
 if (v) v.classList.toggle('rear', VT.facing === 'environment');
+vtSyncBeautyClass();
 vtStartCam();
 }
 function vtSetPanel(on) {
@@ -1214,7 +1459,9 @@ const vTxt = document.getElementById('call-vt-txt');
 if (panel) panel.classList.toggle('vt', !!on);
 if (stage) stage.hidden = !on;
 if (title) title.textContent = on ? '视频通话' : '语音通话';
-if (vTxt) vTxt.textContent = '视频';
+if (vTxt) vTxt.textContent = on ? '语音' : '视频';
+const vb = document.getElementById('call-vt-btn');
+if (vb) vb.classList.toggle('to-voice', !!on);
 const rowVal = document.getElementById('call-vt-row-val');
 if (rowVal) rowVal.textContent = on ? '切回语音' : ((currentCall && currentCall.status === 'connected') ? '开启摄像头' : '接通后可用');
 }
@@ -1241,6 +1488,16 @@ VT.swapPos = null;
 const t = document.getElementById('call-swap-txt');
 if (t) t.textContent = next ? '看对方' : '看自己';
 if (VT.minimized) vtPaintMini();
+vtNativeRectSync(true);
+}
+function paintMiniSelfOff() {
+const blur = document.getElementById('call-mini-selfoff-blur');
+let av = '';
+try { av = myAvOf(vtCid()); } catch (e) { av = ''; }
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
+}
 }
 function vtPaintMini() {
 if (!mini) return;
@@ -1250,6 +1507,7 @@ mini.classList.toggle('swap', on && !!VT.swap);
 if (!on) { vtClearMini(); return; }
 const frame = document.getElementById('call-mini-frame');
 const avBox = document.getElementById('call-mini-av');
+const blur = document.getElementById('call-mini-blur');
 const hasFrame = !!(VT.taCam && VT.taBg);
 if (frame) {
 if (hasFrame) { frame.src = VT.taBg; frame.hidden = false; }
@@ -1261,7 +1519,18 @@ if (!hasFrame) {
 let av = '';
 try { av = partnerAvOf(vtCid()); } catch (e) { av = ''; }
 fillAv(avBox, av);
+if (blur) {
+try { blur.style.backgroundImage = av ? 'url("' + String(av).replace(/"/g, '%22') + '")' : ''; }
+catch (e) { blur.style.backgroundImage = ''; }
 }
+}
+}
+if (blur && hasFrame) blur.style.backgroundImage = '';
+const selfOff = document.getElementById('call-mini-selfoff');
+if (selfOff) {
+const offSelf = !(VT.stream || VT.nativeReady);
+selfOff.hidden = !offSelf;
+if (offSelf) paintMiniSelfOff();
 }
 const ms = document.getElementById('call-mini-self');
 if (ms) {
@@ -1287,11 +1556,16 @@ ms.hidden = true;
 }
 const avBox = document.getElementById('call-mini-av');
 if (avBox) avBox.hidden = false;
+const blur = document.getElementById('call-mini-blur');
+if (blur) blur.style.backgroundImage = '';
+const selfOff = document.getElementById('call-mini-selfoff');
+if (selfOff) selfOff.hidden = true;
 if (mini) mini.classList.remove('vt', 'swap');
 }
 function vtMinimize() {
 if (!currentCall) return;
 if (!mini || !callMiniEnabled()) { toast('通话小框已关闭，视频通话不能缩小'); return; }
+vtNativeClose();
 if (mask) mask.hidden = true;
 if (cdEl) cdEl.hidden = true;
 VT.minimized = true;
@@ -1310,17 +1584,19 @@ try { const cp = document.getElementById('chat-call-panel'); if (cp) cp.hidden =
 setMaskBtns('active');
 vtSetPanel(true);
 vtPaintMini(); // minimized=false → 顺手清掉小窗里的视频元素/缩略图
-vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建（摄像头本来就是关的不受影响）
+if (!VT.camOff) vtStartCam(); // 切后台/锁屏被系统掐断的流在这里重建；手动关着的绝不重开
 return true;
 }
 function vtEnter() {
 if (!currentCall || currentCall.status !== 'connected') { toast('电话接通后才能开视频'); return; }
-if (!vtSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
+if (!vtSupported() && !beautyNativeSupported()) { toast('这个浏览器不支持摄像头，换 Chrome / Edge / Safari 再试'); return; }
 if (VT.mode) return;
 if (!VT.rolled || VT.entered) vtRollTaCam(currentCall.cid);
 VT.entered = true;
 VT.mode = true;
 VT.camOff = false;
+VT.nativeFailed = false; // #1651：每通电话重新给原生美颜一次机会
+VT.nativeToastDone = false;
 VT.facing = 'environment';
 VT.minimized = false;
 vtSwap(false);
@@ -1328,6 +1604,7 @@ vtClearMini();
 vtSetPanel(true);
 vtSelfState('opening', '正在打开…');
 vtSyncCamBtn();
+vtSyncBeautyClass();
 vtPaintTa();
 if (mask) mask.hidden = false;
 if (mini) mini.hidden = true;
@@ -1344,6 +1621,7 @@ VT.mode = false;
 VT.minimized = false;
 vtClearMini();
 vtStopCam();
+vtSyncBeautyClass();
 vtSetPanel(false);
 if (statusEl) statusEl.textContent = '正在通话...';
 setMaskBtns('active');
@@ -1356,6 +1634,61 @@ if (mask) mask.hidden = false;
 syncCallAv();
 syncCallName();
 }
+}
+function vtApplyTaPicFromPool() {
+const pool = vtReadPool(vtCid());
+if (!pool.length) return false;
+let idx = Number(VT.taIdx);
+if (!isFinite(idx) || idx < 0 || idx >= pool.length) {
+try { idx = parseInt(vtStoreFor(vtCid()).get(VT_LAST_KEY), 10); } catch (e) { idx = -1; }
+}
+if (!isFinite(idx) || idx < 0 || idx >= pool.length) idx = 0;
+VT.taIdx = idx;
+VT.taBg = pool[idx];
+return true;
+}
+function vtRestoreFromSnapshot(info) {
+if (!currentCall) return;
+vtStopCam();
+VT.mode = true;
+const wantCam = !!(info && info.vtCam);
+VT.camOff = !wantCam;
+if (info && info.vtFace === 'u') VT.facing = 'user';
+VT.minimized = false;
+VT.startAsVideo = false;
+VT.swap = false;
+VT.nativeFailed = false; // #1651：恢复出来的视频界面，用户点「打开」时重新尝试原生美颜
+VT.taCam = false;
+VT.taBg = '';
+VT.taIdx = -1;
+if (info && info.taCam) {
+VT.taCam = true;
+VT.rolled = true;
+VT.taIdx = isFinite(Number(info.taIdx)) ? Number(info.taIdx) : -1;
+if (!vtApplyTaPicFromPool()) {
+try {
+const s = vtStoreFor(vtCid());
+if (s.requestBigKey) s.requestBigKey(VT_POOL_KEY);
+if (s.whenBigKeyBack) s.whenBigKeyBack(VT_POOL_KEY, function () {
+if (!VT.mode || !VT.taCam || VT.taBg) return;
+if (vtApplyTaPicFromPool()) { vtPaintTa(); saveCallActive(); }
+});
+} catch (e) {}
+}
+}
+vtClearMini();
+vtSetPanel(true);
+vtSelfState(wantCam ? 'opening' : 'off', wantCam ? '正在打开…' : '摄像头已关');
+vtSyncCamBtn();
+vtSyncBeautyClass();
+vtPaintTa();
+if (nameEl) nameEl.textContent = currentCall.name || partnerName();
+if (mask) mask.hidden = false;
+if (mini) mini.hidden = true;
+if (cdEl) cdEl.hidden = true;
+setMaskBtns('active');
+syncCallName();
+if (wantCam) vtStartCam();
 }
 function vtTeardown() {
 vtSwap(false);
@@ -1371,9 +1704,14 @@ shownAv = null;
 VT.taCam = false;
 VT.taBg = '';
 vtStopCam();
+VT.nativeFailed = false;
+VT.nativeToastDone = false;
+vtSyncBeautyClass();
 vtSetPanel(false);
 const selfV = document.getElementById('vt-self');
 if (selfV) { selfV.style.left = ''; selfV.style.top = ''; selfV.style.right = ''; selfV.classList.remove('rear'); }
+const natV = document.getElementById('vt-native-cam');
+if (natV) { natV.style.left = ''; natV.style.top = ''; natV.style.right = ''; }
 vtSelfState('off', '摄像头已关');
 const img = document.getElementById('vt-ta-img');
 if (img) { img.hidden = true; img.removeAttribute('src'); }
@@ -1417,7 +1755,7 @@ const cell = document.createElement('div');
 cell.className = 'avlib-cell';
 const img = document.createElement('img');
 img.src = src;
-img.alt = '他 的画面';
+img.alt = '他的画面';
 const del = document.createElement('button');
 del.className = 'avlib-del';
 del.type = 'button';
@@ -1561,13 +1899,7 @@ const taAv = document.getElementById('vt-ta-av');
 const tapTaBack = function () { if (VT.swap) vtSwap(false); };
 if (taImg) taImg.addEventListener('click', tapTaBack);
 if (taAv) taAv.addEventListener('click', tapTaBack);
-const offMoved = bind(off, false);
-if (off) {
-off.addEventListener('click', function (ev) {
-if (offMoved && offMoved()) { try { ev.preventDefault(); ev.stopImmediatePropagation(); } catch (e) {} return; }
-if (VT.camOff) vtToggleCam(); else vtStartCam();
-});
-}
+bind(off, false); // 只用于拖动定位，不再兼任「点一下开摄像头」
 })();
 const vtRow = document.getElementById('call-vt-row');
 if (vtRow) vtRow.addEventListener('click', function () { if (VT.mode) vtExit(); else vtEnter(); });
@@ -1581,6 +1913,69 @@ if (VT.mode) vtPaintTa();
 const vtSettingsRow = document.getElementById('row-call-settings');
 if (vtSettingsRow) vtSettingsRow.addEventListener('click', function () { setTimeout(vtRenderPool, 0); });
 vtRenderPool();
+(function initCallBeauty() {
+const cb = document.getElementById('call-beauty');
+const cbN = document.getElementById('call-beauty-native');
+const val = document.getElementById('call-beauty-whiteness-val');
+const step = val ? val.closest('.stepper') : null;
+function paint() {
+if (cb) cb.checked = beautyOn();
+if (!beautyNativeSupported() && beautyNativeOn()) {
+try { const s = beautyStore(); if (s) s.set(BEAUTY_NATIVE_KEY, '0'); } catch (e) {}
+}
+if (cbN) cbN.checked = beautyNativeOn() && beautyNativeSupported();
+if (val) val.value = String(beautyWhite());
+}
+paint();
+function restartForBeauty() {
+if (!VT.mode || VT.camOff) return;
+VT.nativeFailed = false;
+vtStopCam();
+vtStartCam();
+}
+if (cb) cb.addEventListener('change', function () {
+const s = beautyStore();
+try { if (s) s.set(BEAUTY_KEY, cb.checked ? '1' : '0'); } catch (e) {}
+paint();
+vtSyncBeautyClass();
+if (VT.facing === 'user') restartForBeauty();
+toast(cb.checked ? '已开启前置美颜' : '已关闭前置美颜');
+});
+if (cbN) cbN.addEventListener('change', function () {
+if (cbN.checked && !beautyNativeSupported()) {
+cbN.checked = false;
+toast('当前 App 包没有 LivePusher 模块：请先在 HBuilderX 的 App 模块配置里勾选 LivePusher（直播推流），重新云打包后再打开');
+return;
+}
+const s = beautyStore();
+try { if (s) s.set(BEAUTY_NATIVE_KEY, cbN.checked ? '1' : '0'); } catch (e) {}
+paint();
+if (VT.facing === 'user') restartForBeauty();
+toast(cbN.checked ? '已开启 App 原生美颜' : '已关闭 App 原生美颜（网页柔光仍按「前置美颜」开关生效）');
+});
+function stepWhite(delta) {
+const n = Math.max(0, Math.min(5, beautyWhite() + delta));
+const s = beautyStore();
+try { if (s) s.set(BEAUTY_WHITE_KEY, String(n)); } catch (e) {}
+paint();
+if (VT.native) { try { VT.native.setStyles({ whiteness: n, beauty: n > 0 ? 1 : 0 }); } catch (e) {} }
+vtSyncBeautyClass();
+toast('美颜强度：' + n + (n ? '' : '（等于关闭）'));
+}
+if (step) {
+const minus = step.querySelector('.stp-min');
+const plus = step.querySelector('.stp-max');
+if (minus) minus.addEventListener('click', function () { stepWhite(-1); });
+if (plus) plus.addEventListener('click', function () { stepWhite(1); });
+}
+document.addEventListener('mochi-restore-done', paint);
+})();
+(function vtNativeBootClean() {
+const clean = function () { try { vtNativeClose(); } catch (e) {} };
+if (window.plus) clean();
+else document.addEventListener('plusready', clean);
+setTimeout(clean, 1200);
+})();
 document.addEventListener('visibilitychange', function () {
 if (document.visibilityState === 'hidden') {
 if (VT.mode) { vtStopCam(); if (!VT.camOff) vtSelfState('off', '已暂停'); }

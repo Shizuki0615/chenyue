@@ -29,6 +29,10 @@
     // 同 bg-* 道理是全局根键，绝不随联系人隔离，防 migrateLegacy 搬进 default 并删根键
     // （挂起键丢了=用户回来接不到重响的来电）。
     'incoming-requests', 'desk-checkin-en', 'desk-call-en', 'desk-freq-mode', 'call-hold',
+    // #1620：新版桌面网格测试开关是全局根键（跟随设备/全桌面，不随联系人隔离）；
+    // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键 → 开关自己关掉、
+    // 新版数据生成链在非 default 桌面失效。
+    'desk-grid-v2-enabled',
     // v3.27.x：night-mode-en（夜间免打扰模式总开关）同为全局根键，全桌面通、不随联系人隔离。
     // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键 → 开关自己关掉、夜间静默失效。
     'night-mode-en',
@@ -67,6 +71,11 @@
     'cc-groups-public', 'cc-groups-public-off', 'cc-scope-migrated', 'cc-media-names-public',
     // v3.11.x：字卡库公用/专属变动一次性提醒的已读标记（chatcard.js 弹窗），同为全局根键
     'cc-scope-notice-done',
+    // #1649：系统预设字卡的全局覆盖表（default-cards.js / preset-edit.js）——文案编辑与
+    // 移除/移动/分组改名/分组排序都是所有联系人桌面共用一份，存根命名空间 xy-home-v2:<键>。
+    // 漏排除会被 migrateLegacy 每次刷新搬进 default 并删根键：非 default 桌面看不到改动，
+    // 表现为「在这个桌面改的系统字卡，切到另一个桌面完全没变」。
+    'default-card-edits', 'default-card-overrides',
     // v3.12.x：我的表情包改全局共享（chat.js）——键 xy-home-v2:my-emoji-groups 走根命名
     // 空间，所有联系人桌面共用一份；mye-global-migrated 为存量桌面数据合并迁移的幂等标记。
     // 都是全局根键，绝不能被 migrateLegacy 当旧顶层业务键迁进 default 桌面
@@ -228,6 +237,18 @@
     // EXCLUDE ⇒ migrateLegacy 每次数据就绪把它当旧顶层业务键迁进 default 并删根键＝#315c 的
     // 「确认一次永久记住」自上线起就被每次启动吃掉（用户每次开屏都要重新勾选）。#1475 起该键
     // 存「时间戳＋声明版本」JSON（改版自动重确认），是同意举证链的本体，必须留在根命名空间。
+    // #1650：聊天顶栏「他那边的时间 · 状态 · 情绪」的三个全局偏好——
+    //   顶栏布局（经典/仿微信）、是否显示状态行、状态是否按作息加权。
+    //   都是全桌面共用的外观/词库偏好，走根命名空间；漏排除会被 migrateLegacy
+    //   当旧顶层业务键迁进 default 并删根键（非 default 桌面切了布局又自己变回去）。
+    'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
+    // #1651：前置美颜（开关 + 美白档位）是「我的脸」的设备偏好，全局根键、不随联系人隔离；
+    //   漏排除会被 migrateLegacy 迁进 default 并删根键（非 default 桌面美颜自己变回默认）。
+    'call-beauty', 'call-beauty-whiteness',
+    'call-beauty-native',
+    // #1653：常用问卷模板（批量问卷页）——所有联系人桌面共用同一套模板，
+    //   漏排除会被 migrateLegacy 迁进 default 并删根键（切到别的桌面模板就看不见了）。
+    'ta-survey-templates',
     'age-confirmed'];
   function isExcluded(k) {
     const r = k.slice(G.length + 1);
@@ -252,6 +273,9 @@
     if (r.indexOf('narc-') === 0) return true;
     // 我的档案：myarc 根键（全局唯一 JSON，my-arc.js）同理不可迁移
     if (r.indexOf('myarc') === 0) return true;
+    // v8.57.6：问卡 A 版卡片 CSS 与卡片配色是全局根键（所有联系人共用一份，只作用单聊），
+    // 绝不能当旧顶层业务键迁进 default 桌面，否则切换联系人后卡片样式/配色读不到。
+    if (r.indexOf('cs-card-global-') === 0) return true;
     // FIX 2026-09-25 #1293：屏幕适配微调七轴（mobile-adapt.js #707/#764/#794）出生即根命名空间
     // ——屏幕是设备属性、跨桌面共用，读取方 loadAdj 只认 xy-home-v2:screen-adj-<axis>。此前整族
     // 既不在 EXCLUDE 也没有前缀守卫 → migrateLegacy 每次启动把根键当旧顶层业务键迁进 default 桌面
@@ -742,6 +766,15 @@
         try { def.remove(k); } catch (e) {}
       }
     });
+    // #1649：系统预设字卡覆盖表的存量回收——早期版本漏排除，已被迁进 default 桌面的副本
+    // 写回根键（根键已有值只删副本，同 pomo-* 口径），保证所有桌面立刻看到同一份改动。
+    ['default-card-edits', 'default-card-overrides'].forEach(function (k) {
+      const v = def.get(k);
+      if (v !== null && v !== undefined && v !== '') {
+        try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}
+        try { def.remove(k); } catch (e) {}
+      }
+    });
     try {
       const stale = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -1080,7 +1113,7 @@
       pills: [
         { label: '他（男生）', value: 'he' },
         { label: '她（女生）', value: 'she' },
-        { label: '不设置（默认 他）', value: '' }
+        { label: '不设置（默认他）', value: '' }
       ]
     });
   }
@@ -1210,7 +1243,7 @@
     removeCjianHint();
     const page = document.getElementById('page-cjian');
     if (!page) return;
-    const hint = el('div', '', '点每位梦角的【去找他】直接进入 他 的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看 他 此刻在哪、在做什么。');
+    const hint = el('div', '', '点每位梦角的【去找他】直接进入他的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看他此刻在哪、在做什么。');
     hint.id = 'entry-cjian-hint';
     hint.style.cssText = 'margin:8px 12px 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.6;color:var(--muted,#666);background:rgba(127,106,216,.08);border:1px solid rgba(127,106,216,.2)';
     const head = page.querySelector('.chat-head');

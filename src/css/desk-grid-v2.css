@@ -1,0 +1,543 @@
+/* ===== 2026-11-03 #1621 桌面网格 v2 · 第二期（长按编辑 / 全网格占位） =====
+   仅在「新版桌面编辑」测试开关开启时由 personalize.js 给 <html> 挂 .desk-grid-v2；
+   开关关闭时本文件全部规则不命中，旧桌面零影响。 */
+
+html.desk-grid-v2 #page-phone {
+  --dgr-cols: 4;
+  /* #1625：第四期改成固定行高。卡片尺寸档（1~3 行）需要可预测的行几何：
+     92px 正好容下小卡（标题+3 行正文）与图标（58 图标+8 间距+14 文字），
+     高卡默认跨 2 行（92×2+14=198），纪念日/音乐 190px 完整放入。 */
+  --dgr-row: 92px;
+  --dgr-colgap: 8px;
+  --dgr-rowgap: 14px;
+  --dgr-pad-x: 8px;
+  --dgr-pad-y: 14px;
+}
+
+/* 页面：4 列固定行高网格。图标 1×1，卡片按占位跨行；旧的流式/两栏规则全部让位 */
+html.desk-grid-v2 .page-slide.dgr-page {
+  display: grid !important;
+  flex-direction: unset !important;
+  grid-template-columns: repeat(var(--dgr-cols, 4), minmax(0, 1fr)) !important;
+  /* #1625：固定行高（原 #1624 的 auto 会让卡片跨行高度不可预测，拖拽改大小无处吸附）。
+     高卡默认 h=2（198px），任何卡片都不会再被压到一行后溢出；内容超出时卡内裁切，
+     不会再出现 #1624 那种卡片压卡片/压图标。 */
+  grid-auto-rows: var(--dgr-row, 92px);
+  gap: var(--dgr-rowgap, 14px) var(--dgr-colgap, 8px);
+  align-content: start;
+  justify-items: stretch;
+  padding: var(--dgr-pad-y, 14px) var(--dgr-pad-x, 8px) 18px;
+  position: relative;
+  overflow-y: auto;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app-grid,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-hint,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-page-add {
+  display: none !important;
+}
+/* 所有桌面项统一由网格定位：清掉旧流式外边距/宽度，避免同一格内又缩又偏 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key] {
+  margin: 0 !important;
+  min-width: 0;
+  align-self: stretch;
+  position: relative;
+}
+/* #1625 卡片尺寸档：非图标项填满所占网格区域（h=1 → 92px，h=2 → 198px）。
+   旧样式里的 height:190/160/92/66 等固定高度全部让位，尺寸改由 h 决定。 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-key]:not(.app) {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  align-self: stretch !important;
+  overflow: hidden;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .app {
+  width: 100%;
+  height: 100%;
+  justify-self: stretch;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-image-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+  width: 100% !important;
+  align-self: stretch !important;
+}
+/* #1625：尺寸档变高后内容垂直居中，避免卡片底部留一大块空白 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-clock,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+/* #1626 统一倒数日卡：拉高到 2/3 行时显示「接下来」列表 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-list,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-main,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-main {
+  margin-bottom: 6px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="2"] .da-days,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="3"] .da-days {
+  font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-name {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-days {
+  font-size: 22px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-w="2"] .da-list-row {
+  font-size: 9.5px;
+}
+/* #1628 拍立得相框：网格内默认 2×2，照片弹性填满，底部小字固定 27px；
+   卡片本身允许胶带探出，所以覆盖通用非图标项的 overflow:hidden。 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100% !important;
+  overflow: visible;
+}
+/* #1643 翻面：网格内让翻面层吃满相框高度，正面照片继续弹性填满 */
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-flip {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back {
+  padding: 5px 7px 4px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-note {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-back-date {
+  font-size: 8.5px;
+  padding-top: 2px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-img {
+  flex: 1 1 auto;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0;
+  object-fit: cover;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-key] .dpf-cap {
+  display: block;
+  flex: 0 0 27px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] {
+  padding: 6px 6px 0;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"] .dpf-cap {
+  display: none;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-h="1"]::before {
+  top: -5px;
+  width: 42px;
+  height: 12px;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .desk-photo-frame[data-dgr-w="2"] .dpf-cap {
+  font-size: 10px;
+}
+/* #1626 编辑态撤销按钮的禁用态 */
+#dgr-editbar button:disabled { opacity: .35; cursor: default; }
+/* 小卡行（今日情话/备忘心情）跨 2 行时改成上下叠放：两张迷你卡各占一行，
+   正好填满 198px，不再把两张卡拉成又高又空的竖条 */
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] {
+  flex-direction: column;
+  gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="2"] .mini-card {
+  height: calc(50% - 7px) !important;
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] {
+  flex-direction: column;
+  gap: var(--dgr-rowgap, 14px);
+}
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-h="3"] .mini-card {
+  height: 92px !important;
+}
+/* 周末卡的连击角标要探出卡片上沿，保留原 overflow:clip 语义 */
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-key] {
+  overflow: clip;
+  overflow-clip-margin: 16px;
+}
+/* 编辑态底部要留出页缩略图条 + 编辑条的高度：页面内容可滚到它们上方，
+   否则最后一行图标会被页缩略图条盖住、手指落在缩略图上（误触成拖动换页）。 */
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page {
+  padding-bottom: 210px;
+}
+
+/* 编辑态：轻微抖动。拖动中的项停止抖动并提到最上层 */
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key] {
+  animation: dgr-jiggle .26s infinite alternate ease-in-out;
+  transform-origin: 50% 50%;
+  touch-action: none;
+}
+html.desk-grid-v2.dgr-editing .page-slide.dgr-page > [data-dgr-key].dgr-drag-source {
+  animation: none !important;
+  opacity: .42;
+}
+@keyframes dgr-jiggle {
+  from { transform: rotate(-.35deg); }
+  to { transform: rotate(.35deg); }
+}
+/* #1625 改大小期间停掉抖动，避免指针坐标被旋转矩阵带偏 */
+html.desk-grid-v2.dgr-resizing .page-slide.dgr-page > [data-dgr-key] {
+  animation: none !important;
+}
+
+/* 拖动替身：克隆体挂在 body，跟手指走；本体留在原位半透明 */
+.dgr-drag-ghost {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  margin: 0 !important;
+  opacity: .96;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.22));
+}
+
+/* 落点占位框：挂在手机壳浮层（不能直接做 grid 子项，否则绝对定位会按网格静态位置摆偏） */
+#dgr-placeholder-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.dgr-placeholder {
+  position: absolute;
+  z-index: 3;
+  border: 1.5px dashed var(--ink, #111111);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--btn-bg, #111111) 8%, transparent);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* 左上角「−」：统一挂在 #page-phone 的浮层里，按视口坐标定位，避免 CSS Grid 把
+   绝对定位子项当成网格项摆到别的格子里 */
+#dgr-badge-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+}
+#dgr-badge-layer .dgr-minus {
+  position: absolute;
+  pointer-events: auto;
+}
+.dgr-minus {
+  z-index: 30;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  transform: translate(-45%, -45%);
+}
+
+/* #1625 第四期：右下角改大小把手（图标不显示；卡片/图片/文字/倒计时可拖） */
+#dgr-badge-layer .dgr-resize {
+  position: absolute;
+  pointer-events: auto;
+}
+.dgr-resize {
+  z-index: 31;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 7px;
+  background: var(--btn-bg, #111111);
+  cursor: nwse-resize;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  transform: translate(-45%, -45%);
+  touch-action: none;
+}
+.dgr-resize::before {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+
+/* ===== #1622 第三期：编辑态页缩略图（点击跳页 / 拖动排序 / 加页 / 删页） ===== */
+#dgr-pagebar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 96px;
+  z-index: 97;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 6px 22px rgba(0,0,0,.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-sizing: border-box;
+}
+#dgr-pagebar::-webkit-scrollbar { display: none; }
+html.dgr-editing #dgr-pagebar { display: flex; }
+.dgr-page-thumb {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 62px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0,0,0,.08);
+  background: linear-gradient(160deg, #fff, #f3f3f3);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.dgr-page-thumb.on {
+  border-color: var(--btn-bg, #111111);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--btn-bg, #111111) 16%, transparent);
+}
+.dgr-page-thumb.dgr-page-drop {
+  border-color: var(--btn-bg, #111111);
+  transform: scale(.96);
+}
+.dgr-page-thumb .dgr-thumb-num {
+  position: absolute;
+  left: 4px;
+  bottom: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink, #111111);
+  z-index: 2;
+}
+.dgr-page-thumb .dgr-thumb-mini {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 5px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 6px;
+  gap: 2px;
+  opacity: .75;
+}
+.dgr-page-thumb .dgr-thumb-mini span {
+  border-radius: 2px;
+  background: rgba(0,0,0,.18);
+}
+.dgr-page-thumb .dgr-thumb-mini span.card {
+  background: rgba(0,0,0,.28);
+  grid-column: 1 / -1;
+}
+.dgr-page-thumb .dgr-page-del {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  z-index: 3;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dgr-page-add-thumb {
+  flex: none;
+  width: 46px;
+  height: 62px;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(0,0,0,.22);
+  background: rgba(255,255,255,.45);
+  color: var(--ink, #111111);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+[data-theme="dark"] #dgr-pagebar { background: rgba(30,30,30,.9); }
+[data-theme="dark"] .dgr-page-thumb { background: linear-gradient(160deg,#2a2a2a,#1e1e1e); border-color: rgba(255,255,255,.12); }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-num { color: #f0f0f0; }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-mini span { background: rgba(255,255,255,.2); }
+[data-theme="dark"] .dgr-page-thumb .dgr-thumb-mini span.card { background: rgba(255,255,255,.3); }
+[data-theme="dark"] .dgr-page-add-thumb { color: #f0f0f0; border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.06); }
+
+/* 编辑条：固定在手机壳底部，不随页面滚动 */
+#dgr-editbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 26px;
+  z-index: 98;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.9);
+  color: var(--ink, #111111);
+  box-shadow: 0 8px 26px rgba(0,0,0,.16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-sizing: border-box;
+}
+html.dgr-editing #dgr-editbar { display: flex; }
+#dgr-editbar .dgr-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#dgr-editbar button {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #111111);
+  background: rgba(255,255,255,.7);
+  cursor: pointer;
+}
+#dgr-editbar button#dgr-add-btn {
+  border-color: transparent;
+  background: var(--btn-bg, #111111);
+  color: var(--btn-ink, #ffffff);
+}
+[data-theme="dark"] #dgr-editbar {
+  background: rgba(30,30,30,.9);
+  color: #f0f0f0;
+  box-shadow: 0 8px 26px rgba(0,0,0,.5);
+}
+[data-theme="dark"] #dgr-editbar button {
+  color: #f0f0f0;
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.12);
+}
+[data-theme="dark"] #dgr-editbar button#dgr-add-btn {
+  background: #f0f0f0;
+  color: #111111;
+}
+
+/* ===== #1625 第四期：卡片尺寸档内容适配 =====
+   1 行 = 92px（紧凑档），2 行 = 198px（默认高卡档）。宽度 2/3 列时同步收窄内边距，
+   让图标能真正放在卡片旁边的空格里，而不是被卡片内容撑破。 */
+
+/* 紧凑档（h=1）：高卡隐藏次要信息，保留核心数字/按钮 */
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatars { gap: 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar { gap: 4px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .ring { width: 44px; height: 44px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-h="1"] .deco-love { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-head { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-artist,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-lyric,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-progress,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-times { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-cover { width: 40px; height: 40px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls { margin-top: 3px; padding: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-play { width: 30px; height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] .mw-controls .mw-heart { width: 30px; height: 30px; min-width: 30px; min-height: 30px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-h="1"] #mw-queue { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-inner { padding-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-phase,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-bar-wrap { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-label,
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-sub { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-h="1"] .dpd-days { font-size: 30px; margin: 2px 0; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] { padding: 8px 12px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-head { margin-bottom: 0; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-h="1"] .dcal-grid { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-disp { font-size: 22px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-timer[data-dgr-h="1"] .dt-controls { display: none; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] { padding: 6px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-anniv[data-dgr-h="1"] .da-days { font-size: 20px; margin: 0; }
+
+/* 窄卡档（w=2/3）：收紧内边距与字号，避免内容横向溢出 */
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="2"]:not(.app) { padding-left: 10px !important; padding-right: 10px !important; }
+html.desk-grid-v2 .page-slide.dgr-page > [data-dgr-w="3"]:not(.app) { padding-left: 12px !important; padding-right: 12px !important; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatars { gap: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .ring { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-avatar .lbl { font-size: 10px; padding: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-heart svg { width: 16px; height: 16px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] .deco-love { width: 100%; gap: 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .deco-widget[data-dgr-w="2"] #love-days { font-size: 16px; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] { padding: 8px 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-cover { width: 52px; height: 52px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-main { gap: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-song { font-size: 13px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-lyric { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-mode,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] #mw-queue { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-btn,
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-controls .mw-heart { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+html.desk-grid-v2 .page-slide.dgr-page > .music-widget[data-dgr-w="2"] .mw-play { width: 38px; height: 38px; }
+
+html.desk-grid-v2 .page-slide.dgr-page > .desk-period[data-dgr-w="2"] .dpd-days { font-size: 38px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-sub { display: none; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-ta { gap: 2px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .weekend-box[data-dgr-w="2"] .we-btn { padding: 5px 8px; font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] { padding: 6px 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-days { gap: 3px; }
+html.desk-grid-v2 .page-slide.dgr-page > .week-card[data-dgr-w="2"] .week-day { font-size: 10px; }
+html.desk-grid-v2 .page-slide.dgr-page > .checkin[data-dgr-w="2"] .ck-btn { padding: 7px 10px; min-height: 34px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mini-card { padding: 10px 8px 6px; }
+html.desk-grid-v2 .page-slide.dgr-page > .mini-row[data-dgr-w="2"] .mc-b { font-size: 11px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] { padding: 8px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-cell { font-size: 9px; line-height: 18px; height: 18px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-cal[data-dgr-w="2"] .dcal-grid { gap: 1px; }
+html.desk-grid-v2 .page-slide.dgr-page > .desk-text-widget[data-dgr-w="2"],
+html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] { padding: 10px 8px; }
+

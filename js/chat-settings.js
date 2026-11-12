@@ -2,6 +2,49 @@
 (function () {
 const uid = window.activePrefix();
 const store = window.activeStore();
+const CARD_GNS = 'xy-home-v2';
+const CARD_CSS_KEY = 'cs-card-global-css';
+const CARD_ACCENT_KEY = 'cs-card-global-accent';
+const CARD_BG_KEY = 'cs-card-global-bg';
+const CARD_SEL_KEY = 'cs-card-global-sel-bg';
+const CARD_TEXT_KEY = 'cs-card-global-text';
+const CARD_GLOBAL_ALL = [CARD_CSS_KEY, CARD_ACCENT_KEY, CARD_BG_KEY, CARD_SEL_KEY, CARD_TEXT_KEY];
+const CARD_ACCENT_DEF = '#e88fa3';
+function cardGStore() {
+try { return window.xyStore ? window.xyStore(CARD_GNS) : null; } catch (e) { return null; }
+}
+function cardSafeHex(v) {
+const s = String(v || '').trim().toLowerCase();
+const m = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})(?:[0-9a-f]{2})?$/i);
+if (!m) return '';
+let h = m[1];
+if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+return '#' + h;
+}
+function cardRgb(v) {
+const h = cardSafeHex(v);
+if (!h) return null;
+return { r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) };
+}
+function cardInkFor(v) {
+const c = cardRgb(v);
+if (!c) return '#2a2024';
+const lum = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+return lum > 0.6 ? '#2a2024' : '#ffffff';
+}
+function cardRgba(v, a) {
+const c = cardRgb(v);
+return c ? 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')' : '';
+}
+function cardShade(v, amt) {
+const c = cardRgb(v);
+if (!c) return v;
+const ch = (x) => Math.max(0, Math.min(255, Math.round(amt < 0 ? x * (1 + amt) : x + (255 - x) * amt)));
+return '#' + [ch(c.r), ch(c.g), ch(c.b)].map((n) => {
+n = n.toString(16);
+return n.length < 2 ? '0' + n : n;
+}).join('');
+}
 const root = document.documentElement;
 const body = document.getElementById('chat-body');
 if (!body) return;
@@ -16,6 +59,15 @@ t._timer = setTimeout(() => { t.className = 'cc-toast'; }, 2000);
 const chatPage = document.getElementById('page-chat');
 const setVar = (el, name, value) => { if (!el) return; const v = String(value); if (el.style.getPropertyValue(name) !== v) el.style.setProperty(name, v); };
 const delVar = (el, name) => { if (el && el.style.getPropertyValue(name) !== '') el.style.removeProperty(name); };
+const syncBodyCls = (names, want) => {
+let cur = '';
+for (let i = 0; i < names.length; i++) {
+if (document.body.classList.contains(names[i])) { cur = names[i]; break; }
+}
+if (cur === want) return;
+names.forEach(n => document.body.classList.remove(n));
+if (want) document.body.classList.add(want);
+};
 function csBgLayer() {
 if (!chatPage) return null;
 let l = document.getElementById('cs-bg-layer');
@@ -375,8 +427,18 @@ setVar(root, '--send-ink', sendInk);
 const sendShow = store.get('cs-send-show') || 'show';
 const sendBtn = document.getElementById('chat-send');
 if (sendBtn) { const wantDisp = sendShow === 'hide' ? 'none' : ''; if (sendBtn.style.display !== wantDisp) sendBtn.style.display = wantDisp; }
+if (window.applyChatInputV2) { try { window.applyChatInputV2(); } catch (e) {} }
 set('cs-send-bg-val', sendBg === DEF.sendBg ? '默认 ' + DEF.sendBg : sendBg);
 set('cs-send-ink-val', sendInk === DEF.sendInk ? '默认 ' + DEF.sendInk : sendInk);
+const inputRadius = store.get('cs-input-radius') || '';
+if (inputRadius) setVar(root, '--cs-input-radius', inputRadius); else delVar(root, '--cs-input-radius');
+const inputFont = store.get('cs-input-font') || '';
+if (!inputFont) delVar(root, '--cs-input-font');
+else if (inputFont === 'follow') setVar(root, '--cs-input-font', 'calc(var(--chat-font-size, 14px) + var(--mochi-text-adj, 0px))');
+else setVar(root, '--cs-input-font', inputFont);
+setVar(root, '--cs-input-btn-size', store.get('cs-input-btn-size') || '38px');
+const inputPadY = store.get('cs-input-pad-y') || '';
+if (inputPadY) setVar(root, '--cs-input-pad-y', inputPadY); else delVar(root, '--cs-input-pad-y');
 set('cs-event-ink-val', eventInk === DEF.eventInk ? '默认 ' + DEF.eventInk : eventInk);
 set('cs-name-ink-val', nameInk === DEF.nameInk ? '默认 ' + DEF.nameInk : nameInk);
 set('cs-out-bg-val', outBg === DEF.outBg ? '默认 ' + DEF.outBg : outBg);
@@ -399,6 +461,14 @@ TIME_STYLES.forEach(s => document.body.classList.remove('cs-time-' + s.value));
 if (wantTimeCls) document.body.classList.add(wantTimeCls);
 }
 set('cs-time-style-val', tsLabel);
+const tdStyle = store.get('cs-time-divider-style') || '';
+syncBodyCls(['cs-td-lines', 'cs-td-plain'], tdStyle === 'lines' ? 'cs-td-lines' : (tdStyle === 'plain' ? 'cs-td-plain' : ''));
+const sysStyle = store.get('cs-sys-style') || '';
+syncBodyCls(['cs-sys-soft', 'cs-sys-plain'], sysStyle === 'soft' ? 'cs-sys-soft' : (sysStyle === 'plain' ? 'cs-sys-plain' : ''));
+const typingPos = store.get('cs-typing-pos') || 'left';
+syncBodyCls(['cs-typing-center'], typingPos === 'center' ? 'cs-typing-center' : '');
+const typingShell = store.get('cs-typing-shell') || '';
+syncBodyCls(['cs-typing-capsule'], typingShell === 'capsule' ? 'cs-typing-capsule' : '');
 const fmtOff = (x, y) => (x === 0 && y === 0) ? '默认' : '左右 ' + x + ' / 上下 ' + y + 'px';
 set('cs-mark-pos-val', fmtOff(markDX, markDY));
 set('cs-time-pos-val', fmtOff(timeDX, timeDY));
@@ -463,6 +533,7 @@ if (rm) rm.hidden = !bg;
 _ensureBubbleContrast();
 applyChatBarInk();
 applyChatSurfaces(inBg, outBg);
+try { applyCardVars(); } catch (e) {}
 try { applyCssEnforce(); } catch (e) {}
 }
 window.applyChatSettings = applySettings;
@@ -1542,6 +1613,121 @@ st.textContent = out;
 document.head.appendChild(st);
 return hint;
 }
+function cardScopeSelector(sel, scope) {
+return String(sel || '').split(',').map(function (part) {
+part = part.trim();
+if (!part) return part;
+if (part.indexOf(scope) === 0) return part;
+if (part.indexOf('#page-chat') === 0) return part;
+return scope + ' ' + part;
+}).join(', ');
+}
+function scopeCardCss(css, scope) {
+css = String(css || '').replace(/<\/style/gi, '<\\/style').trim();
+if (!css) return '';
+const host = document.createElement('style');
+host.media = 'not all';
+host.textContent = css;
+document.head.appendChild(host);
+try {
+const sheet = host.sheet;
+if (!sheet) return '';
+const walk = function (rules) {
+for (let i = 0; i < rules.length; i++) {
+const r = rules[i];
+if (!r) continue;
+if (r.type === 1) {
+try {
+r.selectorText = cardScopeSelector(r.selectorText, scope);
+const ss = r.style;
+for (let j = ss.length - 1; j >= 0; j--) {
+const p = ss[j];
+const v = ss.getPropertyValue(p);
+if (v && ss.getPropertyPriority(p) !== 'important') ss.setProperty(p, v, 'important');
+}
+} catch (e) {}
+} else if (r.type === 4 || r.type === 12 || (r.cssRules && r.type !== 7)) {
+try { walk(r.cssRules); } catch (e) {}
+}
+}
+};
+walk(sheet.cssRules);
+const out = [];
+for (let i = 0; i < sheet.cssRules.length; i++) {
+const r = sheet.cssRules[i];
+if (r && r.type === 3) continue; // @import 不执行
+out.push(r.cssText);
+}
+return out.join('\n');
+} catch (e) {
+return '';
+} finally {
+host.remove();
+}
+}
+function applyCardVars() {
+const g = cardGStore();
+if (!g) return;
+const accent = cardSafeHex(g.get(CARD_ACCENT_KEY)) || CARD_ACCENT_DEF;
+let decl = '--ask-accent:' + accent + ';' +
+'--ask-accent-ink:' + cardInkFor(accent) + ';' +
+'--ask-accent-strong:' + cardShade(accent, -0.35) + ';' +
+'--ask-accent-soft:' + (cardRgba(accent, 0.14) || 'rgba(232,143,163,.14)') + ';';
+const bg = cardSafeHex(g.get(CARD_BG_KEY));
+if (bg) decl += '--ask-card-bg:' + bg + ';';
+const text = cardSafeHex(g.get(CARD_TEXT_KEY));
+if (text) decl += '--ask-card-text:' + text + ';';
+const sel = cardSafeHex(g.get(CARD_SEL_KEY));
+if (sel) decl += '--ask-card-sel-bg:' + sel + ';';
+const colorsVal = document.getElementById('cs-card-colors-val');
+if (colorsVal) {
+colorsVal.textContent = (g.get(CARD_ACCENT_KEY) || g.get(CARD_BG_KEY) || g.get(CARD_SEL_KEY) || g.get(CARD_TEXT_KEY)) ? '已自定义' : '默认';
+}
+let sideRules = '';
+if (!text) {
+const outBg = cardSafeHex(bg || store.get('cs-out-bg')) || '#111111';
+const outInk = cardSafeHex(store.get('cs-out-ink')) || '#ffffff';
+if (_csContrast(outInk, outBg) < 4.5) {
+sideRules += '#page-chat .msg-ask.msg-ask-out{--ask-side-text:' + _csHiInk(outBg) + ';}';
+}
+const inBg = cardSafeHex(bg || store.get('cs-in-bg')) || '#ffffff';
+const inInk = cardSafeHex(store.get('cs-in-ink')) || '#111111';
+if (_csContrast(inInk, inBg) < 4.5) {
+sideRules += '#page-chat .msg-ask.msg-ask-in{--ask-side-text:' + _csHiInk(inBg) + ';}';
+}
+}
+const css = '#page-chat{' + decl + '}' + sideRules;
+const old = document.getElementById('cs-card-vars');
+if (old) {
+if (old.textContent !== css) old.textContent = css;
+return;
+}
+const st = document.createElement('style');
+st.id = 'cs-card-vars';
+st.textContent = css;
+document.head.appendChild(st);
+}
+function applyCardCss() {
+const old = document.getElementById('cs-card-custom');
+if (old) old.remove();
+const g = cardGStore();
+const css = String(g ? (g.get(CARD_CSS_KEY) || '') : '');
+const setVal = document.getElementById('cs-card-css-val');
+if (setVal) setVal.textContent = css ? '已设置' : '默认';
+if (!css) return;
+let out = '';
+try { out = scopeCardCss(css, '#page-chat'); } catch (e) { out = ''; }
+if (!out) return;
+const st = document.createElement('style');
+st.id = 'cs-card-custom';
+st.textContent = out;
+document.head.appendChild(st);
+}
+function applyCardStyle() {
+applyCardVars();
+applyCardCss();
+}
+try { window.mochiApplyCardStyle = applyCardStyle; } catch (e) {}
 if (csCss) {
 csCss.addEventListener('click', () => {
 if (!window.openTCPanel) return;
@@ -1566,15 +1752,163 @@ toast(hint || '气泡样式已应用');
 });
 });
 }
+const csCardCss = row('cs-card-css');
+if (csCardCss) {
+csCardCss.addEventListener('click', () => {
+if (!window.openTCPanel) return;
+const g = cardGStore();
+if (!g) { toast('存储接口不可用，请刷新后重试'); return; }
+window.openTCPanel('卡片 CSS', '' +
+'<div class="sm-fld-hint" style="margin-bottom:8px">全局卡片样式，所有联系人共用，只作用单聊问卡。可直接写选择器（如 <code>.msg-ask-card{...}</code>、<code>.ask-opt-btn{...}</code>、<code>.ask-line-who{...}</code>），系统会自动把选择器限定在 <code>#page-chat</code>，群聊不会生效。</div>' +
+'<textarea id="cs-card-css-input" class="tc-input" rows="6" placeholder=".msg-ask-card{border-radius:18px}&#10;.ask-opt-btn{border-color:rgba(0,0,0,.12)}"></textarea>' +
+'<div class="sm-fld-hint" style="margin:8px 0 4px">示例（点一下填进输入框，可再改；「左右分开」是整套样式，会替换输入框内容）：</div>' +
+'<div class="mail-actions" style="margin-bottom:8px">' +
+'<button class="cc-tool" id="cs-card-ex1">卡面圆角</button>' +
+'<button class="cc-tool" id="cs-card-ex2">选项描边</button>' +
+'<button class="cc-tool" id="cs-card-ex3">分割线颜色</button>' +
+'<button class="cc-tool" id="cs-card-ex4" title="整套左右分开样式，会替换输入框内容">左右分开</button>' +
+'</div>' +
+'<div class="mail-actions"><button class="cc-tool" id="cs-card-css-clear">恢复默认</button><button class="cc-tool" id="cs-card-css-ok">应用</button></div>');
+const ta = document.getElementById('cs-card-css-input');
+if (ta) ta.value = g.get(CARD_CSS_KEY) || '';
+const splitCardCss = [
+'/* ===== 问卡 · 对方（左） ===== */',
+'.msg-ask.msg-ask-in {',
+'  --ask-side-bg: #efe6ff;',
+'  --ask-side-text: #2a2024;',
+'  --ask-opt-bg: rgba(255,255,255,.55);',
+'  --ask-side-sel: rgba(221,204,255,.55);',
+'}',
+'.msg-ask.msg-ask-in .msg-ask-card,',
+'.msg-ask.msg-ask-in .msg-choose-card {',
+'  position: relative;',
+'  background-color: rgba(238,230,255,.15);',
+'  background-image:',
+'    linear-gradient(to top, rgba(255,255,255,.75) 0%, transparent 50%),',
+'    radial-gradient(ellipse at center, rgba(221,204,255,.95) 0%, rgba(221,204,255,.45) 45%, transparent 85%);',
+'  background-size: 100% 100%, 100% 100%;',
+'  border: 1px solid rgba(255,255,255,.36);',
+'  border-radius: 16px;',
+'  padding: 10px 14px;',
+'  line-height: 1.6;',
+'  backdrop-filter: blur(4px) saturate(140%);',
+'  -webkit-backdrop-filter: blur(4px) saturate(140%);',
+'  box-shadow: 0 4px 12px rgba(0,0,0,.02);',
+'  text-shadow: 0 1px 2px rgba(255,255,255,.8);',
+'}',
+'.msg-ask.msg-ask-in .msg-ask-card::before,',
+'.msg-ask.msg-ask-in .msg-choose-card::before {',
+'  content: "☪︎";',
+'  position: absolute;',
+'  top: -4px;',
+'  right: -2px;',
+'  font-size: 16px;',
+'  color: #ffffff;',
+'  font-family: Arial, sans-serif;',
+'  line-height: 1;',
+'  text-shadow: 0 0 4px rgba(255,255,255,.8);',
+'  pointer-events: none;',
+'}',
+'',
+'/* ===== 问卡 · 自己（右） ===== */',
+'.msg-ask.msg-ask-out {',
+'  --ask-side-bg: #ffe6f7;',
+'  --ask-side-text: #2a2024;',
+'  --ask-opt-bg: rgba(255,255,255,.55);',
+'  --ask-side-sel: rgba(255,204,235,.55);',
+'}',
+'.msg-ask.msg-ask-out .msg-ask-card,',
+'.msg-ask.msg-ask-out .msg-choose-card {',
+'  position: relative;',
+'  background-color: rgba(255,230,247,.15);',
+'  background-image:',
+'    linear-gradient(to top, rgba(255,255,255,.75) 0%, transparent 50%),',
+'    radial-gradient(ellipse at center, rgba(255,204,235,.95) 0%, rgba(255,204,235,.45) 45%, transparent 85%);',
+'  background-size: 100% 100%, 100% 100%;',
+'  border: 1px solid rgba(255,255,255,.36);',
+'  border-radius: 16px;',
+'  padding: 10px 14px;',
+'  line-height: 1.6;',
+'  backdrop-filter: blur(8px) saturate(140%);',
+'  -webkit-backdrop-filter: blur(8px) saturate(140%);',
+'  box-shadow: 0 4px 12px rgba(0,0,0,.02);',
+'  text-shadow: 0 1px 2px rgba(255,255,255,.8);',
+'}',
+'.msg-ask.msg-ask-out .msg-ask-card::before,',
+'.msg-ask.msg-ask-out .msg-choose-card::before {',
+'  content: "❀";',
+'  position: absolute;',
+'  top: -4px;',
+'  left: -2px;',
+'  font-size: 16px;',
+'  color: #ffffff;',
+'  font-family: Arial, sans-serif;',
+'  line-height: 1;',
+'  text-shadow: 0 0 4px rgba(255,255,255,.8);',
+'  pointer-events: none;',
+'}',
+'',
+'/* ===== 卡内配套（选项 / 标签 / 分割线也玻璃化） ===== */',
+'.msg-ask .ask-line { line-height: 1.6; }',
+'.msg-ask .ask-line-who { background: rgba(255,255,255,.55); opacity: .8; }',
+'.msg-ask .ask-opt-btn,',
+'.msg-ask .ask-opt-row,',
+'.msg-ask .ask-opt-static { border-color: rgba(255,255,255,.55); }',
+'.msg-ask .ask-opt-submit { background: rgba(255,255,255,.6); color: #2a2024; }',
+'.msg-ask .msg-ask-lines,',
+'.msg-ask .msg-survey-list,',
+'.msg-ask .msg-survey-actions { border-top-color: rgba(255,255,255,.5); }',
+'.msg-ask .msg-fav-heart,',
+'.msg-ask .msg-ask-view-arrow { background: rgba(255,255,255,.55); }'
+].join('\n');
+const cardCssExamples = [
+'.msg-ask-card{border-radius:20px}',
+'.ask-opt-btn,.ask-opt-row{border-color:rgba(127,127,127,.32)}',
+'.msg-ask-lines{border-top-color:rgba(127,127,127,.32)}',
+splitCardCss
+];
+[['cs-card-ex1', 0], ['cs-card-ex2', 1], ['cs-card-ex3', 2], ['cs-card-ex4', 3]].forEach(([id, i]) => {
+const b = document.getElementById(id);
+if (!b || !ta) return;
+b.addEventListener('click', () => {
+if (i === 3) { ta.value = cardCssExamples[i]; return; }
+const cur = String(ta.value || '').trim();
+ta.value = cur ? cur + '\n' + cardCssExamples[i] : cardCssExamples[i];
+});
+});
+document.getElementById('cs-card-css-clear').addEventListener('click', () => {
+try { g.remove(CARD_CSS_KEY); } catch (e) {}
+document.getElementById('tc-mask').hidden = true;
+applyCardCss();
+toast('已恢复默认卡片样式');
+});
+document.getElementById('cs-card-css-ok').addEventListener('click', () => {
+const v = cssReadVal(document.getElementById('cs-card-css-input')).trim();
+try { if (v) g.set(CARD_CSS_KEY, v); else g.remove(CARD_CSS_KEY); } catch (e) {}
+document.getElementById('tc-mask').hidden = true;
+applyCardCss();
+toast(v ? '卡片样式已应用' : '已恢复默认卡片样式');
+});
+});
+}
+const csCardColors = row('cs-card-colors');
+if (csCardColors) {
+csCardColors.addEventListener('click', () => {
+try { if (window.openChatBeautyCardDrawer) window.openChatBeautyCardDrawer(); } catch (e) {}
+});
+}
 applyCss();
+applyCardStyle();
 const gStoreChat = window.xyStore('xy-home-v2');
 const CHAT_SCHEMES_KEY = 'chat-beauty-schemes';
 const CHAT_BEAUTY_KEYS = [
 'cs-bg', 'cs-bubble-css', 'cs-font', 'cs-font-size', 'cs-bubble-size',
 'cs-bubble-radius', 'cs-av-shape', 'cs-time-style', 'cs-time-ink', 'cs-typing-ink',
+'cs-time-divider-style', 'cs-sys-style', 'cs-typing-pos', 'cs-typing-shell',
 'cs-out-bg', 'cs-out-ink', 'cs-in-bg', 'cs-in-ink',
 'cs-mark-ink',
 'cs-send-bg', 'cs-send-ink', 'cs-send-show',
+'cs-input-radius', 'cs-input-font', 'cs-input-btn-size', 'cs-input-pad-y',
 'cs-ph-ink', 'cs-ph-show',
 'cs-event-ink', 'cs-name-ink',
 'cs-head-opacity', 'cs-input-opacity', 'cs-bubble-opacity', 'cs-head-inset', 'cs-input-inset',
@@ -1596,18 +1930,37 @@ const recognizeChatBeauty = (data) => {
 if (!data || typeof data !== 'object') return 0;
 let n = 0;
 CHAT_BEAUTY_KEYS.forEach(k => { if (data[k] !== undefined) n++; });
+CARD_GLOBAL_ALL.forEach(k => { if (data[k] !== undefined) n++; });
 return n;
 };
 const collectChatBeauty = () => {
 const data = {};
 CHAT_BEAUTY_KEYS.forEach(k => { const v = store.get(k); if (v !== null && v !== undefined && v !== '') data[k] = v; });
+const g = cardGStore();
+if (g) {
+CARD_GLOBAL_ALL.forEach(k => {
+let v = null;
+try { v = g.get(k); } catch (e) {}
+data[k] = (v === null || v === undefined) ? '' : String(v);
+});
+}
 data['__kind__'] = CHAT_BEAUTY_KIND;
 return data;
 };
 const applyChatBeautyData = (data) => {
 let n = 0;
 CHAT_BEAUTY_KEYS.forEach(k => { if (data[k] !== undefined) { store.set(k, data[k]); n++; } });
+const g = cardGStore();
+if (g) {
+CARD_GLOBAL_ALL.forEach(k => {
+if (data[k] === undefined) return;
+const v = data[k];
+try { if (v === '' || v === null) g.remove(k); else g.set(k, v); } catch (e) {}
+n++;
+});
+}
 try { applySettings(); applyCss(); applyFont(); } catch (e) {}
+try { applyCardStyle(); } catch (e) {}
 try { csFontChanged(); } catch (e) {}
 return n;
 };
@@ -1652,7 +2005,7 @@ if (v !== 'ok') return;
 applyChatBeautyData(s.data || {});
 hideChatSchemeModal(m);
 toast('已应用「' + s.name + '」，当前聊天立即生效');
-}, { noInput: true, staticText: '将覆盖当前联系人桌面的聊天美化设置，立即生效', pills: [{ label: '应用', value: 'ok' }] });
+}, { noInput: true, staticText: '将覆盖当前联系人桌面的聊天美化设置与全局卡片 CSS/配色，立即生效', pills: [{ label: '应用', value: 'ok' }] });
 if (ctl && ctl.pills) ctl.pills([{ label: '应用', value: 'ok' }], 'ok');
 }
 function deleteChatScheme(idx, m) {
@@ -1725,7 +2078,7 @@ data = collectChatBeauty();
 doExport(data);
 }, {
 noInput: true,
-staticText: '选择要导出的聊天美化方案：\n· 当前设置：导出当前正在使用的聊天美化\n· 已保存方案：导出对应方案（含气泡/壁纸/字体）',
+staticText: '选择要导出的聊天美化方案：\n· 当前设置：导出当前正在使用的聊天美化\n· 已保存方案：导出对应方案（含气泡/壁纸/字体/卡片 CSS 与配色）',
 pills: pills,
 });
 }
@@ -1794,6 +2147,7 @@ if (data['cs-bubble-css']) out.push('自定义CSS');
 if (data['cs-bg']) out.push('壁纸');
 const av = data['cs-av-shape'];
 if (av) out.push('头像 ' + ({ circle: '圆形', round: '圆角', square: '方形' }[av] || av));
+if (CARD_GLOBAL_ALL.some(k => data[k] !== undefined && data[k] !== '')) out.push('卡片配色/CSS');
 return out;
 }
 function chatSaveModalEl() {
@@ -1895,7 +2249,7 @@ m.innerHTML = '';
 const box = document.createElement('div');
 box.style.cssText = 'width:min(92vw,420px);max-height:80vh;display:flex;flex-direction:column;background:var(--card-bg,#fff);color:var(--ink,#111);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.2)';
 const head = document.createElement('div');
-head.innerHTML = '<div style="font-size:16px;font-weight:600;margin-bottom:4px">聊天美化方案</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">方案在所有联系人桌面通用（含气泡颜色/CSS、背景图、字体、时间轴等），点「应用」一键切换当前聊天外观</div>';
+head.innerHTML = '<div style="font-size:16px;font-weight:600;margin-bottom:4px">聊天美化方案</div><div style="font-size:12px;color:var(--muted,#888);margin-bottom:12px">方案在所有联系人桌面通用（含气泡颜色/CSS、背景图、字体、时间轴、卡片 CSS/配色等），点「应用」一键切换当前聊天外观</div>';
 box.appendChild(head);
 const list = document.createElement('div'); list.className = 'cm-list';
 list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0';
@@ -1956,29 +2310,42 @@ const csResetBeauty = row('cs-reset-beauty');
 if (csResetBeauty) {
 csResetBeauty.addEventListener('click', () => {
 if (!window.openTCPanel) return;
-const runReset = (keepCss) => {
+const runReset = (keepBubbleCss, keepCardCss) => {
 CS_RESET_KEYS.forEach(k => {
-if (keepCss && k === 'cs-bubble-css') return;
+if (keepBubbleCss && k === 'cs-bubble-css') return;
 try { store.remove(k); } catch (e) {}
 });
+const g = cardGStore();
+if (g) {
+CARD_GLOBAL_ALL.forEach(k => {
+if (keepCardCss && k === CARD_CSS_KEY) return;
+try { g.remove(k); } catch (e) {}
+});
+}
 try { applyCss(); } catch (e) {}
+try { applyCardStyle(); } catch (e) {}
 try { applySettings(); } catch (e) {}
-toast(keepCss ? '已恢复初始美化（气泡 CSS 已保留）' : '已恢复初始美化');
+toast(keepCardCss ? '已恢复初始美化（卡片 CSS 已保留，配色已回默认）'
+: keepBubbleCss ? '已恢复初始美化（气泡 CSS 已保留）'
+: '已恢复初始美化');
 };
 window.openTCPanel('恢复初始美化', '' +
-'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、顶栏/输入栏/气泡透明度、标识与时间轴微调、发送按钮与输入框提示。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想弄清「气泡 CSS 到底生效了没」，用「保留气泡 CSS」——其余项归零后若效果出现，说明之前是被滑块/颜色压住了。</div>' +
+'<div class="sm-fld-hint" style="margin-bottom:10px">把个性化观感项全部回默认：气泡颜色/文字色、气泡 CSS、字体与字号、气泡大小与圆角、头像形状、时间轴与标识、分隔线/系统提示/正在输入样式、顶栏/输入栏/气泡透明度、输入栏圆角/输入框字号/按钮大小/粗细、标识与时间轴微调、发送按钮与输入框提示、卡片 CSS 与卡片配色。<br><b>聊天壁纸、壁纸铺满方式与位置、自定义头像都不受影响。</b><br>想保留气泡 CSS：选「保留气泡 CSS」，卡片 CSS 与配色会清掉。<br>想保留卡片 CSS：选「保留卡片 CSS」，配色回默认、气泡 CSS 会清掉。</div>' +
 '<div class="mail-actions">' +
 '<button class="cc-tool" id="cs-reset-cancel">取消</button>' +
 '<button class="cc-tool" id="cs-reset-keepcss">保留气泡 CSS</button>' +
+'<button class="cc-tool" id="cs-reset-keepcardcss">保留卡片 CSS</button>' +
 '<button class="cc-tool" id="cs-reset-all" style="color:#d64545">全部恢复</button>' +
 '</div>');
 const closeTc = () => { try { document.getElementById('tc-mask').hidden = true; } catch (e) {} };
 const cBtn = document.getElementById('cs-reset-cancel');
 if (cBtn) cBtn.addEventListener('click', closeTc);
 const kBtn = document.getElementById('cs-reset-keepcss');
-if (kBtn) kBtn.addEventListener('click', () => { runReset(true); closeTc(); });
+if (kBtn) kBtn.addEventListener('click', () => { runReset(true, false); closeTc(); });
+const ckBtn = document.getElementById('cs-reset-keepcardcss');
+if (ckBtn) ckBtn.addEventListener('click', () => { runReset(false, true); closeTc(); });
 const aBtn = document.getElementById('cs-reset-all');
-if (aBtn) aBtn.addEventListener('click', () => { runReset(false); closeTc(); });
+if (aBtn) aBtn.addEventListener('click', () => { runReset(false, false); closeTc(); });
 });
 }
 (function initChatSettingsTabs() {
@@ -2349,7 +2716,10 @@ return !!(m && m.style.display === 'flex');
 }
 function inputOrderSync() {
 const el = document.getElementById('cs-input-order-val');
-if (el) el.textContent = (window.mochiInputOrder && !window.mochiInputOrder.isDefault()) ? '已自定义' : '默认排列';
+if (!el) return;
+let v2 = false;
+try { v2 = !!(window.chatInputV2On && window.chatInputV2On()); } catch (e) {}
+el.textContent = v2 ? '新版固定' : ((window.mochiInputOrder && !window.mochiInputOrder.isDefault()) ? '已自定义' : '默认排列');
 }
 function inputOrderIcon(token) {
 if (token === 'input') return '';
@@ -2596,15 +2966,33 @@ ioBindResize();
 clearInterval(ioWatchTimer);
 ioWatchTimer = setInterval(() => { try { csDrawerLayerTick(); } catch (e) {} }, 240);
 }
+const csV2 = document.getElementById('cs-input-v2');
+if (csV2) {
+const gV2 = window.xyStore('xy-home-v2');
+const syncV2 = () => { try { csV2.checked = gV2.get('cs-input-v2') === '1'; } catch (e) { csV2.checked = false; } };
+syncV2();
+csV2.addEventListener('change', () => {
+try { if (csV2.checked) gV2.set('cs-input-v2', '1'); else gV2.remove('cs-input-v2'); } catch (e) {}
+if (window.applyChatInputV2) { try { window.applyChatInputV2(); } catch (e) {} }
+inputOrderSync();
+toast(csV2.checked ? '已开启新版输入栏：表情在左，⋯ 收其他功能' : '已回到旧版输入栏：按钮顺序设置恢复生效');
+});
+}
 const csIo = row('cs-input-order');
 if (csIo) {
 inputOrderSync();
-csIo.addEventListener('click', openInputOrderPanel);
+csIo.addEventListener('click', () => {
+let v2 = false;
+try { v2 = !!(window.chatInputV2On && window.chatInputV2On()); } catch (e) {}
+if (v2) { toast('新版输入栏下按钮位置固定；关闭「新版输入栏」后即可自定义'); return; }
+openInputOrderPanel();
+});
 document.addEventListener('contact-switched', () => {
 inputOrderSync();
 closeInputOrderPanel(false);
 });
 document.addEventListener('chat-input-order-changed', inputOrderSync);
+document.addEventListener('chat-input-v2-changed', inputOrderSync);
 document.addEventListener('mochi-wrj-heal', () => { inputOrderSync(); if (inputOrderPanelOpen()) renderInputOrderPanel(); });
 document.addEventListener('batch-send-changed', () => { if (inputOrderPanelOpen()) renderInputOrderPanel(); });
 document.addEventListener('voice-send-changed', () => { if (inputOrderPanelOpen()) renderInputOrderPanel(); });
@@ -2624,14 +3012,14 @@ const rpProbSync = () => { const el = document.getElementById('cs-rp-auto-prob-v
 rpProbSync();
 csRpProb.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('他 自动发红包概率（0-100%·每联系人独立）', String(rpProbGet()), (v) => {
+window.openModal('他自动发红包概率（0-100%·每联系人独立）', String(rpProbGet()), (v) => {
 const t = String(v || '').trim();
 let n = parseFloat(t);
 if (!isFinite(n)) n = 4;
 n = Math.max(0, Math.min(100, Math.round(n)));
 store.set('cs-rp-auto-prob', String(n));
 rpProbSync();
-toast('已设置：他 自动发红包概率为 ' + n + '%');
+toast('已设置：他自动发红包概率为 ' + n + '%');
 }, { maxlength: 3 });
 });
 document.addEventListener('contact-switched', rpProbSync);
@@ -2647,13 +3035,13 @@ const rpMaxSync = () => { const el = document.getElementById('cs-rp-daily-max-va
 rpMaxSync();
 csRpDailyMax.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('他 每日发红包上限（0-99 次·0=不限）', String(rpMaxGet()), (v) => {
+window.openModal('他每日发红包上限（0-99 次·0=不限）', String(rpMaxGet()), (v) => {
 let n = parseInt(String(v || '').trim(), 10);
 if (!isFinite(n)) n = 5;
 n = Math.max(0, Math.min(99, n));
 store.set('cs-rp-daily-max', String(n));
 rpMaxSync();
-toast(n === 0 ? '已设置：他 每日发红包不限次数' : '已设置：他 每天最多发 ' + n + ' 个红包');
+toast(n === 0 ? '已设置：他每日发红包不限次数' : '已设置：他每天最多发 ' + n + ' 个红包');
 }, { maxlength: 2 });
 });
 document.addEventListener('contact-switched', rpMaxSync);
@@ -2669,13 +3057,13 @@ const rpAskProbSync = () => { const el = document.getElementById('cs-rp-ask-prob
 rpAskProbSync();
 csRpAskProb.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('他 申请心意币概率（0-100%·每联系人独立）', String(rpAskProbGet()), (v) => {
+window.openModal('他申请心意币概率（0-100%·每联系人独立）', String(rpAskProbGet()), (v) => {
 let n = parseFloat(String(v || '').trim());
 if (!isFinite(n)) n = 4;
 n = Math.max(0, Math.min(100, Math.round(n)));
 store.set('cs-rp-ask-prob', String(n));
 rpAskProbSync();
-toast('已设置：他 申请心意币概率为 ' + n + '%');
+toast('已设置：他申请心意币概率为 ' + n + '%');
 }, { maxlength: 3 });
 });
 document.addEventListener('contact-switched', rpAskProbSync);
@@ -2691,17 +3079,39 @@ const rpAskMaxSync = () => { const el = document.getElementById('cs-rp-ask-daily
 rpAskMaxSync();
 csRpAskMax.addEventListener('click', () => {
 if (!window.openModal) return;
-window.openModal('他 每日申请心意币上限（0-99 次·0=不限）', String(rpAskMaxGet()), (v) => {
+window.openModal('他每日申请心意币上限（0-99 次·0=不限）', String(rpAskMaxGet()), (v) => {
 let n = parseInt(String(v || '').trim(), 10);
 if (!isFinite(n)) n = 0;
 n = Math.max(0, Math.min(99, n));
 store.set('cs-rp-ask-daily-max', String(n));
 rpAskMaxSync();
-toast(n === 0 ? '已设置：他 申请心意币不限次数' : '已设置：他 每天最多申请 ' + n + ' 次');
+toast(n === 0 ? '已设置：他申请心意币不限次数' : '已设置：他每天最多申请 ' + n + ' 次');
 }, { maxlength: 2 });
 });
 document.addEventListener('contact-switched', rpAskMaxSync);
 if (typeof window !== 'undefined') window.csRpSyncAskMax = rpAskMaxSync;
+}
+const csRpReject = row('cs-rp-reject-prob');
+if (csRpReject) {
+const rpRejectGet = () => {
+let v = null; try { v = parseFloat(store.get('cs-rp-reject-prob')); } catch (e) {}
+return (v !== null && isFinite(v)) ? Math.max(0, Math.min(100, Math.round(v))) : 20;
+};
+const rpRejectSync = () => { const el = document.getElementById('cs-rp-reject-prob-val'); if (el) el.textContent = rpRejectGet() + '%'; };
+rpRejectSync();
+csRpReject.addEventListener('click', () => {
+if (!window.openModal) return;
+window.openModal('他拒收红包概率（0-100%·每联系人独立）', String(rpRejectGet()), (v) => {
+let n = parseFloat(String(v || '').trim());
+if (!isFinite(n)) n = 20;
+n = Math.max(0, Math.min(100, Math.round(n)));
+store.set('cs-rp-reject-prob', String(n));
+rpRejectSync();
+toast('已设置：他拒收红包概率为 ' + n + '%');
+}, { maxlength: 3 });
+});
+document.addEventListener('contact-switched', rpRejectSync);
+if (typeof window !== 'undefined') window.csRpSyncReject = rpRejectSync;
 }
 if (!document.getElementById('cs-rp-thx-box')) {
 const rpSetBox = document.getElementById('rp-settings');
@@ -2710,7 +3120,7 @@ if (rpSetBox && rpDoneBtn) {
 const rpThxBox = document.createElement('div');
 rpThxBox.id = 'cs-rp-thx-box';
 rpThxBox.innerHTML = '<div class="rp-settings-title">红包领后捎一句话</div>' +
-'<div class="set-row" id="cs-rp-thx-en"><div class="txt">领后捎一句话<span class="sub">红包被领取后（我领 他 的 / 他 领我的）他 有概率主动捎一句，固定一条、不受「回复条数」限制；每个联系人单独设置</span></div><div class="val" id="cs-rp-thx-en-val">开</div></div>' +
+'<div class="set-row" id="cs-rp-thx-en"><div class="txt">领后捎一句话<span class="sub">红包被领取后（我领他的 / 他领我的）他有概率主动捎一句，固定一条、不受「回复条数」限制；每个联系人单独设置</span></div><div class="val" id="cs-rp-thx-en-val">开</div></div>' +
 '<div class="set-row" id="cs-rp-thx-prob"><div class="txt">捎话概率<span class="sub">开关命中后再按这个概率决定这次说不说</span></div><div class="val" id="cs-rp-thx-prob-val">60%</div></div>' +
 '<div class="set-row" id="cs-rp-thx-mode"><div class="txt">捎话内容<span class="sub">系统预设话术随机一句 / 和正常聊天一样回复 / 混合</span></div><div class="val" id="cs-rp-thx-mode-val">混合</div></div>';
 rpSetBox.insertBefore(rpThxBox, rpDoneBtn);
@@ -2756,7 +3166,7 @@ rpThxAsk('cs-rp-thx-en', '红包领后捎一句话', null, (v) => {
 const on = v === 'on' ? 1 : 0;
 window.saveReplyCfg('rp-thx-en', on);
 rpThxSync();
-toast(on === 1 ? '已开启：红包被领取后 他 有概率捎一句话' : '已关闭：领红包后不再捎话');
+toast(on === 1 ? '已开启：红包被领取后他有概率捎一句话' : '已关闭：领红包后不再捎话');
 }, () => ({ noInput: true, pill: rpThxGet().en ? 'on' : 'off', pills: [{ label: '开', value: 'on' }, { label: '关', value: 'off' }] }));
 rpThxAsk('cs-rp-thx-prob', '捎话概率（0-100%·每联系人独立）', () => rpThxGet().prob, (v) => {
 let n = parseFloat(String(v || '').trim());
@@ -2782,6 +3192,7 @@ try { if (window.csRpSyncProb) window.csRpSyncProb(); } catch (e) {}
 try { if (window.csRpSyncMax) window.csRpSyncMax(); } catch (e) {}
 try { if (window.csRpSyncAskProb) window.csRpSyncAskProb(); } catch (e) {}
 try { if (window.csRpSyncAskMax) window.csRpSyncAskMax(); } catch (e) {}
+try { if (window.csRpSyncReject) window.csRpSyncReject(); } catch (e) {}
 try { if (window.csRpSyncThx) window.csRpSyncThx(); } catch (e) {}
 };
 }
@@ -2800,7 +3211,7 @@ csHts.addEventListener('change', () => {
 if (csHts.checked === htsGet()) return;
 htsSet(csHts.checked);
 try { document.dispatchEvent(new Event('hide-ta-sticker-changed')); } catch (e) {}
-toast(csHts.checked ? '已隐藏：聊天和朋友圈的表情包面板只显示「我的表情包」' : '已恢复显示 他 的和公用表情包');
+toast(csHts.checked ? '已隐藏：聊天和朋友圈的表情包面板只显示「我的表情包」' : '已恢复显示他的和公用表情包');
 });
 csAddSync(syncHts);
 document.addEventListener('contact-switched', syncHts);
@@ -2978,6 +3389,11 @@ body.appendChild(mk(false, '这是一条示例气泡（仅供预览，不会发�
 body.appendChild(mk(true, '我的气泡也长这样～'));
 }
 let csDrawerSec = 'bubble';
+function openChatBeautyCardDrawer() {
+csDrawerSec = 'card';
+openChatBeautyDrawer();
+}
+try { window.openChatBeautyCardDrawer = openChatBeautyCardDrawer; } catch (e) {}
 function openChatBeautyDrawer() {
 try {
 document.querySelectorAll('.page').forEach(pg => { if (!pg.hidden) pg.hidden = true; });
@@ -3114,7 +3530,7 @@ return wrap;
 };
 let colorItems = [];
 let paletteHost = null;
-const mkColorItem = (label, key, def, swatchList) => {
+const mkColorItem = (label, key, def, swatchList, opts) => {
 const el = document.createElement('div');
 el.style.cssText = 'display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--card-border,#ddd);border-radius:9px;cursor:pointer;min-width:0';
 const sw = document.createElement('span');
@@ -3122,11 +3538,13 @@ sw.style.cssText = 'width:18px;height:18px;border-radius:5px;border:1px solid va
 const tx = document.createElement('span');
 tx.textContent = label;
 tx.style.cssText = 'font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-const curGet = () => { try { return store.get(key) || def; } catch (e) { return def; } };
+const st = (opts && opts.store) || store;
+const applyFn = (opts && opts.apply) || applySettings;
+const curGet = () => { try { return st.get(key) || def; } catch (e) { return def; } };
 const paint = () => { sw.style.background = curGet(); };
 const curSet = (v) => {
-try { if (v === null) store.remove(key); else store.set(key, v); } catch (e) {}
-applySettings(); paint();
+try { if (v === null) st.remove(key); else st.set(key, v); } catch (e) {}
+applyFn(); paint();
 };
 el.appendChild(sw); el.appendChild(tx); paint();
 el.addEventListener('click', () => {
@@ -3238,6 +3656,56 @@ wrap.appendChild(mkPills('气泡框大小', BUBBLE_SIZES, () => store.get('cs-bu
 wrap.appendChild(mkNote('气泡透明度只调底色，文字始终清晰；自定义气泡 CSS 写了 background 时，滑块值优先（动过滑块即覆盖 CSS）。'));
 return wrap;
 } },
+{ key: 'card', label: '卡片', build: () => {
+const wrap = document.createElement('div');
+wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+const g = cardGStore();
+if (!g) {
+wrap.appendChild(mkNote('卡片设置不可用：存储接口缺失，请刷新后重试。'));
+return wrap;
+}
+const cs = {
+get: (k) => g.get(k),
+set: (k, v) => g.set(k, v),
+remove: (k) => g.remove(k)
+};
+const cardPalette = [{ color: CARD_ACCENT_DEF, label: '粉' }].concat(BUBBLE_BG_COLORS);
+wrap.appendChild(mkNote('问卡 A 版 · 全局共用，所有联系人同一套 · 只作用单聊。卡面/文字默认跟随气泡，改“默认”即回自动。'));
+wrap.appendChild(mkGrid([
+mkColorItem('强调色', CARD_ACCENT_KEY, CARD_ACCENT_DEF, cardPalette, { store: cs, apply: applyCardStyle }),
+mkColorItem('卡面底色（默认跟气泡）', CARD_BG_KEY, DEF.outBg, BUBBLE_BG_COLORS, { store: cs, apply: applyCardStyle }),
+mkColorItem('选中项底色（默认自动）', CARD_SEL_KEY, '#f0e9f7', BUBBLE_BG_COLORS, { store: cs, apply: applyCardStyle }),
+mkColorItem('文字色（默认跟气泡）', CARD_TEXT_KEY, DEF.outInk, BUBBLE_INK_COLORS, { store: cs, apply: applyCardStyle })
+]));
+paletteHost = document.createElement('div');
+wrap.appendChild(paletteHost);
+wrap.appendChild(mkNote('文字色和卡面底色保持明显深浅差；太接近会看不清。未选中项底色自动跟卡面，要单独改写到下面卡片 CSS 的 .ask-opt-btn / .ask-opt-row。'));
+const cta = document.createElement('textarea');
+cta.id = 'cs-card-drawer-css';
+cta.className = 'tc-input';
+cta.rows = 3;
+cta.placeholder = '.msg-ask-card{border-radius:18px}' + '\n.ask-opt-btn{border-color:rgba(0,0,0,.12)}';
+cta.style.cssText = 'width:100%;box-sizing:border-box;padding:9px 11px;font-size:12.5px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--bg-b,#fff);color:var(--ink,#111);resize:vertical';
+try { cta.value = g.get(CARD_CSS_KEY) || ''; } catch (e) {}
+let cardCssTimer = null;
+cta.addEventListener('input', () => {
+clearTimeout(cardCssTimer);
+cardCssTimer = setTimeout(() => {
+const v = String(cta.value || '').trim();
+try { if (v) g.set(CARD_CSS_KEY, v); else g.remove(CARD_CSS_KEY); } catch (e) {}
+applyCardCss();
+}, 160);
+});
+wrap.appendChild(mkNote('卡片 CSS（边写边套用；选择器自动限定在 #page-chat，群聊不会生效）'));
+wrap.appendChild(cta);
+wrap.appendChild(mkAct('清空卡片 CSS', () => {
+try { g.remove(CARD_CSS_KEY); } catch (e) {}
+cta.value = '';
+applyCardCss();
+toast('已清空卡片样式');
+}));
+return wrap;
+} },
 { key: 'bar', label: '栏位', build: () => {
 const wrap = document.createElement('div');
 wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
@@ -3249,6 +3717,41 @@ wrap.appendChild(mkNote('这两条位置滑杆拖着就能把顶栏/输入栏上
 wrap.appendChild(mkPills('发送按钮', [{ label: '显示', value: 'show' }, { label: '隐藏（回车发送）', value: 'hide' }],
 () => store.get('cs-send-show') || 'show', v => {
 try { store.set('cs-send-show', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入栏圆角', [
+{ label: '默认（宽屏胶囊 / 手机通栏）', value: '' },
+{ label: '大圆角', value: '20px' },
+{ label: '标准', value: '14px' },
+{ label: '小圆角', value: '8px' },
+{ label: '直角', value: '0px' }
+], () => store.get('cs-input-radius') || '', v => {
+try { if (v) store.set('cs-input-radius', v); else store.remove('cs-input-radius'); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入框字号', [
+{ label: '跟随气泡', value: 'follow' },
+{ label: '小', value: '13px' },
+{ label: '标准', value: '15px' },
+{ label: '大', value: '17px' }
+], () => store.get('cs-input-font') || '15px', v => {
+try { if (v === '15px') store.remove('cs-input-font'); else store.set('cs-input-font', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('按钮大小', [
+{ label: '小', value: '34px' },
+{ label: '标准', value: '38px' },
+{ label: '大', value: '42px' }
+], () => store.get('cs-input-btn-size') || '38px', v => {
+try { store.set('cs-input-btn-size', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('输入栏粗细', [
+{ label: '紧凑', value: '8px' },
+{ label: '默认', value: '' },
+{ label: '宽松', value: '18px' }
+], () => store.get('cs-input-pad-y') || '', v => {
+try { if (v) store.set('cs-input-pad-y', v); else store.remove('cs-input-pad-y'); } catch (e) {}
 applySettings();
 }));
 {
@@ -3356,6 +3859,43 @@ mkColorItem('时间轴文字色', 'cs-time-ink', DEF.timeInk, BUBBLE_INK_COLORS)
 paletteHost = document.createElement('div');
 wrap.appendChild(paletteHost);
 wrap.appendChild(mkNote('想逐项精调（含「同步到全部桌面」「恢复默认」等）回聊天设置→美化，点对应一行即可。'));
+return wrap;
+} },
+{ key: 'tip', label: '提示', build: () => {
+const wrap = document.createElement('div');
+wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+wrap.appendChild(mkNote('时间分隔线只在「字体 · 其他 → 时间轴样式」选到「时间分隔线」时出现；这三组的颜色仍跟「时间轴文字色 / 系统事件文字色 / 正在输入颜色」。'));
+wrap.appendChild(mkPills('时间分隔线', [
+{ label: '胶囊（默认）', value: '' },
+{ label: '细线夹字', value: 'lines' },
+{ label: '纯文字', value: 'plain' }
+], () => store.get('cs-time-divider-style') || '', v => {
+try { if (v) store.set('cs-time-divider-style', v); else store.remove('cs-time-divider-style'); } catch (e) {}
+applySettings();
+if (window.chatReRenderTime) { try { window.chatReRenderTime(); } catch (e) {} }
+}));
+wrap.appendChild(mkPills('系统提示', [
+{ label: '默认（灰底描边）', value: '' },
+{ label: '轻底无边框', value: 'soft' },
+{ label: '纯文字', value: 'plain' }
+], () => store.get('cs-sys-style') || '', v => {
+try { if (v) store.set('cs-sys-style', v); else store.remove('cs-sys-style'); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('正在输入位置', [
+{ label: '左侧（默认）', value: 'left' },
+{ label: '居中', value: 'center' }
+], () => store.get('cs-typing-pos') || 'left', v => {
+try { if (v === 'left') store.remove('cs-typing-pos'); else store.set('cs-typing-pos', v); } catch (e) {}
+applySettings();
+}));
+wrap.appendChild(mkPills('正在输入样式', [
+{ label: '纯文字（默认）', value: '' },
+{ label: '小胶囊', value: 'capsule' }
+], () => store.get('cs-typing-shell') || '', v => {
+try { if (v) store.set('cs-typing-shell', v); else store.remove('cs-typing-shell'); } catch (e) {}
+applySettings();
+}));
 return wrap;
 } },
 { key: 'tune', label: '微调', build: () => {
@@ -3487,6 +4027,46 @@ cb.scrollTop = cb.scrollHeight;
 }
 } catch (e) {}
 }
+(function initChatHeadPrefs() {
+const gs = (function () { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } })();
+if (!gs) return;
+const rowEl = document.getElementById('cs-head-layout');
+const valEl = document.getElementById('cs-head-layout-val');
+const chkEl = document.getElementById('cs-head-meta');
+function get(k, d) {
+try { const v = gs.get(k); return (v === null || v === undefined || v === '') ? d : v; } catch (e) { return d; }
+}
+function set(k, v) { try { gs.set(k, String(v)); } catch (e) {} }
+function paint() {
+if (valEl) valEl.textContent = get('chat-head-layout', 'classic') === 'wx' ? '仿微信' : '经典';
+if (chkEl) chkEl.checked = get('chat-head-meta', '1') !== '0';
+}
+paint();
+if (rowEl) {
+rowEl.addEventListener('click', () => {
+if (!window.openModal) return;
+const cur = get('chat-head-layout', 'classic') === 'wx' ? 'wx' : 'classic';
+window.openModal('顶栏布局', '', (v) => {
+if (v !== 'classic' && v !== 'wx') return;
+set('chat-head-layout', v);
+paint();
+if (window.applyChatHeadPrefs) window.applyChatHeadPrefs();
+toast(v === 'wx' ? '已切换：仿微信顶栏（昵称居中，状态在第二行）' : '已切换：经典顶栏（头像 + 昵称与状态同一行）');
+}, {
+noInput: true,
+pill: cur,
+pills: [{ label: '经典', value: 'classic' }, { label: '仿微信', value: 'wx' }]
+});
+});
+}
+if (chkEl) {
+chkEl.addEventListener('change', () => {
+set('chat-head-meta', chkEl.checked ? '1' : '0');
+if (window.applyChatHeadPrefs) window.applyChatHeadPrefs();
+toast(chkEl.checked ? '顶栏显示：时间 · 状态 · 情绪' : '顶栏只显示他那边的时间');
+});
+}
+})();
 (function injectCsLiveAdjust() {
 const sec = document.querySelector('#page-chat-settings .them-sec[data-sec="beautify"]');
 if (!sec || document.getElementById('cs-live-adjust')) return;

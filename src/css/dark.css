@@ -67,9 +67,6 @@
 [data-theme="dark"] .set-row .arrow svg { stroke:#666; }
 [data-theme="dark"] .set-row.sub .txt { color:#ccc; }
 [data-theme="dark"] .ver { color:#666; }
-[data-theme="dark"] .ver-credit { color:#777; }
-[data-theme="dark"] .set-alert { background:#232323; color:#aaa; }
-[data-theme="dark"] .set-alert b { color:#eee; }
 [data-theme="dark"] .gs-row { border-bottom-color:rgba(255,255,255,.05); }
 [data-theme="dark"] .stp-min,
 [data-theme="dark"] .stp-max { background:var(--dark-hover); color:#aaa; }
@@ -121,9 +118,9 @@
 [data-theme="dark"] .chat-input:empty::before { color:var(--hint-ink); }
 [data-theme="dark"] .chat-plus-btn { background:var(--dark-card-92); border-color:var(--dark-border); color:var(--ink); }
 [data-theme="dark"] .more-panel { background:var(--dark-card-97); border-color:var(--dark-border); }
-[data-theme="dark"] .more-tab { background:var(--dark-card-92); color:var(--dark-soft); border-color:var(--dark-border); }
-[data-theme="dark"] .more-tab.sel { background:var(--btn-bg); color:var(--btn-ink); border-color:var(--btn-bg); }
-[data-theme="dark"] .more-tab:active { background:var(--dark-hover); }
+[data-theme="dark"] .more-tab { background:transparent; color:var(--dark-soft); border:none; }
+[data-theme="dark"] .more-tab.sel { background:rgba(255,255,255,.12); color:var(--ink); border:none; }
+[data-theme="dark"] .more-tab:active { background:rgba(255,255,255,.18); }
 [data-theme="dark"] .poke-card { background:var(--dark-card-97); border-color:var(--dark-border); }
 [data-theme="dark"] .poke-card-head { border-bottom-color:var(--dark-border); }
 [data-theme="dark"] .poke-card-close { background:var(--dark-hover); color:var(--ink); }
@@ -390,7 +387,8 @@
    tabbar.css 的 color-mix 透明度链在深色模式下同样生效（旧写法盖死 background，
    背景透明度滑杆在深色下会整条失效） */
 [data-theme="dark"] .tabbar { --tabbar-base-bg:var(--dark-card-92); border-color:var(--dark-border-12); }
-[data-theme="dark"] .tabbar .tab.active { background:var(--dark-hover); }
+/* 2026-11-02：选中块改内缩伪元素后，深色背景/阴影同步落到 ::before（阴影范围一并收紧） */
+[data-theme="dark"] .tabbar .tab.active::before { background:var(--dark-hover); box-shadow:0 1px 7px rgba(0,0,0,.32); }
 /* SVG stroke 兜底 */
 [data-theme="dark"] .ch-back svg,
 [data-theme="dark"] .set-row .ico svg,
@@ -402,7 +400,7 @@
 [data-theme="dark"] .cal-month-btn svg,
 [data-theme="dark"] .mem-cal-btn svg,
 [data-theme="dark"] .more-tab svg {
-    stroke: var(--ink);
+    stroke: currentColor;
   }
 /* placeholder */
 [data-theme="dark"] .card-search-input::placeholder,
@@ -429,11 +427,31 @@
 [data-theme="dark"] .msg-inplace .ip-opt-chk.on .ip-opt-box { border-color:var(--ink); background:var(--ink); }
 [data-theme="dark"] .msg-inplace .ip-opt-chk.on .ip-opt-box::after { border-color:#111; }
 [data-theme="dark"] .msg-ask-card { background:var(--dark-card-92); border-color:var(--dark-border); }
+/* 2026-10-26 提问卡片气泡化：左右问卡在暗色下同样读暗色气泡变量（变量未落值时兜深卡底） */
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-ask-card,
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-in .msg-choose-card {
+  background:var(--cs-in-surface, var(--msg-in-bg, var(--dark-card-92)));
+  color:var(--msg-in-ink, var(--ink));
+  border-color:var(--dark-border);
+}
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-ask-card,
+[data-theme="dark"] #page-chat .msg-ask.msg-ask-out .msg-choose-card {
+  background:var(--cs-out-surface, var(--msg-out-bg, var(--dark-card-92)));
+  color:var(--msg-out-ink, var(--ink));
+  border-color:var(--dark-border-12);
+}
+/* 2026-10-26 未答选项区：勾选与提交条在暗色下按暗色气泡变量走（变量未落值时兜深底） */
+[data-theme="dark"] .ask-opt-chk.on .ask-opt-box::after { border-color:var(--msg-in-bg, #2a2a2a); }
+[data-theme="dark"] .ask-opt-submit {
+  background:var(--msg-in-ink, #f0f0f0);
+  color:var(--msg-in-bg, #2a2a2a);
+}
 [data-theme="dark"] .msg-choose-card { background:var(--dark-card-92); border-color:var(--dark-border); }
-/* v3.33.x #521：批量问卷长卡片（暗色适配，跨域改动见 WORKLOG；观感对齐单题 ask-card） */
-[data-theme="dark"] .msg-survey-card { background:var(--dark-card-92); border-color:var(--dark-border); }
-[data-theme="dark"] .msg-survey-opt { background:var(--dark-card); border-color:var(--dark-border-12); color:var(--ink); }
-[data-theme="dark"] .msg-survey-opt.sel { border-color:var(--ink); }
+/* 2026-10-26 B 版问卷摘要卡暗色适配（卡面已并入气泡，只补接收侧按钮/绿字对比） */
+[data-theme="dark"] .msg-ask.msg-ask-in .msg-survey-detail-btn {
+  border-color:rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:var(--ink);
+}
+[data-theme="dark"] .msg-ask.msg-ask-in .msg-survey-a { color:#7fd39a; }
 [data-theme="dark"] .call-minimize { background:var(--dark-card); border-color:var(--dark-border-12); color:var(--dark-soft); }
 [data-theme="dark"] .call-mini { background:var(--dark-card-92); border-color:var(--dark-border); }
 [data-theme="dark"] .msg-poke-seg { background:var(--dark-card); border-color:var(--dark-border-12); }
@@ -568,6 +586,7 @@
 [data-theme="dark"] .msg-moods { border-top-color:rgba(255,255,255,.14); }
 [data-theme="dark"] .msg-mood .msg-mood-tag { background:rgba(255,255,255,.1); }
 [data-theme="dark"] .msg-fav-heart { background:rgba(255,255,255,.07); }
+[data-theme="dark"] .msg-fav-heart.is-fav { background:rgba(255,77,106,.18); color:#ff6b82; }
 [data-theme="dark"] .msg-inplace .ip-opt,
 [data-theme="dark"] .msg-inplace .ip-chip { border-color:var(--dark-border-12); background:var(--dark-card); }
 [data-theme="dark"] .msg-inplace .ip-opt:active,
@@ -752,8 +771,7 @@
 [data-theme="dark"] .ck-location { border-bottom-color:rgba(255,255,255,.06); }
 [data-theme="dark"] .ck-loc-entry { border-color:rgba(255,255,255,.22); background:var(--static-bg); }
 [data-theme="dark"] .ck-loc-entry:active { background:var(--dark-hover); }
-[data-theme="dark"] .loc-panel { background:var(--dark-card-97); }
-[data-theme="dark"] .loc-head,
+[data-theme="dark"] #loc-panel { background:var(--dark-card-97); }
 [data-theme="dark"] .loc-section { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-send-area { border-top-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-ask-btn { color:#111; }
@@ -784,12 +802,9 @@
 [data-theme="dark"] .fw-result { background:rgba(255,180,80,.1); border-color:rgba(255,180,80,.35); }
 [data-theme="dark"] .fw-p-line { color:rgba(255,255,255,.75); }
 [data-theme="dark"] .fw-result .fw-p-line:first-child { color:#ffc97e; }
-/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配 */
-[data-theme="dark"] .loc-panel.loc-full { background:var(--dark-card-97); }
-[data-theme="dark"] .loc-head { background:rgba(30,30,30,.96); }
-[data-theme="dark"] .loc-back { border-color:rgba(255,255,255,.14); background:rgba(255,255,255,.06); }
-[data-theme="dark"] .loc-back svg { stroke:#f0f0f0; }
-[data-theme="dark"] .loc-back:active { background:rgba(255,255,255,.12); }
+/* v3.26.x：全屏位置页（聊天寻踪半框 / 桌面寻踪页两入口统一全屏）暗色适配
+   #1613：已改为真正的 .page，页面背景由 #loc-panel 承接，旧 .loc-full 选择器下线；
+   #1613g：顶栏统一用全站 .chat-head（暗色由 .chat-head 既有规则承接），旧 loc-head/loc-back 下线 */
 [data-theme="dark"] .loc-section { background:var(--dark-card-92); border-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-item { border-bottom-color:rgba(255,255,255,.07); }
 [data-theme="dark"] .loc-tl-tag { background:var(--dark-hover); }

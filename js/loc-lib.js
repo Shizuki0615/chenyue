@@ -14,6 +14,19 @@ touch: ['好像碰到了你的手', '有什么轻轻碰了一下你的肩', '耳
 };
 const LABEL = { dir: '方位', dist: '距离', state: '状态', sense: '感知', egg: '彩蛋', custom: '自定义', combo: '组合', direct: '方向', rangef: '距离感', power: '感知强度', touch: '触碰' };
 const CATS = ['dir', 'dist', 'state', 'sense', 'egg', 'direct', 'rangef', 'power', 'touch'];
+const PT = window.presetTextEdit;
+const LOC_EDIT = function (c) { return 'loc:' + c; };
+function applyLocEdits() {
+if (!PT) return;
+CATS.forEach(function (c) {
+PT.apply(LOC_EDIT(c), function (newText, orig) {
+const arr = LIB[c] || [];
+for (let i = 0; i < arr.length; i++) if (arr[i] === orig) arr[i] = newText;
+});
+});
+}
+applyLocEdits();
+if (PT) PT.onRebuild(applyLocEdits);
 const DEF_KEY = 'loc-lib-default';          // 使用系统预设开关（默认开）
 const CUSTOM_KEY = 'loc-lib-custom';        // 我的添加（对象数组 [{t,grp}]）
 const GRP_KEY = 'loc-lib-groups';           // 我的添加自定义分组
@@ -21,7 +34,12 @@ function getUseDefault() {
 const v = store.get(DEF_KEY);
 return v === null ? true : v === '1';
 }
-function isOff(cat, text) { return store.get('loc-off-' + cat + ':' + text) === '1' || !!(window.presetGroup && window.presetGroup.isOff('loc', cat)); }
+function isOff(cat, text) {
+if (window.presetGroup && window.presetGroup.isOff('loc', cat)) return true;
+if (store.get('loc-off-' + cat + ':' + text) === '1') return true;
+const orig = PT ? PT.original(LOC_EDIT(cat), text) : text;
+return orig !== text && store.get('loc-off-' + cat + ':' + orig) === '1';
+}
 function setOff(cat, text, off) { store.set('loc-off-' + cat + ':' + text, off ? '1' : '0'); }
 function getGroups() {
 try {
@@ -157,9 +175,34 @@ window.presetGroup.bindBar(bar, 'loc', cat, function () { renderSysList(); updat
 }
 (LIB[cat] || []).forEach(x => {
 const off = isOff(cat, x);
+const ekey = LOC_EDIT(cat);
+const edited = !!(PT && PT.isEdited(ekey, x));
 const row = document.createElement('div');
 row.className = 'tc-qrow' + (off ? ' off' : '');
-row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + esc(x) + ' <span class="tc-known">系统</span></div></div>';
+row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + esc(x) + ' <span class="tc-known' +
+(edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>';
+if (PT) {
+const pencil = document.createElement('button');
+pencil.type = 'button';
+pencil.className = 'preset-edit-btn';
+pencil.title = '编辑这张系统字卡';
+pencil.setAttribute('aria-label', '编辑这张系统字卡');
+pencil.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+pencil.addEventListener('click', () => {
+PT.open({
+key: ekey,
+shown: x,
+exists: function (next) { return (LIB[cat] || []).some(y => y === next && y !== x); },
+onChanged: function (next) {
+const arr = LIB[cat] || [];
+for (let i = 0; i < arr.length; i++) if (arr[i] === x) arr[i] = next;
+renderSysList();
+updateEntryCount();
+}
+});
+});
+row.appendChild(pencil);
+}
 const lab = document.createElement('label');
 lab.className = 'toggle ccard-toggle';
 lab.innerHTML = '<input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span>';

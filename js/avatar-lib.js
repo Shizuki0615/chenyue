@@ -746,7 +746,7 @@ el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-wid
 };
 applyTo(chatAv);
 applyTo(deskRing);
-const avNodes = document.querySelectorAll((out ? '.msg-out' : '.msg-in') + ' .msg-av');
+const avNodes = document.querySelectorAll(out ? '.msg-out .msg-av, .msg-ask-out .msg-av' : '.msg-in .msg-av, .msg-ask-in .msg-av');
 const vh = window.innerHeight || 0;
 const avTail = [];
 for (let i = 0; i < avNodes.length; i++) {
@@ -992,26 +992,26 @@ try { if (window.chatSysNickChanged) window.chatSysNickChanged(oldEff, 'me'); } 
 try { if (window.renderChatHeader) window.renderChatHeader(); } catch (e) {}
 syncVal();
 }
-function nickMsgPartner(to) { return '他 把聊天昵称换成了「' + to + '」'; }
+function nickMsgPartner(to) { return '他把聊天昵称换成了「' + to + '」'; }
 function nickMsgMeSet(to) {
 return '我 把聊天昵称换成了「' + to + '」';
 }
 window.chatNickMsgMeSet = nickMsgMeSet;
 function nickMsgMeSelf(to) { return '我把自己的聊天昵称换成了「' + to + '」'; }
-function nickMsgTaSetMine(to) { return '他 把我的聊天昵称换成了「' + to + '」'; }
+function nickMsgTaSetMine(to) { return '他把我的聊天昵称换成了「' + to + '」'; }
 function replyNickInvite(accepted, name) {
 const to = String(name || store.get('cs-lbl-partner') || '');
 const text = accepted
-? (to ? '他 同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他 同意了我的换昵称邀请')
-: '他 拒绝了我的换昵称邀请，昵称保持不变';
+? (to ? '他同意了我的换昵称邀请，昵称换成了「' + to + '」' : '他同意了我的换昵称邀请')
+: '他拒绝了我的换昵称邀请，昵称保持不变';
 chatSystem(text, null, true);
 toast(text);
 }
 function replyMeNickInvite(accepted, name) {
 const to = String(name || store.get('cs-lbl-user') || '');
 const text = accepted
-? (to ? '我同意了 他 的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了 他 的换昵称邀请')
-: '我拒绝了 他 的换昵称邀请，昵称保持不变';
+? (to ? '我同意了他的换昵称邀请，我的昵称换成了「' + to + '」' : '我同意了他的换昵称邀请')
+: '我拒绝了他的换昵称邀请，昵称保持不变';
 chatSystem(text, null, true);
 }
 function switchNickFromLib(name) {

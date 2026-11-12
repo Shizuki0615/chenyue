@@ -224,7 +224,7 @@
   function itemAt(x, y) { return d.fx.find(f => f.x === x && f.y === y) || null; }
   function ownedCount(t) { return (d.inv[t] || 0) + d.fx.filter(x => x.t === t).length; }
   // #766 每日互动点数上限（判定与提示文案同源；改数值只改这里）
-  const EARN_CAP = { ta: { cap: 5, name: '陪 他 互动' }, n: { cap: 10, name: '家具互动' } };
+  const EARN_CAP = { ta: { cap: 5, name: '陪他互动' }, n: { cap: 10, name: '家具互动' } };
   function gainPts(n, kind) {
     const tk = todayKey();
     if (d.earn.day !== tk) d.earn = { day: tk, n: 0, ta: 0 };

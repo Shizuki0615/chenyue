@@ -4,6 +4,22 @@ const uid = window.activePrefix();
 const store = window.activeStore();
 const gStore = window.xyStore('xy-home-v2'); // v3.9.x：fish-log 全局累计（跨所有联系人按自然日去重）
 const DESK_IMG_SIZES = { s: 40, m: 70, l: 100 };
+const DESK_FRAME_STICKER_MAX = 8;
+const DESK_EMOJI_STICKERS = ['😊', '😍', '🥰', '😘', '😎', '😭', '😡', '🥺', '😴', '🤔', '🌸', '🌟', '❤️', '💖', '✨', '🍀', '🎀', '🐱', '🐰', '🐻'];
+const DESK_STICKER_LIB_KEY = 'desk-sticker-lib';
+const DESK_STICKER_LIB_MAX = 20;
+const DESK_STICKER_SRC_PREFIX = 'desk-sticker-src-';
+const DESK_FRAME_STICKERS = [
+{ id: 'heart', name: '爱心', svg: '<path d="M32 55C19 46 7 35 7 23.5A12.5 12.5 0 0 1 32 17a12.5 12.5 0 0 1 25 6.5C57 35 45 46 32 55z" fill="#e28b8b" stroke="#fff" stroke-width="3.2"/><path d="M18.5 22.5c0-4 2.8-6.7 6-7.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>' },
+{ id: 'star', name: '星星', svg: '<path d="M32 5.5l7.7 16.9 18.3 2-13.7 12.5 3.7 18.1L32 46.3 16 55l3.7-18.1L6 24.4l18.3-2z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><circle cx="25" cy="26" r="2.1" fill="#fff" opacity=".7"/>' },
+{ id: 'flower', name: '小花', svg: '<g fill="#efa8c2" stroke="#fff" stroke-width="2.6"><circle cx="32" cy="14" r="8.2"/><circle cx="47" cy="24" r="8.2"/><circle cx="44" cy="43" r="8.2"/><circle cx="20" cy="43" r="8.2"/><circle cx="17" cy="24" r="8.2"/></g><circle cx="32" cy="31" r="7.2" fill="#f6d76b" stroke="#fff" stroke-width="2.6"/>' },
+{ id: 'bow', name: '蝴蝶结', svg: '<path d="M28 30C20 26 10 20 8 16.5 7 14 9 11.5 12 11c3-.6 6.5 2.5 9.5 5.5L28 23z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M36 30c8-4 18-10 20-13.5 1-2.5-1-5-4-5.5-3-.6-6.5 2.5-9.5 5.5L36 23z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M29 34c-3 2-8 6-9 10-1 4 1 7 5 7 4 0 7-4 9-8z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><path d="M35 34c3 2 8 6 9 10 1 4-1 7-5 7-4 0-7-4-9-8z" fill="#e79ab5" stroke="#fff" stroke-width="3"/><circle cx="32" cy="30" r="8" fill="#f3c76b" stroke="#fff" stroke-width="3"/>' },
+{ id: 'cloud', name: '云朵', svg: '<path d="M17 47a10 10 0 0 1-1-19.8A14 14 0 0 1 42 22a9.5 9.5 0 0 1 5 18z" fill="#a9c9e6" stroke="#fff" stroke-width="3"/><circle cx="26" cy="35" r="2.1" fill="#fff" opacity=".85"/><circle cx="36" cy="33" r="2.4" fill="#fff" opacity=".85"/>' },
+{ id: 'moon', name: '月亮', svg: '<path d="M42 7a23 23 0 1 0 12 39A18.5 18.5 0 0 1 42 7z" fill="#f0c76d" stroke="#fff" stroke-width="3"/><path d="M48 13l1.7 3.9 3.9 1.7-3.9 1.7-1.7 3.9-1.7-3.9-3.9-1.7 3.9-1.7z" fill="#fff"/>' },
+{ id: 'leaf', name: '叶子', svg: '<path d="M12 52C12 28 30 12 54 11c1 24-15 42-42 41z" fill="#9ec79a" stroke="#fff" stroke-width="3"/><path d="M17 47C26 34 38 23 49 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>' },
+{ id: 'sparkle', name: '闪光', svg: '<path d="M32 4l4.6 23.4L60 32l-23.4 4.6L32 60l-4.6-23.4L4 32l23.4-4.6z" fill="#f6d76b" stroke="#fff" stroke-width="2.8"/>' },
+{ id: 'bear', name: '小熊', svg: '<circle cx="15" cy="19" r="9" fill="#c99d7b" stroke="#fff" stroke-width="2.8"/><circle cx="49" cy="19" r="9" fill="#c99d7b" stroke="#fff" stroke-width="2.8"/><circle cx="32" cy="36" r="19" fill="#d8ae8a" stroke="#fff" stroke-width="3"/><circle cx="32" cy="41" r="9" fill="#f4e2cf" stroke="#fff" stroke-width="2.2"/><circle cx="25" cy="33" r="2" fill="#5b4636"/><circle cx="39" cy="33" r="2" fill="#5b4636"/><ellipse cx="32" cy="39" rx="2.4" ry="1.6" fill="#5b4636"/><path d="M32 41v3" stroke="#5b4636" stroke-width="1.4"/><path d="M29 45c2 1.6 4 1.6 6 0" fill="none" stroke="#5b4636" stroke-width="1.4" stroke-linecap="round"/>' },
+];
 let viewerBound = false;
 const syncPageHint = (slide) => {
 if (!slide) return;
@@ -255,6 +271,8 @@ const sliderPreview = document.getElementById('modal-slider-preview');
 const sliderPreviewIco = document.getElementById('modal-slider-preview-ico');
 const colorInput = document.getElementById('modal-color');
 const customBtn = document.getElementById('modal-custom');
+let hexRow = document.getElementById('modal-hexrow');
+let hexInput = document.getElementById('modal-hex');
 const selectEl = document.getElementById('modal-select');
 const groupChipsEl = document.getElementById('modal-group-chips');
 const fileBtn = document.getElementById('modal-file');
@@ -319,6 +337,7 @@ let _openedAt = 0;
 let pillClicked = false;
 window.openModal = function (t, v, fn, opts) {
 opts = opts || {};
+ensureHexRow();
 _modalOpts = opts;
 _openSeq++;
 _openedAt = Date.now();
@@ -401,6 +420,13 @@ swatches.hidden = !(opts.swatches && opts.swatches.length);
 swatches.innerHTML = '';
 picked = -1;
 customVal = null;
+if (hexRow) hexRow.hidden = !opts.colorPicker;
+if (hexInput) { hexInput.value = ''; setHexBad(false); }
+if (opts.colorPicker && opts.pick === -2 && opts.color) {
+customVal = opts.color;
+picked = -2;
+if (hexInput) hexInput.value = String(opts.color);
+}
 if (opts.swatches && opts.swatches.length) {
 opts.swatches.forEach((label, i) => {
 const s = document.createElement('span');
@@ -412,12 +438,13 @@ Array.prototype.forEach.call(swatches.children, c => c.classList.remove('on'));
 s.classList.add('on');
 picked = i;
 customBtn.classList.remove('on');
+if (hexInput) { hexInput.value = ''; setHexBad(false); }
 });
 swatches.appendChild(s);
 });
 }
 buildPills(opts.pills, opts.pill);
-customBtn.hidden = !opts.colorPicker;
+customBtn.hidden = true;
 customBtn.classList.remove('on');
 if (opts.colorPicker && opts.pick === -2) customBtn.classList.add('on');
 if (opts.color) colorInput.value = opts.color;
@@ -568,6 +595,68 @@ colorInput.style.cssText = 'position:fixed;left:-9999px;top:0;width:40px;height:
 void colorInput.offsetWidth; // 强制回流，确保 iOS 判定该元素已渲染
 try { colorInput.click(); } catch (e) { try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e2) {} }
 });
+const normHex = (v) => {
+let c = String(v == null ? '' : v).trim().toLowerCase();
+if (!c) return '';
+if (c.charAt(0) !== '#') c = '#' + c;
+return /^#[0-9a-f]{6}$/.test(c) ? c : null;
+};
+const setHexBad = (bad) => {
+try { hexInput.classList.toggle('bad', !!bad); hexInput.style.borderColor = bad ? '#d64545' : ''; } catch (e) {}
+try { const b = ceBoxOf(hexInput); if (b) { b.classList.toggle('bad', !!bad); b.style.borderColor = bad ? '#d64545' : ''; } } catch (e) {}
+};
+const applyHexField = () => {
+if (!hexInput || hexRow.hidden) return false;
+const raw = readModalVal(hexInput).trim();
+if (!raw) { setHexBad(false); return false; }
+const c = normHex(raw);
+if (c === null) { setHexBad(true); return false; }
+setHexBad(false);
+customVal = c;
+picked = -2;
+customBtn.classList.add('on');
+Array.prototype.forEach.call(swatches.children, (s) => s.classList.remove('on'));
+return true;
+};
+function bindHexInput() {
+if (!hexInput || hexInput.__hexBound) return;
+hexInput.__hexBound = true;
+hexInput.addEventListener('input', applyHexField);
+hexInput.addEventListener('change', applyHexField);
+hexInput.addEventListener('keydown', (e) => {
+if (e.key !== 'Enter') return;
+e.preventDefault();
+if (applyHexField()) { try { hexInput.blur(); } catch (e2) {} }
+});
+}
+function ensureHexRow() {
+if (!mask) return;
+const box = mask.querySelector('.modal');
+if (!box) return;
+if (!hexRow) {
+hexRow = document.createElement('div');
+hexRow.className = 'modal-hexrow';
+hexRow.id = 'modal-hexrow';
+hexRow.hidden = true;
+hexRow.style.cssText = 'margin-top:9px';
+const anchor = document.getElementById('modal-custom');
+if (anchor && anchor.parentNode === box) box.insertBefore(hexRow, anchor.nextSibling);
+else box.appendChild(hexRow);
+}
+if (!hexInput) {
+hexInput = document.createElement('input');
+hexInput.type = 'text';
+hexInput.className = 'modal-hex';
+hexInput.id = 'modal-hex';
+hexInput.placeholder = '手输色值：#RRGGBB（如 #e05555）';
+hexInput.autocomplete = 'off';
+hexInput.maxLength = 7;
+hexInput.style.cssText = 'width:100%;border:1px solid var(--input-border,#e0e0e0);border-radius:12px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--input-bg,#fff);color:var(--ink,#111);text-transform:uppercase;box-sizing:border-box';
+hexRow.appendChild(hexInput);
+}
+bindHexInput();
+}
+bindHexInput();
 if (sliderRange) {
 sliderRange.addEventListener('input', () => {
 if (!sliderCfg) return;
@@ -582,6 +671,7 @@ customVal = colorInput.value;
 Array.prototype.forEach.call(swatches.children, c => c.classList.remove('on'));
 customBtn.classList.add('on');
 picked = -2;
+if (hexInput) { hexInput.value = customVal; setHexBad(false); }
 try { colorInput.hidden = true; colorInput.style.cssText = ''; } catch (e) {}
 });
 function close() {
@@ -603,6 +693,12 @@ const ae = document.activeElement;
 if (ae && ae.isContentEditable && mask.contains(ae)) ae.blur();
 } catch (e) {}
 if (!cb) return;
+if (pillsEl && !pillsEl.hidden && pillClicked) {
+if (pillsOnOk) pillsOnOk(pillVal);
+cb(pillVal);
+return;
+}
+if (hexRow && !hexRow.hidden && picked === -2 && customVal) { cb(customVal); return; }
 if (swatches && !swatches.hidden && (picked === -2 || picked >= 0)) {
 if (picked === -2 && customVal) { cb(customVal); return; }
 if (picked >= 0) { cb(picked); return; }
@@ -716,11 +812,16 @@ function brandText() {
 const v = gStore.get('desk-brand');
 return (v && v.trim()) ? v : 'Mochi';
 }
+window.mochiBrandText = brandText;
+window.mochiCoinBrand = function () {
+try { return brandText(); } catch (e) { return 'Mochi'; }
+};
 function paintDeskBrand() {
 const el = document.getElementById('desk-brand');
 if (el) el.textContent = brandText();
 const val = document.getElementById('desk-brand-val');
 if (val) val.textContent = gStore.get('desk-brand') || '默认（Mochi）';
+try { if (window.mochiRefreshCoinBrand) window.mochiRefreshCoinBrand(); } catch (e) {}
 }
 function bindDeskBrand() {
 const row = document.getElementById('row-desk-brand');
@@ -1508,7 +1609,7 @@ const bgOp = tabbarNum('tabbar-bg-op', 100, 0, 100);
 const wholeOp = tabbarNum('tabbar-whole-op', 100, 0, 100);
 const bgA = Math.round(bgOp * wholeOp) / 10000; // 背景＝两根滑杆叠乘
 const icoA = Math.max(wholeOp, 12) / 100;       // 图标层整栏透明度 12% 下限
-['--tabbar-bg-a', '--tabbar-ico-a', '--tabbar-bg-color', '--tabbar-radius', '--tabbar-blur', '--tabbar-ico-size'].forEach(p => rs.removeProperty(p));
+['--tabbar-bg-a', '--tabbar-ico-a', '--tabbar-bg-color', '--tabbar-radius', '--tabbar-blur', '--tabbar-ico-size', '--tabbar-y'].forEach(p => rs.removeProperty(p));
 if (bgA < 1) rs.setProperty('--tabbar-bg-a', String(bgA));
 if (icoA < 1) rs.setProperty('--tabbar-ico-a', String(icoA));
 const bgc = store.get('tabbar-bg-color');
@@ -1519,6 +1620,8 @@ const blur = tabbarNum('tabbar-blur', 0, 0, 20);
 if (blur > 0) rs.setProperty('--tabbar-blur', blur + 'px');
 const isz = tabbarNum('tabbar-icon-size', 23, 18, 34);
 if (isz !== 23) rs.setProperty('--tabbar-ico-size', isz + 'px');
+const y = tabbarNum('tabbar-y-offset', 0, -12, 12);
+if (y !== 0) rs.setProperty('--tabbar-y', y + 'px');
 if (!bar) return;
 bar.classList.toggle('tabbar-blur-on', blur > 0);
 bar.classList.toggle('tabbar-faint', bgOp < 50 || wholeOp < 50);
@@ -1595,11 +1698,12 @@ pills: [{ label: '更换图片', value: 'pick' }, { label: '移除恢复默认',
 };
 const resetTabbarBeauty = () => {
 TABBAR_PAGES.forEach(pk => store.remove('tab-icon-' + pk));
-['tab-icon-opacity', 'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size'].forEach(k => store.remove(k));
+['tab-icon-opacity', 'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size', 'tabbar-y-offset'].forEach(k => store.remove(k));
 restoreTabbarIcons();
 };
 restoreTabbarIcons();
 const restoreAppIconOrder = () => {
+if (window.__deskGridV2GridActive) return;
 const allGrids = Array.prototype.slice.call(document.querySelectorAll('.app-grid'));
 const byKey = {};
 allGrids.forEach(g => {
@@ -1645,6 +1749,12 @@ try { return JSON.parse(store.get('hidden-icons') || '[]'); } catch (e) { return
 };
 const setHiddenIcons = (arr) => {
 store.set('hidden-icons', JSON.stringify(arr));
+};
+const getHiddenWidgets = () => {
+try { return JSON.parse(store.get('hidden-widgets') || '[]'); } catch (e) { return []; }
+};
+const setHiddenWidgets = (arr) => {
+try { store.set('hidden-widgets', JSON.stringify(arr)); } catch (e) {}
 };
 const applyHiddenIcons = () => {
 const hidden = getHiddenIcons();
@@ -2277,15 +2387,30 @@ paletteHost.appendChild(strip);
 const tip = document.createElement('div');
 tip.style.cssText = 'font-size:10.5px;color:var(--muted,#999);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap';
 const tipTx = document.createElement('span');
-tipTx.textContent = '正在调「' + item.label + '」，点色块即时生效';
-const hexBtn = document.createElement('button');
-hexBtn.textContent = '手输色值';
-hexBtn.style.cssText = 'font-size:11px;padding:3px 8px;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);cursor:pointer';
-hexBtn.addEventListener('click', () => {
-openHexColorModal('输入' + item.label + '色值', item.curGet() || '#111111', (c) => { item.curSet(c); toast(item.label + '已设为 ' + String(c).toUpperCase()); });
-});
-tip.appendChild(tipTx); tip.appendChild(hexBtn);
+tipTx.textContent = '正在调「' + item.label + '」，点色块或下方手输即时生效';
+tip.appendChild(tipTx);
 paletteHost.appendChild(tip);
+const hexLine = document.createElement('div');
+hexLine.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap';
+const hexIn = document.createElement('input');
+hexIn.type = 'text';
+hexIn.placeholder = '#RRGGBB';
+hexIn.maxLength = 7;
+hexIn.autocomplete = 'off'; hexIn.autocorrect = 'off'; hexIn.autocapitalize = 'off'; hexIn.spellcheck = false;
+hexIn.style.cssText = 'width:104px;font-size:11px;padding:3px 7px;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--input-bg,#fff);color:var(--ink,#111);outline:none';
+const applyInlineHex = () => {
+let c = String(hexIn.value || '').trim().toLowerCase();
+if (!c) return;
+if (c.charAt(0) !== '#') c = '#' + c;
+if (!/^#[0-9a-f]{6}$/.test(c)) { toast('格式不对：# + 6 位十六进制，如 #e05555'); return; }
+item.curSet(c);
+hexIn.value = c;
+toast(item.label + ' 已设为 ' + c.toUpperCase());
+};
+hexIn.addEventListener('change', applyInlineHex);
+hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyInlineHex(); } });
+hexLine.appendChild(hexIn);
+paletteHost.appendChild(hexLine);
 };
 const zoomWorks = !(window.matchMedia && window.matchMedia('(max-width: 900px)').matches) && !document.documentElement.classList.contains('force-mobile');
 const SECS = [
@@ -2311,6 +2436,15 @@ txBtn.textContent = '改桌面文字颜色（进装修模式点文字）';
 txBtn.style.cssText = 'padding:7px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);font-size:11.5px;cursor:pointer';
 txBtn.addEventListener('click', () => { d.style.display = 'none'; try { enterDecor(); } catch (e) {} });
 wrap.appendChild(txBtn);
+const wCssBtn = document.createElement('button');
+wCssBtn.textContent = '小组件 CSS（自定义样式）';
+wCssBtn.style.cssText = 'padding:7px;border:1px solid var(--card-border,#ddd);border-radius:9px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);font-size:11.5px;cursor:pointer';
+wCssBtn.addEventListener('click', () => {
+d.style.display = 'none';
+const row = document.getElementById('row-widget-css');
+if (row) row.click(); else toast('入口暂不可达，请到设置 → 手机桌面美化 → 小组件 CSS');
+});
+wrap.appendChild(wCssBtn);
 wrap.appendChild(mkSlider('透明度', 'widget-opacity', '--widget-opacity', 40, 100, 5, '%', 100, (v) => {
 applyWidgetOpacity(parseInt(v, 10)); // 复用设置页 applier：写 --widget-opacity + 同步标签
 }));
@@ -2401,6 +2535,11 @@ toast('点桌面上要调整的图标，就能调它的图片位置');
 });
 fitBtn.style.fontWeight = '600';
 wrap.appendChild(fitBtn);
+wrap.appendChild(mkAct('图标 CSS（自定义样式）', () => {
+d.style.display = 'none';
+const row = document.getElementById('row-icon-css');
+if (row) row.click(); else toast('入口暂不可达，请到设置 → 手机桌面美化 → 图标 CSS');
+}));
 const note = document.createElement('div');
 note.style.cssText = 'font-size:10.5px;color:var(--muted,#999);line-height:1.5';
 note.textContent = '换单个图标＝点「上传单个图标图片」后点桌面图标选「上传图片」；换一批用批量上传。上传过的图片可单独调「缩放 / 水平位置 / 垂直位置」，即时生效、不用重新上传。';
@@ -2444,6 +2583,10 @@ const bar = document.querySelector('.tabbar');
 if (bar) bar.classList.toggle('tabbar-blur-on', n > 0);
 }, (v) => { const n = parseInt(v, 10); if (n > 0) store.set('tabbar-blur', String(n)); else store.remove('tabbar-blur'); }));
 wrap.appendChild(mkSlider('图标大小', 'tabbar-icon-size', '--tabbar-ico-size', 18, 34, 1, 'px', 23, null, (v) => { const n = parseInt(v, 10); if (n === 23) store.remove('tabbar-icon-size'); else store.set('tabbar-icon-size', String(n)); }));
+wrap.appendChild(mkSlider('上下位置', 'tabbar-y-offset', '', -12, 12, 1, 'px', 0, (v) => {
+const n = parseInt(v, 10);
+setBarVar('--tabbar-y', n === 0 ? null : n + 'px');
+}, (v) => { const n = parseInt(v, 10); if (n === 0) store.remove('tabbar-y-offset'); else store.set('tabbar-y-offset', String(n)); }));
 paletteHost = document.createElement('div');
 const cgrid = document.createElement('div');
 cgrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px';
@@ -2457,7 +2600,7 @@ rst.addEventListener('click', () => { armUndo(); resetTabbarBeauty(); renderSec(
 wrap.appendChild(rst);
 const nt = document.createElement('div');
 nt.style.cssText = 'font-size:10.5px;color:var(--muted,#999);line-height:1.5';
-nt.textContent = '「背景透明度」只稀释底色；「整栏透明度」连图标一起淡出——图标保底 12%、按屏下瞬间显形，不会消失找不回。按钮图片点上面三个按钮上传（已传过可选更换/移除）。';
+nt.textContent = '「背景透明度」只稀释底色；「整栏透明度」连图标一起淡出——图标保底 12%、按屏下瞬间显形，不会消失找不回。按钮图片点上面三个按钮上传（已传过可选更换/移除）。「上下位置」正值下移、负值上移，0 为默认。';
 wrap.appendChild(nt);
 return wrap;
 } }
@@ -2972,6 +3115,338 @@ pills: [{ label: '自动跟随深色', value: 'auto' }, { label: '恢复默认',
 });
 }
 document.addEventListener('contact-switched', applyAppNameColor);
+const iconInkRow = document.getElementById('row-icon-ink');
+const iconInkVal = document.getElementById('icon-ink-val');
+const ICON_INK_KEY = 'icon-ink-color';
+const iconInkValOf = () => { try { return store.get(ICON_INK_KEY) || ''; } catch (e) { return ''; } };
+function applyIconInkColor() {
+const old = document.getElementById('icon-ink-color-style');
+if (old) old.remove();
+const c = iconInkValOf();
+if (iconInkVal) iconInkVal.textContent = c ? c.toUpperCase() : '默认';
+if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) return;
+const st = document.createElement('style');
+st.id = 'icon-ink-color-style';
+const _inkN = parseInt(c.slice(1), 16);
+const _inkR = (_inkN >> 16) & 255, _inkG = (_inkN >> 8) & 255, _inkB = _inkN & 255;
+const _inkLum = (0.299 * _inkR + 0.587 * _inkG + 0.114 * _inkB) / 255;
+const _inkLight = _inkLum > 0.72;
+const _shR = _inkLight ? Math.round(_inkR * 0.55) : _inkR;
+const _shG = _inkLight ? Math.round(_inkG * 0.55) : _inkG;
+const _shB = _inkLight ? Math.round(_inkB * 0.55) : _inkB;
+const _bgA = _inkLight ? 0.13 : 0.10;
+st.textContent = '#page-phone .app .app-ico svg{stroke:' + c + ' !important;}'
++ '.tabbar .tab{color:' + c + ' !important;}'
++ '.tabbar .tab.active{color:' + c + ' !important;}'
++ '.tabbar .tab.active::before{background:rgba(' + _inkR + ',' + _inkG + ',' + _inkB + ',' + _bgA + ') !important;box-shadow:0 1px 6px rgba(' + _shR + ',' + _shG + ',' + _shB + ',.14) !important;}'
++ '.tabbar .tab svg{stroke-opacity:.55;}'
++ '.tabbar .tab.active svg{stroke-opacity:1;}';
+document.head.appendChild(st);
+}
+applyIconInkColor();
+if (iconInkRow) {
+const iconInkSwatches = [
+{ color: '#111111', label: '默认黑' },
+{ color: '#333333', label: '深灰' },
+{ color: '#555555', label: '中灰' },
+{ color: '#777777', label: '浅中灰' },
+{ color: '#999999', label: '中浅灰' },
+{ color: '#bbbbbb', label: '浅灰' },
+{ color: '#ffffff', label: '纯白' },
+{ color: '#e05555', label: '樱花粉' },
+{ color: '#cc5555', label: '珊瑚红' },
+{ color: '#e8753a', label: '暖橘' },
+{ color: '#f0a020', label: '琥珀金' },
+{ color: '#2e8b57', label: '薄荷绿' },
+{ color: '#4a9d5e', label: '森绿' },
+{ color: '#3a7bd5', label: '天蓝' },
+{ color: '#7b5fd6', label: '紫罗兰' },
+{ color: '#d6459d', label: '玫红' },
+];
+iconInkRow.addEventListener('click', () => {
+if (!window.openModal) return;
+const current = iconInkValOf();
+window.openModal('图标与底栏线条颜色', '', (v) => {
+if (v === '__reset__') { store.remove(ICON_INK_KEY); applyIconInkColor(); return; }
+const color = (typeof v === 'number' && iconInkSwatches[v]) ? iconInkSwatches[v].color : v;
+if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
+store.set(ICON_INK_KEY, color);
+applyIconInkColor();
+}, {
+colorPicker: true,
+noInput: true,
+color: current,
+swatches: iconInkSwatches,
+pills: [{ label: '恢复默认', value: '__reset__' }],
+});
+});
+}
+document.addEventListener('contact-switched', applyIconInkColor);
+const DESK_WIDGET_CSS_KEY = 'desk-widget-css';
+const DESK_ICON_CSS_KEY = 'desk-icon-css';
+const DESK_CSS_ROOT = '#page-phone';
+const DESK_WIDGET_CSS_TARGET = '[data-card-bg]';
+const DESK_ICON_CSS_TARGET = '.app .app-ico';
+const DESK_CSS_WIDGETS = [
+{ type: 'deco', name: '纪念日卡' },
+{ type: 'quote', name: '今日情话' },
+{ type: 'fish', name: '已摸鱼' },
+{ type: 'checkin', name: '打卡横幅' },
+{ type: 'music', name: '音乐播放器' },
+{ type: 'memo', name: '今日备忘' },
+{ type: 'mood', name: '今天的心情' },
+{ type: 'week', name: '本周日常' },
+{ type: 'weekend', name: '周末倒计时' },
+{ type: 'desk-clock', name: '时钟' },
+{ type: 'desk-calendar', name: '日历' },
+{ type: 'desk-timer', name: '倒计时' },
+{ type: 'desk-anniv', name: '倒数日' },
+{ type: 'desk-period', name: '经期' },
+{ type: 'photo-frame', name: '拍立得相框', sel: '.desk-photo-frame' },
+];
+const deskDeclsImportant = (decl) => String(decl || '').split(';').map(function (part) {
+const s = part.trim();
+if (!s) return '';
+return /!\s*important$/i.test(s) ? s : s + '!important';
+}).filter(Boolean).join(';');
+function scopeDeskCss(css, fallbackSel) {
+css = String(css || '').replace(/<\/style/gi, '<\\/style').trim();
+if (!css) return '';
+if (css.indexOf('{') < 0) {
+const decl = deskDeclsImportant(css);
+return decl ? DESK_CSS_ROOT + ' ' + fallbackSel + '{' + decl + '}' : '';
+}
+const host = document.createElement('style');
+host.media = 'not all';
+host.textContent = css;
+document.head.appendChild(host);
+try {
+const sheet = host.sheet;
+if (!sheet) return '';
+const scopeSelector = (sel) => String(sel || '').split(',').map(function (part) {
+part = part.trim();
+if (!part) return part;
+if (part.indexOf(DESK_CSS_ROOT) === 0) return part;
+return DESK_CSS_ROOT + ' ' + part;
+}).join(', ');
+const walk = function (rules) {
+for (let i = 0; i < rules.length; i++) {
+const r = rules[i];
+if (!r) continue;
+if (r.type === 1) {
+try {
+r.selectorText = scopeSelector(r.selectorText);
+const ss = r.style;
+for (let j = ss.length - 1; j >= 0; j--) {
+const p = ss[j];
+const v = ss.getPropertyValue(p);
+if (v && ss.getPropertyPriority(p) !== 'important') ss.setProperty(p, v, 'important');
+}
+} catch (e) {}
+} else if (r.type === 4 || r.type === 12 || (r.cssRules && r.type !== 7)) {
+try { walk(r.cssRules); } catch (e) {}
+}
+}
+};
+walk(sheet.cssRules);
+const out = [];
+for (let i = 0; i < sheet.cssRules.length; i++) {
+const r = sheet.cssRules[i];
+if (r && r.type === 3) continue; // @import 不执行
+out.push(r.cssText);
+}
+return out.join('\n');
+} catch (e) {
+return '';
+} finally {
+host.remove();
+}
+}
+function applyDeskCss(key, styleId, valId, fallbackSel) {
+const old = document.getElementById(styleId);
+if (old) old.remove();
+let css = '';
+try { css = String(store.get(key) || '').trim(); } catch (e) {}
+const val = document.getElementById(valId);
+if (val) val.textContent = css ? '已设置' : '默认';
+if (!css) return;
+const out = scopeDeskCss(css, fallbackSel);
+if (!out) {
+if (val) val.textContent = '格式有误';
+return;
+}
+const st = document.createElement('style');
+st.id = styleId;
+st.textContent = out;
+document.head.appendChild(st);
+}
+function applyDeskWidgetCss() {
+applyDeskCss(DESK_WIDGET_CSS_KEY, 'desk-widget-css-style', 'widget-css-val', DESK_WIDGET_CSS_TARGET);
+}
+function applyDeskIconCss() {
+applyDeskCss(DESK_ICON_CSS_KEY, 'desk-icon-css-style', 'icon-css-val', DESK_ICON_CSS_TARGET);
+}
+function deskCssReadVal(el) {
+if (!el) return '';
+let v = '';
+try { v = el.value || ''; } catch (e) {}
+if (String(v).trim()) return String(v);
+try {
+const box = el.__ceBox || (el.parentNode && el.parentNode.querySelector('.ce-box[data-for="' + (el.id || '') + '"]'));
+if (box) {
+const t = (box.innerText || box.textContent || '');
+if (String(t).trim()) return String(t);
+}
+} catch (e) {}
+return v;
+}
+function setDeskCssCaret(ta, pos) {
+if (!ta) return;
+try { ta.focus(); } catch (e) {}
+const box = ta.__ceBox;
+if (box) {
+try {
+const text = box.textContent || '';
+const p = Math.max(0, Math.min(pos, text.length));
+const range = document.createRange();
+const walker = document.createTreeWalker(box, 4 /* SHOW_TEXT */, null, false);
+let node, offset = 0, placed = false;
+while ((node = walker.nextNode())) {
+const len = node.nodeValue ? node.nodeValue.length : 0;
+if (p <= offset + len) {
+range.setStart(node, Math.max(0, p - offset));
+range.collapse(true);
+placed = true;
+break;
+}
+offset += len;
+}
+const sel = window.getSelection();
+if (!sel) return;
+sel.removeAllRanges();
+if (placed) sel.addRange(range);
+else {
+range.selectNodeContents(box);
+range.collapse(false);
+sel.addRange(range);
+}
+return;
+} catch (e) {}
+}
+try { ta.setSelectionRange(pos, pos); } catch (e) {}
+}
+function insertDeskWidgetSelector(ta, type) {
+if (!ta || !type) return;
+const item = DESK_CSS_WIDGETS.find(function (w) { return w && w.type === type; });
+const sel = (item && item.sel) ? item.sel : '[data-card-bg="' + type + '"]';
+const cur = deskCssReadVal(ta);
+if (cur.indexOf(sel + ' {') >= 0) {
+const s = cur.lastIndexOf(sel + ' {');
+const line = cur.indexOf('\n', s);
+const p = line >= 0 ? line + 3 : cur.length;
+setDeskCssCaret(ta, p);
+return;
+}
+const block = sel + ' {\n  \n}';
+let next;
+if (!cur.trim()) {
+next = block;
+} else if (cur.indexOf('{') < 0) {
+const body = cur.trim().split('\n').map(function (line) { return '  ' + line; }).join('\n');
+next = DESK_WIDGET_CSS_TARGET + ' {\n' + body + '\n}\n\n' + block;
+} else {
+next = cur.replace(/\s+$/, '') + '\n\n' + block;
+}
+ta.value = next;
+const start = next.lastIndexOf(sel + ' {');
+let pos = next.length - 2;
+if (start >= 0) {
+const line = next.indexOf('\n', start);
+if (line >= 0) pos = line + 3;
+}
+setDeskCssCaret(ta, pos);
+}
+function bindDeskCssRow(opts) {
+const row = document.getElementById(opts.rowId);
+if (!row) return;
+row.addEventListener('click', function () {
+if (!window.openTCPanel) {
+try { toast('样式编辑器还没加载上，请刷新页面再试'); } catch (e) {}
+return;
+}
+const pickerHtml = opts.picker ? (
+'<div class="sm-fld-hint" style="margin:8px 0 4px">单独改某个小组件：选组件 → 插入选择器 → 在括号里写样式；其他组件不受影响。</div>' +
+'<div style="display:flex;gap:6px;margin-bottom:8px">' +
+'<select id="desk-widget-css-target" class="tc-input" style="flex:1;width:auto;min-width:0;padding:8px 10px;font-size:12.5px">' +
+DESK_CSS_WIDGETS.map(function (w) { return '<option value="' + w.type + '">' + w.name + '</option>'; }).join('') +
+'</select>' +
+'<button class="cc-tool" id="desk-widget-css-insert" style="flex:none;width:auto;padding:8px 12px;font-size:12px">插入选择器</button>' +
+'</div>'
+) : '';
+window.openTCPanel(opts.title, '' +
+'<div class="sm-fld-hint" style="margin-bottom:8px">' + opts.hint + '</div>' +
+pickerHtml +
+'<textarea id="' + opts.inputId + '" class="tc-input" rows="6" placeholder="' + opts.placeholder + '"></textarea>' +
+'<div class="mail-actions"><button class="cc-tool" id="' + opts.clearId + '">清空</button><button class="cc-tool" id="' + opts.okId + '">应用</button></div>');
+const ta = document.getElementById(opts.inputId);
+if (ta) {
+try { ta.value = store.get(opts.key) || ''; } catch (e) { ta.value = ''; }
+}
+const targetSel = document.getElementById('desk-widget-css-target');
+const insertBtn = document.getElementById('desk-widget-css-insert');
+if (opts.picker && targetSel && insertBtn && ta) {
+insertBtn.addEventListener('click', function () {
+insertDeskWidgetSelector(ta, targetSel.value);
+});
+}
+const clearBtn = document.getElementById(opts.clearId);
+if (clearBtn) clearBtn.addEventListener('click', function () {
+try { store.remove(opts.key); } catch (e) {}
+const mask = document.getElementById('tc-mask');
+if (mask) mask.hidden = true;
+opts.apply();
+try { toast(opts.clearToast); } catch (e) {}
+});
+const okBtn = document.getElementById(opts.okId);
+if (okBtn) okBtn.addEventListener('click', function () {
+const v = String(deskCssReadVal(ta) || '').trim();
+try { if (v) store.set(opts.key, v); else store.remove(opts.key); } catch (e) {}
+const mask = document.getElementById('tc-mask');
+if (mask) mask.hidden = true;
+opts.apply();
+try { toast(v ? opts.applyToast : opts.clearToast); } catch (e) {}
+});
+});
+}
+bindDeskCssRow({
+rowId: 'row-widget-css',
+key: DESK_WIDGET_CSS_KEY,
+inputId: 'desk-widget-css-input',
+clearId: 'desk-widget-css-clear',
+okId: 'desk-widget-css-ok',
+title: '小组件 CSS',
+hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.12)</code>（自动应用到所有带背景的桌面小组件卡片）<br>· 或写选择器，如 <code>.music-widget{...}</code>、<code>[data-card-bg=&quot;week&quot;]{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。<br>· 拍立得相框：选「拍立得相框」插入 <code>.desk-photo-frame{...}</code>；相纸底色 <code>--photo-frame-paper</code>、小字颜色 <code>--photo-frame-ink</code>、胶带颜色 <code>--photo-frame-tape</code> 也可直接覆盖。',
+placeholder: 'border-radius: 24px;&#10;box-shadow: 0 8px 24px rgba(0,0,0,.12);',
+picker: true,
+apply: applyDeskWidgetCss,
+applyToast: '小组件样式已应用',
+clearToast: '已清空小组件样式',
+});
+bindDeskCssRow({
+rowId: 'row-icon-css',
+key: DESK_ICON_CSS_KEY,
+inputId: 'desk-icon-css-input',
+clearId: 'desk-icon-css-clear',
+okId: 'desk-icon-css-ok',
+title: '图标 CSS',
+hint: '输入自定义样式，支持两种写法：<br>· 直接写声明，如 <code>border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.18)</code>（自动应用到所有桌面图标外框）<br>· 或写选择器，如 <code>.app[data-app=&quot;chat&quot;] .app-ico{...}</code>、<code>.app-ico img{...}</code>、<code>.app-name{...}</code>；系统会自动把选择器限定在手机桌面页，只作用当前联系人桌面。',
+placeholder: 'border-radius: 16px;&#10;box-shadow: 0 4px 12px rgba(0,0,0,.18);',
+apply: applyDeskIconCss,
+applyToast: '图标样式已应用',
+clearToast: '已清空图标样式',
+});
+applyDeskWidgetCss();
+applyDeskIconCss();
 if (!document.getElementById('desk-cp-style')) {
 const cpStyle = document.createElement('style');
 cpStyle.id = 'desk-cp-style';
@@ -3225,9 +3700,11 @@ const BEAUTY_KEYS = [
 'bg-blur', 'bg-mask-op',
 'desk-font-size', 'desk-card-scale', 'desk-card-radius',
 'widget-opacity', 'ico-radius', 'ico-shape',
+'desk-widget-css', 'desk-icon-css',
 'widget-bg-color', 'widget-border-color', 'widget-btn-color', 'widget-btn-text-color', 'widget-heart-color',
 'app-name-color',
-'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size',
+'icon-ink-color',
+'tabbar-bg-op', 'tabbar-whole-op', 'tabbar-bg-color', 'tabbar-radius', 'tabbar-blur', 'tabbar-icon-size', 'tabbar-y-offset',
 'tab-icon-opacity',
 'desk-layout', 'desk-page-count',
 'desk-images', 'desk-texts', 'desk-countdowns',
@@ -3349,7 +3826,7 @@ pills: pills,
 });
 });
 }
-const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
+const SCOPE_COLOR_KEYS = ['widget-bg-color','widget-border-color','widget-btn-color','widget-btn-text-color','widget-heart-color','app-name-color','icon-ink-color','widget-opacity','desk-card-radius','ico-radius','ico-shape','desk-font-size','desk-card-scale'];
 const SCOPE_BG_KEYS = ['phone-bg','phone-bg-preset','phone-bg-solid','phone-bg-pos-x','phone-bg-pos-y','phone-bg-size','bg-blur','bg-mask-op'];
 const SCOPE_LAYOUT_KEYS = ['desk-layout','desk-page-count','desk-images','desk-texts','desk-countdowns'];
 const applyBeautyData = (data, scope) => {
@@ -3829,7 +4306,7 @@ const b64 = decodeURIComponent(location.hash.slice(8)).replace(/-/g, '+').replac
 data = JSON.parse(decodeURIComponent(escape(atob(b64))));
 } catch (e) {
 cleanHash();
-const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让 他 用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
+const msg = '这条分享链接不完整或已损坏（多半被聊天软件截断了）。请让他用「导出美化方案」把方案文件发给你，或重新发送完整链接。';
 if (window.openModal) window.openModal('分享链接无法读取', '', () => {}, { noInput: true, pillSubmit: true, staticText: msg, pills: [{ label: '知道了', value: 'ok' }] });
 else toast(msg);
 return;
@@ -3979,6 +4456,30 @@ clearP(); bar.style.display = 'none'; toast('已应用「' + name + '」');
 });
 bar.appendChild(tx); bar.appendChild(re); bar.appendChild(keep);
 bar.style.display = 'flex';
+})();
+(function initThemeStickyHead() {
+const page = document.getElementById('page-theme');
+if (!page) return;
+const head = page.querySelector('.chat-head');
+if (!head) return;
+const sync = () => {
+const h = head.offsetHeight;
+if (!page.hidden && h > 0) page.style.setProperty('--theme-head-h', h + 'px');
+};
+try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
+sync();
+})();
+(function initSettingStickyHead() {
+const page = document.getElementById('page-setting');
+if (!page) return;
+const head = page.querySelector('.set-title');
+if (!head) return;
+const sync = () => {
+const h = head.offsetHeight;
+if (!page.hidden && h > 0) page.style.setProperty('--set-head-h', h + 'px');
+};
+try { if (window.ResizeObserver) new ResizeObserver(sync).observe(head); } catch (e) {}
+sync();
 })();
 (function initThemeTabs() {
 const tabsEl = document.getElementById('them-tabs');
@@ -4231,7 +4732,7 @@ const src = store.get('phone-bg') || store.get('cs-bg'); // 优先桌面壁纸�
 if (!src) { toast('请先在桌面美化或聊天美化里设置一张壁纸'); return; }
 toast('正在从壁纸取色…');
 sampleWallpaperColor(src).then((c) => {
-if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用「手动输入色值」'); return; }
+if (!c || !/^#[0-9a-fA-F]{6}$/.test(c)) { toast('取色失败，请改用下方手输色值'); return; }
 try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
 applyAccentColor(c);
 toast('已从壁纸取色 ' + c.toUpperCase() + '（不满意可再点色块微调）');
@@ -4258,10 +4759,12 @@ const applyAccentColor = (color) => {
 if (color && /^#[0-9a-fA-F]{6}$/.test(color)) {
 document.documentElement.style.setProperty('--btn-bg', color);
 document.documentElement.style.setProperty('--btn-ink', accentLuminance(color) > 0.55 ? '#111111' : '#ffffff');
+document.documentElement.style.setProperty('--photo-frame-tape', color);
 if (accentVal) accentVal.textContent = color.toUpperCase() === '#111111' ? '默认' : '已设置';
 } else {
 document.documentElement.style.removeProperty('--btn-bg');
 document.documentElement.style.removeProperty('--btn-ink');
+document.documentElement.style.removeProperty('--photo-frame-tape');
 if (accentVal) accentVal.textContent = '默认';
 }
 };
@@ -4273,14 +4776,6 @@ const current = getAccentColor();
 window.openModal('主题色', '', (v) => {
 if (v === '__reset__') { try { localStorage.removeItem(ACCENT_KEY); } catch (e) {} applyAccentColor(''); return; }
 if (v === '__pick_wall__') { applyAccentFromWallpaper(); return; }
-if (v === '__hex__') {
-openHexColorModal('手动输入主题色', current || '#e05555', (c) => {
-try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
-applyAccentColor(c);
-toast('主题色已设置 ' + c.toUpperCase());
-});
-return;
-}
 const color = (typeof v === 'number' && ACCENT_PRESETS[v]) ? ACCENT_PRESETS[v].color : v;
 if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
 try { localStorage.setItem(ACCENT_KEY, color); } catch (e) {}
@@ -4290,10 +4785,9 @@ noInput: true,
 colorPicker: true,
 color: current,
 swatches: ACCENT_PRESETS,
-staticText: '点色块=一键选用，最简单可靠。「从壁纸取色」自动挑壁纸主色配成主题色。「自定义颜色」调起手机系统取色器，部分手机（内置浏览器/APP内打开）不支持、点了没反应——请改用「手动输入色值」，填 6 位色值如 #e05555（网上搜「颜色代码」可查任意颜色的色值）。',
+staticText: '点色块一键选用；「从壁纸取色」自动配主色；也可在下方手输 #RRGGBB。',
 pills: [
 { label: '从壁纸取色', value: '__pick_wall__' },
-{ label: '手动输入色值', value: '__hex__' },
 { label: '恢复默认', value: '__reset__' },
 ],
 });
@@ -4307,6 +4801,7 @@ const rows = [
 ['row-widget-btn', () => { store.remove('widget-btn-color'); document.documentElement.style.removeProperty('--widget-btn'); paintBeautyVal(widgetBtnVal, '', '#111111', '默认黑'); }],
 ['row-widget-btn-text', () => { store.remove('widget-btn-text-color'); document.documentElement.style.removeProperty('--widget-btn-text'); paintBeautyVal(widgetBtnTextVal, '', '#ffffff', '默认白'); }],
 ['row-app-name-color', () => { store.remove(APP_NAME_COLOR_KEY); applyAppNameColor(); }],
+['row-icon-ink', () => { store.remove(ICON_INK_KEY); applyIconInkColor(); }],
 ['row-widget-heart', () => { store.remove('widget-heart-color'); document.documentElement.style.removeProperty('--widget-heart'); paintBeautyVal(widgetHeartVal, '', '#111111', '默认黑'); }]
 ];
 rows.forEach(function (pair) {
@@ -4324,6 +4819,65 @@ try { pair[1](); } catch (err) {}
 try { if (typeof toast === 'function') toast('已恢复默认'); } catch (err) {}
 });
 row.appendChild(btn);
+});
+})();
+(function bindBeautyColorHexInputs() {
+const rows = [
+['row-accent-color', '主题色', getAccentColor, (c) => {
+try { localStorage.setItem(ACCENT_KEY, c); } catch (e) {}
+applyAccentColor(c);
+}],
+['row-widget-color', '小组件颜色', () => store.get('widget-bg-color') || '', (c) => {
+store.set('widget-bg-color', c);
+applyWidgetColor(c);
+}],
+['row-widget-border', '小组件边框', () => store.get('widget-border-color') || '', (c) => {
+store.set('widget-border-color', c);
+applyWidgetBorder(c);
+}],
+['row-widget-btn', '按钮', () => store.get('widget-btn-color') || '', (c) => {
+store.set('widget-btn-color', c);
+applyWidgetBtn(c);
+}],
+['row-widget-btn-text', '按钮文字', () => store.get('widget-btn-text-color') || '', (c) => {
+store.set('widget-btn-text-color', c);
+applyWidgetBtnText(c);
+}],
+['row-app-name-color', '图标文字', () => store.get(APP_NAME_COLOR_KEY) || '', (c) => {
+store.set(APP_NAME_COLOR_KEY, c);
+applyAppNameColor();
+}],
+['row-icon-ink', '图标与底栏线条', iconInkValOf, (c) => {
+store.set(ICON_INK_KEY, c);
+applyIconInkColor();
+}],
+['row-widget-heart', '爱心外框', () => store.get('widget-heart-color') || '', (c) => {
+store.set('widget-heart-color', c);
+applyWidgetHeart(c);
+}]
+];
+rows.forEach(function (it) {
+const row = document.getElementById(it[0]);
+if (!row || row.querySelector('.bfy-hex-btn')) return;
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'bfy-hex-btn';
+btn.textContent = '手输';
+btn.title = '手动输入 #RRGGBB 色值（取色器打不开的手机用）';
+btn.style.cssText = 'flex:none;margin-left:6px;padding:3px 9px;font-size:11px;line-height:1.4;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink,#111);cursor:pointer';
+btn.addEventListener('click', function (e) {
+e.stopPropagation(); // 别触发该行原来的选择器弹窗
+if (typeof openHexColorModal !== 'function') return;
+let cur = '';
+try { cur = it[2]() || ''; } catch (err) { cur = ''; }
+openHexColorModal('输入' + it[1] + '色值', /^#[0-9a-fA-F]{6}$/.test(cur) ? cur : '#111111', function (c) {
+try { it[3](c); } catch (err) {}
+try { if (typeof toast === 'function') toast(it[1] + '已设为 ' + String(c).toUpperCase()); } catch (err) {}
+});
+});
+const reset = row.querySelector('.bfy-reset-btn');
+if (reset) row.insertBefore(btn, reset);
+else row.appendChild(btn);
 });
 })();
 const deskCsFontRow = document.getElementById('row-desk-cs-font');
@@ -4857,7 +5411,7 @@ if (img) pills.push({ label: maskPctOf(type) === 0 ? '原图直出 ✓' : '原�
 pills.push({ label: '组件透明度', value: 'opacity' });
 pills.push({ label: '组件颜色', value: 'wcolor' }); // #1516 独立背景颜色（与背景图片分两层：颜色垫底、图片在上）
 if (WIDGET_TEXT_PARTS[type]) pills.push({ label: '文字颜色', value: 'text' });
-if (widgetEl) {
+if (widgetEl && !window.__deskGridV2GridActive) {
 pills.push({ label: '上移', value: 'up' });
 pills.push({ label: '下移', value: 'down' });
 pills.push({ label: '移出此页', value: 'out' });
@@ -5064,7 +5618,7 @@ Array.prototype.forEach.call(s.children, (n) => {
 if (n.hasAttribute && n.hasAttribute('data-desk-widget')) arr.push({ wid: n.getAttribute('data-desk-widget'), page: pi });
 });
 });
-document.querySelectorAll('#desk-widget-pool [data-desk-widget]').forEach((n) => {
+document.querySelectorAll('#desk-widget-pool > [data-desk-widget]').forEach((n) => {
 arr.push({ wid: n.getAttribute('data-desk-widget'), pool: true });
 });
 } catch (e) {}
@@ -5117,7 +5671,9 @@ const n = Math.min(slides.length, deskPageCount());
 for (let i = 0; i < n; i++) {
 const s = slides[i];
 if (!s) continue;
-const bg = sanitizeBg('page-bg-' + i, BG_SAFE_LIMIT);
+let bgKey = 'page-bg-' + i;
+try { if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey) bgKey = window.__deskGridV2PageBgKey(i) || bgKey; } catch (e) {}
+const bg = sanitizeBg(bgKey, BG_SAFE_LIMIT);
 if (bg && typeof bg === 'string' && bg.length > 2) {
 const want = 'url("' + bg + '")';
 if (s.style.backgroundImage === want) continue;
@@ -5125,7 +5681,7 @@ s.style.backgroundImage = want;
 s.style.backgroundSize = 'cover';
 s.style.backgroundPosition = 'center';
 } else {
-if (hydrateDeskBgOnce('page-bg-' + i, s, applyPageBgs)) continue;
+if (hydrateDeskBgOnce(bgKey, s, applyPageBgs)) continue;
 if (!s.style.backgroundImage) continue;
 s.style.backgroundImage = '';
 s.style.backgroundSize = '';
@@ -5197,6 +5753,10 @@ if (addBtn) slide.insertBefore(node, addBtn);
 else slide.appendChild(node);
 };
 const syncDeskLayout = (addArr, removeArr) => {
+if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) {
+try { window.__deskGridV2.syncCustom(addArr, removeArr); } catch (e) {}
+return;
+}
 const lay = deskLayout();
 if (!lay) return;
 let changed = false;
@@ -5305,15 +5865,24 @@ txt.textContent = (i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景图'
 const val = document.createElement('div');
 val.className = 'val';
 val.id = 'page-bg-val-' + i;
+const pageBgKey = () => {
+try {
+if (window.__deskGridV2GridActive && window.__deskGridV2PageBgKey) {
+const k = window.__deskGridV2PageBgKey(i);
+if (k) return k;
+}
+} catch (e) {}
+return 'page-bg-' + i;
+};
 const syncRowUI = () => {
-const bg = store.get('page-bg-' + i);
+const bg = store.get(pageBgKey());
 val.textContent = bg ? '已设置' : '';
 };
 syncRowUI();
 row.appendChild(ico); row.appendChild(txt); row.appendChild(val);
 if (window.mochiFilePickSurface) window.mochiFilePickSurface(row, { id: 'page-bg-tap-' + i, accept: 'image/*', owner: 'mochi-page-bg-pick' });
 row.addEventListener('click', () => {
-const bg = store.get('page-bg-' + i);
+const bg = store.get(pageBgKey());
 const pickPageBg = () => {
 window.mochiFilePick({
 id: 'mochi-page-bg-pick', accept: 'image/*',
@@ -5324,7 +5893,7 @@ const reader = new FileReader();
 reader.onload = () => {
 compressImageFit(reader.result, phoneBgMaxSide(), 4.5 * 1024 * 1024).then(data => {
 if (!data) { toast('图片过大或格式不支持，请换一张小图'); return; }
-store.set('page-bg-' + i, data);
+store.set(pageBgKey(), data);
 buildDeskPages();
 syncRowUI();
 toast((i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景已设置');
@@ -5339,7 +5908,7 @@ if (bg && window.openModal) {
 window.openModal((i === 0 ? '首页' : '第 ' + (i + 1) + ' 页') + '背景图', '', (v) => {
 if (v === '1') pickPageBg();
 else if (v === '2') {
-store.remove('page-bg-' + i);
+store.remove(pageBgKey());
 buildDeskPages();
 syncRowUI();
 toast('已恢复默认');
@@ -5359,6 +5928,10 @@ const n = deskPageCount();
 if (n >= DESK_PAGE_MAX) { toast('最多 ' + DESK_PAGE_MAX + ' 页'); return; }
 store.set('desk-page-count', String(n + 1));
 buildDeskPages();
+if (window.__deskGridV2GridActive) {
+try { if (window.__deskGridV2SyncNow) window.__deskGridV2SyncNow('page-add'); } catch (e) {}
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+}
 toast('已新增第 ' + (n + 1) + ' 页');
 });
 }
@@ -5366,6 +5939,10 @@ if (delPageRow) {
 delPageRow.addEventListener('click', () => {
 const n = deskPageCount();
 if (n <= DESK_PAGE_MIN) { toast('核心页不可删除'); return; }
+if (window.__deskGridV2GridActive && window.__deskGridV2.deletePage) {
+window.__deskGridV2.deletePage(n - 1);
+return;
+}
 if (window.openModal) {
 window.openModal('删除最后一页？', '', (v) => {
 if (v === 'ok') {
@@ -5391,14 +5968,18 @@ let dels = [];
 try {
 store.remove('desk-layout');
 store.set('desk-page-count', '2');
+try { store.remove('desk-grid-v2'); } catch (e) {}
 document.querySelectorAll('.app-grid').forEach(function (g) {
 if (g.dataset.app) store.remove('app-icon-order-' + g.dataset.app);
 });
 store.remove('hidden-icons');
+store.remove('hidden-widgets');
 if (window.idbDelete) {
 const P = (window.activePrefix ? window.activePrefix() : 'xy-home-v2:default');
 dels.push(window.idbDelete(P + ':desk-layout'));
 dels.push(window.idbDelete(P + ':hidden-icons'));
+dels.push(window.idbDelete(P + ':hidden-widgets'));
+dels.push(window.idbDelete(P + ':desk-grid-v2'));
 document.querySelectorAll('.app-grid').forEach(function (g) {
 if (g.dataset.app) dels.push(window.idbDelete(P + ':app-icon-order-' + g.dataset.app));
 });
@@ -5441,16 +6022,2008 @@ renderDeskCountdowns();
 setupDeskCountdownClick();
 document.addEventListener('contact-switched', renderDeskTexts);
 document.addEventListener('contact-switched', renderDeskCountdowns);
-const WIDGET_IDS = ['deco', 'quote-row', 'checkin', 'apps', 'music', 'p2apps', 'memo-row', 'week', 'weekend', 'desk-clock', 'desk-calendar', 'desk-timer', 'desk-anniv', 'desk-period',
-'app-chat', 'app-group-chat', 'app-home', 'app-mail', 'app-feed', 'app-calendar', 'app-memory', 'app-divination', 'app-note', 'app-music', 'app-stats', 'app-interact', 'app-checkin', 'p3apps', 'app-period', 'app-accounting', 'app-tongpin', 'app-shenshou', 'app-water', 'app-eat', 'app-pomo', 'app-cjian', 'app-memo-arc', 'app-my-arc', 'app-room', 'app-piggy', 'app-memo'];
+document.addEventListener('mochi-restore-done', renderDeskCountdowns);
+const DESK_GRID_V2_KEY = 'desk-grid-v2';
+const DESK_GRID_V2_BACKUP_KEY = 'desk-grid-v2-backup';
+const DESK_GRID_V2_FLAG_KEY = 'desk-grid-v2-enabled';
+const DESK_GRID_V2_COLS = 4;
+const DESK_GRID_V2_VERSION = 2;
+const DESK_GRID_V2_ITEM_TYPES = { icon: 1, widget: 1, image: 1, text: 1, countdown: 1 };
+const deskGridV2FlagOn = () => {
+try { return gStore.get(DESK_GRID_V2_FLAG_KEY) === '1'; } catch (e) { return false; }
+};
+let deskGridV2PageSeq = 0;
+const deskGridV2NewPageId = () => 'pg_' + Date.now().toString(36) + '_' + (++deskGridV2PageSeq) + Math.random().toString(36).slice(2, 6);
+const deskGridV2Validate = (m) => {
+try {
+if (!m || m.v !== DESK_GRID_V2_VERSION || !Array.isArray(m.pages)) return false;
+if (m.pages.length < DESK_PAGE_MIN || m.pages.length > DESK_PAGE_MAX) return false;
+const ids = Object.create(null), keys = Object.create(null);
+for (let pi = 0; pi < m.pages.length; pi++) {
+const page = m.pages[pi];
+if (!page || typeof page.id !== 'string' || !page.id || ids[page.id]) return false;
+ids[page.id] = 1;
+if (!Array.isArray(page.items) || typeof page.bg !== 'string') return false;
+const occ = Object.create(null);
+for (let i = 0; i < page.items.length; i++) {
+const it = page.items[i];
+if (!it || typeof it.key !== 'string' || !it.key || keys[it.key]) return false;
+keys[it.key] = 1;
+if (!DESK_GRID_V2_ITEM_TYPES[it.type]) return false;
+const col = it.col, row = it.row, w = it.w, h = it.h;
+if (!Number.isInteger(col) || col < 0 || col >= DESK_GRID_V2_COLS) return false;
+if (!Number.isInteger(row) || row < 0) return false;
+if (!Number.isInteger(w) || w < 1 || w > DESK_GRID_V2_COLS || col + w > DESK_GRID_V2_COLS) return false;
+if (!Number.isInteger(h) || h < 1 || h > 8) return false;
+for (let r = row; r < row + h; r++) {
+for (let c = col; c < col + w; c++) {
+const kk = r + ',' + c;
+if (occ[kk]) return false;
+occ[kk] = 1;
+}
+}
+}
+}
+return true;
+} catch (e) { return false; }
+};
+const deskGridV2Read = () => {
+try {
+const raw = store.get(DESK_GRID_V2_KEY);
+if (!raw) return null;
+const m = JSON.parse(raw);
+return deskGridV2Validate(m) ? m : null;
+} catch (e) { return null; }
+};
+const deskGridV2BackupOnce = () => {
+try {
+if (store.get(DESK_GRID_V2_BACKUP_KEY)) return false;
+const iconOrders = {};
+document.querySelectorAll('.app-grid').forEach(g => {
+if (g.dataset.app) iconOrders[g.dataset.app] = store.get('app-icon-order-' + g.dataset.app) || null;
+});
+const bk = {
+ts: Date.now(),
+v: 1,
+note: '新版桌面网格数据生成前的旧布局快照；旧键保留未删，关闭测试开关即回旧版',
+pageCount: store.get('desk-page-count') || null,
+layout: store.get('desk-layout') || null,
+iconOrders,
+images: store.get('desk-images') || null,
+texts: store.get('desk-texts') || null,
+countdowns: store.get('desk-countdowns') || null
+};
+store.set(DESK_GRID_V2_BACKUP_KEY, JSON.stringify(bk));
+return true;
+} catch (e) { return false; }
+};
+const deskGridV2Place = (occ, st, w, h) => {
+const fits = (row, col) => {
+if (col + w > DESK_GRID_V2_COLS) return false;
+for (let r = row; r < row + h; r++) {
+for (let c = col; c < col + w; c++) {
+if (occ[r + ',' + c]) return false;
+}
+}
+return true;
+};
+let pos = st.pos, guard = 0;
+while (guard++ < 100000) {
+const row = Math.floor(pos / DESK_GRID_V2_COLS);
+const col = pos % DESK_GRID_V2_COLS;
+if (fits(row, col)) {
+for (let r = row; r < row + h; r++) {
+for (let c = col; c < col + w; c++) occ[r + ',' + c] = 1;
+}
+st.pos = (col + w >= DESK_GRID_V2_COLS)
+? (row + h) * DESK_GRID_V2_COLS
+: (row * DESK_GRID_V2_COLS + col + w);
+return { col, row };
+}
+pos++;
+}
+return { col: 0, row: 0 };
+};
+const deskGridV2ScanPage = (slide) => {
+const items = [];
+const seen = Object.create(null);
+const occ = Object.create(null);
+const st = { pos: 0 };
+const add = (it) => {
+if (!it || !it.key || seen[it.key]) return;
+seen[it.key] = 1;
+const p = deskGridV2Place(occ, st, it.w, it.h);
+it.col = p.col;
+it.row = p.row;
+items.push(it);
+};
+const addIcon = (app) => {
+const k = app && app.dataset ? app.dataset.app : '';
+if (!k) return;
+const grid = app.closest ? app.closest('.app-grid') : null;
+add({ key: 'app-' + k, type: 'icon', w: 1, h: 1, g: (grid && grid.dataset.app) || '' });
+};
+Array.prototype.forEach.call(slide.children, (n) => {
+if (!n || !n.classList) return;
+if (n.classList.contains('desk-page-hint') || n.classList.contains('desk-page-add')) return;
+if (n.classList.contains('app-grid')) {
+Array.prototype.forEach.call(n.querySelectorAll('.app'), addIcon);
+return;
+}
+if (n.classList.contains('app')) { addIcon(n); return; }
+if (n.hasAttribute('data-desk-widget')) {
+const wk = n.getAttribute('data-desk-widget');
+if (getHiddenWidgets().indexOf(wk) >= 0) return;
+add({ key: wk, type: 'widget', w: DESK_GRID_V2_COLS, h: 1 });
+return;
+}
+if (n.hasAttribute('data-desk-image')) {
+const pct = parseFloat((n.style && n.style.width) || '');
+const w = isFinite(pct) && pct > 0 ? (pct <= 45 ? 2 : (pct <= 75 ? 3 : 4)) : DESK_GRID_V2_COLS;
+add({ key: n.getAttribute('data-desk-image'), type: 'image', w, h: 1 });
+return;
+}
+if (n.hasAttribute('data-desk-text')) {
+add({ key: n.getAttribute('data-desk-text'), type: 'text', w: DESK_GRID_V2_COLS, h: 1 });
+return;
+}
+if (n.hasAttribute('data-desk-countdown')) {
+add({ key: n.getAttribute('data-desk-countdown'), type: 'countdown', w: DESK_GRID_V2_COLS, h: 1 });
+}
+});
+return items;
+};
+const deskGridV2Summary = (m) => {
+if (!m || !m.pages) return null;
+let n = 0;
+m.pages.forEach(p => { n += (p.items || []).length; });
+return { pages: m.pages.length, items: n };
+};
+const updateDeskGridV2UI = () => {
+const el = document.getElementById('desk-grid-v2-val');
+if (!el) return;
+if (!deskGridV2FlagOn()) { el.textContent = '关闭'; return; }
+const s = deskGridV2Summary(deskGridV2Read());
+el.textContent = s ? ('测试中 · ' + s.pages + ' 页 ' + s.items + ' 项') : '测试中 · 待生成';
+};
+const deskGridV2SyncFromDom = (reason, manual) => {
+if (!deskGridV2FlagOn() || !pagesBox) return { ok: false, reason: 'off' };
+try {
+const slides = Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide'));
+if (slides.length < DESK_PAGE_MIN || slides.length > DESK_PAGE_MAX) return { ok: false, reason: 'pages' };
+const old = deskGridV2Read();
+const ids = old ? old.pages.map(p => (p && p.id) || '').filter(Boolean) : [];
+while (ids.length < slides.length) ids.push(deskGridV2NewPageId());
+ids.length = slides.length;
+const pages = slides.map((s, i) => {
+const oldPage = old && old.pages[i] ? old.pages[i] : null;
+return {
+id: ids[i],
+bg: (oldPage && typeof oldPage.bg === 'string' && oldPage.bg) ? oldPage.bg : ('page-bg-' + i),
+items: deskGridV2ScanPage(s)
+};
+});
+const model = { v: DESK_GRID_V2_VERSION, ts: Date.now(), cols: DESK_GRID_V2_COLS, pages };
+if (!deskGridV2Validate(model)) {
+try { console.warn('[mochi] desk-grid-v2 校验失败，保留上一份数据：', reason); } catch (e) {}
+if (manual) toast('新版桌面数据校验失败，已保留旧布局');
+return { ok: false, reason: 'invalid' };
+}
+store.set(DESK_GRID_V2_KEY, JSON.stringify(model));
+const s = deskGridV2Summary(model);
+updateDeskGridV2UI();
+return { ok: true, pages: s.pages, items: s.items };
+} catch (e) {
+try { console.warn('[mochi] desk-grid-v2 生成异常：', e); } catch (e2) {}
+if (manual) toast('新版桌面数据生成失败，已保留旧布局');
+return { ok: false, reason: 'error' };
+}
+};
+const DGR_ROW_H = 92;
+const DGR_ROW_GAP = 14;
+const DGR_COL_GAP = 8;
+const DGR_PAD_X = 8;
+const DGR_PAD_Y = 14;
+const DGR_MIN_CARD_W = 2;
+const DGR_MAX_CARD_W = DESK_GRID_V2_COLS;
+const DGR_MAX_CARD_H = 3;
+const DGR_DEFAULT_SIZE = {
+deco: { w: 4, h: 2 },
+music: { w: 4, h: 2 },
+'desk-period': { w: 4, h: 2 },
+'desk-calendar': { w: 4, h: 2 },
+'desk-timer': { w: 4, h: 2 },
+'quote-card': { w: 2, h: 1 },
+'fish-card': { w: 2, h: 1 }
+};
+try {
+if (!document.getElementById('dgr-row-autofix')) {
+const st = document.createElement('style');
+st.id = 'dgr-row-autofix';
+st.textContent = 'html.desk-grid-v2 .page-slide.dgr-page{grid-auto-rows:var(--dgr-row,92px)!important}';
+(document.head || document.documentElement).appendChild(st);
+}
+} catch (e) {}
+let deskGridV2GridOn = false;
+let deskGridV2Editing = false;
+let deskGridV2Booted = false;
+let deskGridV2RenderBusy = false;
+let deskGridV2RenderTimer = null;
+let deskGridV2SuppressClickUntil = 0;
+let deskGridV2Press = null;
+let deskGridV2Drag = null;
+let deskGridV2EdgeTimer = null;
+let deskGridV2Placeholder = null;
+let deskGridV2Resize = null;
+let deskGridV2Undo = null;
+const deskGridV2Slides = () => pagesBox ? Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide')) : [];
+const deskGridV2CurrentIdx = () => {
+try {
+const n = deskGridV2Slides().length;
+const i = (typeof window.deskIdx === 'function') ? window.deskIdx() : 0;
+return Math.max(0, Math.min(Math.max(0, n - 1), i));
+} catch (e) { return 0; }
+};
+const deskGridV2NodeOf = (it) => {
+if (!it) return null;
+try {
+if (it.type === 'icon') {
+const k = it.key.indexOf('app-') === 0 ? it.key.slice(4) : it.key;
+return document.querySelector('.app[data-app="' + k + '"]');
+}
+if (it.type === 'widget') return document.querySelector('[data-desk-widget="' + it.key + '"]');
+if (it.type === 'image') return document.querySelector('[data-desk-image="' + it.key + '"]');
+if (it.type === 'text') return document.querySelector('[data-desk-text="' + it.key + '"]');
+if (it.type === 'countdown') return document.querySelector('[data-desk-countdown="' + it.key + '"]');
+} catch (e) {}
+return null;
+};
+const deskGridV2DefaultSize = (node, it) => {
+if (!it) return { w: DESK_GRID_V2_COLS, h: 1 };
+if (it.type === 'icon') return { w: 1, h: 1 };
+if (it.type === 'image') {
+let frameMeta = null;
+try { frameMeta = loadDeskImagesMeta().find(x => x && x.id === it.key) || null; } catch (e) {}
+if (frameMeta && frameMeta.frame === 'polaroid') return { w: 2, h: 2 };
+const w = Number.isInteger(it.w) ? Math.max(DGR_MIN_CARD_W, Math.min(DGR_MAX_CARD_W, it.w)) : DESK_GRID_V2_COLS;
+return { w: w, h: 2 };
+}
+const d = DGR_DEFAULT_SIZE[it.key];
+if (d) return { w: d.w, h: d.h };
+return { w: DESK_GRID_V2_COLS, h: 1 };
+};
+const deskGridV2ClampSize = (it, w, h) => {
+if (!it || it.type === 'icon') return { w: 1, h: 1 };
+const cw = Math.max(1, Math.min(DGR_MAX_CARD_W, Number.isInteger(w) ? w : DESK_GRID_V2_COLS));
+const dw = Math.max(DGR_MIN_CARD_W, cw);
+const ch = Math.max(1, Math.min(DGR_MAX_CARD_H, Number.isInteger(h) ? h : 1));
+return { w: dw, h: ch };
+};
+const deskGridV2SaveModel = (m) => {
+if (!m || !deskGridV2Validate(m)) {
+try { console.warn('[mochi] desk-grid-v2 保存前校验失败', m && m.pages && m.pages.length); } catch (e) {}
+return false;
+}
+try { store.set(DESK_GRID_V2_KEY, JSON.stringify(m)); updateDeskGridV2UI(); return true; } catch (e) { return false; }
+};
+const deskGridV2Find = (m, key) => {
+if (!m || !m.pages || !key) return null;
+for (let pi = 0; pi < m.pages.length; pi++) {
+const page = m.pages[pi];
+const items = page.items || [];
+for (let i = 0; i < items.length; i++) {
+if (items[i].key === key) return { item: items[i], index: i, page, pageIdx: pi };
+}
+}
+return null;
+};
+const deskGridV2Occ = (page, ignoreKey) => {
+const occ = Object.create(null);
+((page && page.items) || []).forEach(it => {
+if (!it || (ignoreKey && it.key === ignoreKey)) return;
+for (let r = it.row; r < it.row + it.h; r++) {
+for (let c = it.col; c < it.col + it.w; c++) occ[r + ',' + c] = 1;
+}
+});
+return occ;
+};
+const deskGridV2FitAt = (occ, col, row, w, h) => {
+if (col + w > DESK_GRID_V2_COLS || row < 0) return false;
+for (let r = row; r < row + h; r++) {
+for (let c = col; c < col + w; c++) {
+if (occ[r + ',' + c]) return false;
+}
+}
+return true;
+};
+const deskGridV2FindFreeIn = (occ, maxRow, w, h, wantCol, wantRow, minRow) => {
+const start = Math.max(0, minRow || 0);
+let best = null, bestD = 1e9;
+for (let r = start; r <= maxRow + 2; r++) {
+for (let c = 0; c <= DESK_GRID_V2_COLS - w; c++) {
+if (!deskGridV2FitAt(occ, c, r, w, h)) continue;
+const dr = Math.abs(r - wantRow);
+const dc = Math.abs(c - wantCol);
+const d = dr * 10 + dc;
+if (d < bestD) { bestD = d; best = { col: c, row: r }; if (d === 0) return best; }
+}
+}
+return best || { col: 0, row: Math.max(start, maxRow) };
+};
+const deskGridV2FindFree = (page, w, h, ignoreKey, wantCol, wantRow, minRow) => {
+const occ = deskGridV2Occ(page, ignoreKey);
+let maxRow = 0;
+((page && page.items) || []).forEach(it => {
+if (it && (!ignoreKey || it.key !== ignoreKey)) maxRow = Math.max(maxRow, it.row + it.h);
+});
+return deskGridV2FindFreeIn(occ, maxRow, w, h, wantCol, wantRow, minRow);
+};
+const deskGridV2ReflowPage = (page, pinnedKey) => {
+if (!page || !Array.isArray(page.items)) return false;
+const items = page.items;
+const occ = Object.create(null);
+let maxRow = 0;
+const mark = (it) => {
+for (let r = it.row; r < it.row + it.h; r++) {
+for (let c = it.col; c < it.col + it.w; c++) {
+const k = r + ',' + c;
+occ[k] = (occ[k] || 0) + 1;
+}
+}
+maxRow = Math.max(maxRow, it.row + it.h);
+};
+const unmark = (it) => {
+for (let r = it.row; r < it.row + it.h; r++) {
+for (let c = it.col; c < it.col + it.w; c++) {
+const k = r + ',' + c;
+if (occ[k]) occ[k]--;
+}
+}
+};
+let pinned = null;
+if (pinnedKey) pinned = items.find(it => it && it.key === pinnedKey) || null;
+const rest = items.filter(it => it && it !== pinned)
+.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
+let changed = false;
+if (pinned) {
+const sp = deskGridV2ClampSize(pinned, pinned.w, pinned.h);
+pinned.w = sp.w; pinned.h = sp.h;
+mark(pinned);
+}
+rest.forEach(it => {
+const s = deskGridV2ClampSize(it, it.w, it.h);
+if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; it.sz = 1; changed = true; }
+mark(it);
+});
+rest.forEach(it => {
+unmark(it);
+if (deskGridV2FitAt(occ, it.col, it.row, it.w, it.h)) { mark(it); return; }
+const free = deskGridV2FindFreeIn(occ, maxRow, it.w, it.h, it.col, it.row, 0);
+if (!free) { mark(it); return; }
+if (free.col !== it.col || free.row !== it.row) { it.col = free.col; it.row = free.row; changed = true; }
+mark(it);
+});
+return changed;
+};
+const deskGridV2Resolve = (page, key, wantCol, wantRow, w, h, allowSwap, allowPush) => {
+if (!page) return null;
+const col0 = Math.max(0, Math.min(DESK_GRID_V2_COLS - w, wantCol));
+const row0 = Math.max(0, wantRow);
+const occ = deskGridV2Occ(page, key);
+if (deskGridV2FitAt(occ, col0, row0, w, h)) return { col: col0, row: row0 };
+if (allowSwap) {
+const hits = (page.items || []).filter(it => it && it.key !== key &&
+!(it.col >= col0 + w || it.col + it.w <= col0 || it.row >= row0 + h || it.row + it.h <= row0));
+if (hits.length === 1 && hits[0].w === w && hits[0].h === h) {
+return { col: col0, row: row0, swapWith: hits[0].key };
+}
+}
+if (allowPush) return { col: col0, row: row0, push: true };
+const free = deskGridV2FindFree(page, w, h, key, col0, row0);
+return free ? { col: free.col, row: free.row } : null;
+};
+const deskGridV2Repack = (m) => {
+if (!m || !m.pages) return m;
+try {
+m.pages.forEach(page => {
+const items = page.items || [];
+items.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)));
+const occ = Object.create(null);
+const st = { pos: 0 };
+items.forEach(it => {
+if (!it.sz) {
+const d = deskGridV2DefaultSize(deskGridV2NodeOf(it), it);
+it.w = d.w; it.h = d.h; it.sz = 1;
+}
+const s = deskGridV2ClampSize(it, it.w, it.h);
+it.w = s.w; it.h = s.h;
+const p = deskGridV2Place(occ, st, it.w, it.h);
+it.col = p.col;
+it.row = p.row;
+});
+});
+m.mode = 'grid';
+m.rowMode = 'fixed';
+m.rowH = DGR_ROW_H;
+m.rowGap = DGR_ROW_GAP;
+m.colGap = DGR_COL_GAP;
+m.ts = Date.now();
+} catch (e) {}
+return m;
+};
+const deskGridV2ReconcilePages = (m) => {
+if (!m || !m.pages) return false;
+const slides = deskGridV2Slides();
+let changed = false;
+while (m.pages.length > slides.length) { m.pages.pop(); changed = true; }
+for (let i = m.pages.length; i < slides.length; i++) {
+const pid = deskGridV2NewPageId();
+m.pages.push({ id: pid, bg: 'page-bg-' + pid, items: [] });
+changed = true;
+}
+return changed;
+};
+const deskGridV2AdoptIcons = (m) => {
+if (!m || !pagesBox) return false;
+const slides = deskGridV2Slides();
+let changed = false;
+const addItem = (node, pi) => {
+if (!node || !node.hasAttribute) return;
+let key = '', type = '', w = DESK_GRID_V2_COLS, h = 1;
+if (node.classList.contains('app')) {
+const raw = node.dataset ? node.dataset.app : '';
+if (!raw) return;
+if (node.style.display === 'none') return;
+key = 'app-' + raw;
+type = 'icon';
+w = 1;
+h = 1;
+} else if (node.hasAttribute('data-desk-widget')) {
+key = node.getAttribute('data-desk-widget');
+if (getHiddenWidgets().indexOf(key) >= 0) {
+try { ensureWidgetPool().appendChild(node); } catch (e) {}
+return;
+}
+type = 'widget';
+} else if (node.hasAttribute('data-desk-image')) {
+key = node.getAttribute('data-desk-image');
+type = 'image';
+const pct = parseFloat((node.style && node.style.width) || '');
+w = isFinite(pct) && pct > 0 ? (pct <= 45 ? 2 : (pct <= 75 ? 3 : 4)) : DESK_GRID_V2_COLS;
+} else if (node.hasAttribute('data-desk-text')) {
+key = node.getAttribute('data-desk-text');
+type = 'text';
+} else if (node.hasAttribute('data-desk-countdown')) {
+key = node.getAttribute('data-desk-countdown');
+type = 'countdown';
+}
+if (!key || deskGridV2Find(m, key)) return;
+const page = m.pages[pi];
+if (!page) return;
+const d = deskGridV2DefaultSize(node, { key: key, type: type, w: w });
+const free = deskGridV2FindFree(page, d.w, d.h, null, 0, 0);
+page.items.push({ key: key, type: type, col: free.col, row: free.row, w: d.w, h: d.h, g: '', sz: 1 });
+changed = true;
+};
+slides.forEach((slide, pi) => {
+if (!slide) return;
+Array.prototype.forEach.call(slide.children, (node) => {
+if (!node || !node.classList) return;
+if (node.classList.contains('desk-page-hint') || node.classList.contains('desk-page-add') || node.classList.contains('app-grid')) return;
+addItem(node, pi);
+});
+});
+const addNode = (app) => {
+const raw = app && app.dataset ? app.dataset.app : '';
+if (!raw) return;
+const grid = app.closest ? app.closest('.app-grid') : null;
+if (grid && grid.closest && grid.closest('#desk-widget-pool')) return;
+const slide = app.closest ? app.closest('.page-slide') : null;
+if (!slide) return;
+const pi = slides.indexOf(slide);
+if (pi < 0) return;
+addItem(app, pi);
+};
+document.querySelectorAll('.app').forEach(addNode);
+return changed;
+};
+const deskGridV2NormalizeSizes = (m) => {
+if (!m || !m.pages) return false;
+let changed = false;
+m.pages.forEach(page => {
+((page && page.items) || []).forEach(it => {
+if (!it) return;
+if (it.type === 'icon') {
+if (it.w !== 1 || it.h !== 1) { it.w = 1; it.h = 1; changed = true; }
+if (!it.sz) { it.sz = 1; changed = true; }
+return;
+}
+if (!it.sz) {
+const d = deskGridV2DefaultSize(deskGridV2NodeOf(it), it);
+it.w = d.w; it.h = d.h; it.sz = 1;
+changed = true;
+}
+const s = deskGridV2ClampSize(it, it.w, it.h);
+if (s.w !== it.w || s.h !== it.h) { it.w = s.w; it.h = s.h; changed = true; }
+});
+if (deskGridV2ReflowPage(page, null)) changed = true;
+});
+return changed;
+};
+const deskGridV2SplitQuoteRow = () => {
+if (!pagesBox || !deskGridV2GridOn) return false;
+const wrapper = document.querySelector('.page-slide [data-desk-widget="quote-row"]');
+const wrapperSlide = wrapper ? wrapper.closest('.page-slide') : null;
+const insertRef = wrapper ? wrapper.nextSibling : null;
+let qNode = document.querySelector('[data-desk-widget="quote-card"]');
+let fNode = document.querySelector('[data-desk-widget="fish-card"]');
+if (wrapper) {
+const q = wrapper.querySelector('.mini-card[data-card-bg="quote"]');
+const f = wrapper.querySelector('.mini-card[data-card-bg="fish"]');
+if (q) { q.setAttribute('data-desk-widget', 'quote-card'); qNode = q; }
+if (f) { f.setAttribute('data-desk-widget', 'fish-card'); fNode = f; }
+try { ensureWidgetPool().appendChild(wrapper); } catch (e) {}
+}
+if (!qNode || !fNode) return false;
+const m = deskGridV2Read();
+if (!m) {
+const slide = wrapperSlide || deskGridV2Slides()[0];
+if (slide) {
+if (insertRef && insertRef.parentNode === slide) {
+slide.insertBefore(qNode, insertRef);
+slide.insertBefore(fNode, insertRef);
+} else {
+slide.appendChild(qNode);
+slide.appendChild(fNode);
+}
+}
+return true;
+}
+let changed = false;
+const legacy = deskGridV2Find(m, 'quote-row');
+if (legacy) {
+const old = legacy.item;
+const page = legacy.page;
+page.items.splice(legacy.index, 1);
+const qCol = Math.max(0, Math.min(DESK_GRID_V2_COLS - 2, old.col || 0));
+const qRow = Math.max(0, old.row || 0);
+const q = { key: 'quote-card', type: 'widget', col: qCol, row: qRow, w: 2, h: 1, sz: 1 };
+page.items.push(q);
+const wantF = (qCol + 2 <= DESK_GRID_V2_COLS - 2) ? qCol + 2 : 0;
+const free = deskGridV2FindFree(page, 2, 1, 'fish-card', wantF, qRow, qRow);
+page.items.push({ key: 'fish-card', type: 'widget', col: free.col, row: free.row, w: 2, h: 1, sz: 1 });
+deskGridV2ReflowPage(page, null);
+changed = true;
+}
+const qf = deskGridV2Find(m, 'quote-card');
+const ff = deskGridV2Find(m, 'fish-card');
+const slides = deskGridV2Slides();
+if (qf && slides[qf.pageIdx]) slides[qf.pageIdx].appendChild(qNode);
+else { try { ensureWidgetPool().appendChild(qNode); } catch (e) {} }
+if (ff && slides[ff.pageIdx]) slides[ff.pageIdx].appendChild(fNode);
+else { try { ensureWidgetPool().appendChild(fNode); } catch (e) {} }
+if (changed) deskGridV2SaveModel(m);
+try { if (wrapperSlide) syncPageHint(wrapperSlide); } catch (e) {}
+return changed;
+};
+const deskGridV2AbsorbLegacyCountdowns = (m) => {
+if (!m || !m.pages) return false;
+let first = null;
+let changed = false;
+m.pages.forEach((page, pi) => {
+const keep = [];
+(page.items || []).forEach(it => {
+if (it && it.type === 'countdown') {
+if (!first) first = { pageIdx: pi, item: it };
+changed = true;
+return;
+}
+keep.push(it);
+});
+page.items = keep;
+});
+if (changed && !deskGridV2Find(m, 'desk-anniv') && first) {
+const page = m.pages[first.pageIdx];
+if (page) {
+const free = deskGridV2FindFree(page, 4, 1, null, first.item.col || 0, first.item.row || 0);
+page.items.push({ key: 'desk-anniv', type: 'widget', col: free.col, row: free.row, w: 4, h: 1, sz: 1 });
+}
+}
+return changed;
+};
+const deskGridV2Render = () => {
+if (!deskGridV2GridOn || !pagesBox) return;
+if (deskGridV2RenderBusy) return;
+const m = deskGridV2Read();
+if (!m) return;
+deskGridV2RenderBusy = true;
+try {
+const slides = deskGridV2Slides();
+slides.forEach((slide, pi) => {
+slide.classList.add('dgr-page');
+slide.style.setProperty('--dgr-row', DGR_ROW_H + 'px');
+const page = m.pages[pi];
+if (!page) return;
+(page.items || []).forEach(it => {
+const node = deskGridV2NodeOf(it);
+if (!node) return;
+if (node.parentNode !== slide) slide.appendChild(node);
+node.dataset.dgrKey = it.key;
+node.dataset.dgrW = String(it.w);
+node.dataset.dgrH = String(it.h);
+node.dataset.dgrType = it.type;
+node.style.gridColumn = String(it.col + 1) + ' / span ' + it.w;
+node.style.gridRow = String(it.row + 1) + ' / span ' + it.h;
+});
+});
+let pool = null;
+try { pool = ensureWidgetPool(); } catch (e) {}
+slides.forEach((slide) => {
+Array.prototype.slice.call(slide.children).forEach((node) => {
+if (!node || !node.classList) return;
+if (node.classList.contains('desk-page-hint') || node.classList.contains('desk-page-add') || node.classList.contains('app-grid')) return;
+const isItem = node.classList.contains('app') || node.hasAttribute('data-desk-widget') ||
+node.hasAttribute('data-desk-image') || node.hasAttribute('data-desk-text') || node.hasAttribute('data-desk-countdown');
+if (!isItem || node.dataset.dgrKey) return;
+try {
+if (pool) pool.appendChild(node);
+node.style.gridColumn = '';
+node.style.gridRow = '';
+} catch (e) {}
+});
+});
+try { applyHiddenIcons(); } catch (e) {}
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2UpdatePageBarActive();
+}
+} catch (e) {
+try { console.warn('[mochi] desk-grid-v2 渲染异常：', e); } catch (e2) {}
+} finally {
+deskGridV2RenderBusy = false;
+}
+};
+const scheduleDeskGridV2Render = (reason) => {
+if (!deskGridV2GridOn) return;
+if (deskGridV2RenderTimer) clearTimeout(deskGridV2RenderTimer);
+deskGridV2RenderTimer = setTimeout(() => {
+deskGridV2RenderTimer = null;
+deskGridV2Render();
+}, 120);
+};
+let deskGridV2HealTimer = null;
+function deskGridV2FindOverlaps() {
+const out = [];
+try {
+deskGridV2Slides().forEach((slide, pi) => {
+const nodes = Array.prototype.slice.call(slide.children).filter(n => {
+if (!n || !n.hasAttribute || !n.hasAttribute('data-dgr-key')) return false;
+const st = getComputedStyle(n);
+return st.display !== 'none' && st.visibility !== 'hidden';
+});
+for (let i = 0; i < nodes.length; i++) {
+const a = nodes[i], ra = a.getBoundingClientRect();
+if (!ra.width || !ra.height) continue;
+for (let j = i + 1; j < nodes.length; j++) {
+const b = nodes[j], rb = b.getBoundingClientRect();
+if (!rb.width || !rb.height) continue;
+const ox = Math.max(0, Math.min(ra.left + ra.width, rb.left + rb.width) - Math.max(ra.left, rb.left));
+const oy = Math.max(0, Math.min(ra.top + ra.height, rb.top + rb.height) - Math.max(ra.top, rb.top));
+if (ox > 2 && oy > 2) out.push({ page: pi, a: a.dataset.dgrKey, b: b.dataset.dgrKey, ox: ox, oy: oy });
+}
+}
+});
+} catch (e) {}
+return out;
+}
+function deskGridV2HealOverlaps(reason) {
+if (!deskGridV2GridOn) return { ok: false, count: 0 };
+const overlaps = deskGridV2FindOverlaps();
+if (!overlaps.length) return { ok: true, count: 0, repaired: false };
+const m = deskGridV2Read();
+if (!m) return { ok: false, count: overlaps.length };
+let repaired = false;
+const dirty = {};
+overlaps.forEach(o => { dirty[o.page] = 1; });
+Object.keys(dirty).forEach(k => {
+const pi = Number(k);
+const page = m.pages[pi];
+if (!page) return;
+const changed = deskGridV2ReflowPage(page, null);
+if (changed) repaired = true;
+});
+if (repaired && deskGridV2Validate(m)) {
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+try { console.warn('[mochi] desk-grid-v2 检测到重叠并已重排：', reason, overlaps.slice(0, 6)); } catch (e) {}
+} else if (overlaps.length) {
+try { console.warn('[mochi] desk-grid-v2 仍检测到重叠：', reason, overlaps.slice(0, 6)); } catch (e) {}
+}
+return { ok: true, count: overlaps.length, repaired: repaired };
+}
+function scheduleDeskGridV2Heal(reason) {
+if (!deskGridV2GridOn) return;
+if (deskGridV2HealTimer) clearTimeout(deskGridV2HealTimer);
+deskGridV2HealTimer = setTimeout(() => {
+deskGridV2HealTimer = null;
+try {
+const phone = document.getElementById('page-phone');
+if (phone && phone.hidden) {
+try { whenDeskVisible(function () { scheduleDeskGridV2Heal('visible'); }); } catch (e) {}
+return;
+}
+deskGridV2HealOverlaps(reason);
+} catch (e) {}
+}, 380);
+}
+const deskGridV2SyncGridMode = (reason, manual) => {
+if (!deskGridV2FlagOn() || !pagesBox) return { ok: false, reason: 'off' };
+let m = deskGridV2Read();
+let changed = false;
+if (!m) {
+const r = deskGridV2SyncFromDom(reason, manual);
+m = deskGridV2Read();
+if (!m) return r;
+deskGridV2Repack(m);
+changed = true;
+} else if (m.mode !== 'grid') {
+deskGridV2Repack(m);
+changed = true;
+}
+if (deskGridV2ReconcilePages(m)) changed = true;
+if (deskGridV2AdoptIcons(m)) changed = true;
+if (deskGridV2AbsorbLegacyCountdowns(m)) changed = true;
+if (deskGridV2NormalizeSizes(m)) changed = true;
+if (m.rowMode !== 'fixed') {
+m.rowMode = 'fixed';
+m.rowH = DGR_ROW_H;
+m.rowGap = DGR_ROW_GAP;
+m.colGap = DGR_COL_GAP;
+changed = true;
+}
+if (changed) deskGridV2SaveModel(m);
+deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+if (deskGridV2Editing) deskGridV2RefreshPageBar();
+scheduleDeskGridV2Heal('sync');
+const s = deskGridV2Summary(m) || { pages: 0, items: 0 };
+return { ok: true, pages: s.pages, items: s.items };
+};
+const syncDeskGridV2 = (reason, manual) => {
+if (deskGridV2GridOn) return deskGridV2SyncGridMode(reason, manual);
+return deskGridV2SyncFromDom(reason, manual);
+};
+const deskGridV2RefreshBadges = () => {
+try {
+const phone = document.getElementById('page-phone');
+let layer = document.getElementById('dgr-badge-layer');
+if (!deskGridV2Editing || !phone) { if (layer) layer.remove(); return; }
+if (!layer) {
+layer = document.createElement('div');
+layer.id = 'dgr-badge-layer';
+phone.appendChild(layer);
+}
+layer.innerHTML = '';
+const slide = deskGridV2Slides()[deskGridV2CurrentIdx()];
+if (!slide) return;
+const pr = phone.getBoundingClientRect();
+const sr = slide.getBoundingClientRect();
+Array.prototype.forEach.call(slide.children, (node) => {
+if (!node || !node.hasAttribute || !node.hasAttribute('data-dgr-key')) return;
+if (node.style.display === 'none') return;
+const key = node.getAttribute('data-dgr-key');
+const rect = node.getBoundingClientRect();
+if (!rect.width || !rect.height) return;
+if (rect.bottom <= sr.top + 2 || rect.top >= sr.bottom - 2) return;
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dgr-minus';
+b.textContent = '−';
+b.dataset.dgrKey = key;
+b.style.left = (rect.left - pr.left) + 'px';
+b.style.top = (rect.top - pr.top) + 'px';
+b.addEventListener('pointerdown', (e) => e.stopPropagation());
+b.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2RemoveKey(key);
+});
+layer.appendChild(b);
+if (node.dataset.dgrType && node.dataset.dgrType !== 'icon') {
+const rh = document.createElement('button');
+rh.type = 'button';
+rh.className = 'dgr-resize';
+rh.dataset.dgrKey = key;
+rh.setAttribute('aria-label', '拖动改大小');
+rh.style.left = (rect.right - pr.left) + 'px';
+rh.style.top = (rect.bottom - pr.top) + 'px';
+rh.addEventListener('pointerdown', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2StartResize(key, e);
+});
+layer.appendChild(rh);
+}
+});
+} catch (e) {}
+};
+function deskGridV2EnterEdit() {
+if (!deskGridV2GridOn || deskGridV2Editing) return;
+deskGridV2Editing = true;
+document.documentElement.classList.add('dgr-editing');
+deskGridV2SuppressClickUntil = Date.now() + 400;
+try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {}
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+function deskGridV2ExitEdit() {
+if (!deskGridV2Editing) return;
+deskGridV2Editing = false;
+document.documentElement.classList.remove('dgr-editing');
+deskGridV2CleanupDrag();
+deskGridV2CancelResize();
+try { const layer = document.getElementById('dgr-badge-layer'); if (layer) layer.remove(); } catch (e) {}
+try { const pb = document.getElementById('dgr-pagebar'); if (pb) pb.remove(); } catch (e) {}
+deskGridV2SuppressClickUntil = Date.now() + 300;
+}
+function deskGridV2CleanupDrag() {
+if (deskGridV2EdgeTimer) { clearTimeout(deskGridV2EdgeTimer); deskGridV2EdgeTimer = null; }
+const d = deskGridV2Drag;
+if (d) {
+try { d.ghost.remove(); } catch (e) {}
+try { d.node.classList.remove('dgr-drag-source'); } catch (e) {}
+try {
+if (d.pointerId != null && pagesBox.hasPointerCapture && pagesBox.hasPointerCapture(d.pointerId)) {
+pagesBox.releasePointerCapture(d.pointerId);
+}
+} catch (e) {}
+}
+deskGridV2Drag = null;
+if (deskGridV2Placeholder) { try { deskGridV2Placeholder.remove(); } catch (e) {} deskGridV2Placeholder = null; }
+}
+function deskGridV2RemoveResizeListeners() {
+try {
+window.removeEventListener('pointermove', deskGridV2ResizeMove, true);
+window.removeEventListener('pointerup', deskGridV2ResizeEnd, true);
+window.removeEventListener('pointercancel', deskGridV2CancelResize, true);
+} catch (e) {}
+}
+function deskGridV2CancelResize() {
+const rs = deskGridV2Resize;
+if (!rs) return;
+deskGridV2Resize = null;
+deskGridV2RemoveResizeListeners();
+document.documentElement.classList.remove('dgr-resizing');
+try {
+if (rs.pointerId != null && pagesBox.hasPointerCapture && pagesBox.hasPointerCapture(rs.pointerId)) {
+pagesBox.releasePointerCapture(rs.pointerId);
+}
+} catch (e) {}
+try {
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, rs.key);
+if (f && rs.node) {
+rs.node.dataset.dgrW = String(f.item.w);
+rs.node.dataset.dgrH = String(f.item.h);
+rs.node.style.gridColumn = String(f.item.col + 1) + ' / span ' + f.item.w;
+rs.node.style.gridRow = String(f.item.row + 1) + ' / span ' + f.item.h;
+}
+} catch (e) {}
+if (rs.raf) { try { cancelAnimationFrame(rs.raf); } catch (e) {} rs.raf = null; }
+if (deskGridV2Editing) deskGridV2RefreshBadges();
+}
+function deskGridV2ResizeMove(e) {
+const rs = deskGridV2Resize;
+if (!rs || e.pointerId !== rs.pointerId) return;
+const slide = deskGridV2Slides()[rs.pageIdx];
+if (!slide) return;
+try { e.preventDefault(); } catch (er) {}
+const cs = getComputedStyle(slide);
+const padL = parseFloat(cs.paddingLeft) || DGR_PAD_X;
+const padR = parseFloat(cs.paddingRight) || DGR_PAD_X;
+const colGap = parseFloat(cs.columnGap) || DGR_COL_GAP;
+const rowGap = parseFloat(cs.rowGap) || DGR_ROW_GAP;
+const rowH = parseFloat(cs.getPropertyValue('--dgr-row')) || DGR_ROW_H;
+const colW = Math.max(10, (slide.clientWidth - padL - padR - colGap * (DESK_GRID_V2_COLS - 1)) / DESK_GRID_V2_COLS);
+const dw = Math.round((e.clientX - rs.startX) / (colW + colGap));
+const dh = Math.round((e.clientY - rs.startY) / (rowH + rowGap));
+const s = deskGridV2ClampSize({ type: rs.type }, rs.startW + dw, rs.startH + dh);
+s.w = Math.max(DGR_MIN_CARD_W, Math.min(s.w, DESK_GRID_V2_COLS - rs.col));
+if (s.w === rs.w && s.h === rs.h) return;
+rs.w = s.w; rs.h = s.h;
+const node = rs.node;
+if (node) {
+node.dataset.dgrW = String(s.w);
+node.dataset.dgrH = String(s.h);
+node.style.gridColumn = String(rs.col + 1) + ' / span ' + s.w;
+node.style.gridRow = String(rs.row + 1) + ' / span ' + s.h;
+}
+if (!rs.raf) {
+rs.raf = requestAnimationFrame(() => {
+rs.raf = null;
+if (deskGridV2Resize === rs && deskGridV2Editing) deskGridV2RefreshBadges();
+});
+}
+}
+function deskGridV2ResizeEnd(e) {
+const rs = deskGridV2Resize;
+if (!rs || e.pointerId !== rs.pointerId) return;
+deskGridV2Resize = null;
+deskGridV2RemoveResizeListeners();
+document.documentElement.classList.remove('dgr-resizing');
+if (rs.raf) { try { cancelAnimationFrame(rs.raf); } catch (er) {} rs.raf = null; }
+try {
+if (pagesBox.hasPointerCapture && pagesBox.hasPointerCapture(rs.pointerId)) pagesBox.releasePointerCapture(rs.pointerId);
+} catch (er) {}
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, rs.key);
+if (m && f && f.item.type !== 'icon') {
+const s = deskGridV2ClampSize(f.item, rs.w, rs.h);
+s.w = Math.max(DGR_MIN_CARD_W, Math.min(s.w, DESK_GRID_V2_COLS - f.item.col));
+if (f.item.w !== s.w || f.item.h !== s.h) {
+deskGridV2PushUndo(m);
+f.item.w = s.w;
+f.item.h = s.h;
+f.item.sz = 1;
+deskGridV2ReflowPage(f.page, f.item.key);
+deskGridV2SaveModel(m);
+}
+}
+deskGridV2SuppressClickUntil = Date.now() + 400;
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+}
+function deskGridV2StartResize(key, e) {
+if (!deskGridV2Editing || !key) return;
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, key);
+if (!f || f.item.type === 'icon') return;
+const node = deskGridV2NodeOf(f.item);
+const slide = deskGridV2Slides()[f.pageIdx];
+if (!node || !slide) return;
+const rect = node.getBoundingClientRect();
+if (!rect.width || !rect.height) return;
+deskGridV2CancelResize();
+deskGridV2Resize = {
+key: key,
+type: f.item.type,
+pageIdx: f.pageIdx,
+col: f.item.col,
+row: f.item.row,
+startW: f.item.w,
+startH: f.item.h,
+w: f.item.w,
+h: f.item.h,
+startX: e.clientX,
+startY: e.clientY,
+pointerId: e.pointerId,
+node: node,
+raf: null
+};
+document.documentElement.classList.add('dgr-resizing');
+try { pagesBox.setPointerCapture(e.pointerId); } catch (er) {}
+window.addEventListener('pointermove', deskGridV2ResizeMove, true);
+window.addEventListener('pointerup', deskGridV2ResizeEnd, true);
+window.addEventListener('pointercancel', deskGridV2CancelResize, true);
+}
+function deskGridV2SetSize(key, w, h) {
+const m = deskGridV2Read();
+const f = m && deskGridV2Find(m, key);
+if (!m || !f || f.item.type === 'icon') return false;
+deskGridV2PushUndo(m);
+const s = deskGridV2ClampSize(f.item, w, h);
+if (s.w > DESK_GRID_V2_COLS - f.item.col) {
+f.item.col = Math.max(0, DESK_GRID_V2_COLS - s.w);
+}
+f.item.w = s.w;
+f.item.h = s.h;
+f.item.sz = 1;
+deskGridV2ReflowPage(f.page, f.item.key);
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) deskGridV2RefreshBadges();
+return true;
+}
+function deskGridV2UpdateUndoBtn() {
+const btn = document.getElementById('dgr-undo-btn');
+if (!btn) return;
+btn.disabled = !deskGridV2Undo;
+}
+function deskGridV2PushUndo(m) {
+try {
+const mm = m || deskGridV2Read();
+if (!mm) return false;
+deskGridV2Undo = {
+model: JSON.stringify(mm),
+hidden: JSON.stringify(getHiddenIcons()),
+ts: Date.now()
+};
+deskGridV2UpdateUndoBtn();
+return true;
+} catch (e) { return false; }
+}
+function deskGridV2ClearUndo() {
+deskGridV2Undo = null;
+deskGridV2UpdateUndoBtn();
+}
+function deskGridV2UndoLast() {
+if (!deskGridV2Undo) return false;
+let m = null;
+try { m = JSON.parse(deskGridV2Undo.model); } catch (e) { m = null; }
+if (!deskGridV2Validate(m)) { deskGridV2ClearUndo(); return false; }
+try {
+const hidden = JSON.parse(deskGridV2Undo.hidden || '[]');
+setHiddenIcons(Array.isArray(hidden) ? hidden : []);
+} catch (e) {}
+deskGridV2Undo = null;
+deskGridV2SaveModel(m);
+deskGridV2Render();
+if (deskGridV2Editing) {
+deskGridV2RefreshBadges();
+deskGridV2RefreshPageBar();
+}
+deskGridV2UpdateUndoBtn();
+toast('已撤销上一步');
+return true;
+}
+function deskGridV2RemoveKey(key) {
+const m = deskGridV2Read();
+if (!m || !key) return;
+const found = deskGridV2Find(m, key);
+if (!found) return;
+const it = found.item;
+const node = deskGridV2NodeOf(it);
+if (it.type === 'icon' || it.type === 'widget') deskGridV2PushUndo(m);
+else deskGridV2ClearUndo();
+if (it.type === 'icon') {
+const raw = key.indexOf('app-') === 0 ? key.slice(4) : key;
+const hidden = getHiddenIcons();
+if (hidden.indexOf(raw) < 0) hidden.push(raw);
+setHiddenIcons(hidden);
+if (node) node.style.display = 'none';
+found.page.items.splice(found.index, 1);
+} else if (it.type === 'image') {
+try { removeDeskImage(key); } catch (e) {}
+return;
+} else if (it.type === 'text') {
+try { removeDeskText(key); } catch (e) {}
+return;
+} else if (it.type === 'countdown') {
+try { removeDeskCountdown(key); } catch (e) {}
+return;
+} else {
+if (it.type === 'widget') {
+const hw = getHiddenWidgets();
+if (hw.indexOf(key) < 0) { hw.push(key); setHiddenWidgets(hw); }
+}
+if (node) {
+try { ensureWidgetPool().appendChild(node); } catch (e) {}
+node.style.gridColumn = '';
+node.style.gridRow = '';
+node.dataset.dgrKey = '';
+}
+found.page.items.splice(found.index, 1);
+}
+deskGridV2SaveModel(m);
+deskGridV2Render();
+deskGridV2RefreshBadges();
+toast('已移出此页，可在组件库加回');
+}
+function deskGridV2StartDrag(node, e) {
+if (!node || !node.dataset || !node.dataset.dgrKey) return;
+const m = deskGridV2Read();
+const found = m && deskGridV2Find(m, node.dataset.dgrKey);
+if (!found) return;
+const rect = node.getBoundingClientRect();
+if (!rect.width || !rect.height) return;
+const ghost = node.cloneNode(true);
+ghost.classList.add('dgr-drag-ghost');
+ghost.removeAttribute('data-dgr-key');
+try { ghost.querySelectorAll('.dgr-minus').forEach(n => n.remove()); } catch (e) {}
+ghost.style.left = rect.left + 'px';
+ghost.style.top = rect.top + 'px';
+ghost.style.width = rect.width + 'px';
+ghost.style.height = rect.height + 'px';
+ghost.style.gridColumn = 'auto';
+ghost.style.gridRow = 'auto';
+ghost.style.transform = 'translate(0,0)';
+document.body.appendChild(ghost);
+node.classList.add('dgr-drag-source');
+deskGridV2Drag = {
+key: found.item.key,
+item: found.item,
+node: node,
+ghost: ghost,
+pageIdx: found.pageIdx,
+startX: e.clientX,
+startY: e.clientY,
+pointerId: e.pointerId,
+moved: false,
+target: null
+};
+try { pagesBox.setPointerCapture(e.pointerId); } catch (er) {}
+}
+function deskGridV2UpdateTarget(x, y) {
+const d = deskGridV2Drag;
+if (!d) return;
+const idx = deskGridV2CurrentIdx();
+const slides = deskGridV2Slides();
+const slide = slides[idx];
+const m = deskGridV2Read();
+const page = m && m.pages[idx];
+if (!slide || !page) return;
+const rect = slide.getBoundingClientRect();
+const cs = getComputedStyle(slide);
+const padL = parseFloat(cs.paddingLeft) || DGR_PAD_X;
+const padR = parseFloat(cs.paddingRight) || DGR_PAD_X;
+const padT = parseFloat(cs.paddingTop) || DGR_PAD_Y;
+const colGap = parseFloat(cs.columnGap) || DGR_COL_GAP;
+const rowGap = parseFloat(cs.rowGap) || DGR_ROW_GAP;
+const colW = Math.max(10, (slide.clientWidth - padL - padR - colGap * (DESK_GRID_V2_COLS - 1)) / DESK_GRID_V2_COLS);
+const xRel = x - rect.left - padL;
+let col = Math.floor((xRel + colGap / 2) / (colW + colGap));
+col = Math.max(0, Math.min(DESK_GRID_V2_COLS - d.item.w, col));
+const rowH = parseFloat(cs.getPropertyValue('--dgr-row')) || DGR_ROW_H;
+const yContent = y - rect.top + slide.scrollTop;
+let row = Math.round((yContent - padT) / (rowH + rowGap));
+row = Math.max(0, row);
+const t = deskGridV2Resolve(page, d.key, col, row, d.item.w, d.item.h, idx === d.pageIdx, true);
+if (!t) return;
+d.target = { pageIdx: idx, col: t.col, row: t.row, swapWith: t.swapWith || null, push: !!t.push };
+const ph = deskGridV2Placeholder || (deskGridV2Placeholder = document.createElement('div'));
+ph.className = 'dgr-placeholder';
+const phone = document.getElementById('page-phone');
+let layer = document.getElementById('dgr-placeholder-layer');
+if (phone && !layer) {
+layer = document.createElement('div');
+layer.id = 'dgr-placeholder-layer';
+phone.appendChild(layer);
+}
+if (layer) {
+if (ph.parentNode !== layer) layer.appendChild(ph);
+const pr = phone.getBoundingClientRect();
+ph.style.left = (rect.left - pr.left + padL + t.col * (colW + colGap)) + 'px';
+ph.style.top = (rect.top - pr.top + padT + t.row * (rowH + rowGap) - slide.scrollTop) + 'px';
+ph.style.width = (d.item.w * colW + Math.max(0, d.item.w - 1) * colGap) + 'px';
+ph.style.height = (d.item.h * rowH + Math.max(0, d.item.h - 1) * rowGap) + 'px';
+}
+}
+function deskGridV2MoveDrag(e) {
+const d = deskGridV2Drag;
+if (!d) return;
+const dx = e.clientX - d.startX;
+const dy = e.clientY - d.startY;
+if (Math.abs(dx) + Math.abs(dy) > 6) d.moved = true;
+try { d.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; } catch (er) {}
+deskGridV2UpdateTarget(e.clientX, e.clientY);
+const box = pagesBox.getBoundingClientRect();
+const edge = 44;
+const atEdge = (e.clientX < box.left + edge) || (e.clientX > box.right - edge);
+if (atEdge) {
+if (!deskGridV2EdgeTimer) {
+const dir = (e.clientX < box.left + edge) ? -1 : 1;
+deskGridV2EdgeTimer = setTimeout(() => {
+deskGridV2EdgeTimer = null;
+const slides = deskGridV2Slides();
+const idx = deskGridV2CurrentIdx();
+const ni = Math.max(0, Math.min(slides.length - 1, idx + dir));
+if (ni !== idx && typeof window.deskGo === 'function') window.deskGo(ni);
+deskGridV2UpdateTarget(e.clientX, e.clientY);
+}, 320);
+}
+} else if (deskGridV2EdgeTimer) {
+clearTimeout(deskGridV2EdgeTimer);
+deskGridV2EdgeTimer = null;
+}
+}
+function deskGridV2CommitDrag() {
+const d = deskGridV2Drag;
+if (!d) return;
+const m = deskGridV2Read();
+const found = m && deskGridV2Find(m, d.key);
+const t = d.target;
+if (m && found && t) {
+deskGridV2PushUndo(m);
+try {
+if (t.pageIdx !== found.pageIdx) {
+found.page.items.splice(found.index, 1);
+const dest = m.pages[t.pageIdx];
+if (dest) {
+found.item.col = t.col;
+found.item.row = t.row;
+dest.items.push(found.item);
+deskGridV2ReflowPage(dest, found.item.key);
+}
+} else {
+if (t.swapWith) {
+const other = deskGridV2Find(m, t.swapWith);
+if (other) {
+const oldCol = found.item.col, oldRow = found.item.row;
+other.item.col = oldCol;
+other.item.row = oldRow;
+}
+}
+found.item.col = t.col;
+found.item.row = t.row;
+if (t.push) deskGridV2ReflowPage(found.page, found.item.key);
+}
+deskGridV2SaveModel(m);
+deskGridV2Render();
+} catch (e) {}
+}
+deskGridV2CleanupDrag();
+deskGridV2RefreshBadges();
+}
+function deskGridV2BuildEditBar() {
+const phone = document.getElementById('page-phone');
+if (!phone || document.getElementById('dgr-editbar')) return;
+const bar = document.createElement('div');
+bar.id = 'dgr-editbar';
+const hint = document.createElement('span');
+hint.className = 'dgr-hint';
+hint.textContent = '拖动 · 右下角改大小 · − 移出';
+const undo = document.createElement('button');
+undo.type = 'button';
+undo.id = 'dgr-undo-btn';
+undo.textContent = '撤销';
+undo.disabled = true;
+const add = document.createElement('button');
+add.type = 'button';
+add.id = 'dgr-add-btn';
+add.textContent = '+ 添加';
+const done = document.createElement('button');
+done.type = 'button';
+done.id = 'dgr-done-btn';
+done.textContent = '完成';
+bar.appendChild(hint);
+bar.appendChild(undo);
+bar.appendChild(add);
+bar.appendChild(done);
+bar.addEventListener('pointerdown', e => e.stopPropagation());
+bar.addEventListener('click', e => e.stopPropagation());
+undo.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+if (!deskGridV2Editing) return;
+deskGridV2UndoLast();
+});
+add.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+if (!deskGridV2Editing) return;
+const idx = deskGridV2CurrentIdx();
+const slides = deskGridV2Slides();
+if (slides[idx] && typeof openDeskLib === 'function') openDeskLib(slides[idx], idx);
+});
+done.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2ExitEdit();
+});
+phone.appendChild(bar);
+}
+function deskGridV2BindEditEvents() {
+if (!pagesBox || window.__dgrEditBound) return;
+window.__dgrEditBound = true;
+const cancelLong = () => {
+if (deskGridV2Press && deskGridV2Press.timer) {
+clearTimeout(deskGridV2Press.timer);
+deskGridV2Press.timer = null;
+}
+};
+pagesBox.addEventListener('pointerdown', (e) => {
+if (!deskGridV2GridOn) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+if (e.target.closest('#dgr-editbar, .dgr-minus, .desk-lib, .decor-bar')) return;
+if (e.target.closest('input, textarea, select, a')) return;
+if (e.target.closest('.dpf-sticker')) return;
+const slide = e.target.closest('.page-slide');
+if (!slide) return;
+const item = e.target.closest('[data-dgr-key]');
+const x = e.clientX, y = e.clientY;
+if (deskGridV2Editing) {
+deskGridV2Press = { id: e.pointerId, x: x, y: y, item: item, timer: null, longFired: false };
+return;
+}
+deskGridV2Press = {
+id: e.pointerId, x: x, y: y, item: item, longFired: false,
+timer: setTimeout(() => {
+if (!deskGridV2Press) return;
+deskGridV2Press.timer = null;
+if (!deskGridV2GridOn) return;
+deskGridV2Press.longFired = true;
+deskGridV2EnterEdit();
+}, 500)
+};
+}, true);
+pagesBox.addEventListener('pointermove', (e) => {
+if (!deskGridV2GridOn || !deskGridV2Press || e.pointerId !== deskGridV2Press.id) return;
+const p = deskGridV2Press;
+const dx = e.clientX - p.x, dy = e.clientY - p.y;
+const dist = Math.abs(dx) + Math.abs(dy);
+if (!deskGridV2Editing) {
+if (dist > 10) cancelLong();
+return;
+}
+if (!deskGridV2Drag) {
+if (p.item && dist > 6) deskGridV2StartDrag(p.item, e);
+return;
+}
+try { e.preventDefault(); } catch (er) {}
+deskGridV2MoveDrag(e);
+}, { capture: true, passive: false });
+pagesBox.addEventListener('pointerup', (e) => {
+if (!deskGridV2Press || e.pointerId !== deskGridV2Press.id) return;
+const p = deskGridV2Press;
+if (p.timer) { clearTimeout(p.timer); p.timer = null; }
+if (deskGridV2Drag) {
+try { e.preventDefault(); } catch (er) {}
+deskGridV2CommitDrag();
+} else if (p.longFired) {
+deskGridV2SuppressClickUntil = Date.now() + 400;
+}
+deskGridV2Press = null;
+}, true);
+pagesBox.addEventListener('pointercancel', (e) => {
+if (!deskGridV2Press || e.pointerId !== deskGridV2Press.id) return;
+if (deskGridV2Press.timer) { clearTimeout(deskGridV2Press.timer); deskGridV2Press.timer = null; }
+deskGridV2CleanupDrag();
+deskGridV2Press = null;
+}, true);
+pagesBox.addEventListener('click', (e) => {
+if (!deskGridV2GridOn) return;
+if (Date.now() < deskGridV2SuppressClickUntil) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+return;
+}
+if (!deskGridV2Editing) return;
+if (e.target.closest('.dgr-minus')) return;
+const frame = e.target.closest('.desk-photo-frame');
+if (frame) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+const pid = frame.dataset.deskImage;
+if (pid) openPhotoFrameMenu(pid);
+return;
+}
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+}, true);
+pagesBox.addEventListener('click', (e) => {
+if (!deskGridV2GridOn || deskGridV2Editing) return;
+const phone = document.getElementById('page-phone');
+if (!phone || !phone.classList.contains('decor-on')) return;
+const app = e.target.closest('.app');
+if (!app || app.closest('.app-grid')) return;
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+try { if (window.openIconMenu) window.openIconMenu(app); } catch (er) {}
+}, true);
+window.addEventListener('resize', () => {
+if (deskGridV2Editing) setTimeout(deskGridV2RefreshBadges, 150);
+});
+let dgrBadgeRaf = null;
+const refreshBadgesSoon = () => {
+if (!deskGridV2Editing || dgrBadgeRaf) return;
+dgrBadgeRaf = requestAnimationFrame(() => {
+dgrBadgeRaf = null;
+deskGridV2RefreshBadges();
+deskGridV2UpdatePageBarActive();
+});
+};
+pagesBox.addEventListener('scroll', refreshBadgesSoon, true);
+}
+const deskGridV2AddFromLib = (wid, pageIdx) => {
+if (!deskGridV2GridOn) return false;
+const m = deskGridV2Read();
+const page = m && m.pages[pageIdx];
+if (!m || !page || !wid) return false;
+let changed = false;
+let undoPushed = false;
+const ensureUndo = () => {
+if (!undoPushed) { deskGridV2PushUndo(m); undoPushed = true; }
+};
+const addIconNode = (app) => {
+const raw = app && app.dataset ? app.dataset.app : '';
+if (!raw) return;
+ensureUndo();
+const key = 'app-' + raw;
+const hidden = getHiddenIcons();
+const hi = hidden.indexOf(raw);
+if (hi >= 0) { hidden.splice(hi, 1); setHiddenIcons(hidden); changed = true; }
+const existing = deskGridV2Find(m, key);
+if (existing) {
+if (existing.pageIdx === pageIdx) {
+if (app.style.display === 'none') app.style.display = '';
+return;
+}
+existing.page.items.splice(existing.index, 1);
+}
+const grid = app.closest ? app.closest('.app-grid') : null;
+const free = deskGridV2FindFree(page, 1, 1, key, 0, 0);
+page.items.push({ key: key, type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: (grid && grid.dataset.app) || '', sz: 1 });
+changed = true;
+};
+if (wid.indexOf('app-') === 0) {
+const app = document.querySelector('.app[data-app="' + wid.slice(4) + '"]');
+if (!app) return false;
+addIconNode(app);
+if (!changed) { toast('已在本页'); return true; }
+} else if (wid === 'apps' || wid === 'p2apps' || wid === 'p3apps') {
+const grid = document.querySelector('[data-desk-widget="' + wid + '"]');
+if (!grid) return false;
+Array.prototype.forEach.call(grid.querySelectorAll('.app'), addIconNode);
+if (!changed) { toast('已在本页'); return true; }
+} else {
+const node = document.querySelector('[data-desk-widget="' + wid + '"]');
+if (!node) return false;
+const hw = getHiddenWidgets();
+const hwi = hw.indexOf(wid);
+if (hwi >= 0) { hw.splice(hwi, 1); setHiddenWidgets(hw); }
+const existing = deskGridV2Find(m, wid);
+if (existing) {
+if (existing.pageIdx === pageIdx) { toast('已在本页'); return true; }
+ensureUndo();
+existing.page.items.splice(existing.index, 1);
+} else {
+ensureUndo();
+}
+const d = deskGridV2DefaultSize(node, { key: wid, type: 'widget' });
+const free = deskGridV2FindFree(page, d.w, d.h, wid, 0, 0);
+page.items.push({ key: wid, type: 'widget', col: free.col, row: free.row, w: d.w, h: d.h, sz: 1 });
+changed = true;
+}
+if (changed) {
+if (wid === 'desk-anniv') { try { renderDeskAnniv(); } catch (e) {} }
+deskGridV2SaveModel(m);
+deskGridV2Render();
+deskGridV2RefreshBadges();
+toast('已添加到本页');
+}
+return true;
+};
+const deskGridV2SyncCustom = (addArr, removeArr) => {
+const m = deskGridV2Read();
+if (!m) return;
+let changed = false;
+(removeArr || []).forEach(id => {
+m.pages.forEach(page => {
+const i = (page.items || []).findIndex(x => x.key === id);
+if (i >= 0) { page.items.splice(i, 1); changed = true; }
+});
+});
+(addArr || []).forEach(it => {
+if (!it || !it.id) return;
+const page = m.pages[it.page];
+if (!page) return;
+if (deskGridV2Find(m, it.id)) return;
+const type = it.id.indexOf('img_') === 0 ? 'image' : (it.id.indexOf('txt_') === 0 ? 'text' : (it.id.indexOf('cd_') === 0 ? 'countdown' : 'widget'));
+const d = deskGridV2DefaultSize(null, { key: it.id, type: type });
+const free = deskGridV2FindFree(page, d.w, d.h, null, 0, 0);
+page.items.push({ key: it.id, type: type, col: free.col, row: free.row, w: d.w, h: d.h, sz: 1 });
+changed = true;
+});
+if (changed) {
+deskGridV2SaveModel(m);
+scheduleDeskGridV2Render('custom');
+}
+};
+function deskGridV2ApplyGroupChat() {
+if (!deskGridV2GridOn) return;
+const m = deskGridV2Read();
+if (!m || !m.pages || !m.pages.length) return;
+let changed = false;
+let en = false;
+try {
+const v = window.xyStore ? window.xyStore('xy-home-v2').get('group-chat-enabled') : null;
+en = (v !== null && v !== undefined) ? (v === '1') : (store.get('group-chat-enabled') === '1');
+} catch (e) {}
+let divPin = false, gcPin = false;
+try { divPin = store.get('divination-desk-pin') === '1'; } catch (e) {}
+try { gcPin = store.get('group-chat-desk-pin') === '1'; } catch (e) {}
+const divNode = document.querySelector('.app[data-app="divination"]');
+const gcNode = document.querySelector('.app[data-app="group-chat"]');
+const page0 = m.pages[0];
+if (en) {
+if (gcNode) {
+const hidden = getHiddenIcons();
+const hi = hidden.indexOf('group-chat');
+if (hi >= 0) { hidden.splice(hi, 1); setHiddenIcons(hidden); }
+gcNode.style.display = '';
+}
+if (!gcPin && gcNode && !deskGridV2Find(m, 'app-group-chat') && page0) {
+const free = deskGridV2FindFree(page0, 1, 1, null, 0, 0);
+page0.items.push({ key: 'app-group-chat', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main', sz: 1 });
+changed = true;
+}
+if (!divPin && divNode) {
+const f = deskGridV2Find(m, 'app-divination');
+if (f) { f.page.items.splice(f.index, 1); changed = true; }
+try { if (divNode.parentNode !== ensureWidgetPool()) ensureWidgetPool().appendChild(divNode); } catch (e) {}
+}
+} else {
+try { if (divPin) store.set('divination-desk-pin', '0'); } catch (e) {}
+try { if (gcPin) store.set('group-chat-desk-pin', '0'); } catch (e) {}
+const gc = deskGridV2Find(m, 'app-group-chat');
+if (gc) { gc.page.items.splice(gc.index, 1); changed = true; }
+if (gcNode) { try { ensureWidgetPool().appendChild(gcNode); } catch (e) {} }
+if (divNode && !deskGridV2Find(m, 'app-divination') && page0) {
+const free = deskGridV2FindFree(page0, 1, 1, null, 0, 0);
+page0.items.push({ key: 'app-divination', type: 'icon', col: free.col, row: free.row, w: 1, h: 1, g: 'main', sz: 1 });
+changed = true;
+}
+}
+if (changed) { deskGridV2SaveModel(m); deskGridV2Render(); }
+else scheduleDeskGridV2Render('group-chat');
+}
+const deskGridV2PageBgKeyAt = (i) => {
+const m = deskGridV2Read();
+const p = m && m.pages[i];
+return (p && typeof p.bg === 'string' && p.bg) ? p.bg : ('page-bg-' + i);
+};
+window.__deskGridV2PageBgKey = deskGridV2PageBgKeyAt;
+const deskGridV2RemapMetaPages = (mapFn) => {
+['desk-images', 'desk-texts', 'desk-countdowns'].forEach(key => {
+try {
+const arr = JSON.parse(store.get(key) || '[]');
+if (!Array.isArray(arr)) return;
+let changed = false;
+const out = [];
+arr.forEach(m => {
+if (!m) return;
+if (typeof m.page !== 'number') { out.push(m); return; }
+const np = mapFn(m.page);
+if (np === null || np === undefined) { changed = true; return; }
+if (np !== m.page) { m.page = np; changed = true; }
+out.push(m);
+});
+if (changed) store.set(key, JSON.stringify(out));
+} catch (e) {}
+});
+try { renderDeskImages(); } catch (e) {}
+try { renderDeskTexts(); } catch (e) {}
+try { renderDeskCountdowns(); } catch (e) {}
+};
+let deskGridV2PageDrag = null;
+function deskGridV2UpdatePageBarActive() {
+const bar = document.getElementById('dgr-pagebar');
+if (!bar) return;
+const idx = deskGridV2CurrentIdx();
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), (t) => {
+const on = Number(t.dataset.pageIdx) === idx;
+t.classList.toggle('on', on);
+if (on) { try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
+});
+}
+function deskGridV2RefreshPageBar() {
+if (!deskGridV2GridOn) return;
+const phone = document.getElementById('page-phone');
+if (!phone) return;
+let bar = document.getElementById('dgr-pagebar');
+if (!deskGridV2Editing) { if (bar) bar.remove(); return; }
+const m = deskGridV2Read();
+if (!m) return;
+if (!bar) {
+bar = document.createElement('div');
+bar.id = 'dgr-pagebar';
+phone.appendChild(bar);
+}
+bar.innerHTML = '';
+const cur = deskGridV2CurrentIdx();
+const n = m.pages.length;
+m.pages.forEach((page, i) => {
+const t = document.createElement('div');
+t.className = 'dgr-page-thumb' + (i === cur ? ' on' : '');
+t.dataset.pageIdx = String(i);
+const mini = document.createElement('div');
+mini.className = 'dgr-thumb-mini';
+const items = (page.items || []).slice()
+.sort((a, b) => ((a.row || 0) - (b.row || 0)) || ((a.col || 0) - (b.col || 0)))
+.slice(0, 12);
+items.forEach(it => {
+if (!it) return;
+const b = document.createElement('span');
+if (it.type !== 'icon') b.className = 'card';
+b.style.gridColumn = 'span ' + Math.max(1, Math.min(DESK_GRID_V2_COLS, it.w || 1));
+if (it.h > 1) b.style.gridRow = 'span ' + Math.min(2, it.h);
+mini.appendChild(b);
+});
+const num = document.createElement('span');
+num.className = 'dgr-thumb-num';
+num.textContent = String(i + 1);
+t.appendChild(mini);
+t.appendChild(num);
+if (n > DESK_PAGE_MIN) {
+const del = document.createElement('button');
+del.type = 'button';
+del.className = 'dgr-page-del';
+del.textContent = '−';
+del.addEventListener('pointerdown', (e) => e.stopPropagation());
+del.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2DeletePage(i);
+});
+t.appendChild(del);
+}
+bar.appendChild(t);
+});
+if (n < DESK_PAGE_MAX) {
+const add = document.createElement('button');
+add.type = 'button';
+add.className = 'dgr-page-add-thumb';
+add.textContent = '+';
+add.addEventListener('click', (e) => {
+e.preventDefault();
+e.stopPropagation();
+deskGridV2AddPage();
+});
+bar.appendChild(add);
+}
+if (!bar.__dgrPageBound) {
+bar.__dgrPageBound = true;
+bar.addEventListener('pointerdown', (e) => {
+if (e.target.closest('.dgr-page-del, .dgr-page-add-thumb')) return;
+const t = e.target.closest('.dgr-page-thumb');
+if (!t) return;
+const from = Number(t.dataset.pageIdx);
+if (!isFinite(from)) return;
+deskGridV2PageDrag = { from: from, startX: e.clientX, moved: false, target: from, pointerId: e.pointerId };
+try { bar.setPointerCapture(e.pointerId); } catch (er) {}
+});
+bar.addEventListener('pointermove', (e) => {
+const d = deskGridV2PageDrag;
+if (!d || e.pointerId !== d.pointerId) return;
+if (Math.abs(e.clientX - d.startX) > 6) d.moved = true;
+if (!d.moved) return;
+try { e.preventDefault(); } catch (er) {}
+let best = 1e9, target = d.from;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), (t, i) => {
+const r = t.getBoundingClientRect();
+const dist = Math.abs(e.clientX - (r.left + r.right) / 2);
+t.classList.toggle('dgr-page-drop', false);
+if (dist < best) { best = dist; target = i; }
+});
+d.target = target;
+const tt = bar.querySelectorAll('.dgr-page-thumb')[target];
+if (tt) tt.classList.add('dgr-page-drop');
+});
+bar.addEventListener('pointerup', (e) => {
+const d = deskGridV2PageDrag;
+if (!d || e.pointerId !== d.pointerId) return;
+deskGridV2PageDrag = null;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), t => t.classList.remove('dgr-page-drop'));
+try {
+if (bar.hasPointerCapture && bar.hasPointerCapture(e.pointerId)) bar.releasePointerCapture(e.pointerId);
+} catch (er) {}
+if (d.moved) {
+deskGridV2ReorderPages(d.from, d.target);
+} else {
+try { if (window.deskGo) window.deskGo(d.from); } catch (er) {}
+}
+});
+bar.addEventListener('pointercancel', () => {
+deskGridV2PageDrag = null;
+Array.prototype.forEach.call(bar.querySelectorAll('.dgr-page-thumb'), t => t.classList.remove('dgr-page-drop'));
+});
+}
+deskGridV2UpdatePageBarActive();
+}
+function deskGridV2AddPage() {
+deskGridV2ClearUndo();
+const n = deskPageCount();
+if (n >= DESK_PAGE_MAX) { toast('最多 ' + DESK_PAGE_MAX + ' 页'); return; }
+store.set('desk-page-count', String(n + 1));
+buildDeskPages();
+deskGridV2SyncGridMode('page-add');
+setTimeout(() => {
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+try { if (window.deskGo) window.deskGo(Math.min(n, deskPageCount() - 1)); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-add');
+}, 80);
+toast('已新增第 ' + (n + 1) + ' 页');
+}
+function deskGridV2DeletePage(idx) {
+const m = deskGridV2Read();
+if (!m) return;
+if (m.pages.length <= DESK_PAGE_MIN) { toast('至少保留 ' + DESK_PAGE_MIN + ' 页'); return; }
+const n = m.pages.length;
+if (idx < 0 || idx >= n) return;
+if (!window.openModal) return;
+window.openModal('删除第 ' + (idx + 1) + ' 页？', '', (v) => {
+if (v !== 'ok') return;
+deskGridV2ClearUndo();
+try {
+const mm = deskGridV2Read();
+if (!mm || mm.pages.length <= DESK_PAGE_MIN) return;
+const page = mm.pages[idx];
+const slides = deskGridV2Slides();
+const slide = slides[idx];
+if (slide) {
+Array.prototype.forEach.call(slide.children, (node) => {
+if (!node || !node.hasAttribute || !node.hasAttribute('data-dgr-key')) return;
+try { ensureWidgetPool().appendChild(node); } catch (e) {}
+node.style.gridColumn = '';
+node.style.gridRow = '';
+node.dataset.dgrKey = '';
+});
+if (slide.parentNode) slide.parentNode.removeChild(slide);
+}
+mm.pages.splice(idx, 1);
+store.set('desk-page-count', String(mm.pages.length));
+if (page && typeof page.bg === 'string' && page.bg) { try { store.remove(page.bg); } catch (e) {} }
+deskGridV2SaveModel(mm);
+deskGridV2RemapMetaPages(i => (i === idx ? null : (i > idx ? i - 1 : i)));
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+const cur = Math.max(0, Math.min(mm.pages.length - 1, deskGridV2CurrentIdx() >= idx ? deskGridV2CurrentIdx() - 1 : deskGridV2CurrentIdx()));
+try { if (window.deskGo) window.deskGo(cur); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-delete');
+toast('已删除第 ' + (idx + 1) + ' 页');
+} catch (e) {
+try { console.warn('[mochi] 删除页失败', e); } catch (e2) {}
+}
+}, { noInput: true, staticText: '该页上的图标/卡片会移回隐藏池，可从组件库加回；该页背景图一并移除。' });
+}
+function deskGridV2ReorderPages(from, to) {
+deskGridV2ClearUndo();
+const m = deskGridV2Read();
+if (!m) return;
+const n = m.pages.length;
+if (from < 0 || to < 0 || from >= n || to >= n || from === to) return;
+const curIdx = deskGridV2CurrentIdx();
+const curId = (m.pages[curIdx] && m.pages[curIdx].id) || '';
+const idsBefore = m.pages.map(p => p && p.id);
+const moved = m.pages.splice(from, 1)[0];
+m.pages.splice(to, 0, moved);
+const newIndexById = {};
+m.pages.forEach((p, i) => { if (p && p.id) newIndexById[p.id] = i; });
+const map = idsBefore.map(id => newIndexById[id]);
+const slides = deskGridV2Slides();
+const movedSlide = slides.splice(from, 1)[0];
+slides.splice(to, 0, movedSlide);
+if (pagesBox) slides.forEach(s => { if (s) pagesBox.appendChild(s); });
+deskGridV2SaveModel(m);
+deskGridV2RemapMetaPages(i => (typeof i === 'number' && map[i] !== undefined) ? map[i] : i);
+deskGridV2Render();
+try { applyPageBgs(); } catch (e) {}
+try { if (window.deskRebuild) window.deskRebuild(); } catch (e) {}
+const newCur = (curId && newIndexById[curId] !== undefined) ? newIndexById[curId] : Math.min(curIdx, m.pages.length - 1);
+try { if (window.deskGo) window.deskGo(newCur); } catch (e) {}
+try { syncPagesUI(); } catch (e) {}
+deskGridV2RefreshPageBar();
+deskGridV2RefreshBadges();
+scheduleDeskGridV2Heal('page-reorder');
+toast('页面顺序已更新');
+}
+function deskGridV2Boot() {
+if (deskGridV2Booted) return;
+if (!deskGridV2FlagOn()) return;
+deskGridV2Booted = true;
+try {
+document.documentElement.classList.add('desk-grid-v2');
+window.__deskGridV2GridActive = true;
+deskGridV2GridOn = true;
+deskGridV2BackupOnce();
+try { deskGridV2SplitQuoteRow(); } catch (e) {}
+let m = deskGridV2Read();
+if (!m) {
+deskGridV2SyncFromDom('boot');
+m = deskGridV2Read();
+}
+if (m && m.mode !== 'grid') {
+deskGridV2Repack(m);
+deskGridV2SaveModel(m);
+}
+deskGridV2BuildEditBar();
+deskGridV2BindEditEvents();
+deskGridV2SyncGridMode('boot');
+deskGridV2ApplyGroupChat();
+try { syncPagesUI(); } catch (e) {}
+scheduleDeskGridV2Heal('boot');
+try { whenDeskVisible(function () { scheduleDeskGridV2Heal('desk-visible'); }); } catch (e) {}
+} catch (e) {
+try { console.warn('[mochi] desk-grid-v2 启动异常，回退旧版：', e); } catch (e2) {}
+deskGridV2GridOn = false;
+window.__deskGridV2GridActive = false;
+document.documentElement.classList.remove('desk-grid-v2');
+}
+}
+setTimeout(deskGridV2Boot, 850);
+let deskGridV2Timer = null;
+let deskGridV2QuietUntil = 0;
+const deskGridV2HasGridModel = () => {
+const m = deskGridV2Read();
+return !!(m && m.mode === 'grid');
+};
+const scheduleDeskGridV2Sync = (reason) => {
+if (!deskGridV2FlagOn()) return;
+if (!deskGridV2GridOn && deskGridV2HasGridModel()) return;
+const delay = Math.max(280, deskGridV2QuietUntil - Date.now() + 80);
+if (deskGridV2Timer) clearTimeout(deskGridV2Timer);
+deskGridV2Timer = setTimeout(() => {
+deskGridV2Timer = null;
+syncDeskGridV2(reason);
+}, delay);
+};
+const deskGridV2Enable = (manual) => {
+gStore.set(DESK_GRID_V2_FLAG_KEY, '1');
+deskGridV2BackupOnce();
+const r = { ok: true, reload: true };
+updateDeskGridV2UI();
+if (manual) toast('已开启新版桌面编辑，正在刷新桌面…（旧布局已备份）');
+return r;
+};
+const deskGridV2Disable = (manual) => {
+gStore.remove(DESK_GRID_V2_FLAG_KEY);
+if (deskGridV2Timer) { clearTimeout(deskGridV2Timer); deskGridV2Timer = null; }
+deskGridV2ExitEdit();
+updateDeskGridV2UI();
+if (manual) toast('已关闭新版桌面编辑，正在回到旧版…（新版数据保留）');
+};
+const deskGridV2Row = document.getElementById('row-desk-grid-v2');
+if (deskGridV2Row) {
+deskGridV2Row.addEventListener('click', () => {
+if (!window.openModal) return;
+window.openModal('新版桌面编辑（测试）', '', (v) => {
+if (v === 'on') {
+deskGridV2Enable(true);
+setTimeout(function () { try { location.reload(); } catch (e) {} }, 450);
+} else if (v === 'off') {
+deskGridV2Disable(true);
+setTimeout(function () { try { location.reload(); } catch (e) {} }, 450);
+}
+}, {
+noInput: true,
+staticText: '开启后桌面切换为网格布局：长按图标/卡片进入编辑，直接拖动、跨页、左上角 − 移出，编辑条 + 打开组件库。\n切换需要刷新桌面；新版编辑结果保存在新版数据里，关闭后回到旧版布局（旧版不会自动跟随新版编辑），旧布局本身不删除。',
+pills: [
+{ label: '开启新版桌面编辑', value: 'on' },
+{ label: '关闭，回到旧版', value: 'off' }
+]
+});
+});
+}
+const DESK_ICON_NAME_KEY = 'desk-icon-name-hidden';
+const deskIconNameHidden = () => {
+try { return store.get(DESK_ICON_NAME_KEY) === '1'; } catch (e) { return false; }
+};
+const applyDeskIconNameVisibility = () => {
+const hidden = deskIconNameHidden();
+document.documentElement.classList.toggle('desk-hide-app-names', hidden);
+const val = document.getElementById('desk-icon-name-val');
+if (val) val.textContent = hidden ? '隐藏' : '显示';
+};
+const deskIconNameRow = document.getElementById('row-desk-icon-name');
+if (deskIconNameRow) {
+deskIconNameRow.addEventListener('click', () => {
+const next = !deskIconNameHidden();
+try { store.set(DESK_ICON_NAME_KEY, next ? '1' : '0'); } catch (e) {}
+applyDeskIconNameVisibility();
+toast(next ? '已隐藏图标名称' : '已显示图标名称');
+});
+}
+applyDeskIconNameVisibility();
+document.addEventListener('contact-switched', applyDeskIconNameVisibility);
+const DESK_DOTS_KEY = 'desk-dots-hidden';
+const deskDotsHidden = () => {
+try { return store.get(DESK_DOTS_KEY) === '1'; } catch (e) { return false; }
+};
+const applyDeskDotsVisibility = () => {
+const hidden = deskDotsHidden();
+document.documentElement.classList.toggle('desk-hide-dots', hidden);
+const val = document.getElementById('desk-dots-val');
+if (val) val.textContent = hidden ? '隐藏' : '显示';
+};
+const deskDotsRow = document.getElementById('row-desk-dots');
+if (deskDotsRow) {
+deskDotsRow.addEventListener('click', () => {
+const next = !deskDotsHidden();
+try { store.set(DESK_DOTS_KEY, next ? '1' : '0'); } catch (e) {}
+applyDeskDotsVisibility();
+toast(next ? '已隐藏分页圆点' : '已显示分页圆点');
+});
+}
+applyDeskDotsVisibility();
+document.addEventListener('contact-switched', applyDeskDotsVisibility);
+if (pagesBox && typeof MutationObserver === 'function') {
+try {
+const deskGridV2MO = new MutationObserver((records) => {
+let relevant = false;
+for (let i = 0; i < records.length; i++) {
+const r = records[i];
+const t = r.target;
+if (t && t.closest && t.closest('.dgr-minus, .dgr-placeholder')) continue;
+const nodes = [];
+try { if (r.addedNodes) nodes.push.apply(nodes, r.addedNodes); } catch (e) {}
+try { if (r.removedNodes) nodes.push.apply(nodes, r.removedNodes); } catch (e) {}
+if (nodes.length && nodes.every(n => n && n.nodeType === 1 && n.classList && (n.classList.contains('dgr-minus') || n.classList.contains('dgr-placeholder')))) continue;
+relevant = true;
+break;
+}
+if (relevant) scheduleDeskGridV2Sync('dom');
+});
+deskGridV2MO.observe(pagesBox, { childList: true, subtree: true });
+} catch (e) {}
+}
+document.addEventListener('contact-switched', () => {
+deskGridV2QuietUntil = Date.now() + 1200;
+if (deskGridV2Editing) deskGridV2ExitEdit();
+updateDeskGridV2UI();
+if (deskGridV2FlagOn()) {
+deskGridV2BackupOnce();
+scheduleDeskGridV2Sync('contact');
+}
+});
+document.addEventListener('mochi-restore-done', () => {
+updateDeskGridV2UI();
+if (deskGridV2FlagOn()) scheduleDeskGridV2Sync('restore');
+});
+updateDeskGridV2UI();
+if (deskGridV2FlagOn()) {
+deskGridV2BackupOnce();
+}
+window.__deskGridV2 = {
+read: deskGridV2Read,
+validate: deskGridV2Validate,
+sync: syncDeskGridV2,
+enable: deskGridV2Enable,
+disable: deskGridV2Disable,
+summary: () => deskGridV2Summary(deskGridV2Read()),
+gridOn: () => deskGridV2GridOn,
+editing: () => deskGridV2Editing,
+enterEdit: deskGridV2EnterEdit,
+exitEdit: deskGridV2ExitEdit,
+render: deskGridV2Render,
+syncCustom: deskGridV2SyncCustom,
+addFromLib: deskGridV2AddFromLib,
+removeKey: deskGridV2RemoveKey,
+resize: deskGridV2SetSize,
+undo: deskGridV2UndoLast,
+defaultSize: (it) => deskGridV2DefaultSize(null, it),
+applyGroupChat: deskGridV2ApplyGroupChat,
+boot: deskGridV2Boot,
+addPage: deskGridV2AddPage,
+deletePage: deskGridV2DeletePage,
+reorderPages: deskGridV2ReorderPages,
+refreshPageBar: deskGridV2RefreshPageBar,
+pageBgKey: deskGridV2PageBgKeyAt,
+findOverlaps: deskGridV2FindOverlaps,
+healOverlaps: deskGridV2HealOverlaps,
+debug: () => ({ gridOn: deskGridV2GridOn, editing: deskGridV2Editing, booted: deskGridV2Booted, press: !!deskGridV2Press, drag: !!deskGridV2Drag, resize: deskGridV2Resize ? { key: deskGridV2Resize.key, w: deskGridV2Resize.w, h: deskGridV2Resize.h } : null, pageDrag: deskGridV2PageDrag ? { from: deskGridV2PageDrag.from, target: deskGridV2PageDrag.target, moved: deskGridV2PageDrag.moved } : null, bound: !!window.__dgrEditBound }),
+key: DESK_GRID_V2_KEY,
+backupKey: DESK_GRID_V2_BACKUP_KEY,
+flagKey: DESK_GRID_V2_FLAG_KEY,
+cols: DESK_GRID_V2_COLS
+};
+window.__deskGridV2ApplyGroupChat = deskGridV2ApplyGroupChat;
+window.__deskGridV2SyncNow = (reason) => syncDeskGridV2(reason || 'sync-now');
+window.__deskGridV2Schedule = (reason) => scheduleDeskGridV2Sync(reason || 'scheduled');
+window.mochiDeskGridBack = function () {
+if (!deskGridV2Editing) return false;
+deskGridV2ExitEdit();
+return true;
+};
+const WIDGET_IDS = ['deco', 'quote-row', 'quote-card', 'fish-card', 'checkin', 'music', 'memo-row', 'week', 'weekend', 'desk-clock', 'desk-calendar', 'desk-timer', 'desk-anniv', 'desk-period',
+'app-chat', 'app-group-chat', 'app-home', 'app-mail', 'app-feed', 'app-calendar', 'app-memory', 'app-divination', 'app-note', 'app-music', 'app-stats', 'app-interact', 'app-checkin', 'app-period', 'app-accounting', 'app-tongpin', 'app-shenshou', 'app-water', 'app-eat', 'app-pomo', 'app-cjian', 'app-memo-arc', 'app-my-arc', 'app-room', 'app-piggy', 'app-memo'];
 const WIDGET_NAMES = {
-deco: '纪念日卡', 'quote-row': '今日情话 / 已摸鱼', checkin: '打卡横幅', apps: '功能图标(整组)',
-music: '音乐播放器', p2apps: '第二页功能图标(整组)', 'memo-row': '今日备忘 / 心情', week: '本周日常', weekend: '摸鱼倒计时（周末）',
-'desk-clock': '时钟', 'desk-calendar': '月历', 'desk-timer': '计时器', 'desk-anniv': '纪念日倒计时', 'desk-period': '经期倒计时',
+deco: '纪念日卡', 'quote-row': '今日情话 / 已摸鱼', 'quote-card': '今日情话', 'fish-card': '已摸鱼', checkin: '打卡横幅',
+music: '音乐播放器', 'memo-row': '今日备忘 / 心情', week: '本周日常', weekend: '摸鱼倒计时（周末）',
+'desk-clock': '时钟', 'desk-calendar': '月历', 'desk-timer': '计时器', 'desk-anniv': '倒数日（纪念日+自定义）', 'desk-period': '经期倒计时',
 'app-chat': '聊天图标', 'app-group-chat': '群聊图标', 'app-home': '主页图标', 'app-mail': '信箱图标', 'app-feed': '朋友圈图标',
 'app-calendar': '日历图标', 'app-memory': '纪念图标', 'app-divination': '占卜图标', 'app-note': '收藏图标',
 'app-music': '音乐图标', 'app-stats': '聊天统计图标', 'app-interact': '提问记录图标', 'app-checkin': '寻踪图标',
-'p3apps': '第三页功能图标(整组)', 'app-period': '经期记录图标', 'app-accounting': '记账图标', 'app-tongpin': '同频图标', 'app-shenshou': '伸手图标', 'app-water': '喝水图标', 'app-eat': '吃什么图标', 'app-pomo': '番茄钟图标',
+'app-period': '经期记录图标', 'app-accounting': '记账图标', 'app-tongpin': '同频图标', 'app-shenshou': '伸手图标', 'app-water': '喝水图标', 'app-eat': '吃什么图标', 'app-pomo': '番茄钟图标',
 'app-cjian': '此间图标', 'app-memo-arc': '梦角档案图标', 'app-my-arc': '我的档案图标', 'app-room': '房间图标', 'app-piggy': '存钱罐图标', 'app-memo': '备忘录图标',
 };
 const PREV_BOX = 'display:flex;align-items:center;justify-content:center;width:78px;height:58px;border-radius:10px;background:linear-gradient(135deg,#fff,#f6f6f6);border:1px solid rgba(0,0,0,.07);box-shadow:0 1px 3px rgba(0,0,0,.06);flex-shrink:0;overflow:hidden;padding:4px;box-sizing:border-box';
@@ -5472,6 +8045,8 @@ const _appIcos = [
 const WIDGET_PREV_HTML = {
 deco: '<span style="display:flex;gap:3px;align-items:center">' + _av + '<svg width="10" height="10" viewBox="0 0 24 24" fill="#ccc"><path d="M12 21s-7-4.5-9-8.5a4.5 4.5 0 019-3 4.5 4.5 0 019 3c-2 4-9 8.5-9 8.5z"/></svg>' + _av + '</span>',
 'quote-row': '<span style="display:flex;gap:4px">' + _card('情话') + _card('摸鱼') + '</span>',
+'quote-card': _card('情话'),
+'fish-card': _card('摸鱼'),
 checkin: '<span style="display:flex;align-items:center;gap:4px;width:64px;height:22px;padding:0 6px;border-radius:11px;background:#fff;border:1px solid rgba(0,0,0,.07);box-sizing:border-box"><svg width="9" height="9" viewBox="0 0 24 24" fill="#ccc"><path d="M12 21s-7-4.5-9-8.5a4.5 4.5 0 019-3 4.5 4.5 0 019 3c-2 4-9 8.5-9 8.5z"/></svg><span style="flex:1;font-size:6px;color:#999">一起摸鱼</span><span style="font-size:6px;color:#fff;background:#111;padding:1px 5px;border-radius:5px">打卡</span></span>',
 apps: '<span style="display:grid;grid-template-columns:repeat(3,14px);gap:4px">' + _appIcos.map(_ico).join('') + '</span>',
 music: '<span style="display:flex;gap:5px;align-items:center;width:64px"><span style="width:26px;height:26px;border-radius:7px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><span style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="height:3px;border-radius:2px;background:#ccc;width:90%"></span><span style="height:3px;border-radius:2px;background:#eee;width:60%"></span><span style="height:2px;border-radius:1px;background:#111;width:40%"></span></span></span>',
@@ -5482,7 +8057,7 @@ weekend: '<span style="display:flex;flex-direction:column;align-items:center;jus
 'desk-clock': '<span style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:18px;font-weight:700;color:#222;letter-spacing:1px;font-variant-numeric:tabular-nums">12:30</span><span style="font-size:7px;color:#aaa">星期一 · 8 月 19 日</span></span>',
 'desk-calendar': '<span style="display:grid;grid-template-columns:repeat(7,6px);gap:2px">' + Array.from({ length: 21 }, (_, i) => '<span style="width:6px;height:6px;border-radius:2px;' + (i === 10 ? 'background:#111' : 'background:#eee') + '"></span>').join('') + '</span>',
 'desk-timer': '<span style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:14px;font-weight:700;color:#222;font-variant-numeric:tabular-nums">00:00.0</span><span style="display:flex;gap:3px"><span style="font-size:5px;color:#666;background:#f0f0f0;padding:1px 4px;border-radius:4px">开始</span><span style="font-size:5px;color:#666;background:#f0f0f0;padding:1px 4px;border-radius:4px">重置</span></span></span>',
-'desk-anniv': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:7px;color:#bbb">距下一个纪念日</span><span style="font-size:15px;font-weight:700;color:#333">30 天</span><span style="font-size:6px;color:#999">生日 · 9 月 18 日</span></span>',
+'desk-anniv': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:6px;color:#bbb">最近的倒数日</span><span style="font-size:15px;font-weight:700;color:#333">3 天</span><span style="font-size:6px;color:#999">生日 · 9 月 18 日</span></span>',
 'desk-period': '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:7px;color:#e85a8f">距下次经期</span><span style="font-size:15px;font-weight:700;color:#e85a8f">5 天</span><span style="font-size:6px;color:#999">周期第 23 天</span></span>',
 'app-chat': _appIcoPrev('聊天'), 'app-group-chat': _appIcoPrev('群聊'), 'app-home': _appIcoPrev('主页'), 'app-mail': _appIcoPrev('信箱'), 'app-feed': _appIcoPrev('朋友圈'),
 'app-calendar': _appIcoPrev('日历'), 'app-memory': _appIcoPrev('纪念'), 'app-divination': _appIcoPrev('占卜'), 'app-note': _appIcoPrev('收藏'),
@@ -5501,6 +8076,7 @@ document.body.appendChild(pool);
 return pool;
 }
 const saveDeskLayout = () => {
+if (window.__deskGridV2GridActive) return null;
 const slides = Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide'));
 const lay = slides.map(s => Array.prototype.slice.call(s.querySelectorAll(DESK_SEL_ALL)).map(n => deskWidOf(n)).filter(Boolean));
 try {
@@ -5513,6 +8089,10 @@ store.set('desk-layout', JSON.stringify(lay));
 return lay;
 };
 const applyDeskLayout = () => {
+if (window.__deskGridV2GridActive) {
+try { if (window.__deskGridV2Schedule) window.__deskGridV2Schedule('apply-layout'); } catch (e) {}
+return;
+}
 const lay = deskLayout();
 if (!lay) { restoreTemplateDesk(); return; }
 const slides = Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide'));
@@ -5574,6 +8154,7 @@ applyDeskLayout();
 window.applyDeskLayout = function () { try { applyDeskLayout(); } finally { try { applyHiddenIcons(); } catch (e) {} } };
 document.addEventListener('contact-switched', applyDeskLayout);
 function ensureDeskPeriod() {
+if (window.__deskGridV2GridActive) return;
 const lay = deskLayout();
 const node = document.querySelector('[data-desk-widget="desk-period"]');
 if (!node) return;
@@ -5611,6 +8192,7 @@ try { renderDeskWidgets(); } catch (e) {}
 }
 ensureDeskPeriod();
 function ensureDeskPeriodP3Order() {
+if (window.__deskGridV2GridActive) return;
 ensureDeskPeriod();
 try {
 if (deskLayout()) return;
@@ -5627,6 +8209,7 @@ setTimeout(ensureDeskPeriodP3Order, 200);
 setTimeout(ensureDeskPeriodP3Order, 600);
 document.addEventListener('contact-switched', ensureDeskPeriod);
 function ensureMemoRowP3() {
+if (window.__deskGridV2GridActive) return;
 const node = document.querySelector('[data-desk-widget="memo-row"]');
 if (!node || !pagesBox) return;
 const slides = Array.prototype.slice.call(pagesBox.querySelectorAll('.page-slide'));
@@ -5649,6 +8232,7 @@ ensureMemoRowP3();
 setTimeout(ensureMemoRowP3, 150); // 等 buildDeskPages 的 setTimeout(ensureP3) 补齐第三页后兜底一次
 document.addEventListener('contact-switched', ensureMemoRowP3);
 function ensureP2SecondRowIcons() {
+if (window.__deskGridV2GridActive) return;
 if (store.get('p2icons-p3-mig') === '1') return;
 store.set('p2icons-p3-mig', '1');
 const p2g = document.querySelector('.app-grid.p2-grid');
@@ -5667,6 +8251,7 @@ if (n && n.parentNode === p2g) p2g.appendChild(n);
 });
 }
 function ensureP2AppsBelowWeekend() {
+if (window.__deskGridV2GridActive) return;
 const node = document.querySelector('[data-desk-widget="p2apps"]');
 const we = document.querySelector('[data-desk-widget="weekend"]');
 ensureP2SecondRowIcons();
@@ -5724,6 +8309,10 @@ _reapplyScheduled = true;
 setTimeout(() => { _reapplyScheduled = false; }, 2000);
 });
 function applyGroupChatMode() {
+if (window.__deskGridV2GridActive) {
+try { if (window.__deskGridV2ApplyGroupChat) window.__deskGridV2ApplyGroupChat(); } catch (e) {}
+return;
+}
 try {
 let en = false;
 try { const v = window.xyStore ? window.xyStore('xy-home-v2').get('group-chat-enabled') : null; if (v !== null && v !== undefined) en = v === '1'; else en = store.get('group-chat-enabled') === '1'; } catch (e) {}
@@ -5852,9 +8441,34 @@ iconSearch = search; iconGrid = grid;
 box.appendChild(p);
 panels[g.key] = p;
 });
+const unhideWidget = (wid) => {
+const node = document.querySelector('[data-desk-widget="' + wid + '"]');
+if (!node) return false;
+try {
+let hidden = getHiddenIcons();
+let changed = false;
+const un = (x) => {
+const k = x && x.dataset ? x.dataset.app : '';
+if (!k) return;
+const i = hidden.indexOf(k);
+if (i >= 0) { hidden.splice(i, 1); changed = true; }
+};
+un(node);
+Array.prototype.slice.call(node.querySelectorAll('.app')).forEach(un);
+if (changed) { setHiddenIcons(hidden); applyHiddenIcons(); }
+return changed;
+} catch (e) {}
+return false;
+};
 const addWidgetToPage = (wid) => {
+if (deskGridV2GridOn) {
+try {
+if (deskGridV2AddFromLib(wid, pageIdx)) { lib.remove(); return; }
+} catch (e) {}
+}
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 if (!node) return;
+unhideWidget(wid);
 if (wid.indexOf('app-') === 0) {
 const grid = pageSlide.querySelector('.app-grid');
 if (grid && grid.dataset.app) {
@@ -5890,8 +8504,10 @@ if (window.deskRebuild) window.deskRebuild();
 lib.remove();
 toast('已添加到本页');
 };
-const IS_ICON_TILE = (w) => (w.indexOf('app-') === 0 || w === 'apps' || w === 'p2apps' || w === 'p3apps');
-WIDGET_IDS.forEach(wid => {
+const LIB_SPLIT_IDS = { 'quote-card': 1, 'fish-card': 1 };
+const libIds = WIDGET_IDS.filter(wid => deskGridV2GridOn ? wid !== 'quote-row' : !LIB_SPLIT_IDS[wid]);
+const IS_ICON_TILE = (w) => w.indexOf('app-') === 0;
+libIds.forEach(wid => {
 if (IS_ICON_TILE(wid)) {
 const node = document.querySelector('[data-desk-widget="' + wid + '"]');
 const curPage = node && node.closest('.page-slide') ? Array.prototype.indexOf.call(pagesBox.querySelectorAll('.page-slide'), node.closest('.page-slide')) : -1;
@@ -5910,7 +8526,14 @@ iname.className = 'dli-name';
 iname.textContent = nm.replace(/图标$/, '');
 tile.appendChild(iprev); tile.appendChild(iname);
 tile.addEventListener('click', () => {
-if (curPage === pageIdx) { toast('已在本页'); return; }
+if (deskGridV2GridOn) {
+try { if (deskGridV2AddFromLib(wid, pageIdx)) lib.remove(); } catch (e) {}
+return;
+}
+if (curPage === pageIdx) {
+toast(unhideWidget(wid) ? '已恢复显示' : '已在本页');
+return;
+}
 addWidgetToPage(wid);
 });
 iconGrid.appendChild(tile);
@@ -5971,6 +8594,29 @@ imgBtn.addEventListener('click', () => { addDeskImage(pageIdx); lib.remove(); })
 imgMeta.appendChild(imgName); imgMeta.appendChild(imgWhere);
 imgItem.appendChild(imgPrev); imgItem.appendChild(imgMeta); imgItem.appendChild(imgBtn);
 panels.widget.appendChild(imgItem);
+if (deskGridV2GridOn) {
+const pfItem = document.createElement('div');
+pfItem.className = 'desk-lib-item';
+const pfPrev = document.createElement('div');
+pfPrev.className = 'dl-prev';
+pfPrev.style.cssText = PREV_BOX;
+pfPrev.innerHTML = '<span style="position:relative;width:42px;height:48px;background:#fffaf0;border-radius:4px;padding:3px;display:flex;flex-direction:column;box-shadow:0 3px 8px rgba(0,0,0,.10)"><span style="flex:1;border-radius:2px;background:linear-gradient(135deg,#e8ded0,#cfc2b0)"></span><span style="height:7px;font-size:5px;line-height:7px;color:#8b7a66;text-align:center">2026.11.03</span><span style="position:absolute;top:-3px;left:50%;width:16px;height:6px;border-radius:1px;background:var(--photo-frame-tape,#e7d2aa);transform:translateX(-50%) rotate(-2deg)"></span></span>';
+const pfMeta = document.createElement('div');
+pfMeta.className = 'dl-meta';
+const pfName = document.createElement('div');
+pfName.className = 'dl-name';
+pfName.textContent = '拍立得相框（2×2）';
+const pfWhere = document.createElement('div');
+pfWhere.className = 'dl-where';
+pfWhere.textContent = '可多个 · 可拖动调焦点';
+const pfBtn = document.createElement('button');
+pfBtn.className = 'dl-btn';
+pfBtn.textContent = '选照片并添加';
+pfBtn.addEventListener('click', () => { addDeskPhotoFrame(pageIdx); lib.remove(); });
+pfMeta.appendChild(pfName); pfMeta.appendChild(pfWhere);
+pfItem.appendChild(pfPrev); pfItem.appendChild(pfMeta); pfItem.appendChild(pfBtn);
+panels.widget.appendChild(pfItem);
+}
 const textItem = document.createElement('div');
 textItem.className = 'desk-lib-item';
 const textPrev = document.createElement('div');
@@ -5992,27 +8638,6 @@ textBtn.addEventListener('click', () => { addDeskText(pageIdx); lib.remove(); })
 textMeta.appendChild(textName); textMeta.appendChild(textWhere);
 textItem.appendChild(textPrev); textItem.appendChild(textMeta); textItem.appendChild(textBtn);
 panels.widget.appendChild(textItem);
-const cdItem = document.createElement('div');
-cdItem.className = 'desk-lib-item';
-const cdPrev = document.createElement('div');
-cdPrev.className = 'dl-prev';
-cdPrev.style.cssText = PREV_BOX;
-cdPrev.innerHTML = '<span style="display:flex;flex-direction:column;align-items:center;gap:1px"><span style="font-size:6px;color:#bbb">距出差</span><span style="font-size:14px;font-weight:700;color:#333">28 天</span><span style="font-size:5px;color:#999">9 月 16 日</span></span>';
-const cdMeta = document.createElement('div');
-cdMeta.className = 'dl-meta';
-const cdName = document.createElement('div');
-cdName.className = 'dl-name';
-cdName.textContent = '倒计时（自定义事件）';
-const cdWhere = document.createElement('div');
-cdWhere.className = 'dl-where';
-cdWhere.textContent = '可多个';
-const cdBtn = document.createElement('button');
-cdBtn.className = 'dl-btn';
-cdBtn.textContent = '添加倒计时';
-cdBtn.addEventListener('click', () => { addDeskCountdown(pageIdx); lib.remove(); });
-cdMeta.appendChild(cdName); cdMeta.appendChild(cdWhere);
-cdItem.appendChild(cdPrev); cdItem.appendChild(cdMeta); cdItem.appendChild(cdBtn);
-panels.widget.appendChild(cdItem);
 const close = document.createElement('button');
 close.textContent = '关闭';
 close.style.cssText = 'width:100%;margin-top:8px;padding:10px;border:1px solid #eee;border-radius:10px;background:#fafafa;font-size:13px;cursor:pointer;font-family:inherit';
@@ -6041,14 +8666,63 @@ if (lay[pi] && lay[pi].indexOf(m.id) >= 0) { pageIdx = pi; pageArr = lay[pi]; br
 const slide = slides[pageIdx] || slides[m.page];
 if (!slide) return;
 const node = document.createElement('div');
-node.className = 'desk-image-widget';
+const isFrame = m.frame === 'polaroid';
+node.className = 'desk-image-widget' + (isFrame ? ' desk-photo-frame' : '');
 node.dataset.deskImage = m.id;
+const img = document.createElement('img');
+if (isFrame) {
+img.className = 'dpf-img';
+const fx = Number.isFinite(Number(m.focusX)) ? Math.max(0, Math.min(1, Number(m.focusX))) : 0.5;
+const fy = Number.isFinite(Number(m.focusY)) ? Math.max(0, Math.min(1, Number(m.focusY))) : 0.5;
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+const flip = document.createElement('div');
+flip.className = 'dpf-flip';
+const front = document.createElement('div');
+front.className = 'dpf-face dpf-front';
+front.appendChild(img);
+const capText = (m.caption || '').trim();
+if (capText) {
+const cap = document.createElement('div');
+cap.className = 'dpf-cap';
+cap.textContent = capText;
+front.appendChild(cap);
+} else {
+node.classList.add('dpf-no-cap');
+}
+const back = document.createElement('div');
+back.className = 'dpf-face dpf-back';
+const note = document.createElement('div');
+note.className = 'dpf-back-note';
+const noteText = String(m.backNote || '').trim().slice(0, 160);
+if (noteText) note.textContent = noteText;
+else note.classList.add('dpf-back-empty');
+const date = document.createElement('div');
+date.className = 'dpf-back-date';
+date.textContent = photoFrameBackDate(m);
+back.appendChild(note);
+back.appendChild(date);
+flip.appendChild(front);
+flip.appendChild(back);
+node.appendChild(flip);
+const stickers = photoFrameStickersOf(m);
+stickers.forEach((stickerMeta, si) => {
+const sp = document.createElement('span');
+sp.className = 'dpf-sticker dpf-sticker-' + (stickerMeta.size === 's' || stickerMeta.size === 'l' ? stickerMeta.size : 'm');
+sp.dataset.dpfStkIdx = String(si);
+sp.style.left = (stickerMeta.x * 100) + '%';
+sp.style.top = (stickerMeta.y * 100) + '%';
+sp.style.setProperty('--stk-rot', photoFrameStickerRot(stickerMeta, si) + 'deg');
+if (!fillPhotoFrameStickerNode(sp, stickerMeta)) return;
+node.appendChild(sp);
+bindPhotoFrameStickerDrag(node, sp, m.id, si);
+});
+} else {
 const w = DESK_IMG_SIZES.l;
 const wv = (m.w === DESK_IMG_SIZES.s || m.w === DESK_IMG_SIZES.m) ? m.w : w;
 node.style.width = wv + '%';
 if (wv < 100) node.style.alignSelf = m.align === 'c' ? 'center' : (m.align === 'r' ? 'flex-end' : 'flex-start');
-const img = document.createElement('img');
 node.appendChild(img);
+}
 insertDeskNodeByLayout(slide, node, m.id, pageArr);
 const srcKey = window.activePrefix() + ':desk-image-src-' + m.id;
 if (window.idbGet) {
@@ -6059,6 +8733,7 @@ if (src) img.src = src;
 }
 });
 for (let i = 0; i < slides.length; i++) syncPageHint(slides[i]);
+try { if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) window.__deskGridV2.render(); } catch (e) {}
 }
 function moveDeskImage(id, dir) {
 const lay = deskLayout();
@@ -6131,6 +8806,24 @@ const reader = new FileReader();
 reader.onload = () => {
 compressImage(reader.result, 1280).then(data => {
 if (!data) { toast('图片过大或格式不支持'); return; }
+const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (frameMeta && frameMeta.frame === 'polaroid') {
+openPhotoFrameCrop(data, { focusX: frameMeta.focusX, focusY: frameMeta.focusY }, (focus) => {
+if (!focus) return;
+const srcKey = window.activePrefix() + ':desk-image-src-' + id;
+if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (mm) {
+mm.focusX = focus.focusX;
+mm.focusY = focus.focusY;
+saveDeskImagesMeta(list);
+}
+renderDeskImages();
+toast('已更换照片');
+});
+return;
+}
 const srcKey = window.activePrefix() + ':desk-image-src-' + id;
 if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
 renderDeskImages();
@@ -6140,6 +8833,819 @@ toast('已更换图片');
 reader.onerror = () => toast('图片读取失败，请换一张再试');
 reader.readAsDataURL(f);
 }
+});
+}
+function photoFrameDate() {
+const d = new Date();
+const p = n => (n < 10 ? '0' + n : '' + n);
+return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+function photoFrameBackDate(meta) {
+const saved = String((meta && meta.backDate) || '').trim();
+if (saved) return saved.slice(0, 24);
+const ts = Number(meta && meta.addedAt);
+if (Number.isFinite(ts) && ts > 0) {
+const d = new Date(ts);
+const p = n => (n < 10 ? '0' + n : '' + n);
+return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate());
+}
+return photoFrameDate();
+}
+function openPhotoFrameCrop(src, focus, cb) {
+const old = document.getElementById('dpf-crop-overlay');
+if (old) { try { old.remove(); } catch (e) {} }
+let fx = Number.isFinite(Number(focus && focus.focusX)) ? Math.max(0, Math.min(1, Number(focus.focusX))) : 0.5;
+let fy = Number.isFinite(Number(focus && focus.focusY)) ? Math.max(0, Math.min(1, Number(focus.focusY))) : 0.5;
+const overlay = document.createElement('div');
+overlay.id = 'dpf-crop-overlay';
+overlay.className = 'dpf-crop-overlay';
+const title = document.createElement('div');
+title.className = 'dpf-crop-title';
+title.textContent = '调整照片位置';
+const box = document.createElement('div');
+box.className = 'dpf-crop-box';
+const img = document.createElement('img');
+img.alt = '';
+img.src = src;
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+box.appendChild(img);
+const tip = document.createElement('div');
+tip.className = 'dpf-crop-tip';
+tip.textContent = '拖动照片，选择相框里露出的部分';
+const actions = document.createElement('div');
+actions.className = 'dpf-crop-actions';
+const cancel = document.createElement('button');
+cancel.type = 'button';
+cancel.className = 'dpf-crop-cancel';
+cancel.textContent = '取消';
+const ok = document.createElement('button');
+ok.type = 'button';
+ok.className = 'dpf-crop-ok';
+ok.textContent = '完成';
+let drag = null;
+let done = false;
+const finish = (save) => {
+if (done) return;
+done = true;
+try { overlay.remove(); } catch (e) {}
+try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+window.mochiPhotoCropBack = null;
+if (cb) cb(save ? { focusX: Math.round(fx * 1000) / 1000, focusY: Math.round(fy * 1000) / 1000 } : null);
+};
+window.mochiPhotoCropBack = () => { finish(false); return true; };
+cancel.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); finish(false); });
+ok.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); finish(true); });
+box.addEventListener('pointerdown', (e) => {
+if (e.button != null && e.button !== 0) return;
+const rect = box.getBoundingClientRect();
+drag = { id: e.pointerId, x: e.clientX, y: e.clientY, fx: fx, fy: fy, w: rect.width, h: rect.height };
+try { box.setPointerCapture(e.pointerId); } catch (er) {}
+try { e.preventDefault(); } catch (er) {}
+});
+box.addEventListener('pointermove', (e) => {
+if (!drag || e.pointerId !== drag.id || !drag.w || !drag.h) return;
+fx = Math.max(0, Math.min(1, drag.fx - (e.clientX - drag.x) / drag.w));
+fy = Math.max(0, Math.min(1, drag.fy - (e.clientY - drag.y) / drag.h));
+img.style.objectPosition = (fx * 100) + '% ' + (fy * 100) + '%';
+try { e.preventDefault(); } catch (er) {}
+});
+const stopDrag = () => { drag = null; };
+box.addEventListener('pointerup', stopDrag);
+box.addEventListener('pointercancel', stopDrag);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+actions.appendChild(cancel);
+actions.appendChild(ok);
+overlay.appendChild(title);
+overlay.appendChild(box);
+overlay.appendChild(tip);
+overlay.appendChild(actions);
+document.body.appendChild(overlay);
+try { document.documentElement.classList.add('dpf-crop-open'); } catch (e) {}
+actions.addEventListener('pointerdown', (e) => e.stopPropagation());
+}
+function canEditPhotoFrameSticker() {
+if (document.documentElement.classList.contains('dgr-editing')) return true;
+const phone = document.getElementById('page-phone');
+return !!(phone && phone.classList.contains('decor-on'));
+}
+function photoFrameStickerBaseRot(st, si) {
+if (!st || st.kind === 'emoji' || st.kind === 'upload') return 0;
+const base = DESK_FRAME_STICKERS.findIndex(s => s && s.id === st.id);
+if (base < 0) return 0;
+return ((base + si) % 5 - 2) * 2;
+}
+function photoFrameStickerRot(st, si) {
+if (st && st.rot != null && Number.isFinite(Number(st.rot))) {
+return Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+}
+return photoFrameStickerBaseRot(st, si);
+}
+function stickerLibOf() {
+try {
+const v = JSON.parse(gStore.get(DESK_STICKER_LIB_KEY) || '[]');
+return Array.isArray(v) ? v.filter(x => x && x.id) : [];
+} catch (e) { return []; }
+}
+function saveStickerLib(arr) {
+try { gStore.set(DESK_STICKER_LIB_KEY, JSON.stringify(arr)); return true; } catch (e) { return false; }
+}
+function deskStickerSrc(ref) {
+if (!ref) return '';
+try { return gStore.get(DESK_STICKER_SRC_PREFIX + ref) || ''; } catch (e) { return ''; }
+}
+function readDeskStickerSrc(ref, cb) {
+const cached = deskStickerSrc(ref);
+if (cached) { try { cb(cached); } catch (e) {} return; }
+if (window.idbGet && ref) {
+window.idbGet('xy-home-v2:' + DESK_STICKER_SRC_PREFIX + ref).then(function (src) {
+if (src) { try { cb(src); } catch (e) {} }
+}, function () {});
+}
+}
+function normalizePhotoFrameSticker(st) {
+if (!st) return null;
+const x = Number.isFinite(Number(st.x)) ? Math.max(0, Math.min(1, Number(st.x))) : 0.72;
+const y = Number.isFinite(Number(st.y)) ? Math.max(0, Math.min(1, Number(st.y))) : 0.22;
+const size = st.size === 's' || st.size === 'l' ? st.size : 'm';
+const item = { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, size: size };
+if (st.kind === 'emoji') {
+const e = String(st.emoji || '').trim();
+if (!e) return null;
+item.kind = 'emoji';
+item.emoji = e.slice(0, 16);
+} else if (st.kind === 'upload') {
+const ref = String(st.ref || '');
+if (!ref) return null;
+item.kind = 'upload';
+item.ref = ref.slice(0, 48);
+} else {
+if (!st.id || !DESK_FRAME_STICKERS.some(s => s && s.id === st.id)) return null;
+item.id = st.id;
+}
+if (st.rot != null && Number.isFinite(Number(st.rot))) item.rot = Math.max(-180, Math.min(180, Math.round(Number(st.rot))));
+return item;
+}
+function fillPhotoFrameStickerNode(sp, stickerMeta) {
+if (!sp || !stickerMeta) return false;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+sp.classList.add('dpf-sticker-k-' + (stickerMeta.kind || 'draw'));
+if (stickerMeta.kind === 'emoji') {
+sp.classList.add('dpf-sticker-emoji');
+const svg = document.createElementNS(SVG_NS, 'svg');
+svg.setAttribute('viewBox', '0 0 64 64');
+svg.setAttribute('aria-hidden', 'true');
+const txt = document.createElementNS(SVG_NS, 'text');
+txt.setAttribute('x', '32');
+txt.setAttribute('y', '34');
+txt.setAttribute('text-anchor', 'middle');
+txt.setAttribute('dominant-baseline', 'central');
+txt.setAttribute('font-size', '52');
+txt.textContent = stickerMeta.emoji;
+svg.appendChild(txt);
+sp.appendChild(svg);
+return true;
+}
+if (stickerMeta.kind === 'upload') {
+sp.classList.add('dpf-sticker-upload');
+const im = document.createElement('img');
+im.className = 'dpf-sticker-img';
+im.alt = '';
+const apply = (src) => {
+if (!src || !im || im.parentNode !== sp) return;
+im.src = src;
+sp.classList.remove('dpf-sticker-missing');
+};
+sp.appendChild(im);
+const src = deskStickerSrc(stickerMeta.ref);
+if (src) apply(src);
+else { sp.classList.add('dpf-sticker-missing'); readDeskStickerSrc(stickerMeta.ref, apply); }
+return true;
+}
+const stk = DESK_FRAME_STICKERS.find(s => s && s.id === stickerMeta.id);
+if (!stk) return false;
+sp.classList.add('dpf-sticker-draw');
+sp.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stk.svg + '</svg>';
+return true;
+}
+function photoFrameStickersOf(meta) {
+const raw = meta && Array.isArray(meta.stickers) ? meta.stickers
+: (meta && meta.sticker ? [meta.sticker] : []);
+const out = [];
+for (let i = 0; i < raw.length && out.length < DESK_FRAME_STICKER_MAX; i++) {
+const item = normalizePhotoFrameSticker(raw[i]);
+if (item) out.push(item);
+}
+return out;
+}
+function writePhotoFrameStickers(id, arr) {
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const clean = [];
+(Array.isArray(arr) ? arr : []).forEach(st => {
+if (clean.length >= DESK_FRAME_STICKER_MAX) return;
+const item = normalizePhotoFrameSticker(st);
+if (item) clean.push(item);
+});
+delete mm.sticker;
+if (clean.length) mm.stickers = clean; else delete mm.stickers;
+saveDeskImagesMeta(list);
+renderDeskImages();
+}
+function nextPhotoFrameStickerSpot(list) {
+const spots = [[0.72, 0.22], [0.28, 0.34], [0.74, 0.62], [0.3, 0.7], [0.52, 0.14], [0.16, 0.52], [0.86, 0.46], [0.5, 0.8]];
+let best = spots[0], bestD = -1;
+spots.forEach(p => {
+let min = 1e9;
+(Array.isArray(list) ? list : []).forEach(st => {
+const dx = (Number(st.x) || 0) - p[0];
+const dy = (Number(st.y) || 0) - p[1];
+const d = dx * dx + dy * dy;
+if (d < min) min = d;
+});
+if (min > bestD) { bestD = min; best = p; }
+});
+return { x: best[0], y: best[1] };
+}
+function bindPhotoFrameStickerDrag(frameNode, stickerEl, id, idx) {
+if (!frameNode || !stickerEl) return;
+let drag = null;
+let suppressClick = false;
+stickerEl.addEventListener('pointerdown', (e) => {
+if (!canEditPhotoFrameSticker()) return;
+if (e.button != null && e.button !== 0) return;
+const rect = frameNode.getBoundingClientRect();
+drag = { id: e.pointerId, rect: rect, x: null, y: null };
+try { stickerEl.setPointerCapture(e.pointerId); } catch (er) {}
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+stickerEl.classList.add('dpf-sticker-drag');
+});
+stickerEl.addEventListener('pointermove', (e) => {
+if (!drag || e.pointerId !== drag.id) return;
+const rect = drag.rect;
+if (!rect || !rect.width || !rect.height) return;
+drag.x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+drag.y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+stickerEl.style.left = (drag.x * 100) + '%';
+stickerEl.style.top = (drag.y * 100) + '%';
+try { e.preventDefault(); } catch (er) {}
+});
+const end = (e) => {
+if (!drag || (e && e.pointerId !== drag.id)) return;
+const d = drag; drag = null;
+stickerEl.classList.remove('dpf-sticker-drag');
+try { if (e && e.pointerId != null) stickerEl.releasePointerCapture(e.pointerId); } catch (er) {}
+if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (er) {} }
+if (d.x == null || d.y == null) return;
+suppressClick = true;
+setTimeout(() => { suppressClick = false; }, 400);
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const arr = photoFrameStickersOf(mm);
+if (!arr[idx]) return;
+arr[idx].x = Math.round(d.x * 1000) / 1000;
+arr[idx].y = Math.round(d.y * 1000) / 1000;
+delete mm.sticker;
+mm.stickers = arr;
+saveDeskImagesMeta(list);
+};
+stickerEl.addEventListener('pointerup', end);
+stickerEl.addEventListener('pointercancel', end);
+stickerEl.addEventListener('click', (e) => {
+if (!canEditPhotoFrameSticker()) return;
+const stkPanelOpen = !!document.getElementById('dpf-stk-overlay');
+if (stkPanelOpen) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+suppressClick = false;
+return;
+}
+if (suppressClick) {
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+suppressClick = false;
+}
+});
+}
+function openPhotoFrameStickerPicker(id) {
+const old = document.getElementById('dpf-stk-overlay');
+if (old) { try { old.remove(); } catch (e) {} }
+const meta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (!meta) return;
+const before = photoFrameStickersOf(meta);
+const draft = before.map(s => Object.assign({}, s));
+let selected = draft.length ? draft.length - 1 : -1;
+let dirty = false;
+const overlay = document.createElement('div');
+overlay.id = 'dpf-stk-overlay';
+overlay.className = 'dpf-stk-overlay';
+const panel = document.createElement('div');
+panel.className = 'dpf-stk-panel';
+const title = document.createElement('div');
+title.className = 'dpf-stk-title';
+title.textContent = '相框贴纸';
+const handle = document.createElement('div');
+handle.className = 'dpf-stk-handle';
+let panelOffset = 0;
+let panelDrag = null;
+const applyPanelTransform = (animate) => {
+panel.style.transition = animate ? 'transform .18s ease' : 'none';
+panel.style.transform = panelOffset ? 'translateY(' + (-panelOffset) + 'px)' : '';
+};
+const setPanelMini = (on) => {
+panel.classList.toggle('dpf-stk-panel-mini', on);
+title.textContent = on ? '相框贴纸 · 点此展开' : '相框贴纸';
+if (on) {
+const tb = document.querySelector('.tabbar');
+const tbTop = tb ? tb.getBoundingClientRect().top : 0;
+const lift = tbTop > 0 ? Math.max(8, Math.round(window.innerHeight - tbTop + 8)) : 8;
+panel.style.marginBottom = lift + 'px';
+} else {
+panel.style.marginBottom = '';
+}
+panelOffset = 0;
+applyPanelTransform(false);
+};
+const panelDragMove = (e) => {
+if (!panelDrag || e.pointerId !== panelDrag.id) return;
+const dy = e.clientY - panelDrag.startY;
+if (Math.abs(dy) > 6) panelDrag.moved = true;
+const maxUp = Math.max(0, window.innerHeight - panel.offsetHeight - 8);
+const maxDown = Math.max(0, panel.offsetHeight - 54);
+const next = Math.max(-maxDown, Math.min(maxUp, panelDrag.startOffset - dy));
+panelOffset = next;
+applyPanelTransform(false);
+try { e.preventDefault(); } catch (er) {}
+};
+const panelDragEnd = (e) => {
+if (!panelDrag || e.pointerId !== panelDrag.id) return;
+const d = panelDrag; panelDrag = null;
+panel.classList.remove('dpf-stk-panel-drag');
+try { if (d.el && d.el.releasePointerCapture) d.el.releasePointerCapture(e.pointerId); } catch (er) {}
+if (!d.moved) {
+if (panelOffset < 0) { panelOffset = 0; applyPanelTransform(true); }
+return;
+}
+const maxDown = Math.max(1, panel.offsetHeight - 54);
+if (panelOffset < 0) {
+if (-panelOffset > maxDown * 0.45) { setPanelMini(true); return; }
+panelOffset = 0;
+}
+applyPanelTransform(true);
+};
+const bindPanelDrag = (el) => {
+el.addEventListener('pointerdown', (e) => {
+if (e.button != null && e.button !== 0) return;
+if (panel.classList.contains('dpf-stk-panel-mini')) setPanelMini(false);
+panelDrag = { id: e.pointerId, startY: e.clientY, startOffset: panelOffset, moved: false, el: el };
+try { el.setPointerCapture(e.pointerId); } catch (er) {}
+panel.classList.add('dpf-stk-panel-drag');
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+});
+};
+bindPanelDrag(handle);
+bindPanelDrag(title);
+window.addEventListener('pointermove', panelDragMove);
+window.addEventListener('pointerup', panelDragEnd);
+window.addEventListener('pointercancel', panelDragEnd);
+const grid = document.createElement('div');
+grid.className = 'dpf-stk-grid';
+const addEntry = (entry) => {
+if (draft.length >= DESK_FRAME_STICKER_MAX) {
+toast('最多贴 ' + DESK_FRAME_STICKER_MAX + ' 张，先删一张再加');
+return false;
+}
+const spot = nextPhotoFrameStickerSpot(draft);
+const st = Object.assign({ x: spot.x, y: spot.y, size: 'm' }, entry);
+st.rot = photoFrameStickerBaseRot(st, draft.length);
+draft.push(st);
+selected = draft.length - 1;
+dirty = true;
+writePhotoFrameStickers(id, draft);
+sync();
+return true;
+};
+const tabsBar = document.createElement('div');
+tabsBar.className = 'dpf-stk-tabs';
+let activeTab = 'draw';
+const tabBtns = {};
+[['draw', '手绘'], ['emoji', 'Emoji'], ['upload', '我的上传']].forEach(pair => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-tab';
+b.textContent = pair[1];
+b.addEventListener('click', () => { activeTab = pair[0]; sync(); });
+tabBtns[pair[0]] = b;
+tabsBar.appendChild(b);
+});
+const drawWrap = document.createElement('div');
+drawWrap.appendChild(grid);
+const emojiWrap = document.createElement('div');
+const emojiGrid = document.createElement('div');
+emojiGrid.className = 'dpf-stk-emoji-grid';
+DESK_EMOJI_STICKERS.forEach(e => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-emoji-item';
+b.textContent = e;
+b.addEventListener('click', () => addEntry({ kind: 'emoji', emoji: e }));
+emojiGrid.appendChild(b);
+});
+const emojiRow = document.createElement('div');
+emojiRow.className = 'dpf-stk-emoji-row';
+const emojiInput = document.createElement('input');
+emojiInput.type = 'text';
+emojiInput.className = 'dpf-stk-emoji-input';
+emojiInput.maxLength = 16;
+emojiInput.placeholder = '粘贴任意 emoji';
+const emojiAddBtn = document.createElement('button');
+emojiAddBtn.type = 'button';
+emojiAddBtn.className = 'dpf-stk-emoji-add';
+emojiAddBtn.textContent = '添加';
+const addEmojiInput = () => {
+const v = String(emojiInput.value || '').trim();
+if (!v) { toast('先输入或粘贴一个 emoji'); return; }
+if (addEntry({ kind: 'emoji', emoji: v })) emojiInput.value = '';
+};
+emojiAddBtn.addEventListener('click', addEmojiInput);
+emojiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addEmojiInput(); } });
+emojiRow.appendChild(emojiInput);
+emojiRow.appendChild(emojiAddBtn);
+emojiWrap.appendChild(emojiGrid);
+emojiWrap.appendChild(emojiRow);
+const uploadWrap = document.createElement('div');
+const uploadBtn = document.createElement('button');
+uploadBtn.type = 'button';
+uploadBtn.className = 'dpf-stk-upload-btn';
+uploadBtn.textContent = '＋ 上传贴纸图片';
+const uploadGrid = document.createElement('div');
+uploadGrid.className = 'dpf-stk-upload-grid';
+const uploadEmpty = document.createElement('div');
+uploadEmpty.className = 'dpf-stk-upload-empty';
+uploadEmpty.textContent = '还没有上传贴纸，点上方按钮添加';
+const uploadSticker = () => {
+if (!window.mochiFilePick) { toast('相册选择组件没加载上，请刷新页面再试'); return; }
+window.mochiFilePick({
+id: 'mochi-desk-sticker-pick', accept: 'image/*',
+onFiles: (files) => {
+const f = files && files[0];
+if (!f) { toast('没有取到图片，请再选一次'); return; }
+const reader = new FileReader();
+reader.onload = () => {
+ingestTo(reader.result, { maxSide: 320, mime: 'image/png', byteLimit: 180 * 1024, tag: 'desk-sticker' }).then(data => {
+if (!data) { toast('图片过大或格式不支持，请换一张'); return; }
+const lib = stickerLibOf();
+if (lib.length >= DESK_STICKER_LIB_MAX) { toast('贴纸库已满（最多 ' + DESK_STICKER_LIB_MAX + ' 张）'); return; }
+const ref = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+try { gStore.set(DESK_STICKER_SRC_PREFIX + ref, data); } catch (e) { toast('存储空间不足，贴纸没保存上'); return; }
+lib.push({ id: ref, name: '贴纸 ' + (lib.length + 1), addedAt: Date.now() });
+if (!saveStickerLib(lib)) { toast('存储空间不足，贴纸没保存上'); return; }
+activeTab = 'upload';
+addEntry({ kind: 'upload', ref: ref });
+sync();
+toast('已添加上传贴纸');
+});
+};
+reader.onerror = () => toast('图片读取失败，请重试');
+reader.readAsDataURL(f);
+}
+});
+};
+uploadBtn.addEventListener('click', uploadSticker);
+uploadWrap.appendChild(uploadBtn);
+uploadWrap.appendChild(uploadEmpty);
+uploadWrap.appendChild(uploadGrid);
+const placedTitle = document.createElement('div');
+placedTitle.className = 'dpf-stk-subtitle';
+const placedList = document.createElement('div');
+placedList.className = 'dpf-stk-placed';
+const sizeRow = document.createElement('div');
+sizeRow.className = 'dpf-stk-sizes';
+const rotRow = document.createElement('div');
+rotRow.className = 'dpf-stk-rotrow';
+const rotLabel = document.createElement('label');
+rotLabel.textContent = '旋转';
+const rotInput = document.createElement('input');
+rotInput.type = 'range';
+rotInput.min = '-180';
+rotInput.max = '180';
+rotInput.step = '1';
+const rotVal = document.createElement('span');
+rotVal.className = 'dpf-stk-rotval';
+rotRow.appendChild(rotLabel);
+rotRow.appendChild(rotInput);
+rotRow.appendChild(rotVal);
+const actions = document.createElement('div');
+actions.className = 'dpf-stk-actions';
+const tip = document.createElement('div');
+tip.className = 'dpf-stk-tip';
+tip.textContent = '手绘点图案即新增；Emoji 可点常用或粘贴任意表情；上传贴纸会存进「我的上传」，可重复贴到任意相框。最多 ' + DESK_FRAME_STICKER_MAX + ' 张，选中后可改大小/旋转或删除。';
+let closed = false;
+const close = (keep) => {
+if (closed) return;
+closed = true;
+try { overlay.remove(); } catch (e) {}
+try { document.documentElement.classList.remove('dpf-crop-open'); } catch (e) {}
+try {
+window.removeEventListener('pointermove', panelDragMove);
+window.removeEventListener('pointerup', panelDragEnd);
+window.removeEventListener('pointercancel', panelDragEnd);
+} catch (e) {}
+window.mochiPhotoCropBack = null;
+if (!keep && dirty) writePhotoFrameStickers(id, before);
+};
+const stickerLabelOf = (st) => {
+if (!st) return '';
+if (st.kind === 'emoji') return '';
+if (st.kind === 'upload') {
+const it = stickerLibOf().find(x => x && x.id === st.ref);
+return it && it.name ? it.name : '上传贴纸';
+}
+const d = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
+return d ? d.name : '';
+};
+const sync = () => {
+Object.keys(tabBtns).forEach(k => tabBtns[k].classList.toggle('on', k === activeTab));
+drawWrap.style.display = activeTab === 'draw' ? '' : 'none';
+emojiWrap.style.display = activeTab === 'emoji' ? '' : 'none';
+uploadWrap.style.display = activeTab === 'upload' ? '' : 'none';
+uploadGrid.innerHTML = '';
+const lib = stickerLibOf();
+uploadEmpty.hidden = !!lib.length;
+lib.forEach(item => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-upload-item';
+b.title = item.name || '上传贴纸';
+const im = document.createElement('img');
+im.alt = '';
+const src = deskStickerSrc(item.id);
+if (src) im.src = src;
+else readDeskStickerSrc(item.id, (s) => { if (s && im.parentNode === b) im.src = s; });
+b.appendChild(im);
+b.addEventListener('click', () => addEntry({ kind: 'upload', ref: item.id }));
+uploadGrid.appendChild(b);
+});
+Array.prototype.forEach.call(sizeRow.querySelectorAll('.dpf-stk-size'), b => {
+b.classList.toggle('on', selected >= 0 && draft[selected] && b.dataset.size === draft[selected].size);
+});
+removeBtn.hidden = selected < 0;
+const hasSel = selected >= 0 && draft[selected];
+rotRow.hidden = !hasSel;
+if (hasSel) {
+const r = photoFrameStickerRot(draft[selected], selected);
+rotInput.value = String(r);
+rotVal.textContent = r + '°';
+}
+placedTitle.textContent = '已贴 ' + draft.length + '/' + DESK_FRAME_STICKER_MAX + ' · 选中一张可改大小或删除';
+placedList.innerHTML = '';
+if (!draft.length) {
+const empty = document.createElement('div');
+empty.className = 'dpf-stk-placed-empty';
+empty.textContent = '还没有贴纸，点上方添加';
+placedList.appendChild(empty);
+} else {
+draft.forEach((st, i) => {
+let icon = null;
+if (st.kind === 'emoji') {
+icon = document.createElement('span');
+icon.className = 'dpf-stk-placed-emoji';
+icon.textContent = st.emoji;
+} else if (st.kind === 'upload') {
+icon = document.createElement('img');
+icon.alt = '';
+const src = deskStickerSrc(st.ref);
+if (src) icon.src = src;
+else readDeskStickerSrc(st.ref, (s) => { if (s && icon.parentNode) icon.src = s; });
+} else {
+const stDef = DESK_FRAME_STICKERS.find(s => s && s.id === st.id);
+if (!stDef) return;
+icon = document.createElement('span');
+icon.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + stDef.svg + '</svg>';
+}
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-placed-item' + (i === selected ? ' on' : '');
+b.appendChild(icon);
+const label = stickerLabelOf(st);
+if (label) {
+const tx = document.createElement('span');
+tx.textContent = label;
+b.appendChild(tx);
+}
+b.addEventListener('click', () => { selected = i; sync(); });
+placedList.appendChild(b);
+});
+}
+};
+let removeBtn;
+DESK_FRAME_STICKERS.forEach((st, si) => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-item';
+b.dataset.sticker = st.id;
+b.innerHTML = '<svg viewBox="0 0 64 64" aria-hidden="true">' + st.svg + '</svg><span>' + st.name + '</span>';
+b.style.setProperty('--stk-rot', (((si % 5) - 2) * 2) + 'deg');
+b.addEventListener('click', () => addEntry({ id: st.id }));
+grid.appendChild(b);
+});
+[['s', '小'], ['m', '中'], ['l', '大']].forEach(pair => {
+const b = document.createElement('button');
+b.type = 'button';
+b.className = 'dpf-stk-size';
+b.dataset.size = pair[0];
+b.textContent = pair[1];
+b.addEventListener('click', () => {
+if (selected < 0 || !draft[selected]) { toast('先在「已贴」里点选一张贴纸'); return; }
+draft[selected].size = pair[0];
+dirty = true;
+writePhotoFrameStickers(id, draft);
+sync();
+});
+sizeRow.appendChild(b);
+});
+rotInput.addEventListener('input', () => {
+if (selected < 0 || !draft[selected]) return;
+const v = Math.round(Number(rotInput.value));
+draft[selected].rot = v;
+rotVal.textContent = v + '°';
+const el = document.querySelector('.desk-photo-frame .dpf-sticker[data-dpf-stk-idx="' + selected + '"]');
+if (el) el.style.setProperty('--stk-rot', v + 'deg');
+});
+rotInput.addEventListener('change', () => {
+if (selected < 0 || !draft[selected]) return;
+draft[selected].rot = Math.round(Number(rotInput.value));
+dirty = true;
+writePhotoFrameStickers(id, draft);
+sync();
+});
+const cancel = document.createElement('button');
+cancel.type = 'button';
+cancel.className = 'dpf-stk-cancel';
+cancel.textContent = '取消';
+cancel.addEventListener('click', () => close(false));
+removeBtn = document.createElement('button');
+removeBtn.type = 'button';
+removeBtn.className = 'dpf-stk-remove';
+removeBtn.textContent = '删除选中';
+removeBtn.addEventListener('click', () => {
+if (selected < 0) return;
+draft.splice(selected, 1);
+selected = draft.length ? Math.min(selected, draft.length - 1) : -1;
+dirty = true;
+writePhotoFrameStickers(id, draft);
+sync();
+});
+const ok = document.createElement('button');
+ok.type = 'button';
+ok.className = 'dpf-stk-ok';
+ok.textContent = '完成';
+ok.addEventListener('click', () => close(true));
+overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+window.mochiPhotoCropBack = () => { close(false); return true; };
+actions.appendChild(cancel);
+actions.appendChild(removeBtn);
+actions.appendChild(ok);
+panel.appendChild(handle);
+panel.appendChild(title);
+panel.appendChild(tabsBar);
+panel.appendChild(drawWrap);
+panel.appendChild(emojiWrap);
+panel.appendChild(uploadWrap);
+panel.appendChild(placedTitle);
+panel.appendChild(placedList);
+panel.appendChild(sizeRow);
+panel.appendChild(rotRow);
+panel.appendChild(tip);
+panel.appendChild(actions);
+overlay.appendChild(panel);
+document.body.appendChild(overlay);
+try { document.documentElement.classList.add('dpf-crop-open'); } catch (e) {}
+sync();
+}
+function readPhotoFrameSrc(id, cb) {
+const key = window.activePrefix() + ':desk-image-src-' + id;
+const fallback = () => { try { cb(store.get('desk-image-src-' + id) || ''); } catch (e) { cb(''); } };
+if (window.idbGet) {
+window.idbGet(key).then(src => {
+let fallbackSrc = '';
+try { fallbackSrc = store.get('desk-image-src-' + id) || ''; } catch (e) {}
+cb(src || fallbackSrc || '');
+}).catch(fallback);
+} else fallback();
+}
+function addDeskPhotoFrame(pageIdx) {
+window.mochiFilePick({
+id: 'mochi-photo-frame-add-pick', accept: 'image/*',
+onFiles: (files) => {
+const f = files && files[0];
+if (!f) { toast('没有取到照片，请再选一次'); return; }
+const reader = new FileReader();
+reader.onload = () => {
+compressImage(reader.result, 1280).then(data => {
+if (!data) { toast('照片过大或格式不支持，请换一张'); return; }
+openPhotoFrameCrop(data, { focusX: 0.5, focusY: 0.5 }, (focus) => {
+if (!focus) return;
+const id = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+const meta = loadDeskImagesMeta();
+meta.push({
+id: id,
+page: pageIdx,
+addedAt: Date.now(),
+frame: 'polaroid',
+caption: photoFrameDate(),
+backDate: photoFrameDate(),
+backNote: '',
+focusX: focus.focusX,
+focusY: focus.focusY
+});
+saveDeskImagesMeta(meta);
+syncDeskLayout([{ id: id, page: pageIdx }]);
+const srcKey = window.activePrefix() + ':desk-image-src-' + id;
+if (window.idbSet) window.idbSet(srcKey, data); else store.set('desk-image-src-' + id, data);
+renderDeskImages();
+toast('已添加拍立得相框');
+});
+});
+};
+reader.onerror = () => toast('照片读取失败，请换一张再试');
+reader.readAsDataURL(f);
+}
+});
+}
+function openPhotoFrameMenu(id) {
+const meta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (!meta) return;
+if (!window.openModal) return;
+const openCrop = () => {
+readPhotoFrameSrc(id, (src) => {
+if (!src) { toast('照片还没加载好，请稍后再试'); return; }
+openPhotoFrameCrop(src, { focusX: meta.focusX, focusY: meta.focusY }, (focus) => {
+if (!focus) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+mm.focusX = focus.focusX;
+mm.focusY = focus.focusY;
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast('已调整照片位置');
+});
+});
+};
+const editCaption = () => {
+const cur = loadDeskImagesMeta().find(x => x && x.id === id) || {};
+window.openModal('相框小字', cur.caption || '', (v) => {
+if (v == null) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const txt = String(v).trim().slice(0, 24);
+mm.caption = txt;
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast(txt ? '已更新相框小字' : '已清空相框小字');
+}, { maxlength: 24, placeholder: '留空则不显示' });
+};
+const editBack = () => {
+const cur = loadDeskImagesMeta().find(x => x && x.id === id) || {};
+const curNote = String(cur.backNote || '');
+setTimeout(() => {
+if (!window.openModal) return;
+window.openModal('相框背面', curNote, (v) => {
+if (v == null) return;
+const list = loadDeskImagesMeta();
+const mm = list.find(x => x && x.id === id);
+if (!mm) return;
+const txt = String(v).replace(/\r/g, '').trim().slice(0, 160);
+mm.backNote = txt;
+if (!mm.backDate) mm.backDate = photoFrameBackDate(mm);
+saveDeskImagesMeta(list);
+renderDeskImages();
+toast(txt ? '已更新相框背面' : '已清空相框背面');
+}, {
+textarea: true, textareaRows: 4,
+textareaPlaceholder: '写一句当时的心情…（留空则只显示日期）'
+});
+}, 0);
+};
+window.openModal('拍立得相框', '', (v) => {
+if (v === 'chg') changeDeskImage(id);
+else if (v === 'stk') openPhotoFrameStickerPicker(id);
+else if (v === 'back') editBack();
+else if (v === 'focus') openCrop();
+else if (v === 'cap') editCaption();
+else if (v === 'del') removeDeskImage(id);
+}, {
+noInput: true,
+pills: [
+{ label: '更换照片', value: 'chg' },
+{ label: '贴纸', value: 'stk' },
+{ label: '编辑背面', value: 'back' },
+{ label: '调整焦点', value: 'focus' },
+{ label: '修改小字', value: 'cap' },
+{ label: '删除相框', value: 'del' }
+]
 });
 }
 function removeDeskImage(id) {
@@ -6170,6 +9676,38 @@ if (!widget) return;
 const id = widget.dataset.deskImage;
 const phone = document.getElementById('page-phone');
 const isDecor = phone && phone.classList.contains('decor-on');
+const frameMeta = loadDeskImagesMeta().find(x => x && x.id === id);
+if (frameMeta && frameMeta.frame === 'polaroid') {
+if (document.getElementById('dpf-stk-overlay')) { e.stopPropagation(); return; }
+if (isDecor) {
+e.stopPropagation();
+if (widget.__dpfTapTimer) {
+clearTimeout(widget.__dpfTapTimer);
+widget.__dpfTapTimer = null;
+}
+openPhotoFrameMenu(id);
+return;
+}
+if (widget.__dpfTapTimer) {
+clearTimeout(widget.__dpfTapTimer);
+widget.__dpfTapTimer = null;
+try { e.preventDefault(); e.stopPropagation(); } catch (er) {}
+widget.classList.toggle('dpf-flipped');
+return;
+}
+widget.__dpfTapTimer = setTimeout(() => {
+widget.__dpfTapTimer = null;
+if (!document.body.contains(widget)) return;
+if (widget.classList.contains('dpf-flipped')) return;
+const img0 = widget.querySelector('img');
+if (!img0 || !img0.src) return;
+setupDeskImageViewerClose();
+const viewer0 = document.getElementById('desk-image-viewer');
+const viewerImg0 = document.getElementById('desk-image-viewer-img');
+if (viewer0 && viewerImg0) { viewerImg0.src = img0.src; viewer0.hidden = false; }
+}, 260);
+return;
+}
 if (isDecor) {
 e.stopPropagation();
 if (!window.openModal) return;
@@ -6279,6 +9817,7 @@ node.appendChild(p);
 insertDeskNodeByLayout(slide, node, m.id, pageArr);
 });
 for (let i = 0; i < slides.length; i++) syncPageHint(slides[i]);
+try { if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) window.__deskGridV2.render(); } catch (e) {}
 }
 function addDeskText(pageIdx) {
 if (!window.openModal) return;
@@ -6395,30 +9934,38 @@ function saveDeskCountdownsMeta(arr) { store.set('desk-countdowns', JSON.stringi
 function renderDeskCountdowns() {
 if (!pagesBox) return;
 pagesBox.querySelectorAll('[data-desk-countdown]').forEach(n => n.remove());
-const meta = loadDeskCountdownsMeta();
-const lay = deskLayout();
+try { mergeLegacyDeskCountdowns(); } catch (e) {}
 const slides = pagesBox.querySelectorAll('.page-slide');
-meta.forEach(m => {
-let pageIdx = m.page, pageArr = null;
-if (lay) {
-for (let pi = 0; pi < lay.length; pi++) {
-if (lay[pi] && lay[pi].indexOf(m.id) >= 0) { pageIdx = pi; pageArr = lay[pi]; break; }
-}
-}
-const slide = slides[pageIdx] || slides[m.page];
-if (!slide) return;
-const node = document.createElement('div');
-node.className = 'desk-countdown-widget';
-node.dataset.deskCountdown = m.id;
-const target = new Date(m.date + 'T00:00:00');
-const today = new Date(); today.setHours(0, 0, 0, 0);
-const days = Math.round((target - today) / 86400000);
-node.innerHTML = '<div class="dcd-label">距' + (m.title || '事件') + '</div>' +
-'<div class="dcd-days">' + (days >= 0 ? days : '已过') + (days >= 0 ? ' 天' : '') + '</div>' +
-'<div class="dcd-date">' + m.date + '</div>';
-insertDeskNodeByLayout(slide, node, m.id, pageArr);
-});
 for (let i = 0; i < slides.length; i++) syncPageHint(slides[i]);
+try { renderDeskAnniv(); } catch (e) {}
+try {
+if (window.__deskGridV2 && window.__deskGridV2.gridOn && window.__deskGridV2.gridOn()) window.__deskGridV2.render();
+} catch (e) {}
+}
+function mergeLegacyDeskCountdowns() {
+let legacyRaw = '';
+try { legacyRaw = store.get('desk-countdowns') || ''; } catch (e) { return false; }
+if (!legacyRaw) return false;
+let legacy = [];
+try { legacy = JSON.parse(legacyRaw); } catch (e) { legacy = []; }
+if (!Array.isArray(legacy) || !legacy.length) return false;
+const extras = getExtras();
+let added = false;
+legacy.forEach(m => {
+if (!m || !m.title || !m.date) return;
+const date = normDateStr(m.date);
+if (!date) return;
+if (extras.some(x => x && x.name === m.title && x.date === date)) return;
+extras.push({ name: m.title, date: date, type: 'count' });
+added = true;
+});
+if (added) saveExtras(extras);
+try {
+store.set('desk-countdowns-backup', legacyRaw);
+store.set('desk-countdowns', '[]');
+} catch (e) {}
+try { renderExtras(); } catch (e) {}
+return added;
 }
 function addDeskCountdown(pageIdx) {
 if (!window.openModal) return;
@@ -6601,6 +10148,10 @@ const phone = document.getElementById('page-phone');
 const MOVE_DELAY = 350, EDGE = 44, EDGE_DELAY = 300;
 let inMoveMode = false, dragging = false;
 const enterMoveMode = () => {
+if (window.__deskGridV2GridActive) {
+toast('新版桌面编辑已开启：直接在桌面长按图标/卡片拖动');
+return;
+}
 if (inMoveMode) return;
 inMoveMode = true;
 enterDecor();
@@ -7623,7 +11174,10 @@ syncRelUI();
 function getExtras() {
 try { return JSON.parse(store.get('mem-extras') || '[]'); } catch (e) { return []; }
 }
-function saveExtras(list) { store.set('mem-extras', JSON.stringify(list)); }
+function saveExtras(list) {
+store.set('mem-extras', JSON.stringify(list));
+try { renderDeskAnniv(); } catch (e) {}
+}
 function renderExtras() {
 const list = document.getElementById('mem-extra-list');
 if (!list) return;
@@ -7634,11 +11188,15 @@ const d = document.createElement('div');
 d.className = 'mem-extra';
 const target = new Date(it.date + 'T00:00:00');
 if (isNaN(target.getTime())) return;
-const diff = Math.round((target.getTime() - Date.now()) / 864e5);
-const isCount = it.type === 'count' || diff > 0;
-const label = isCount
-? (diff > 0 ? '还有 ' + diff + ' 天' : '就是今天')
-: '已 ' + Math.abs(diff) + ' 天';
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const diff = Math.round((target.getTime() - today.getTime()) / 864e5);
+let label = '';
+let isCount = false;
+if (diff > 1) { label = '还有 ' + diff + ' 天'; isCount = true; }
+else if (diff === 1) { label = '明天'; isCount = true; }
+else if (diff === 0) { label = '今天'; isCount = true; }
+else { label = '已 ' + Math.abs(diff) + ' 天'; }
 const fmt = it.date.split('-').join('.');
 d.innerHTML =
 '<span class="me-name">' + it.name + '</span>' +
@@ -7819,6 +11377,26 @@ renderExtras();
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 memPage.hidden = false;
 });
+}
+if (pagesBox) {
+pagesBox.addEventListener('click', (e) => {
+const card = e.target.closest('[data-desk-widget="desk-anniv"]');
+if (!card) return;
+if (window.__deskGridV2 && window.__deskGridV2.editing && window.__deskGridV2.editing()) return;
+const phone = document.getElementById('page-phone');
+if (phone && phone.classList.contains('decor-on')) return;
+if (Array.from(document.querySelectorAll('.app-grid')).some(g => g.classList.contains('editing'))) return;
+e.preventDefault();
+e.stopPropagation();
+if (!memApp) return;
+memApp.click();
+setTimeout(function () {
+try {
+const list = document.getElementById('mem-extra-list');
+if (list && list.scrollIntoView) list.scrollIntoView({ block: 'center', behavior: 'smooth' });
+} catch (er) {}
+}, 220);
+}, true);
 }
 const memBack = document.getElementById('mem-back');
 if (memBack) {
@@ -9184,6 +12762,7 @@ callSettingsRow.addEventListener('click', () => {
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 const csPage = document.getElementById('page-call-settings');
 if (csPage) csPage.hidden = false;
+if (window.rpSyncUI) { try { window.rpSyncUI(); } catch (e) {} }
 });
 }
 let deskClockTimer = null;
@@ -9308,45 +12887,100 @@ disp.textContent = '00:00.0';
 });
 render();
 }
-function renderDeskAnniv() {
-const daysEl = document.getElementById('da-days');
-const nameEl = document.getElementById('da-name');
-if (!daysEl || !nameEl) return;
-const now = new Date();
-const cands = [];
+function countdownDayText(days) {
+if (days === 0) return '今天';
+if (days === 1) return '明天';
+if (days > 1) return days + ' 天';
+return '已过 ' + Math.abs(days) + ' 天';
+}
+function countdownDateText(d) {
+if (!d || isNaN(d.getTime())) return '';
+const y = d.getFullYear();
+const prefix = (y !== new Date().getFullYear()) ? y + ' 年 ' : '';
+return prefix + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+}
+function countdownEvents() {
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const out = [];
+const seen = Object.create(null);
+const push = (name, target, source) => {
+if (!target || isNaN(target.getTime())) return;
+const key = (name || '') + '|' + target.getFullYear() + '-' + (target.getMonth() + 1) + '-' + target.getDate();
+if (seen[key]) return;
+seen[key] = 1;
+out.push({
+name: name || '倒数日',
+target: target,
+days: Math.round((target.getTime() - today.getTime()) / 864e5),
+source: source
+});
+};
+const pushAnnual = (name, d, source) => {
+if (!d || isNaN(d.getTime())) return;
+let t = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+if (t.getTime() < today.getTime()) t = new Date(t.getFullYear() + 1, d.getMonth(), d.getDate());
+push(name, t, source);
+};
 const start = normDateStr(store.get('love-start'));
 if (start) {
 const d = new Date(start + 'T00:00:00');
-if (!isNaN(d.getTime())) {
-let ann = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-if (ann.getTime() < now.getTime()) ann.setFullYear(ann.getFullYear() + 1);
-cands.push({ name: relLabel(), date: ann });
-}
+pushAnnual(relLabel(), d, 'anniv');
 }
 try {
-const extras = JSON.parse(store.get('mem-extras') || '[]');
-extras.forEach(it => {
-if (!it.date) return;
+(getExtras() || []).forEach(it => {
+if (!it || !it.date) return;
 const d = new Date(it.date + 'T00:00:00');
 if (isNaN(d.getTime())) return;
-let dt = new Date(d.getTime());
-if (dt.getTime() < now.getTime()) {
-dt = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-if (dt.getTime() < now.getTime()) dt.setFullYear(dt.getFullYear() + 1);
-}
-cands.push({ name: it.name || '纪念日', date: dt });
+if (it.type === 'count') push(it.name || '倒数日', d, 'count');
+else pushAnnual(it.name || '纪念日', d, 'anniv');
 });
 } catch (e) {}
-if (!cands.length) {
+try {
+(loadDeskCountdownsMeta() || []).forEach(m => {
+if (!m || !m.date) return;
+const d = new Date(m.date + 'T00:00:00');
+if (isNaN(d.getTime())) return;
+push(m.title || '倒数日', d, 'count');
+});
+} catch (e) {}
+const upcoming = out.filter(e => e.days >= 0).sort((a, b) => a.days - b.days);
+const past = out.filter(e => e.days < 0).sort((a, b) => b.days - a.days);
+return upcoming.concat(past);
+}
+function renderDeskAnniv() {
+const daysEl = document.getElementById('da-days');
+const nameEl = document.getElementById('da-name');
+const listEl = document.getElementById('da-list');
+if (!daysEl || !nameEl) return;
+const events = countdownEvents();
+if (!events.length) {
 daysEl.textContent = '—';
+daysEl.classList.remove('past');
 nameEl.textContent = '未设置纪念日';
+if (listEl) listEl.innerHTML = '';
 return;
 }
-cands.sort((a, b) => a.date - b.date);
-const next = cands[0];
-const days = Math.ceil((next.date - now) / 864e5);
-daysEl.textContent = days + ' 天';
-nameEl.textContent = next.name + ' · ' + (next.date.getMonth() + 1) + ' 月 ' + next.date.getDate() + ' 日';
+const primary = events[0];
+daysEl.textContent = countdownDayText(primary.days);
+daysEl.classList.toggle('past', primary.days < 0);
+nameEl.textContent = primary.name + ' · ' + countdownDateText(primary.target);
+if (listEl) {
+listEl.innerHTML = '';
+events.slice(1, 4).forEach(e => {
+const row = document.createElement('div');
+row.className = 'da-list-row';
+const nm = document.createElement('span');
+nm.className = 'da-list-name';
+nm.textContent = e.name;
+const val = document.createElement('span');
+val.className = 'da-list-days';
+val.textContent = countdownDayText(e.days);
+row.appendChild(nm);
+row.appendChild(val);
+listEl.appendChild(row);
+});
+}
 }
 function renderDeskWidgets() {
 try { initDeskClock(); } catch (e) {}
@@ -9372,6 +13006,8 @@ try { restoreTabbarIcons(); } catch (e) {} // #769h2 切桌面重刷底部栏
 if (whenDeskVisible(refreshDeskVisuals)) { try { syncBgUI(); } catch (e) {} }
 try { rescueDeskVisuals(); } catch (e) {}
 try { applyWidgetColor(store.get('widget-bg-color') || '#ffffff'); } catch (e) {}
+try { applyDeskWidgetCss(); } catch (e) {}
+try { applyDeskIconCss(); } catch (e) {}
 try { applyWidgetBorder(store.get('widget-border-color') || 'rgba(0,0,0,.1)'); } catch (e) {}
 try { applyWidgetBtn(store.get('widget-btn-color') || '#111111'); } catch (e) {}
 try { applyWidgetBtnText(store.get('widget-btn-text-color') || '#ffffff'); } catch (e) {}

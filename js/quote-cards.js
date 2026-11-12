@@ -8,7 +8,13 @@ function getUseDefault() {
 const v = store.get(DEF_KEY);
 return v === null ? true : v === '1';
 }
-function isQuoteOff(q) { return store.get('quote-off:' + q) === '1'; }
+const PT = window.presetTextEdit;
+const EDIT_KEY = 'quote:sys';
+function isQuoteOff(q) {
+if (store.get('quote-off:' + q) === '1') return true;
+const orig = PT ? PT.original(EDIT_KEY, q) : q;
+return orig !== q && store.get('quote-off:' + orig) === '1';
+}
 function setQuoteOff(q, off) { store.set('quote-off:' + q, off ? '1' : '0'); }
 const DEFAULT_QUOTES = [
 '我偏爱你', '我只对你这样', '过来，让我抱一下', '别走，再陪我一会儿',
@@ -24,6 +30,16 @@ const DEFAULT_QUOTES = [
 '今天也想把时间留给你', '我有很多话想告诉你', '其实我一直都在想你', '你不在的时候，我会想你',
 '我喜欢你在我身边的感觉', '只要是你，久一点也没关系'
 ];
+function applyQuoteEdits() {
+if (!PT) return;
+PT.apply(EDIT_KEY, function (newText, orig) {
+for (let i = 0; i < DEFAULT_QUOTES.length; i++) {
+if (DEFAULT_QUOTES[i] === orig) DEFAULT_QUOTES[i] = newText;
+}
+});
+}
+applyQuoteEdits();
+if (PT) PT.onRebuild(applyQuoteEdits);
 function toast(msg) {
 let t = document.getElementById('cc-toast');
 if (!t) { t = document.createElement('div'); t.id = 'cc-toast'; document.body.appendChild(t); }
@@ -170,9 +186,34 @@ return;
 }
 DEFAULT_QUOTES.forEach(q => {
 const off = isQuoteOff(q);
+const edited = !!(PT && PT.isEdited(EDIT_KEY, q));
 const row = document.createElement('div');
 row.className = 'tc-qrow' + (off ? ' off' : '');
-row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + esc(q) + ' <span class="tc-known">系统</span></div></div>';
+row.innerHTML = '<div class="tc-qmain"><div class="tc-qtext">' + esc(q) + ' <span class="tc-known' +
+(edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></div></div>';
+if (PT) {
+const pencil = document.createElement('button');
+pencil.type = 'button';
+pencil.className = 'preset-edit-btn';
+pencil.title = '编辑这张系统字卡';
+pencil.setAttribute('aria-label', '编辑这张系统字卡');
+pencil.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+pencil.addEventListener('click', () => {
+PT.open({
+key: EDIT_KEY,
+shown: q,
+exists: function (next) { return DEFAULT_QUOTES.some(x => x === next && x !== q); },
+onChanged: function (next) {
+for (let i = 0; i < DEFAULT_QUOTES.length; i++) {
+if (DEFAULT_QUOTES[i] === q) DEFAULT_QUOTES[i] = next;
+}
+renderSysList();
+updateEntryCount();
+}
+});
+});
+row.appendChild(pencil);
+}
 const lab = document.createElement('label');
 lab.className = 'toggle ccard-toggle';
 lab.innerHTML = '<input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span>';

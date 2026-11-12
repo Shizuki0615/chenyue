@@ -246,6 +246,18 @@ body.cs-time-divider .msg-time-divider { display:flex; }
   font-size:10px; line-height:1; color:var(--msg-event-ink, var(--msg-time-ink, #111111));
   letter-spacing:.3px; opacity:.6; white-space:nowrap;
 }
+/* v8.61.0 时间分隔线三档（聊天设置 → 美化 → 边看边调 → 提示）：body 挂 cs-td-* 类。
+   只在「时间轴样式 = 时间分隔线」时可见；颜色仍吃时间轴/系统事件文字色。 */
+body.cs-td-lines .msg-time-divider { gap:10px; align-items:center; }
+body.cs-td-lines .msg-time-divider::before,
+body.cs-td-lines .msg-time-divider::after {
+  content:''; flex:1; min-width:12px; height:1px;
+  background:rgba(127,127,127,.22); /* 老内核回退 */
+  background:color-mix(in srgb, var(--msg-event-ink, var(--msg-time-ink, #111111)) 22%, transparent);
+}
+body.cs-td-lines .msg-time-divider span,
+body.cs-td-plain .msg-time-divider span { background:transparent; padding:2px 0; }
+body.cs-td-plain .msg-time-divider span { opacity:.65; }
 /* 鑱旂郴浜烘鍦ㄨ緭鍏ワ細姝ｅ父娴佸崰浣嶏紝鏃犻渶棰濆鐣欑櫧琛ュ伩锛堟鍓嶆诞灞傛柟妗堝凡绉婚櫎锛?*/
 
 /* 鑱旂郴浜恒€屾鍦ㄨ緭鍏ャ€嶇姸鎬侊細娑堟伅鍖轰笌杈撳叆鏍忎箣闂寸殑鍐呭祵鏉★紙姝ｅ父娴侊紝涓嶉伄鎸′换浣曟秷鎭級
@@ -273,6 +285,13 @@ body.cs-time-divider .msg-time-divider { display:flex; }
   pointer-events:none;
 }
 .chat-typing[hidden] { display:none; }
+/* v8.61.0 正在输入位置/样式（body 挂 cs-typing-center / cs-typing-capsule）：
+   默认栏位左侧纯文字；居中只改自身对齐，不动消息区几何。 */
+body.cs-typing-center #chat-typing { align-self:center; text-align:center; }
+body.cs-typing-capsule #chat-typing {
+  padding:2px 10px 3px; border-radius:999px;
+  background:rgba(127,127,127,.10);
+}
 /* 娑堟伅鍖哄簳閮ㄧ暀鐧斤紝鏈€鍚庝竴鏉℃秷鎭笉璐磋緭鍏ユ爮 */
 .chat-body { padding-bottom:24px; }
 
@@ -501,7 +520,9 @@ body.cs-time-divider .msg-time-divider { display:flex; }
 
 .chat-input-row {
   display:flex; align-items:center; gap:8px;
-  border-radius:99px; padding:14px 12px 14px 16px; flex-shrink:0; margin-top:8px;
+  /* v8.60.0 输入栏细节（聊天设置 → 美化 → 边看边调 → 栏位）：圆角/粗细读 :root 变量。
+     未设置时不写变量＝宽屏回落胶囊 99px / 14px；手机通栏在自己的满宽规则里另给默认（base.css）。 */
+  border-radius:var(--cs-input-radius, 99px); padding:var(--cs-input-pad-y, 14px) 12px var(--cs-input-pad-y, 14px) 16px; flex-shrink:0; margin-top:8px;
   /* v3.5.89 缁熶竴妗岄潰鐧借壊绠€绾﹂鏍硷紙鍚?.glass锛夛細鐧藉簳 + 娣¤竟 + 杞婚槾褰?*/
   background:rgba(255,255,255,.92);
   border:1px solid rgba(0,0,0,.1);
@@ -523,6 +544,30 @@ body.cs-time-divider .msg-time-divider { display:flex; }
   scrollbar-width:none; -ms-overflow-style:none;
 }
 .chat-input::-webkit-scrollbar { display:none; }
+/* v8.76.6 用户 2026-11-06：给真正输入文字的区域加一个独立输入框（按钮留在输入栏、不圈进去）。
+   外层 .chat-input-row 仍保留可调的栏位底色；这一层只负责让输入区看起来像输入框。 */
+.chat-input-row > .chat-input {
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:18px;
+  padding:7px 12px;
+  min-height:36px;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.04);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.chat-input-row > .chat-input:focus {
+  border-color:rgba(0,0,0,.28);
+  box-shadow:0 0 0 3px rgba(0,0,0,.06);
+}
+[data-theme="dark"] .chat-input-row > .chat-input {
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.2);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.18);
+}
+[data-theme="dark"] .chat-input-row > .chat-input:focus {
+  border-color:rgba(255,255,255,.42);
+  box-shadow:0 0 0 3px rgba(255,255,255,.08);
+}
 /* 绌哄唴瀹规椂鏄剧ず placeholder锛坈ontenteditable 鏃?placeholder 灞炴€э紝鐢?:empty 浼厓绱狅級 */
 .chat-input:empty::before,
 #page-chat .chat-input:empty::before,
@@ -536,15 +581,33 @@ body.cs-time-divider .msg-time-divider { display:flex; }
 }
 .chat-send {
   outline:none; cursor:pointer; flex-shrink:0;
-  width:38px; height:38px; border-radius:50%;
+  width:var(--cs-input-btn-size, 38px); height:var(--cs-input-btn-size, 38px); border-radius:50%;
   background:var(--send-bg, var(--cs-out-surface, var(--msg-out-bg, #111111))); color:var(--send-ink, #ffffff);
   border:1px solid rgba(0,0,0,.1);
   box-shadow:0 1px 4px rgba(0,0,0,.04);
   display:flex; align-items:center; justify-content:center;
   padding:0;
 }
-.chat-send svg { width:20px; height:20px; }
+.chat-send svg { width:calc(var(--cs-input-btn-size, 38px) * .526); height:calc(var(--cs-input-btn-size, 38px) * .526); }
 .chat-send:disabled { opacity:.45; cursor:default; }
+
+/* ===== v8.74.1 新版输入栏 P1 / P2（聊天设置开关 cs-input-v2，默认关；旧版零改动） =====
+   P1：表情（左） + 输入框 + 右侧同一槽位的 ⋯ / 发送（有字才显示发送）；
+   P2：点 ⋯ 打开现有「更多功能」面板，图片 / 语音 / 继续说 / 批量由面板里的代理入口触发。
+   order 用 !important：旧版 applyInputBtnOrder 会把 inline order 写到每个按钮上。 */
+#page-chat.chat-input-v2 .chat-input-row #chat-emoji-btn { order: 1 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-input { order: 2 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-more-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-send { order: 3 !important; }
+#page-chat.chat-input-v2 .chat-input-row #chat-img-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-mic-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-continue-btn,
+#page-chat.chat-input-v2 .chat-input-row #chat-batch-btn { display: none !important; }
+#page-chat.chat-input-v2 .chat-input-row:not(.v2-has-text) #chat-send { display: none !important; }
+#page-chat.chat-input-v2 .chat-input-row.v2-has-text #chat-more-btn { display: none !important; }
+/* P2 里的输入类代理入口：旧版整组隐藏；新版下按对应功能开关单独隐藏 */
+#chat-more-panel:not(.chat-input-v2) .more-item.v2-proxy { display: none !important; }
+#chat-more-panel.chat-input-v2 .more-item.v2-proxy.v2-proxy-off { display: none !important; }
 
 /* 鍏ㄥ睆鑱婂ぉ锛氬ご閮?娑堟伅/杈撳叆鏍忓乏鍙?18px 瀵归綈锛岃儗鏅摵婊?*/
 #page-chat {
@@ -645,18 +708,18 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .ch-input-btn {
   /* #949：flex-shrink 放开（收缩下限 30px 保持可点）——输入栏按钮偏多＋窄屏时按钮先于输入框收缩，
      不再把 flex:1 的输入框挤成 0 宽；宽屏空间富余时永不触发，外观零变化。 */
-  width:38px; height:38px; border-radius:50%; cursor:pointer; flex-shrink:1; min-width:30px;
+  width:var(--cs-input-btn-size, 38px); height:var(--cs-input-btn-size, 38px); border-radius:50%; cursor:pointer; flex-shrink:1; min-width:calc(var(--cs-input-btn-size, 38px) - 8px);
   background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1);
   color:#555; box-shadow:0 1px 4px rgba(0,0,0,.04);
   display:flex; align-items:center; justify-content:center;
   -webkit-tap-highlight-color:transparent;
 }
 .ch-input-btn:active { background:rgba(0,0,0,.08); }
-.ch-input-btn svg { width:20px; height:20px; }
+.ch-input-btn svg { width:calc(var(--cs-input-btn-size, 38px) * .526); height:calc(var(--cs-input-btn-size, 38px) * .526); }
 /* #949：窄屏档——间距与发送键内边距收紧，配合按钮收缩下限，
    360px 屏开满「语音＋批量」后输入框仍保有 4em 以上可用宽（单聊/群聊两排同吃）。 */
 @media (max-width: 480px) {
-  .chat-input-row { gap:5px; padding:12px 8px 12px 10px; }
+  .chat-input-row { gap:5px; padding:var(--cs-input-pad-y, 12px) 8px var(--cs-input-pad-y, 12px) 10px; }
 }
 
 /* 鎷嶄竴鎷?/ 鎹㈠ご鍍忥細灞呬腑鐏板瓧灏忓崱鐗囷紙鍙€夐檮甯︿竴寮犲ご鍍忓浘锛?*/
@@ -673,6 +736,16 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   width:42px; height:42px; border-radius:50%; object-fit:cover;
   border:1px solid rgba(0,0,0,.1);
   box-shadow:0 1px 4px rgba(0,0,0,.1);
+}
+/* v8.61.0 系统提示三档（聊天设置 → 美化 → 边看边调 → 提示）：拍一拍/撤回/来信通知/游戏居中提示共用。
+   轻底＝去描边、底更淡；纯文字＝无底无框只留小字。边框只改颜色不改宽度，几何不动。 */
+body.cs-sys-soft .msg-poke {
+  background:rgba(127,127,127,.06); /* 老内核回退 */
+  background:color-mix(in srgb, var(--msg-event-ink, #8a8a8a) 7%, transparent);
+  border-color:transparent;
+}
+body.cs-sys-plain .msg-poke {
+  background:transparent; border-color:transparent; padding:2px 0;
 }
 /* v3.10.x锛氫俊浠堕€氱煡锛堝啓淇?鍥炰俊/鏉ヤ俊/鍥炰俊鍒拌揪锛夊彲鐐瑰嚮鐩磋揪淇＄鈥斺€?   鍔犱笅鍒掕櫄绾挎彁绀哄彲鐐癸紝鎸変笅鍙嶉鍙樻繁 */
 .msg-poke.mail-notice { cursor:pointer; }
@@ -692,17 +765,29 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .more-panel[hidden] { display:none; }
 /* 鏇村鍔熻兘闈㈡澘锛氶《閮ㄥ垎绫诲垏鎹紙v3.15.x锛氬姛鑳藉澶氬悗鐢变袱椤电鏀逛负鍒嗙被 chips
    甯哥敤/浜掑姩/灏忔父鎴?宸ュ叿/TA鐨勬彁闂紱绐勫睆鏀句笉涓嬫椂妯悜婊氬姩锛?*/
-.more-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+/* v8.74.5 用户 2026-11-05：四个分类页签改成纯图标按钮（不再用文字胶囊）——
+   选中＝深色图标 + 浅色圆底，未选中＝灰色图标；文字只留在 title/aria-label 供读屏与桌面悬停。 */
+.more-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; justify-content:center; }
 .more-tabs::-webkit-scrollbar { display:none; }
 .more-tab {
-  flex:0 0 auto; padding:7px 13px; font-size:12px; font-weight:700;
-  border:1px solid rgba(0,0,0,.1); border-radius:99px;
-  background:rgba(255,255,255,.92); color:#666; cursor:pointer;
+  flex:0 0 auto; width:36px; height:36px; padding:0;
+  border:none; border-radius:50%;
+  background:transparent; color:#777; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
   font-family:inherit; -webkit-tap-highlight-color:transparent;
 }
-.more-tab.sel { background:#111; color:#fff; border-color:#111; }
+.more-tab svg { width:19px; height:19px; }
+.more-tab:active { opacity:.7; }
+.more-tab.sel { background:rgba(0,0,0,.07); color:#111; }
+/* v8.74.7 长按拖动排序：拖动中的图标浮起；行内让位由 DOM 实时重排完成 */
+.more-tab { touch-action:none; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+.more-tabs-dragging { cursor:grabbing; }
+.more-tab.more-tab-dragging { background:rgba(0,0,0,.12); transform:scale(1.14); position:relative; z-index:2; }
+[data-theme="dark"] .more-tab.more-tab-dragging { background:rgba(255,255,255,.2); }
 /* v3.26.x：flex-wrap 会随屏宽自动换行导致不同手机每行 3~4 个不一；改 4 列 grid 固定每行 4 个 */
-.more-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; justify-items:center; }
+/* v8.74.3 用户 2026-11-05：新版 P2 给网格设 min-height 后，Grid 默认 stretch 会把多出的高度
+   摊到行间距上（「好丑，别改间隔」）；align-content:start 让行保持原高，多余高度全留在最下面。 */
+.more-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; justify-items:center; align-content:start; }
 .more-grid[hidden] { display:none; }
 /* .more-item 鑷甫 display:flex锛岄渶鏄惧紡鍏滃簳 hidden 灞炴€э紙鍒嗙被杩囨护闈犲畠闅愯棌锛?*/
 .more-item[hidden] { display:none; }
@@ -726,6 +811,26 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 }
 .more-item svg { width:22px; height:22px; }
 .more-item span { font-size:11px; }
+/* v8.75.5 用户 2026-11-06：功能图标长按拖动（拖到别的分类页签会改属那个分类） */
+.more-item { -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+/* v8.75.10：长按拖动期间不让浏览器把手势抢成滚动/文本选择 */
+.more-grid, .more-item { touch-action:none; }
+.more-grid.more-icons-dragging { cursor:grabbing; }
+/* 拖动时原位只留半透明占位，真正跟手的是 body 上的 .more-item-ghost */
+.more-item.more-item-dragging { position:relative; z-index:1; opacity:.32; }
+.more-item.more-item-dragging .mi-ico {
+  transform:none; box-shadow:none;
+  outline:2px dashed rgba(0,0,0,.28); outline-offset:2px;
+}
+[data-theme="dark"] .more-item.more-item-dragging .mi-ico { outline-color:rgba(255,255,255,.4); }
+/* 用 translate3d 移动，避免每帧改 left/top 触发布局导致浮层慢半拍 */
+.more-item-ghost {
+  position:fixed; left:0; top:0; z-index:9999; pointer-events:none; margin:0;
+  opacity:.96; will-change:transform; backface-visibility:hidden;
+}
+.more-item-ghost .mi-ico { transform:scale(1.08); box-shadow:0 10px 22px rgba(0,0,0,.2); }
+.more-tab.more-tab-drop { background:rgba(0,0,0,.12); color:#111; transform:scale(1.12); }
+[data-theme="dark"] .more-tab.more-tab-drop { background:rgba(255,255,255,.2); color:#fff; }
 
 /* 閫氳瘽鍗婃锛堝鐢?.poke-card 瀹瑰櫒锛夛細鐘舵€佽 + 鎷ㄦ墦/鎸傛柇澶ф寜閽?*/
 #chat-call-panel .poke-card-scroll { min-height:0; max-height:none; }
@@ -809,6 +914,19 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-rps-name { font-size:11px; color:var(--muted); }
 .msg-rps-vs { font-size:12px; font-weight:700; color:#999; letter-spacing:1px; }
 .msg-rps-result { font-size:13px; font-weight:700; color:var(--msg-event-ink, var(--ink)); padding-top:4px; border-top:1px dashed rgba(0,0,0,.1); }
+
+/* 歌词卡片（音乐模块「歌词传情」）：歌名/歌手 + 封面小图 + 引号歌词句，颜色跟随气泡表面
+   限宽 230px：长歌词在卡内换行，不再把气泡撑到聊天宽度上限；短歌词仍按内容收窄。 */
+.msg-lyric-card { display:flex; flex-direction:column; gap:8px; min-width:190px; max-width:min(100%, 230px); }
+.msg-lyric-head { display:flex; align-items:center; gap:8px; }
+.msg-lyric-cover {
+  width:36px; height:36px; border-radius:8px; flex:0 0 auto; object-fit:cover;
+  background:var(--static-bg, rgba(0,0,0,.06)); display:block;
+}
+.msg-lyric-meta { min-width:0; }
+.msg-lyric-song { font-size:11px; font-weight:700; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-artist { font-size:10px; opacity:.55; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-lyric-line { font-size:15px; line-height:1.65; word-break:break-word; }
 
 /* 鎷嶄竴鎷嶆诞灞傚崱鐗囷紙搴曢儴鍗婃锛岄湶鍑洪《閮ㄨ亰澶╂秷鎭紝鏂逛究杈圭湅杈圭帺锛?   搴曢儴 96px锛氭偓鍋滃湪杈撳叆鏍忎笂鏂癸紝涓嶅帇浣?涓嶈鐩栬緭鍏ユ爮锛堣緭鍏ユ爮椤堕儴绾?82px锛?   v3.5.110锛歜ottom 鍔?safe-area锛屽叏闈㈠睆鍏ㄥ睆妯″紡涓嬩笌杈撳叆鏍忓悓姝ヤ笂绉伙紝涓嶉敊浣?   v3.10.x锛歠ixed 鈫?absolute鈥斺€旈敭鐩樺脊鍑烘椂闅忔敹缂╁悗鐨?.phone/#page-chat 鍋滈潬锛?   涓嶅啀閿氬畾鍏ㄩ珮 layout viewport 鎺夊埌杈撳叆鏍忎笅鏂癸紙璇﹁ .more-panel 澶勬敞閲婏級 */
 .poke-card {
@@ -984,6 +1102,15 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .invite-list .cc-item { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.1); }
 .invite-list .cc-item:active { background:rgba(0,0,0,.04); }
 .invite-list .cc-empty { padding:18px 0; }
+/* 2026-10-28：编辑开关打开时字卡只用于改/删，不再显示「可点发送」的手型 */
+.invite-list .cc-item.inv-editing { cursor:default; }
+/* 2026-10-28：听歌 / 读书快捷邀请（仅「邀请他」模式显示；发送时自带类型，不靠内容猜） */
+.chat-ask-quick { display:flex; gap:8px; margin-bottom:8px; }
+.chat-ask-quick .cc-tool { flex:1; }
+.chat-ask-quick[hidden] { display:none; }
+/* 2026-10-28：听歌 / 读书邀请直达说明（仅「邀请他」模式显示；问问TA 模式下与字卡区一起收） */
+.chat-ask-mod-hint { font-size:11px; line-height:1.55; color:var(--muted); padding:2px 2px 8px; }
+.chat-ask-mod-hint[hidden] { display:none; }
 /* display:flex 会压过 UA 的 [hidden]{display:none}，必须显式补回（问问TA 模式下隐藏邀请字卡区与存入按钮） */
 .invite-list[hidden] { display:none; }
 #invite-groups[hidden] { display:none; }
@@ -991,6 +1118,9 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 /* v3.x：邀请TA ——顶部分组栏批量管理 chip 选中态 */
 .inv-g-batch { border-style:dashed; }
 .inv-g-batch.on { background:#111; color:#fff; border-color:#111; }
+/* 2026-10-28：编辑开关 chip（与批量管理同款外观；关闭时字卡只可点卡发送） */
+.inv-g-edit { border-style:dashed; }
+.inv-g-edit.on { background:#111; color:#fff; border-color:#111; }
 /* v3.x：邀请TA ——批量模式下自建分组 chip 上的 ✎/✕ 迷你操作符（预设分组不显示） */
 .inv-g-op {
   display:inline-flex; align-items:center; justify-content:center;
@@ -1373,16 +1503,32 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   -webkit-tap-highlight-color:transparent;
 }
 .msg-inplace .ip-chip:active { background:rgba(0,0,0,.05); }
-.msg-inplace .ip-row { display:flex; gap:8px; }
+/* 2026-10-26 P1/P2：快捷选项改成一行一个；最后一行是输入框，回答键同聊天发送键 */
+.msg-inplace .ip-quick-list { display:flex; flex-direction:column; gap:8px; }
+.msg-inplace .ip-quick {
+  display:block; width:100%; box-sizing:border-box;
+  padding:10px 12px; border:1px solid rgba(127,127,127,.26); border-radius:10px;
+  background:transparent; color:inherit; font-size:13px; line-height:1.5;
+  text-align:left; word-break:break-word; font-family:inherit;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.msg-inplace .ip-quick:active { background:rgba(127,127,127,.12); }
+.msg-inplace .ip-row { display:flex; align-items:center; gap:8px; }
 .msg-inplace .ip-input {
   flex:1; min-width:0; border:1px solid rgba(0,0,0,.12); border-radius:10px;
   padding:9px 12px; font-size:14px; font-family:inherit; outline:none; background:#fff; color:var(--ink);
 }
 .msg-inplace .ip-input:focus { border-color:var(--ink); }
 .msg-inplace .ip-send {
-  flex-shrink:0; border:none; border-radius:10px; padding:0 18px;
-  background:var(--ink); color:#fff; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+  flex-shrink:0; width:38px; height:38px; border-radius:50%; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid rgba(0,0,0,.1);
+  background:var(--send-bg, var(--cs-out-surface, var(--msg-out-bg, #111111)));
+  color:var(--send-ink, #ffffff);
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent;
 }
+.msg-inplace .ip-send svg { width:20px; height:20px; }
 .msg-inplace .ip-send:active { opacity:.85; }
 /* v3.7.x锛氶棶闂甌A 鍗曢€夐宸蹭綔绛旂殑閫夐」鏌ョ湅鈥斺€斿垪鍑鸿缃殑閫夐」+鍚勯€夐」棰勮鍥炲簲锛孴A 閫夌殑閫夐」楂樹寒 */
 .msg-inplace .ip-opt-row {
@@ -1431,37 +1577,511 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-ask-tip { font-size:11px; color:var(--muted); margin-top:8px; }
 .msg-ask-a { font-size:12px; color:#3b7a4e; font-weight:600; margin-top:8px; }
 
-/* ===== 批量问卷长卡片（v3.33.x #521 special:'ask-survey'）===== */
-/* 观感严格对齐单题 ask-card（.msg-ask-card：同 max-width/min-width/圆角/内边距/阴影/居中），
-   标题对应 msg-ask-q、逐题答案对应 msg-ask-a、底部提示对应 msg-ask-tip；无 emoji、无独立进度徽标。
-   TA 逐题作答的进度由 ta-ask.js 经 chatSyncSurveyCard 回写快照后原地重画 innerHTML（不整窗重建） */
-.msg-survey-card {
-  max-width:78%; min-width:220px; text-align:center;
-  background:#fff; border:1px solid rgba(0,0,0,.1);
-  border-radius:16px; padding:14px 16px;
+/* ===== 2026-10-26 提问卡片气泡化 =====
+   问卡家族（ask / ask-card / ask-choose / ask-curious / ask-roast / invite）
+   按发送方左/右排布，卡面读聊天气泡变量（底色/字色/圆角/内边距/字号），
+   头像与时间复用 .msg-side/.msg-av/.msg-time。问卷长卡与红包卡仍保持居中、不受影响。 */
+/* 2026-10-26：所有问卡固定宽度——78% 屏宽减去头像位，答案/问题长短都不再改变气泡宽度 */
+#page-chat .msg-ask.msg-ask-in,
+#page-chat .msg-ask.msg-ask-out {
+  width:78%; max-width:78%;
+  display:flex; align-items:flex-start; gap:8px;
+  padding:2px 0;
+}
+#page-chat .msg-ask.msg-ask-in { align-self:flex-start; justify-content:flex-start; }
+#page-chat .msg-ask.msg-ask-out { align-self:flex-end; justify-content:flex-end; }
+#page-chat .msg-ask.msg-ask-in .msg-ask-card,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card {
+  max-width:100%; min-width:0; flex:1 1 auto;
+  border-radius:var(--chat-bubble-radius, 18px);
+  padding:var(--chat-bubble-pad, 11px 14px);
+  font-size:var(--chat-font-size, 14px);
   box-shadow:0 2px 8px rgba(0,0,0,.05);
-  cursor:pointer;
 }
-.msg-survey-head { font-size:14px; font-weight:700; color:var(--ink); line-height:1.5; }
-.msg-survey-list { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-.msg-survey-item { font-size:13px; color:var(--ink); line-height:1.5; }
-.msg-survey-q { font-weight:600; word-break:break-word; }
-.msg-survey-opts { display:flex; flex-wrap:nowrap; justify-content:center; gap:6px; margin-top:6px; overflow-x:auto; }
-/* 选项观感对齐单题作答的选项 chip（.msg-inplace .ip-chip：白底 + 细边 + 墨色字），
-   不再用灰色小标签；TA 选中的那个加 .sel 高亮（同 .ip-opt-row.sel 口径） */
-.msg-survey-opt {
-  flex:0 0 auto; white-space:nowrap;
-  padding:6px 12px; border:1px solid rgba(0,0,0,.12); border-radius:16px;
-  background:#fff; color:var(--ink); font-size:12px;
+#page-chat .msg-ask.msg-ask-in .msg-ask-card,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card {
+  background:var(--cs-in-surface, var(--msg-in-bg, #ffffff));
+  color:var(--msg-in-ink, #111111);
+  border-color:rgba(0,0,0,.06);
 }
-.msg-survey-opt.sel { border-color:var(--ink); font-weight:700; }
-.msg-survey-a { font-size:12px; font-weight:600; color:#3b7a4e; margin-top:4px; word-break:break-word; }
-/* #1005 卡片可点暗示（用户直派「需要暗示这个卡片可以点击」）：提示行文案本就写着「点击查看…」，
-   这里再补两处视觉信号——行尾一枚右向箭头，以及整张卡的按压反馈（同 .rps-choice:active 口径）。
-   收藏心形改为「点卡片才浮现」后，卡片必须自己把「我能点」摆出来。 */
-.msg-survey-tip { font-size:11px; color:var(--muted); margin-top:8px; display:flex; align-items:center; justify-content:center; gap:3px; }
-.msg-survey-chev { font-size:13px; line-height:1; opacity:.75; transform:translateY(-.5px); }
-.msg-survey-card:active { transform:translateY(1px); box-shadow:0 1px 3px rgba(0,0,0,.05); }
+#page-chat .msg-ask.msg-ask-out .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card {
+  background:var(--cs-out-surface, var(--msg-out-bg, #111111));
+  color:var(--msg-out-ink, #ffffff);
+  border-color:rgba(255,255,255,.1);
+}
+/* 2026-10-26：卡内文字统一左对齐（问题、选项、已答「你/他」两行都不再居中） */
+#page-chat .msg-ask.msg-ask-in .msg-ask-card,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card { text-align:left; }
+/* 出站卡是深底：卡内文字按气泡字色翻白，已答绿字与收藏心形同步提亮 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-q { color:var(--msg-out-ink, #ffffff); }
+#page-chat .msg-ask.msg-ask-out .msg-ask-tip { color:var(--msg-out-ink, #ffffff); opacity:.55; }
+#page-chat .msg-ask.msg-ask-out .msg-ask-a { color:#7fd39a; }
+#page-chat .msg-ask.msg-ask-out .msg-choose-r { color:var(--msg-out-ink, #ffffff); opacity:.8; }
+#page-chat .msg-ask.msg-ask-out .msg-fav-heart { background:rgba(255,255,255,.12); color:rgba(255,255,255,.78); }
+#page-chat .msg-ask.msg-ask-out .msg-fav-time { color:rgba(255,255,255,.6); }
+/* 2026-10-26：所有已答问卡不再点开——两行常驻 + 收藏心形直接显示（心形本身仍可点） */
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered { cursor:default; }
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-in .msg-choose-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered > .msg-fav-heart,
+#page-chat .msg-ask.msg-ask-out .msg-choose-card.answered > .msg-fav-heart { display:inline-flex; }
+/* 我这边已答卡右下角小箭头：只负责展开/收起完整选项，点整卡仍无操作 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.answered.has-ask-arrow {
+  position:relative; padding-bottom:34px;
+}
+#page-chat .msg-ask-view-arrow {
+  position:absolute; right:8px; bottom:6px;
+  width:26px; height:26px; padding:0; border:none; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; color:inherit; opacity:.55;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+#page-chat .msg-ask-view-arrow:active { opacity:.85; background:rgba(127,127,127,.12); }
+#page-chat .msg-ask-view-arrow svg { width:14px; height:14px; transition:transform .15s ease; }
+#page-chat .msg-ask-view-arrow.is-open svg { transform:rotate(90deg); }
+/* 箭头展开的选项列表：选中高亮、其余淡化，右侧保留 ~TA回应 */
+.ask-opt-view { cursor:default; }
+.ask-opt-view.on { border-color:currentColor; background:rgba(127,127,127,.14); font-weight:600; }
+.ask-opt-view.off { opacity:.55; }
+.ask-opt-view .ask-opt-reply { margin-left:auto; flex-shrink:0; font-size:11px; opacity:.6; max-width:45%; text-align:right; }
+/* 时间轴五档：问卡行级定位与普通 .msg 对齐（.msg-side 基础样式全局已生效，这里只补行级定位） */
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in,
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out,
+body.cs-time-float #page-chat .msg-ask.msg-ask-in,
+body.cs-time-float #page-chat .msg-ask.msg-ask-out { position:relative; }
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-in .msg-side .msg-time { right:calc(0px - var(--msg-time-dx, 0px)); }
+body.cs-time-under-bubble #page-chat .msg-ask.msg-ask-out .msg-side .msg-time { left:calc(0px + var(--msg-time-dx, 0px)); }
+body.cs-time-float #page-chat .msg-ask.msg-ask-in .msg-side .msg-time { right:calc(-4px - var(--msg-time-dx, 0px)); }
+body.cs-time-float #page-chat .msg-ask.msg-ask-out .msg-side .msg-time { left:calc(-4px + var(--msg-time-dx, 0px)); }
+body.cs-time-center #page-chat .msg-ask.msg-ask-in,
+body.cs-time-center #page-chat .msg-ask.msg-ask-out { position:relative; width:100%; max-width:100%; padding-top:18px; }
+body.cs-time-center #page-chat .msg-ask.msg-ask-in { justify-content:flex-start; }
+body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; }
+
+/* ===== 2026-10-26 未答选项区（用户定：全部单列，不做双列）===== */
+/* 选项直接铺在卡上；单选点一下即答，多选勾选 + 底部提交；>6 个由 JS 折叠。
+   边框/底色用中性半透明，白底、黑底、自定义气泡色都能读。 */
+.msg-ask-opts { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.msg-ask-opts[hidden] { display:none !important; }
+.ask-opt-btn {
+  display:block; width:100%; box-sizing:border-box;
+  padding:10px 12px; border:1px solid rgba(127,127,127,.26); border-radius:10px;
+  background:transparent; color:inherit; font-size:13px; font-family:inherit;
+  text-align:left; line-height:1.5; word-break:break-word;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-btn:active { background:rgba(127,127,127,.12); }
+.ask-opt-btn[hidden] { display:none !important; }
+.ask-opt-row {
+  display:flex; align-items:center; gap:9px;
+  padding:10px 12px; border:1px solid rgba(127,127,127,.26); border-radius:10px;
+  background:transparent; color:inherit; font-size:13px; line-height:1.5;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-row[hidden] { display:none !important; }
+.ask-opt-row .ask-opt-t { flex:1 1 auto; min-width:0; text-align:left; word-break:break-word; }
+.ask-opt-box {
+  position:relative; flex:none; width:16px; height:16px; box-sizing:border-box;
+  border:1.5px solid rgba(127,127,127,.55); border-radius:5px; background:transparent;
+}
+.ask-opt-chk.on { border-color:currentColor; background:rgba(127,127,127,.14); font-weight:600; }
+.ask-opt-chk.on .ask-opt-box { border-color:currentColor; background:currentColor; }
+.ask-opt-chk.on .ask-opt-box::after {
+  content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+  border:solid var(--msg-in-bg, #fff); border-width:0 2px 2px 0; transform:rotate(45deg);
+}
+.ask-opt-submit {
+  display:block; width:100%; box-sizing:border-box; padding:10px 12px;
+  border:none; border-radius:10px;
+  background:var(--msg-in-ink, #111); color:var(--msg-in-bg, #fff);
+  font-size:13px; font-weight:600; font-family:inherit; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-submit:active { opacity:.85; }
+.ask-opt-submit:disabled { opacity:.42; cursor:default; }
+.ask-opt-more {
+  display:block; width:100%; box-sizing:border-box; padding:8px 12px;
+  border:1px dashed rgba(127,127,127,.36); border-radius:10px;
+  background:transparent; color:inherit; opacity:.55; text-align:left;
+  font-size:11px; font-weight:600; font-family:inherit;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-toggle {
+  display:block; width:100%; box-sizing:border-box; margin-top:10px; padding:8px 0 0;
+  border:none; border-top:1px dashed rgba(127,127,127,.36);
+  background:transparent; color:inherit; opacity:.72; text-align:left;
+  font-size:12px; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-opt-static {
+  padding:9px 12px; border:1px solid rgba(127,127,127,.32); border-radius:10px;
+  font-size:13px; line-height:1.5; word-break:break-word;
+}
+/* 已答统一两行：你：xxxx / 他：xxxx（左对齐，无对勾） */
+.msg-ask-lines { margin-top:9px; display:flex; flex-direction:column; gap:5px; }
+.ask-line { font-size:13px; line-height:1.55; word-break:break-word; }
+.ask-line-who { font-weight:600; opacity:.72; }
+.ask-line-txt { opacity:.95; }
+/* 长问题：超过 4 行折叠 + 「展开」；按钮由 JS 量到溢出后才露出 */
+.msg-ask-q.ask-q-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+.msg-ask-q.ask-q-open { display:block; -webkit-line-clamp:unset; overflow:visible; }
+.ask-q-toggle {
+  display:block; margin:6px 0 0; padding:2px 8px;
+  border:none; background:transparent; color:inherit; opacity:.6;
+  font-size:11px; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.ask-q-toggle[hidden] { display:none !important; }
+
+/* ===== 批量问卷摘要气泡（2026-10-26 B 版 special:'ask-survey'）===== */
+/* 已并入 .msg-ask 气泡骨架：右出站/左接收 + 头像时间 + 固定宽度；卡面只露前 2 题，
+   其余题数收进「查看详情」弹层；收藏心形常驻，整卡不再点开。 */
+#page-chat .msg-ask .msg-survey-card { text-align:left; cursor:default; }
+#page-chat .msg-survey-card > .msg-fav-heart { display:inline-flex; margin-top:6px; }
+.msg-survey-head { font-size:13px; font-weight:700; line-height:1.5; opacity:.92; }
+.msg-survey-status { font-size:11px; line-height:1.5; opacity:.58; margin-top:1px; }
+.msg-survey-list { display:flex; flex-direction:column; gap:8px; margin-top:9px; }
+.msg-survey-item { font-size:13px; line-height:1.55; word-break:break-word; }
+.msg-survey-q {
+  font-weight:600;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+.msg-survey-a {
+  font-size:12px; font-weight:600; margin-top:3px; word-break:break-word; opacity:.88;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-a { color:#7fd39a; opacity:1; }
+#page-chat .msg-ask.msg-ask-in .msg-survey-a { color:#3b7a4e; opacity:1; }
+.msg-survey-more { font-size:11px; opacity:.55; margin-top:1px; }
+.msg-survey-actions { display:flex; justify-content:flex-end; margin-top:10px; }
+.msg-survey-detail-btn {
+  padding:7px 12px; border-radius:999px; font-family:inherit; font-size:12px; font-weight:600;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn {
+  border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.12); color:var(--msg-out-ink,#fff);
+}
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn {
+  border:1px solid rgba(0,0,0,.14); background:rgba(0,0,0,.05); color:var(--ink,#111);
+}
+.msg-survey-detail-btn:active { opacity:.8; }
+
+/* ===== v8.57.6 问卡 A 版（用户定稿）=====
+   卡面继续读气泡底色/字色；A 版只叠细边、轻阴影、白纸选项与选色层。
+   配色/卡片 CSS 由全局根键 cs-card-global-* 注入（chat-settings.js），只作用 #page-chat。
+   --ask-* 未设置时回退到气泡变量：入站跟联系人、出站跟我的气泡，老桌面零感。 */
+#page-chat .msg-ask.msg-ask-out {
+  --ask-side-bg: var(--ask-card-bg, var(--cs-out-surface, var(--msg-out-bg, #111111)));
+  --ask-side-text: var(--ask-card-text, var(--msg-out-ink, #ffffff));
+  --ask-opt-bg: rgba(255,255,255,.28);
+  --ask-opt-bg: color-mix(in srgb, var(--ask-side-bg) 72%, #ffffff);
+  --ask-side-sel: var(--ask-card-sel-bg, rgba(127,127,127,.14));
+  --ask-side-sel: var(--ask-card-sel-bg, color-mix(in srgb, var(--ask-side-text) 7%, var(--ask-opt-bg)));
+}
+#page-chat .msg-ask.msg-ask-in {
+  --ask-side-bg: var(--ask-card-bg, var(--cs-in-surface, var(--msg-in-bg, #ffffff)));
+  --ask-side-text: var(--ask-card-text, var(--msg-in-ink, #111111));
+  --ask-opt-bg: rgba(255,255,255,.28);
+  --ask-opt-bg: color-mix(in srgb, var(--ask-side-bg) 72%, #ffffff);
+  --ask-side-sel: var(--ask-card-sel-bg, rgba(127,127,127,.14));
+  --ask-side-sel: var(--ask-card-sel-bg, color-mix(in srgb, var(--ask-side-text) 7%, var(--ask-opt-bg)));
+}
+
+#page-chat .msg-ask.msg-ask-out .msg-ask-card:not(.msg-survey-card),
+#page-chat .msg-ask.msg-ask-out .msg-choose-card,
+#page-chat .msg-ask.msg-ask-in .msg-ask-card:not(.msg-survey-card),
+#page-chat .msg-ask.msg-ask-in .msg-choose-card {
+  background: var(--ask-side-bg);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10), transparent 42%);
+  color: var(--ask-side-text);
+  border: 1px solid rgba(127,127,127,.18);
+  border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
+  border-radius: var(--chat-bubble-radius, 18px);
+  padding: var(--chat-bubble-pad, 11px 14px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
+  text-align: left;
+}
+#page-chat .msg-ask.msg-ask-out .msg-ask-q,
+#page-chat .msg-ask.msg-ask-in .msg-ask-q {
+  color: var(--ask-side-text);
+  font-size: calc(var(--chat-font-size, 14px) + 1px);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+#page-chat .msg-ask .ask-opt-btn,
+#page-chat .msg-ask .ask-opt-row,
+#page-chat .msg-ask .ask-opt-static {
+  background: rgba(255,255,255,.28);
+  background: var(--ask-opt-bg);
+  border: 1px solid rgba(127,127,127,.20);
+  border-color: color-mix(in srgb, var(--ask-side-text) 14%, transparent);
+  border-radius: 12px;
+  color: var(--ask-side-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 10px 12px;
+}
+#page-chat .msg-ask .ask-opt-btn:active,
+#page-chat .msg-ask .ask-opt-row:active {
+  background: var(--ask-side-sel);
+}
+#page-chat .msg-ask .ask-opt-chk.on,
+#page-chat .msg-ask .ask-opt-view.on {
+  background: var(--ask-side-sel);
+  border-color: var(--ask-side-text);
+  color: var(--ask-side-text);
+  font-weight: 600;
+}
+#page-chat .msg-ask .ask-opt-view.off { opacity: .78; }
+#page-chat .msg-ask .ask-opt-view.off .ask-opt-reply { opacity: .72; }
+#page-chat .msg-ask .ask-opt-box {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border-color: rgba(127,127,127,.5);
+  border-color: color-mix(in srgb, var(--ask-side-text) 32%, transparent);
+}
+#page-chat .msg-ask .ask-opt-chk.on .ask-opt-box {
+  background: var(--ask-accent, #e88fa3);
+  border-color: var(--ask-accent, #e88fa3);
+}
+#page-chat .msg-ask .ask-opt-chk.on .ask-opt-box::after {
+  border-color: var(--ask-accent-ink, #2a2024);
+}
+
+#page-chat .msg-ask .ask-opt-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ask-side-text);
+  color: var(--ask-side-bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+#page-chat .msg-ask .ask-opt-submit svg { width: 18px; height: 18px; }
+#page-chat .msg-ask .ask-opt-submit-ic { display: none; align-items: center; justify-content: center; }
+#page-chat .msg-ask .ask-opt-submit.is-ready .ask-opt-submit-txt { display: none; }
+#page-chat .msg-ask .ask-opt-submit.is-ready .ask-opt-submit-ic { display: inline-flex; }
+
+#page-chat .msg-ask .msg-ask-lines {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask .ask-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--ask-side-text);
+}
+#page-chat .msg-ask .ask-line-who {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(127,127,127,.12);
+  opacity: .75;
+}
+#page-chat .msg-ask .ask-line-txt { flex: 1; min-width: 0; opacity: .95; }
+#page-chat .msg-ask .ask-line-done {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ask-accent, #e88fa3);
+  color: var(--ask-accent-ink, #2a2024);
+}
+#page-chat .msg-ask .ask-line-done svg { width: 9px; height: 9px; }
+
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card),
+#page-chat .msg-ask .msg-choose-card.answered,
+#page-chat .msg-ask .msg-ask-card.answered.has-ask-arrow {
+  position: relative;
+  /* v8.73.7 加固（用户 2026-11-04 实图：自定义卡片 CSS 写了 padding 后心形压到最后一行字上）：
+     底部留白不再靠 padding-bottom——卡片 CSS 注入会给每条声明加 !important，把 44px 一并顶掉。
+     改用卡内 ::after 占位块，padding 怎么改都不影响这块高度。 */
+  padding-bottom: 0;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card)::after,
+#page-chat .msg-ask .msg-choose-card.answered::after {
+  content: ''; display: block; height: 30px;
+}
+/* v8.74.0 用户 2026-11-05：你/他两行整体再下移 4px（「一点点点」）——容器 margin-top 9→13，
+   底部占位 34→30，二者相抵＝卡高仍不变；问题与心形不动。分隔线随容器一起下移。 */
+#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines,
+#page-chat .msg-ask .msg-choose-card.answered .msg-ask-lines {
+  margin-top: 13px;
+}
+/* v8.73.9 用户 2026-11-05：已答卡最后一句（他）离右下收藏心形太远——把最后一行再下移 10px，
+   贴近心形；卡片总高由上面占位同步抵消，问题/「你」行/心形都不动。 */
+#page-chat .msg-ask .msg-ask-card.answered .msg-ask-lines .ask-line:last-child,
+#page-chat .msg-ask .msg-choose-card.answered .msg-ask-lines .ask-line:last-child {
+  margin-top: 10px;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart {
+  position: absolute;
+  right: 44px;
+  bottom: 6px;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  gap: 0;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart .msg-fav-heart-txt,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart .msg-fav-heart-txt { display: none; }
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart svg,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart svg { width: 14px; height: 14px; }
+#page-chat .msg-ask .msg-ask-card.answered:not(.msg-survey-card) > .msg-fav-heart.is-fav,
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart.is-fav {
+  background: var(--ask-accent-soft, rgba(232,143,163,.14));
+  color: var(--ask-accent-strong, var(--ask-accent, #e88fa3));
+  opacity: 1;
+}
+#page-chat .msg-ask.msg-ask-out .msg-fav-time,
+#page-chat .msg-ask.msg-ask-in .msg-fav-time {
+  color: var(--ask-side-text);
+  opacity: .6;
+}
+#page-chat .msg-ask .msg-ask-card.answered:not(.has-ask-arrow) > .msg-fav-heart { right: 8px; }
+#page-chat .msg-ask .msg-choose-card.answered > .msg-fav-heart { right: 8px; }
+#page-chat .msg-ask .msg-ask-view-arrow {
+  right: 8px;
+  bottom: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-ask-view-arrow:active {
+  background: var(--ask-side-sel);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-ask-view-arrow svg { width: 15px; height: 15px; }
+
+/* ===== v8.58.6 问卷摘要卡 A 版对齐 =====
+   只对齐卡面/字体/分割线/收藏位置；详情按钮与问卷逻辑不动。 */
+#page-chat .msg-ask.msg-ask-out .msg-ask-card.msg-survey-card,
+#page-chat .msg-ask.msg-ask-in .msg-ask-card.msg-survey-card {
+  background: var(--ask-side-bg);
+  background-image: linear-gradient(180deg, rgba(255,255,255,.10), transparent 42%);
+  color: var(--ask-side-text);
+  border: 1px solid rgba(127,127,127,.18);
+  border-color: color-mix(in srgb, var(--ask-side-text) 10%, transparent);
+  border-radius: var(--chat-bubble-radius, 18px);
+  padding: var(--chat-bubble-pad, 11px 14px);
+  padding-bottom: 0;
+  box-shadow: 0 4px 14px rgba(0,0,0,.07);
+  position: relative;
+  text-align: left;
+}
+/* v8.73.7 同款加固：问卷详情钮/收藏心形也在卡底绝对定位，留白改 ::after 占位，不吃 padding。 */
+#page-chat .msg-ask .msg-ask-card.msg-survey-card::after {
+  content: ''; display: block; height: 44px;
+}
+#page-chat .msg-ask .msg-survey-head {
+  font-size: calc(var(--chat-font-size, 14px) + 1px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ask-side-text);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-survey-status {
+  color: var(--ask-side-text);
+  opacity: .55;
+}
+#page-chat .msg-ask .msg-survey-list {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask .msg-survey-item { font-size: 13.5px; color: var(--ask-side-text); }
+#page-chat .msg-ask .msg-survey-q { font-weight: 600; color: var(--ask-side-text); }
+#page-chat .msg-ask.msg-ask-out .msg-survey-a,
+#page-chat .msg-ask.msg-ask-in .msg-survey-a {
+  font-size: 12.5px;
+  color: var(--ask-side-text);
+  opacity: .9;
+}
+#page-chat .msg-ask .msg-survey-more { color: var(--ask-side-text); opacity: .55; }
+#page-chat .msg-ask .msg-survey-actions {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127,127,127,.30);
+  border-top-color: color-mix(in srgb, var(--ask-side-text) 30%, transparent);
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+  font-size: 0;
+}
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn svg,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn svg { width: 15px; height: 15px; }
+#page-chat .msg-ask.msg-ask-out .msg-survey-detail-btn:active,
+#page-chat .msg-ask.msg-ask-in .msg-survey-detail-btn:active {
+  background: var(--ask-side-sel);
+  opacity: 1;
+}
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart {
+  position: absolute;
+  right: 44px;
+  bottom: 6px;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  gap: 0;
+  background: rgba(127,127,127,.08);
+  color: var(--ask-side-text);
+  opacity: .72;
+}
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart .msg-fav-heart-txt { display: none; }
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart svg { width: 14px; height: 14px; }
+#page-chat .msg-ask .msg-survey-card > .msg-fav-heart.is-fav {
+  background: var(--ask-accent-soft, rgba(232,143,163,.14));
+  color: var(--ask-accent-strong, var(--ask-accent, #e88fa3));
+  opacity: 1;
+}
 
 /* ===== TA鐨勫皬闂 ===== */
 /* 鑱婂ぉ閲岀殑閫夋嫨棰樺崱鐗?*/
@@ -1485,21 +2105,22 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   -webkit-tap-highlight-color:transparent;
 }
 .msg-ask-card.show-fav .msg-fav-heart,
-.msg-choose-card.show-fav .msg-fav-heart,
-.msg-survey-card.show-fav .msg-fav-heart {
+.msg-choose-card.show-fav .msg-fav-heart {
   display:inline-flex; animation:favFadeIn .18s ease;
 }
 @keyframes favFadeIn { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:none; } }
 .msg-fav-heart svg { width:12px; height:12px; }
 .msg-fav-heart:active { background:rgba(255,77,106,.12); color:#ff4d6a; }
+/* 2026-10-26：已收藏状态常红（不再只在按下的瞬间红一下） */
+.msg-fav-heart.is-fav { background:rgba(255,77,106,.12); color:#ff4d6a; }
+#page-chat .msg-ask.msg-ask-out .msg-fav-heart.is-fav { background:rgba(255,77,106,.18); color:#ff6b82; }
 /* 互动卡片发送时间：展开收藏心形时与心形一同显示，精确到秒 */
 .msg-fav-time {
   margin-top:4px; font-size:11px; color:#999; line-height:1.4;
   display:none; -webkit-tap-highlight-color:transparent;
 }
 .msg-ask-card.show-fav .msg-fav-time,
-.msg-choose-card.show-fav .msg-fav-time,
-.msg-survey-card.show-fav .msg-fav-time {
+.msg-choose-card.show-fav .msg-fav-time {
   display:block; animation:favFadeIn .18s ease;
 }
 
@@ -1630,6 +2251,9 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .call-panel.vt .call-btns { position:relative; z-index:3; gap:10px; margin-top:14px; padding:0 12px 18px; }
 .call-panel.vt .call-btn { width:54px; height:54px; font-size:9px; }
 .call-panel.vt .call-btn svg { width:21px; height:21px; }
+/* v8.75.7 用户 2026-11-06：通话控制按钮只留图标，去掉按钮文字（语音/看自己/打开/翻转/挂断/接听/拒绝）。
+   文字仍留在 DOM 里供读屏识别；这里只做视觉隐藏，不动按钮逻辑与点击区域。 */
+.call-btn, .call-panel.vt .call-btn { font-size:0; line-height:0; gap:0; }
 .vt-stage { position:absolute; inset:0; z-index:1; overflow:hidden; background:#111; }
 .vt-stage[hidden] { display:none; }
 /* TA 的画面：极慢的呼吸缩放，静态图看起来才不「卡住」 */
@@ -1642,13 +2266,24 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   from { transform:scale(1.02); }
   to { transform:scale(1.075); }
 }
-/* TA 关摄像头：深色背景 + 大头像（微信里对方关摄像头的观感） */
+/* TA 关摄像头：头像放大铺满 + 高斯模糊做背景（微信同款观感），中间仍是大头像 */
 .vt-ta-av {
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   background:radial-gradient(circle at 50% 36%, #2c2c34, #0c0c0f 72%);
 }
 .vt-ta-av[hidden] { display:none; }
+/* v8.74.8 头像模糊背景：图片由 call.js 写进 background-image；无头像时留深色渐变兜底。
+   模糊层放大出血，避免 blur 边缘漏出底色；上面再压一层暗幕保证名字/时长可读。 */
+.vt-av-blur {
+  position:absolute; inset:-28px; background-size:cover; background-position:center;
+  background-repeat:no-repeat; filter:blur(28px) saturate(1.12); transform:scale(1.06);
+}
+.vt-ta-av::after {
+  content:''; position:absolute; inset:0; z-index:1;
+  background:linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.18) 55%, rgba(0,0,0,.42));
+}
 .vt-av-ring {
+  position:relative; z-index:2;
   width:106px; height:106px; border-radius:50%; overflow:hidden;
   background:#e9e9e9; box-shadow:0 10px 28px rgba(0,0,0,.45);
   display:flex; align-items:center; justify-content:center;
@@ -1675,12 +2310,41 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.18);
   color:rgba(255,255,255,.78); font-size:9px; line-height:1.35; text-align:center;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  padding:0 4px; cursor:grab; touch-action:none;
+  padding:0 4px; cursor:grab; touch-action:none; overflow:hidden;
 }
 .vt-self-off.dragging { cursor:grabbing; }
 .vt-self-off[hidden] { display:none; }
-.vt-self-off svg { width:20px; height:20px; }
+/* v8.74.9 我不开摄像头时也像微信：我的头像铺满 + 模糊做背景，中间小头像，底部保留「摄像头已关」小标 */
+.vt-self-off-blur {
+  position:absolute; inset:-14px; background-size:cover; background-position:center;
+  background-repeat:no-repeat; filter:blur(14px) saturate(1.1); transform:scale(1.06);
+}
+.vt-self-off::after {
+  content:''; position:absolute; inset:0; z-index:1;
+  background:rgba(0,0,0,.32);
+}
+.vt-self-off-av {
+  position:relative; z-index:2; width:34px; height:34px; border-radius:50%;
+  overflow:hidden; background:#e9e9e9; box-shadow:0 2px 8px rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center;
+}
+.vt-self-off-av img { width:100%; height:100%; object-fit:cover; display:block; }
+.vt-self-off-av svg { width:18px; height:18px; }
+.vt-self-off-badge {
+  position:relative; z-index:2; display:flex; flex-direction:column;
+  align-items:center; gap:2px; color:rgba(255,255,255,.8);
+}
+.vt-self-off-badge svg { width:14px; height:14px; }
+.vt-stage.swap .vt-self-off-av { width:106px; height:106px; }
+.vt-stage.swap .vt-self-off-av svg { width:38px; height:38px; }
+.vt-stage.swap .vt-self-off-blur { filter:blur(28px) saturate(1.12); }
+.vt-stage.swap .vt-self-off-badge { font-size:12px; gap:4px; }
+.vt-stage.swap .vt-self-off-badge svg { width:20px; height:20px; }
 .call-btn.call-vt { background:#3a7bd5; }
+/* 视频态里同一颗按钮变成「语音」：图标换成电话，避免摄像机图标配「语音」两个字 */
+.call-vt .vt-ic-voice { display:none; }
+.call-vt.to-voice .vt-ic-video { display:none; }
+.call-vt.to-voice .vt-ic-voice { display:block; }
 .call-btn.call-cam,
 .call-btn.call-flip,
 .call-btn.call-swap { background:rgba(255,255,255,.22); color:#fff; }
@@ -1746,6 +2410,13 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
   background:#111; border-color:rgba(255,255,255,.14);
   box-shadow:0 8px 24px rgba(0,0,0,.32);
 }
+/* v8.75.2 视频小窗不再是一块黑：TA 头像模糊铺满做底（只有视频态启用，语音胶囊保持白底） */
+.call-mini-blur { display:none; }
+.call-mini.vt .call-mini-blur {
+  display:block; position:absolute; inset:-18px; z-index:0;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  filter:blur(20px) saturate(1.1); transform:scale(1.06);
+}
 .call-mini.vt .call-mini-frame {
   position:absolute; inset:0; z-index:1; width:100%; height:100%;
   object-fit:cover; display:block;
@@ -1753,10 +2424,33 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .call-mini.vt .call-mini-frame[hidden] { display:none; }
 .call-mini.vt .call-mini-av {
   position:absolute; inset:0; z-index:1; width:100%; height:100%;
-  border-radius:0; background:#16161c;
+  border-radius:0; background:linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.34));
 }
 .call-mini.vt .call-mini-av[hidden] { display:none; }
 .call-mini.vt .call-mini-av img { width:48px; height:48px; border-radius:50%; object-fit:cover; }
+/* 我自己关摄像头时：小镜位置（互换后是整块）显示我的头像模糊 + 摄像头已关小图标，
+   不再让一块黑 <video> 占着 */
+.call-mini-selfoff {
+  position:absolute; top:6px; right:6px; z-index:2;
+  width:26px; height:36px; border-radius:7px; overflow:hidden;
+  background:#16161c; box-shadow:0 2px 8px rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center; color:#fff;
+}
+.call-mini-selfoff[hidden] { display:none; }
+.call-mini-selfoff::after {
+  content:''; position:absolute; inset:0; z-index:1; background:rgba(0,0,0,.22);
+}
+.call-mini-selfoff-blur {
+  position:absolute; inset:-10px; background-size:cover; background-position:center;
+  background-repeat:no-repeat; filter:blur(9px) saturate(1.1);
+}
+.call-mini-selfoff svg { position:relative; z-index:2; width:12px; height:12px; opacity:.85; }
+.call-mini.vt.swap .call-mini-selfoff {
+  top:0; left:0; right:auto; width:100%; height:100%; border-radius:0; box-shadow:none;
+  z-index:1;
+}
+.call-mini.vt.swap .call-mini-selfoff-blur { filter:blur(26px) saturate(1.12); }
+.call-mini.vt.swap .call-mini-selfoff svg { width:24px; height:24px; }
 .call-mini.vt .call-mini-self {
   position:absolute; top:6px; right:6px; z-index:2;
   width:26px; height:36px; border-radius:7px; object-fit:cover;
@@ -1865,9 +2559,12 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .rp-send:active { opacity:.85; }
 
 /* ===== 绾㈠寘娑堟伅鍗＄墖锛堢櫧搴曠畝绾︼紝灏侀潰鍥句綔椤堕儴妯箙锛?===== */
-.msg-rp { align-self:center; width:100%; display:flex; justify-content:center; padding:2px 0; }
+.msg-rp { align-self:center; width:85%; max-width:85%; display:flex; align-items:flex-start; gap:8px; padding:2px 0; }
+/* 2026-10-26：谁发的贴谁的头像——左收/右发；卡面按 85% 行宽铺开，点整卡开红包小窗 */
+.msg-rp.msg-rp-in { align-self:flex-start; justify-content:flex-start; }
+.msg-rp.msg-rp-out { align-self:flex-end; justify-content:flex-end; }
 .msg-rp-card {
-  max-width:78%; min-width:220px; text-align:center;
+  flex:1 1 auto; max-width:100%; min-width:0; text-align:center;
   background:#fff; border:1px solid rgba(0,0,0,.1);
   border-radius:16px; padding:14px 18px;
   box-shadow:0 2px 8px rgba(0,0,0,.05);
@@ -1886,15 +2583,87 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 .msg-rp-amt { font-size:24px; font-weight:800; color:var(--msg-event-ink, var(--ink)); margin:8px 0 4px; font-variant-numeric:tabular-nums; }
 .msg-rp-wish { font-size:13px; color:var(--msg-event-ink, var(--ink)); margin-bottom:10px; }
 .msg-rp-foot {
-  display:flex; justify-content:space-between; align-items:center;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
   font-size:11px; color:var(--msg-event-ink, var(--muted));
   padding-top:8px; border-top:1px dashed rgba(0,0,0,.1);
 }
 .msg-rp-status { font-weight:600; }
+.msg-rp-hint { display:inline-flex; align-items:center; gap:2px; opacity:.72; white-space:nowrap; }
+.msg-rp-chev { font-size:12px; line-height:1; transform:translateY(-.5px); }
 .msg-rp-card.opened .msg-rp-status { color:var(--msg-event-ink, var(--ink)); }
 .msg-rp-card.opened { border-color:rgba(0,0,0,.18); }
 .msg-rp-card.expired { opacity:.6; }
 .msg-rp-card.expired .msg-rp-status { color:var(--msg-event-ink, var(--muted)); }
+
+/* ===== 红包拆开弹层（2026-10-26）===== */
+.rp-open-mask {
+  position:absolute; inset:0; z-index:92;
+  background:rgba(0,0,0,.5);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.rp-open-mask[hidden] { display:none; }
+.rp-open-box {
+  position:relative; overflow:hidden;
+  width:min(320px, 86vw); padding:26px 22px 20px;
+  border-radius:24px; text-align:center; color:var(--ink, #111);
+  background:#fff;
+  box-shadow:0 24px 64px rgba(0,0,0,.28);
+  animation:rpOpenIn .22s ease both;
+}
+@keyframes rpOpenIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
+/* 有封面就整张铺封面，盖和红包卡同款白膜；没封面保持白底 */
+.rp-open-box.has-cover { background-size:cover; background-position:center; }
+.rp-open-box.has-cover > * { position:relative; z-index:1; }
+.rp-open-box.has-cover::before {
+  content:''; position:absolute; inset:0; border-radius:24px;
+  background:rgba(255,255,255,.78); z-index:0;
+}
+[data-theme="dark"] .rp-open-box { background:var(--dark-card-92); color:var(--ink); }
+[data-theme="dark"] .rp-open-box.has-cover::before { background:rgba(30,30,30,.8); }
+.rp-open-close {
+  position:absolute; right:10px; top:10px; z-index:2;
+  width:28px; height:28px; padding:0; border:none; border-radius:50%;
+  background:rgba(127,127,127,.14); color:var(--ink, #111);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-close svg { width:14px; height:14px; }
+.rp-open-close:active { background:rgba(127,127,127,.24); }
+.rp-open-ico { width:66px; height:66px; margin:2px auto 8px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.14)); }
+.rp-open-ico svg { width:100%; height:100%; }
+.rp-open-from { font-size:12px; color:var(--muted, #888); letter-spacing:.5px; }
+.rp-open-amt {
+  font-size:36px; font-weight:800; letter-spacing:-.5px; margin:6px 0 2px;
+  font-variant-numeric:tabular-nums; color:var(--ink, #111);
+}
+.rp-open-wish { font-size:13px; color:var(--ink, #111); line-height:1.5; word-break:break-word; }
+.rp-open-note { font-size:11px; color:var(--muted, #888); line-height:1.5; margin:10px 0 16px; }
+.rp-open-btns, .rp-open-confirm { display:flex; gap:10px; }
+.rp-open-btns[hidden], .rp-open-confirm[hidden], .rp-open-status[hidden], .rp-open-done[hidden] { display:none !important; }
+.rp-open-btns button, .rp-open-confirm button {
+  flex:1; height:44px; border-radius:999px; font-family:inherit; font-size:14px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-btns svg { width:18px; height:18px; }
+.rp-open-reject { border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.08); color:var(--ink, #111); }
+.rp-open-reject:active { background:rgba(127,127,127,.16); }
+.rp-open-claim {
+  border:none; background:linear-gradient(135deg, #ffe8a8 0%, #f3c55f 100%); color:#8a3b1f;
+  box-shadow:0 6px 16px rgba(0,0,0,.14);
+}
+.rp-open-claim:active { transform:translateY(1px); }
+.rp-open-cancel { border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.06); color:var(--ink, #111); }
+.rp-open-sure { border:none; background:var(--ink, #111); color:var(--card-bg, #fff); }
+.rp-open-status { font-size:14px; font-weight:700; margin:0 0 16px; line-height:1.5; color:var(--ink, #111); }
+.rp-open-status-sub { display:block; font-size:11px; font-weight:400; color:var(--muted, #888); margin-top:4px; }
+.rp-open-done {
+  width:100%; height:42px; border-radius:999px;
+  border:1px solid rgba(127,127,127,.28); background:rgba(127,127,127,.06);
+  color:var(--ink, #111); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.rp-open-done:active { background:rgba(127,127,127,.16); }
 /* 鑺辨湹鍗＄墖 */
 .msg-flower { align-self:center; width:100%; display:flex; justify-content:center; padding:4px 0; }
 .msg-flower-card {
@@ -2077,3 +2846,91 @@ html.tablet #page-chat.cs-bg-on > #cs-bg-layer { min-height:100vh; min-height:ma
 [data-theme="dark"] .voice-rec-btn { border-color:rgba(255,255,255,.28); color:#fff; }
 
 
+
+/* ===== #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ===== */
+.ch-name-wrap {
+  flex:1; min-width:0;
+  display:flex; align-items:flex-end; gap:7px;
+}
+.ch-name-wrap .ch-name { flex:0 1 auto; }
+.ch-meta {
+  flex:1 1 auto; min-width:0;
+  font-size:11px; font-weight:400; line-height:1.2; letter-spacing:.2px;
+  color:var(--chat-name-ink, inherit);
+  opacity:.55;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  -webkit-tap-highlight-color:transparent;
+}
+.ch-meta[hidden] { display:none; }
+/* 仿微信布局：隐藏头像，昵称居中，状态行在昵称下方第二行 */
+#page-chat.ch-head-wx .ch-av { display:none; }
+#page-chat.ch-head-wx .ch-settings { margin-left:auto; }
+#page-chat.ch-head-wx .ch-name-wrap {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:max-content; max-width:calc(100% - 128px);
+  flex-direction:column; align-items:center; gap:1px;
+  pointer-events:none;
+}
+#page-chat.ch-head-wx .ch-name-wrap .ch-name {
+  max-width:100%;
+  pointer-events:auto;
+  text-align:center;
+}
+#page-chat.ch-head-wx .ch-meta {
+  flex:0 0 auto; width:100%; max-width:100%;
+  text-align:center; font-size:11px;
+}
+
+/* ===== #1651 前置美颜 ===== */
+/* App 原生美颜控件的定位锚点：几何与 .vt-self 完全一致（原生层按它的矩形落位）。
+   自身不画任何东西，也不吃触摸；真正的画面是盖在 WebView 上面的原生推流控件。 */
+.vt-native-cam {
+  position:absolute; top:52px; right:12px; z-index:3;
+  width:76px; height:104px; border-radius:12px;
+  background:transparent; pointer-events:none;
+}
+.vt-stage.swap .vt-native-cam {
+  inset:0; width:100%; height:100%; border-radius:0;
+}
+/* 网页 / PWA 兜底：前置摄像头时给 HTML <video> 一层柔光（后置 .rear 不加）。
+   #1651：强度分 5 档（设置里「美颜强度」滑杆），档位越高越明显——
+   提亮 + 红润 + 降对比 + 轻模糊（柔焦），一眼能看出开/关差别。 */
+body.vt-beauty .vt-self:not(.rear),
+body.vt-beauty .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
+}
+/* 强度 0＝等于关闭：显式撤掉滤镜（否则会回落到上面那条基础规则） */
+body.vt-beauty.vt-beauty-lv0 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv0 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:none;
+}
+body.vt-beauty.vt-beauty-lv1 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv1 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.04) saturate(1.06) contrast(.97) blur(.3px);
+}
+body.vt-beauty.vt-beauty-lv2 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv2 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.08) saturate(1.12) contrast(.94) blur(.6px);
+}
+body.vt-beauty.vt-beauty-lv3 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv3 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.12) saturate(1.18) contrast(.90) blur(1px) sepia(.04);
+}
+body.vt-beauty.vt-beauty-lv4 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv4 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.16) saturate(1.24) contrast(.86) blur(1.5px) sepia(.06);
+}
+body.vt-beauty.vt-beauty-lv5 .vt-self:not(.rear),
+body.vt-beauty.vt-beauty-lv5 .call-mini.vt .call-mini-self:not(.rear) {
+  filter:brightness(1.20) saturate(1.30) contrast(.82) blur(2px) sepia(.08);
+}
+/* #1651：视频舞台左上角的小标——明确告诉你「现在走的是哪一路、强度几档」。
+   原生层只盖住右上角预览区，这个小标在左下角，不会被盖住。 */
+.vt-beauty-tag {
+  position:absolute; left:12px; bottom:96px; z-index:4;
+  padding:3px 9px; border-radius:999px;
+  background:rgba(0,0,0,.62); border:1px solid rgba(255,255,255,.18);
+  color:#fff; font-size:10px; line-height:1.4; letter-spacing:.3px;
+  pointer-events:none; white-space:nowrap;
+}
+.vt-beauty-tag[hidden] { display:none; }

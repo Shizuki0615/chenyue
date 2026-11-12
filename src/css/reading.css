@@ -1,56 +1,119 @@
 /* ===== 一起读书 · 书架与阅读器样式 ===== */
+/* 设计稿色板变量（昼夜两套） */
+:root{--w-bg:#faf9f5;--w-ink:#1a1712;--w-card:#ffffff;--w-mut:rgba(26,23,18,.52);--w-faint:rgba(26,23,18,.42);--w-hair:rgba(26,23,18,.09);--w-pink:#f4b6c2;--w-cink:#f3ecdd}
+[data-theme="dark"]{--w-bg:#161310;--w-ink:#e9e3d5;--w-card:#1d1a15;--w-mut:rgba(233,227,213,.55);--w-faint:rgba(233,227,213,.42);--w-hair:rgba(255,255,255,.1)}
 /* 所有遮罩/面板都必须显式压掉 display，否则作者样式会盖过浏览器的 [hidden] */
-.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-prefs[hidden],.rd-toc[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden]{display:none!important}
+.rd-shelf[hidden],.rd-reader[hidden],.rd-import[hidden],.rd-import-main[hidden],.rd-confirm[hidden],.rd-file-info[hidden],.rd-gbk-row[hidden],.rd-buddy-dot[hidden],.rd-lamp[hidden],.rd-toc[hidden],.rd-toc-mask[hidden],.rd-toc-pane[hidden],.rd-toc-search[hidden],.rd-toc-badge[hidden],.rd-toc-now[hidden],.rd-toc-tab-n[hidden],.rd-selbar[hidden],.rd-anno-sheet[hidden],.rd-anno-preview[hidden],.rd-anno-pop[hidden],.rd-anno-ops[hidden],.rd-lost[hidden],.rd-buddy-card[hidden],#rd-buddy-jump[hidden],#rd-live-drawer[hidden],.rd-hero[hidden],.rd-stat[hidden],.rd-groups-block[hidden],.rd-detail[hidden],.rd-dd-gridwrap[hidden],.rd-dd-ftag[hidden]{display:none!important}
 
 /* ---------- 书架 ---------- */
 /* 顶栏要像信箱那样通栏贴边：横向内边距拆给下面的内容元素，不套在整个书架容器上 */
 .rd-shelf{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;padding:0 0 24px}
-.rd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 16px}
+/* 书架页底色按设计稿；字体跟随全局系统字体，不做局部覆盖 */
+#rd-shelf{background:var(--w-bg,#faf9f5)}
+.rd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px;padding:18px 16px 0}
+.rd-grid>*:nth-child(even){margin-top:22px}
 .rd-book{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-usage{padding:16px 16px 0;text-align:center;font-size:11px;opacity:.55}
-.rd-menu{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.rd-usage{margin:16px 0 22px;text-align:center;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42))}
+/* 详情页页脚按设计稿收紧 2px */
+.rd-usage.rd-dd-foot{margin:14px 0 22px}
+/* 长按菜单：固定在视口底部，避免被页面的滚动容器带出可视区 */
+.rd-menu{position:fixed;left:12px;right:12px;bottom:calc(12px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));z-index:60;padding:6px;border-radius:16px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;box-sizing:border-box;max-height:70vh;overflow-y:auto}
 .rd-menu-title{padding:10px 14px 6px;font-size:12px;opacity:.55;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rd-menu-item{border:0;background:transparent;color:inherit;font-size:15px;padding:13px 10px;border-radius:10px}
 .rd-menu-danger{color:#d9534f}
+.rd-menu-hint{padding:10px 14px;font-size:12px;line-height:1.5;opacity:.5}
+/* 书架首页美化：预设色块 + 自定义 CSS 入口 */
+.rd-preset-opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.rd-preset-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;border:1px solid transparent;background:transparent;border-radius:8px;cursor:pointer;font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.rd-preset-chip.on{border-color:currentColor}
+.rd-preset-swatch{width:28px;height:28px;border-radius:6px;display:block;border:1px solid rgba(0,0,0,.08)}
+.rd-preset-chip span{font-size:10px;opacity:.65;line-height:1}
+.rd-set-custom-btn{margin-top:8px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:11.5px;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rd-set-custom-btn:active{opacity:.5}
 .rd-cover{position:relative;aspect-ratio:3/4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px}
 /* 书脊：累计同读每满三次多一道细纹，最多五道 */
-.rd-spine{position:absolute;right:3px;top:12%;bottom:12%;width:5px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
-.rd-spine i{display:block;height:1px;background:rgba(255,255,255,.62);border-radius:1px}
+.rd-spine{position:absolute;right:4px;top:13%;bottom:13%;width:4px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
+.rd-spine i{display:block;height:1px;border-radius:1px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.66),rgba(255,255,255,0))}
 .rd-line{height:2px;background:var(--line,#e5e5e5)}
 .rd-line i{display:block;height:100%;background:currentColor;opacity:.45}
 .rd-book-title{margin-top:6px;font-size:12px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rd-badge{position:absolute;right:6px;bottom:28px;font-size:10px;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
+.rd-badge{position:absolute;right:6px;bottom:28px;font-size:10px;padding:2px 6px;border-radius:7px;background:rgba(0,0,0,.55);color:#fff;letter-spacing:.02em}
 
 /* ---------- 阅读器骨架 ---------- */
 #page-reading{position:relative}
-.rd-reader{position:absolute;inset:0;display:flex;flex-direction:column}
-.rd-head{display:flex;align-items:center;gap:10px;padding:10px 0 12px}
-.rd-head .rd-title{flex:1;text-align:center;font-size:16px}
+.rd-reader{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
+/* 阅读器顶栏复用全局 chat-head：返回/目录改成 button 后补一条原生样式复位 */
+.rd-reader-head .ch-back,.rd-reader-head .ch-settings{padding:0;font:inherit;color:inherit}
+#rd-mark-btn.on{color:#d9534f}
+#rd-mark-btn.on svg{fill:currentColor}
 .rd-back{border:0;background:transparent;color:inherit;font-size:14px;padding:8px 4px}
-.rd-empty{padding:40px 16px;text-align:center;font-size:13px;opacity:.6}
-.rd-body{flex:1;overflow:hidden;padding:0 18px;white-space:pre-wrap;line-height:1.8;font-size:17px}
-.rd-foot{padding:8px 18px 14px}
+/* 书架空态：线稿书页 + 主副两行 */
+.rd-empty{padding:64px 24px 48px;text-align:center;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-empty-ico{width:46px;height:46px;opacity:.3;margin-bottom:14px}
+.rd-empty-t{font-size:14px;font-weight:600;color:var(--w-mut,rgba(26,23,18,.52))}
+.rd-empty-s{margin-top:7px;font-size:11.5px;line-height:1.7}
+/* 正文区的纸感只由背景承担；上下内边距都会被分页高度扣掉。
+   底部留 10px 余量，避免最后一行被 overflow:hidden 裁掉半行。 */
+.rd-body{flex:1;overflow:hidden;padding:18px 18px 10px;white-space:pre-wrap;line-height:1.8;font-size:17px;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+[data-theme="dark"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+/* 段首缩进：空 span 撑两个字的宽度，不写入正文文本，字符偏移保持不变 */
+.rd-ind{display:inline-block;width:2em;pointer-events:none}
+/* 阅读背景：auto 沿用全站主题；eye / night 只在阅读器内覆盖 */
+.rd-reader[data-rd-bg="eye"]{--bg:#ffffff;--line:#e6e6e6;--ink:#111111;--muted:#8a8a8a;color:#111111;background:#fbf8f1}
+.rd-reader[data-rd-bg="night"]{--bg:#1e1e1e;--line:#333333;--ink:#f0f0f0;--muted:#aaaaaa;color:#f0f0f0;background:#1b1916}
+.rd-reader[data-rd-bg="eye"] .ch-name{color:#111111}
+.rd-reader[data-rd-bg="night"] .ch-name{color:#f0f0f0}
+.page.full .rd-reader[data-rd-bg="eye"] .chat-head{background:rgba(255,255,255,.92);border-bottom-color:rgba(0,0,0,.1);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.page.full .rd-reader[data-rd-bg="night"] .chat-head{background:rgba(30,30,30,.92);border-bottom-color:rgba(255,255,255,.1);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.rd-reader[data-rd-bg="eye"] .ch-back,.rd-reader[data-rd-bg="eye"] .ch-settings{background:rgba(255,255,255,.92);border-color:rgba(0,0,0,.1)}
+.rd-reader[data-rd-bg="night"] .ch-back,.rd-reader[data-rd-bg="night"] .ch-settings{background:rgba(40,40,40,.92);border-color:rgba(255,255,255,.12)}
+.rd-reader[data-rd-bg="eye"] .ch-back svg{stroke:#111111}
+.rd-reader[data-rd-bg="night"] .ch-back svg{stroke:#f0f0f0}
+.rd-reader[data-rd-bg="eye"] .rd-body{background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-reader[data-rd-bg="night"] .rd-body{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+.rd-reader[data-rd-bg="eye"] .rd-bar{background:#e5e5e5}
+.rd-reader[data-rd-bg="night"] .rd-bar{background:#333333}
+.rd-reader[data-rd-bg="eye"] .rd-buddy-dot{border-color:#ffffff}
+.rd-reader[data-rd-bg="night"] .rd-buddy-dot{border-color:#1b1916}
+.rd-reader[data-rd-bg="night"] #rd-buddy.rd-buddy-same-text,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-tog,.rd-reader[data-rd-bg="night"] #rd-buddy.rd-pace{color:#ff9b92}
+.rd-reader[data-rd-bg="night"] .rd-toc-row.on{color:#ff9b92}
+.rd-reader[data-rd-bg="night"] .rd-toc-prog{border-color:rgba(255,155,146,.18);background:rgba(255,155,146,.09)}
+.rd-reader[data-rd-bg="night"] .rd-toc-bar{background:rgba(255,255,255,.1)}
+.rd-reader[data-rd-bg="night"] .rd-toc-him{background:rgba(255,155,146,.24);color:#ffb3ad}
+.rd-reader[data-rd-bg="night"] .rd-toc-badge{background:rgba(255,155,146,.2);color:#ffb3ad}
+.rd-reader[data-rd-bg="night"] .rd-toc-now{background:rgba(48,48,48,.95);color:#f0f0f0}
+.rd-reader[data-rd-bg="night"] .rd-toc-search{background:rgba(255,255,255,.05)}
+.rd-reader[data-rd-bg="night"] #rd-mark-btn.on{color:#ff9b92}
+/* 阅读背景覆盖到模拟状态栏：护眼/夜间时修掉「黑状态栏 + 浅顶栏」的断层 */
+.phone.rd-chrome-eye .statusbar{background:rgba(255,255,255,.92);color:#111111}
+.phone.rd-chrome-night .statusbar{background:rgba(30,30,30,.92);color:#f0f0f0}
+.phone.rd-chrome-night .statusbar .icons{filter:invert(1)}
+/* 底部让出手机安全区，否则进度条和页码会被 home indicator 压住 */
+.rd-foot{padding:8px 18px calc(14px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)))}
 .rd-bar{position:relative;height:2px;background:var(--line,#e5e5e5)}
-.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:currentColor;opacity:.55}
-.rd-buddy-dot{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#f4b6c2;border:1.5px solid #fff;z-index:2;transition:left .18s ease}
-/* 他在我前面：60% 不透明；同页：贴在我这一页末端外侧 6px */
+.rd-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);opacity:.8;border-radius:1px;box-shadow:0 0 6px rgba(244,182,194,.25)}
+.rd-buddy-dot{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:2;transition:left .18s ease}
+/* 他在我前面：60% 不透明；他在我后面：更淡，像个跟在不远处的影子；同页：贴在我这一页末端外侧 6px */
 .rd-buddy-dot.rd-buddy-ahead{opacity:.6}
-.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28)}
+.rd-buddy-dot.rd-buddy-behind{opacity:.32}
+/* 落后很多：再淡一档，几乎只是进度条上的一粒灰 */
+.rd-buddy-dot.rd-buddy-far{opacity:.18}
+.rd-buddy-dot.rd-buddy-same{box-shadow:0 0 0 3px rgba(244,182,194,.28),0 1px 4px rgba(0,0,0,.1)}
 /* 折角书签：圆点滑回我这一页时短暂亮一圈 */
-.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4)}
-.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;opacity:.65;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#rd-page-no{flex:0 0 auto}
+.rd-buddy-dot.rd-buddy-return{box-shadow:0 0 0 3px rgba(244,182,194,.4),0 1px 4px rgba(0,0,0,.1)}
+.rd-foot-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:8px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#rd-page-no{flex:0 0 auto;opacity:.42}
 /* 夜间留灯：两盏很小的小灯，我那盏常亮，他那盏按状态亮 */
 .rd-lamp{display:inline-flex;align-items:center;gap:3px;margin-right:6px;flex:0 0 auto}
-.rd-lamp-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.2}
-.rd-lamp-me{opacity:.55}
-.rd-lamp-him.on{opacity:.55;background:#f4b6c2;box-shadow:0 0 5px rgba(244,182,194,.85)}
-#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#rd-buddy.rd-buddy-same-text{opacity:1;color:#d9534f}
+.rd-lamp-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.2}
+.rd-lamp-me{opacity:.4}
+.rd-lamp-him.on{opacity:.62;background:#f4b6c2;box-shadow:0 0 6px rgba(244,182,194,.75)}
+#rd-buddy{flex:1;min-width:0;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.68}
+#rd-buddy.rd-buddy-same-text{opacity:.88;color:#d9534f}
 /* 此刻同读：会话读满十分钟后，页脚那行换成「此刻 · 同读」 */
-#rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px}
+#rd-buddy.rd-tog{opacity:1;color:#d9534f;letter-spacing:.4px;font-weight:600}
 /* 翻页被看见：章末那一页给出这章的节奏感想 */
-#rd-buddy.rd-pace{opacity:1;color:#d9534f}
+#rd-buddy.rd-pace{opacity:.58;color:#c26e69}
 
 /* 翻到尽头的回弹 */
 @keyframes rdBounceNext{0%{transform:translateX(0)}40%{transform:translateX(-8px)}100%{transform:translateX(0)}}
@@ -64,55 +127,282 @@
    否则 sticky 的 chat-head（z-index 5）会压在面板头部（z-index 2）上面，
    半透明底色还会把「导入一本书 / 关闭」透出来，看起来像一张悬浮卡片。 */
 .rd-shelf.rd-importing > .chat-head{display:none}
-.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff);overflow:auto}
+.rd-import{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 0;background:var(--bg,#fff);overflow:hidden}
+.rd-import-main{display:flex;flex-direction:column;flex:1;min-height:0}
 .rd-import-head{display:flex;align-items:center;justify-content:space-between}
+.rd-import-main > .rd-import-head,.rd-confirm > .rd-import-head{justify-content:flex-start;gap:10px;flex:none;padding-bottom:10px}
+.rd-import .ch-back{padding:0;font:inherit;color:inherit}
+.rd-import .ch-name{color:var(--ink,#111)}
 .rd-import-title{font-size:16px}
-.rd-file-label{display:inline-block;padding:9px 14px;border-radius:10px;border:1px dashed var(--line,#ddd);font-size:13px;cursor:pointer}
-.rd-imp-name{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:9px 10px;font-size:13px;background:transparent;color:inherit}
-#rd-file{width:100%;font-size:12px}
-.rd-file-info{font-size:12px;line-height:1.6;opacity:.75;word-break:break-all}
-.rd-gbk-row{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;background:rgba(244,182,194,.16)}
-.rd-btn{border:0;border-radius:10px;padding:9px 14px;font-size:13px;background:var(--line,#eee);color:inherit}
-.rd-btn-primary{align-self:flex-start;padding:10px 22px}
-#rd-paste{flex:1;min-height:140px;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line,#ddd);padding:10px;font-size:13px;line-height:1.6;resize:none;background:transparent;color:inherit}
+.rd-import-form{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow-y:auto;padding:2px 0 8px}
+.rd-imp-label{display:flex;align-items:baseline;gap:6px;font-size:12px;font-weight:500;opacity:.62}
+.rd-imp-label span{font-size:11px;font-weight:400;opacity:.7}
+.rd-import-sec-title{font-size:12px;font-weight:500;opacity:.5;margin-top:4px}
+.rd-imp-name{width:100%;box-sizing:border-box;height:44px;border-radius:12px;border:1px solid var(--line,#ddd);padding:0 12px;font-size:14px;font-family:inherit;background:transparent;color:inherit;outline:none}
+.rd-imp-name:focus{border-color:#f4b6c2}
+.rd-file-label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;box-sizing:border-box;padding:18px 14px;border:1px dashed var(--line,#ddd);border-radius:14px;background:rgba(244,182,194,.07);font-size:13px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
+.rd-file-label:active,.rd-file-label:focus-visible{border-color:#f4b6c2;background:rgba(244,182,194,.12);outline:none}
+.rd-file-icon{display:flex;width:26px;height:26px;opacity:.5}
+.rd-file-icon svg{width:26px;height:26px}
+.rd-file-t{font-size:14px;font-weight:500}
+.rd-file-sub{font-size:11.5px;opacity:.5}
+.rd-file-native{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;overflow:hidden}
+.rd-file-info{padding:10px 12px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--static-bg,rgba(0,0,0,.03));font-size:12px;line-height:1.6;word-break:break-all}
+.rd-gbk-row{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border-radius:12px;background:rgba(244,182,194,.12);font-size:12px;line-height:1.5}
+.rd-import-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:2px 0}
+.rd-import-or::before,.rd-import-or::after{content:'';flex:1;height:1px;background:var(--line,#e5e5e5)}
+.rd-btn{border:0;border-radius:10px;padding:9px 14px;font-size:13px;font-family:inherit;background:var(--line,#eee);color:inherit}
+.rd-btn-primary{align-self:flex-start;padding:10px 22px;background:var(--rd-primary,var(--ink,#111));color:var(--rd-primary-ink,var(--bg,#fff))}
+.rd-btn-block{display:flex;align-items:center;justify-content:center;width:100%;height:46px;padding:0;border-radius:12px;font-size:14px;font-weight:500}
+.rd-btn-block:active{opacity:.82}
+.rd-btn-text{background:transparent;color:var(--muted);padding:0;border-radius:0;font-size:11.5px;line-height:1.5}
+.rd-btn-text:active{opacity:.5}
+#rd-paste{flex:1 1 auto;min-height:120px;width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line,#ddd);padding:12px;font-size:14px;line-height:1.7;font-family:inherit;resize:none;background:transparent;color:inherit;outline:none}
+#rd-paste:focus{border-color:#f4b6c2}
+.rd-import .ce-box[data-for="rd-imp-name"]{width:100%;box-sizing:border-box;min-height:44px;padding:11px 12px;border:1px solid var(--line,#ddd);border-radius:12px;font-size:14px;line-height:1.4;background:transparent;color:inherit;outline:none}
+.rd-import .ce-box[data-for="rd-paste"]{flex:1 1 auto;width:100%;box-sizing:border-box;min-height:120px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;font-size:14px;line-height:1.7;background:transparent;color:inherit;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;overflow-y:auto}
 .rd-import-foot{display:flex;justify-content:flex-end}
-.rd-import-main{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+.rd-import-foot-main{display:block;flex:none;padding:12px 0 calc(14px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));background:var(--bg,#fff);border-top:1px solid var(--line,#e5e5e5)}
 
 /* ---------- 确认分章 ---------- */
-.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 20px;background:var(--bg,#fff)}
-.rd-confirm-bar{display:flex;gap:8px;flex-wrap:wrap}
-.rd-confirm-list{flex:1;min-height:0;overflow-y:auto}
-.rd-cf-row{padding:10px 0;border-bottom:1px solid var(--line,#eee)}
-.rd-cf-title{border:0;background:transparent;color:inherit;font-size:14px;line-height:1.4;padding:0;text-align:left;max-width:100%}
-.rd-cf-n{font-size:11px;opacity:.6;margin-top:3px}
-.rd-cf-ops{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.rd-confirm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding:calc(14px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 16px 0;background:var(--bg,#fff);overflow:hidden}
+.rd-confirm-sum{padding:12px 14px;border-radius:12px;border:1px solid rgba(244,182,194,.18);background:rgba(244,182,194,.08)}
+.rd-confirm-sum-t{font-size:14px;font-weight:600}
+.rd-confirm-sum-h{font-size:11.5px;line-height:1.6;color:var(--muted);margin-top:3px}
+.rd-confirm-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px}
+.rd-confirm-list{flex:1;min-height:0;overflow-y:auto;padding-bottom:4px}
+.rd-cf-row{padding:12px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-cf-top{display:flex;align-items:baseline;gap:8px}
+.rd-cf-idx{flex:none;width:20px;font-size:11px;opacity:.38;font-variant-numeric:tabular-nums}
+.rd-cf-title{flex:1;min-width:0;border:0;background:transparent;color:inherit;font-family:inherit;font-size:14px;line-height:1.45;padding:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.rd-cf-n{flex:none;font-size:11px;opacity:.5}
+.rd-cf-ops{display:flex;gap:16px;margin-top:5px;margin-left:28px;flex-wrap:wrap}
+.rd-cf-ops .rd-btn-text{font-size:11.5px}
 .rd-btn-mini{padding:5px 10px;font-size:12px}
 .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
-/* ---------- 字号/行距浮层 ---------- */
-.rd-prefs{position:absolute;right:12px;top:52px;z-index:4;padding:10px;border-radius:14px;background:var(--bg,#fff);box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
-.rd-prefs-row{display:flex;align-items:center;gap:6px;font-size:12px}
+/* ---------- 阅读设置页 ---------- */
+#page-reading-settings{overflow:hidden;padding-bottom:0}
+.rd-set-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 16px 28px}
+.rd-set-preview{margin:12px 0 2px;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e6e6e6);background:linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-set-preview-h{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.04em}
+.rd-set-preview-text{padding:14px 16px 20px;font-size:17px;line-height:1.8;white-space:pre-wrap;color:var(--ink)}
+[data-theme="dark"] .rd-set-preview{background:linear-gradient(180deg,#201e1a,#191714);border-color:var(--dark-border,#333)}
+[data-theme="dark"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-preview[data-rd-bg="eye"]{--ink:#111111;--muted:#8a8a8a;background:linear-gradient(180deg,#fdfbf6,#f8f3e9);border-color:#e6e6e6}
+.rd-set-preview[data-rd-bg="eye"] .rd-set-preview-h{border-bottom-color:rgba(0,0,0,.05)}
+.rd-set-preview[data-rd-bg="eye"] .rd-set-preview-text{color:#111111}
+.rd-set-preview[data-rd-bg="night"]{--ink:#f0f0f0;--muted:#aaaaaa;background:linear-gradient(180deg,#201e1a,#191714);border-color:#333333}
+.rd-set-preview[data-rd-bg="night"] .rd-set-preview-h{border-bottom-color:rgba(255,255,255,.08)}
+.rd-set-preview[data-rd-bg="night"] .rd-set-preview-text{color:#f0f0f0}
+.rd-set-row{display:flex;flex-direction:column;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-row:last-child{border-bottom:none}
+.rd-set-row-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rd-set-row-t{font-size:14px}
+.rd-set-row-v{font-size:11.5px;color:var(--muted)}
+.rd-set-toggle .rd-set-row-h{align-items:center}
+.rd-set-row-desc{font-size:11.5px;line-height:1.6;color:var(--muted)}
+.rd-set-sub{padding-left:28px}
+.rd-set-sub .rd-set-row-t{font-size:13px}
+.rd-set-sub.is-off{opacity:.45}
+.rd-set-slider{display:flex;align-items:center;gap:10px}
+.rd-set-slider span{flex:none;font-size:11px;color:var(--muted)}
+.rd-set-slider input[type="range"]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;width:0;height:28px;padding:0;background:transparent}
+.rd-set-slider input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),var(--line,#e6e6e6) var(--rd-pct,50%),var(--line,#e6e6e6) 100%)}
+.rd-set-slider input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.rd-set-slider input[type="range"]::-moz-range-track{height:4px;border-radius:2px;background:var(--line,#e6e6e6)}
+.rd-set-slider input[type="range"]::-moz-range-progress{height:4px;border-radius:2px;background:#f4b6c2}
+.rd-set-slider input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#f4b6c2;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#3a3a3a var(--rd-pct,50%),#3a3a3a 100%)}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#1e1e1e}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
+[data-theme="dark"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
+.rd-set-note{padding:10px 2px 0;font-size:11.5px;line-height:1.6;color:var(--muted)}
+/* 设置页三栏：页签贴边吸顶（沿用 .them-tabs 的 sticky 与底色），只补负边距和按钮字体 */
+.rd-set-tabs{margin:0 -16px}
+.rd-set-tabs .them-tab{border-top:0;border-left:0;border-right:0;font-family:inherit;-webkit-tap-highlight-color:transparent}
+/* 主按钮颜色：四个色块，选中描边跟随正文色，深浅主题都看得见 */
+.rd-primary-opts{display:flex;gap:8px}
+.rd-primary-opt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);font-family:inherit;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-primary-opt i{display:block;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.rd-primary-opt[data-rd-primary="ink"] i{background:#111111}
+.rd-primary-opt[data-rd-primary="pink"] i{background:#d97a8c}
+.rd-primary-opt[data-rd-primary="blue"] i{background:#7893ad}
+.rd-primary-opt[data-rd-primary="brown"] i{background:#8b6a4b}
+.rd-primary-opt.on{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
+.rd-primary-opt span{display:block;white-space:nowrap}
+[data-theme="dark"] .rd-primary-opt{background:#242424;border-color:#3a3a3a}
+/* 数据栏只读统计行 */
+.rd-set-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.rd-set-stat:last-child{border-bottom:none}
+.rd-set-stat span{font-size:14px}
+.rd-set-stat b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+[data-theme="dark"] .rd-set-stat{border-bottom-color:rgba(255,255,255,.08)}
+.rd-live-entry{display:flex;align-items:center;gap:10px;width:100%;margin:12px 0 0;padding:11px 14px;border:1px solid var(--card-border,#ddd);border-radius:12px;background:var(--card-bg,#fff);background:color-mix(in srgb,var(--btn-bg,#111) 10%,var(--card-bg,#fff));color:var(--btn-bg,#111);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-live-entry-t{flex:1;min-width:0}
+.rd-live-entry-name{display:block;font-size:15px;font-weight:700;line-height:1.25}
+.rd-live-entry-sub{display:block;font-size:11.5px;font-weight:400;opacity:.85;margin-top:2px}
+.rd-live-entry-go{flex:none;font-size:12px;font-weight:700;padding:7px 10px;border:1px solid var(--btn-bg,#111);border-radius:999px;background:var(--btn-bg,#111);color:var(--btn-ink,#fff);white-space:nowrap}
+.rd-bg-opts{display:flex;gap:8px}
+.rd-bg-opt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--line,#e6e6e6);border-radius:10px;background:var(--bg,#fff);color:var(--ink);cursor:pointer;font-size:11.5px;text-align:left}
+.rd-bg-opt.on{border-color:rgba(244,182,194,.85);box-shadow:inset 0 0 0 1px rgba(244,182,194,.35)}
+.rd-bg-opt span{display:block;padding:0 2px}
+.rd-bg-sw{display:block;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+.rd-bg-sw.auto{background:linear-gradient(90deg,#fdfbf6 0%,#fdfbf6 50%,#1b1916 50%,#1b1916 100%)}
+.rd-bg-sw.eye{background:linear-gradient(180deg,#fdfbf6,#f2e9d8)}
+.rd-bg-sw.night{background:linear-gradient(180deg,#201e1a,#141311)}
+[data-theme="dark"] .rd-bg-opt{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-bg-sw{border-color:rgba(255,255,255,.12)}
+/* 翻页动画选项小样：纸页＝一张斜翻的纸、轻滑＝两道错开的页、关闭＝一条横线 */
+.rd-turn-sw{display:block;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,.06);position:relative;overflow:hidden;background:linear-gradient(180deg,#fdfbf6,#f6efe0)}
+.rd-turn-sw.paper{background:linear-gradient(105deg,#fdfbf6 0 58%,#e9e0cf 58% 63%,#f7f0e3 63% 100%)}
+.rd-turn-sw.slide{background:linear-gradient(90deg,#fdfbf6 0 46%,#f4e9da 46% 54%,#fdfbf6 54% 100%)}
+.rd-turn-sw.off::after{content:'';position:absolute;left:6px;right:6px;top:50%;height:1px;background:rgba(0,0,0,.18)}
+[data-theme="dark"] .rd-turn-sw{background:#242424;border-color:#3a3a3a}
+[data-theme="dark"] .rd-turn-sw.paper{background:linear-gradient(105deg,#2a2723 0 58%,#1c1a17 58% 63%,#252220 63% 100%)}
+[data-theme="dark"] .rd-turn-sw.slide{background:linear-gradient(90deg,#2a2723 0 46%,#1c1a17 46% 54%,#2a2723 54% 100%)}
+
+/* ---------- 翻页动画 ----------
+   paper：正文横向切 12 条，每段相对父段再转一点，累积成一道弧，是真卷曲不是单层斜切。
+   每段内放一份整页内容并按段偏移裁出对应竖条，所以文字和底纸都是连续的。
+   slide：单层滑出/滑入，成本最低。 */
+/* 整页绕最左缘（书脊）翻出去；每段只叠一点点角度做末端弧度 */
+.rd-curl{position:absolute;z-index:5;pointer-events:none;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
+.rd-curl-seg{position:absolute;top:0;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
+/* 每段右侧多出半像素与下一段重叠，消掉 3D 抗锯齿留下的接缝 */
+.rd-curl-slice{position:absolute;top:0;left:0;width:calc(100% + .5px);height:100%;overflow:hidden;background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+/* 越靠掀起的右端越暗：纸背背光。暗度在掀起过程中渐显，翻页第一帧不会整页发暗。
+   重叠半像素处由后一段整段盖住，不会叠出双重暗色 */
+.rd-curl-slice::after{content:'';position:absolute;inset:0;pointer-events:none;background:rgba(0,0,0,var(--shade,0));animation:rdCurlShadeIn .42s ease-out forwards}
+.rd-curl.is-prev .rd-curl-slice::after{animation-name:rdCurlShadeOut}
+@keyframes rdCurlShadeIn{from{opacity:0}to{opacity:1}}
+@keyframes rdCurlShadeOut{from{opacity:1}to{opacity:0}}
+/* 掀起的那张纸正面朝下，一掀起来就只剩空白纸背；回上一页时纸面要带着内容落回来 */
+.rd-curl-page{position:absolute;top:0;box-sizing:border-box;flex:none;overflow:visible;animation:rdCurlPageBlank .07s linear forwards}
+.rd-curl.is-prev .rd-curl-page{animation:none}
+@keyframes rdCurlPageBlank{from{opacity:1}to{opacity:0}}
+/* 纸页抬起来时在新页上留下的投影，随掀开淡掉 */
+.rd-turn-cast{position:absolute;pointer-events:none;z-index:4;background:linear-gradient(to left,rgba(0,0,0,.15),rgba(0,0,0,.02) 52%,transparent 76%);animation:rdTurnCast 1.05s ease-out forwards}
+.rd-turn-cast.is-prev{transform:scaleX(-1)}
+@keyframes rdTurnCast{from{opacity:1}to{opacity:0}}
+/* 轻滑用的单层纸 */
+.rd-turn-sheet{overflow:hidden;pointer-events:none;backface-visibility:hidden;will-change:transform,opacity;transform-origin:left center;border-radius:0 4px 4px 0}
+.rd-turn-sheet::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to left,rgba(0,0,0,.14),rgba(0,0,0,.03) 46%,transparent 72%)}
+@keyframes rdTurnNextSlide{from{transform:translateX(0);opacity:1}to{transform:translateX(-22%);opacity:0}}
+@keyframes rdTurnPrevSlide{from{transform:translateX(10%);opacity:0}to{transform:translateX(0);opacity:1}}
+.rd-turn-next-slide{animation:rdTurnNextSlide .2s ease forwards}
+.rd-turn-prev-slide{animation:rdTurnPrevSlide .2s ease forwards}
+[data-theme="dark"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+.rd-reader[data-rd-bg="eye"] .rd-curl-slice{background-color:#fbf8f1;background-image:repeating-linear-gradient(0deg,rgba(122,96,64,.018) 0 1px,transparent 1px 4px),linear-gradient(180deg,#fdfbf6 0%,#f8f3e9 100%)}
+.rd-reader[data-rd-bg="night"] .rd-curl-slice{background-color:#1b1916;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 4px),linear-gradient(180deg,#201e1a 0%,#191714 100%)}
+
+/* ---------- 边看边调抽屉 ---------- */
+#rd-live-drawer{position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:40vh;display:flex;flex-direction:column;padding:0 12px calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));border-radius:16px 16px 0 0;background:var(--card-bg,#fff);color:var(--ink,#111);box-shadow:0 -6px 24px rgba(0,0,0,.18);overflow-y:auto;overflow-x:hidden;box-sizing:border-box;transition:bottom .16s ease}
+#rd-live-drawer[data-rd-bg="eye"]{--ink:#111111;--muted:#8a8a8a;--line:#e6e6e6;--card-border:#e6e6e6;--btn-cancel-bg:#fafafa;background:rgba(255,255,255,.94);color:#111111}
+#rd-live-drawer[data-rd-bg="night"]{--ink:#f0f0f0;--muted:#aaaaaa;--line:#3a3a3a;--card-border:#3a3a3a;--btn-cancel-bg:#2a2a2a;background:rgba(30,30,30,.94);color:#f0f0f0}
+.rd-live-grip{width:36px;height:4px;border-radius:2px;background:var(--card-border,#ddd);margin:7px auto 0;flex:none}
+.rd-live-head{display:flex;align-items:center;gap:8px;flex:none;padding:6px 0 2px}
+.rd-live-title{flex:none;font-size:13px;font-weight:700}
+.rd-live-hint{flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-live-mini{flex:none;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink);font-size:11.5px;padding:6px 11px;cursor:pointer}
+.rd-live-body{display:flex;flex-direction:column;gap:8px;padding:6px 0 2px}
+/* 边看边调抽屉：hero / 手账底色色块 */
+.rd-live-tone{display:flex;flex-direction:column;gap:6px}
+.rd-live-tone-h{font-size:10px;letter-spacing:.14em;color:var(--muted,#8a8a8a)}
+.rd-live-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rd-live-slider span{font-size:11px}
+.rd-live-val{width:38px;text-align:right}
+.rd-live-bgrow{display:flex;align-items:center;gap:10px}
+.rd-live-bgrow>span{flex:none;font-size:11px;color:var(--muted)}
+.rd-live-bg{display:flex;flex:1;min-width:0;gap:6px}
+.rd-live-bgopt{flex:1;border:1px solid var(--card-border,#ddd);border-radius:8px;background:var(--btn-cancel-bg,#fafafa);color:var(--ink);font-size:11.5px;padding:6px 4px;cursor:pointer}
+.rd-live-bgopt.on{border-color:rgba(244,182,194,.85);background:rgba(244,182,194,.22)}
+#rd-live-drawer[data-rd-bg="night"] .rd-live-bgopt.on{background:rgba(244,182,194,.16)}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#3a3a3a var(--rd-pct,50%),#3a3a3a 100%)}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#1e1e1e}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-moz-range-track{background:#3a3a3a}
+#rd-live-drawer[data-rd-bg="night"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#1e1e1e}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(to right,#f4b6c2 0,#f4b6c2 var(--rd-pct,50%),#e6e6e6 var(--rd-pct,50%),#e6e6e6 100%)}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-webkit-slider-thumb{border-color:#ffffff}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-moz-range-track{background:#e6e6e6}
+#rd-live-drawer[data-rd-bg="eye"] .rd-set-slider input[type="range"]::-moz-range-thumb{border-color:#ffffff}
+.rd-live-note{font-size:10.5px;line-height:1.5;color:var(--muted);padding:2px 0 0}
 
 /* ---------- 目录 ---------- */
-.rd-toc{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px;background:var(--bg,#fff)}
-.rd-toc-list{flex:1;min-height:0;overflow-y:auto}
-.rd-toc-row{display:flex;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line,#eee);font-size:14px}
+/* 目录改成右侧抽屉：点遮罩关闭，滑入不打断阅读画面 */
+.rd-toc-mask{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.34);animation:rdTocMaskIn .18s ease}
+.rd-toc{position:absolute;top:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;width:min(80%,328px);padding:calc(12px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))) 0 calc(10px + var(--mochi-safe-bottom, env(safe-area-inset-bottom, 0px)));background:var(--bg,#fff);border-radius:16px 0 0 16px;box-shadow:-10px 0 30px rgba(0,0,0,.18);overflow:hidden;animation:rdTocIn .22s cubic-bezier(.2,.8,.3,1)}
+.rd-toc.rd-toc-out{animation:rdTocOut .16s ease forwards}
+.rd-toc-mask.rd-toc-out{animation:rdTocMaskOut .16s ease forwards}
+@keyframes rdTocIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes rdTocOut{from{transform:translateX(0)}to{transform:translateX(100%)}}
+@keyframes rdTocMaskIn{from{opacity:0}to{opacity:1}}
+@keyframes rdTocMaskOut{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion: reduce){.rd-toc,.rd-toc-mask{animation:none!important}}
+.rd-toc-head{flex:none;padding:0 18px 2px}
+.rd-toc-head-row{display:flex;align-items:center;justify-content:space-between}
+.rd-toc-title{font-size:15px;font-weight:600;letter-spacing:.3px}
+.rd-toc-x{width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;margin-right:-8px;opacity:.55}
+.rd-toc-x svg{width:16px;height:16px}
+.rd-toc-x:active{opacity:1}
+.rd-toc-prog{padding:12px 14px;border-radius:12px;border:1px solid rgba(244,182,194,.18);background:rgba(244,182,194,.09)}
+.rd-toc-cur{font-size:14px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px;font-size:11px;color:var(--muted,#8a8a8a);font-variant-numeric:tabular-nums}
+.rd-toc-bar{height:3px;margin-top:8px;border-radius:2px;background:rgba(0,0,0,.07);overflow:hidden}
+.rd-toc-bar span{display:block;width:0;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(244,182,194,.55),#f4b6c2);transition:width .2s ease}
+.rd-toc-tabs{display:flex;gap:18px;margin-top:12px;border-bottom:1px solid var(--line,#eee)}
+.rd-toc-tab{position:relative;border:0;background:transparent;color:inherit;font-family:inherit;font-size:13px;padding:0 0 9px;opacity:.5}
+.rd-toc-tab.on{opacity:1;font-weight:600}
+.rd-toc-tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:currentColor}
+.rd-toc-tab-n{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;margin-left:5px;padding:0 4px;border-radius:8px;background:rgba(244,182,194,.3);color:#b06070;font-size:9.5px;line-height:1;vertical-align:1px}
+.rd-toc-search{display:block;width:100%;box-sizing:border-box;height:36px;line-height:34px;margin-top:10px;padding:0 12px;border:1px solid var(--line,#e5e5e5);border-radius:10px;background:rgba(0,0,0,.025);color:inherit;font-family:inherit;font-size:13px;outline:none}
+.rd-toc-search:focus{border-color:rgba(244,182,194,.7);background:transparent}
+.rd-toc-search::placeholder{opacity:.45}
+.rd-toc-pane{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;margin-top:8px}
+.rd-toc-list{flex:1;min-height:0;overflow-y:auto;padding:0 10px 12px}
+.rd-toc-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 8px;border-bottom:1px solid var(--line,#eee);font-size:14px}
+.rd-toc-row:active{background:rgba(0,0,0,.03)}
 .rd-toc-row.on{color:#d9534f}
-.rd-toc-n{opacity:.5;min-width:22px}
-.rd-toc-t{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-row.on .rd-toc-t{font-weight:600}
+.rd-toc-row.is-read .rd-toc-t{opacity:.38}
+.rd-toc-row.is-read .rd-toc-n{opacity:.22}
+.rd-toc-n{flex:none;min-width:20px;opacity:.42;font-size:11.5px;font-variant-numeric:tabular-nums}
+.rd-toc-t{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-toc-flags{flex:none;display:flex;align-items:center;gap:6px}
+.rd-toc-him{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(244,182,194,.3);color:#a4555f;font-size:9px;line-height:1}
+.rd-toc-badge{display:inline-block;box-sizing:border-box;min-width:18px;height:16px;padding:0 5px;border-radius:8px;background:rgba(244,182,194,.24);color:#b06070;font-size:9.5px;line-height:16px;text-align:center}
+.rd-toc-none{padding:28px 8px;text-align:center;font-size:12px;color:var(--muted,#8a8a8a)}
+.rd-toc-lost{color:var(--muted,#8a8a8a);font-size:12px}
+.rd-toc-now{position:absolute;left:50%;bottom:12px;z-index:2;display:flex;align-items:center;gap:4px;transform:translateX(-50%);border:0;border-radius:16px;padding:8px 14px;background:rgba(255,255,255,.95);color:var(--ink,#111);font-family:inherit;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.16)}
+/* 书签页 */
+.rd-mark-list{flex:1;min-height:0;overflow-y:auto;padding:2px 14px 12px}
+.rd-mark-row{display:flex;align-items:flex-start;gap:4px;padding:2px 0;border-bottom:1px solid var(--line,#eee)}
+.rd-mark-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 4px;border:0;background:transparent;color:inherit;text-align:left;font-family:inherit}
+.rd-mark-main:active{opacity:.6}
+.rd-mark-ch{font-size:13px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rd-mark-q{display:-webkit-box;font-size:12px;line-height:1.55;opacity:.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.rd-mark-meta{font-size:10.5px;opacity:.42;font-variant-numeric:tabular-nums}
+.rd-mark-del{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;margin-top:9px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font-family:inherit;font-size:12px;opacity:.28}
+.rd-mark-del:active{opacity:.8}
+.rd-mark-empty{padding:54px 18px;text-align:center;font-size:12px;line-height:1.9;color:var(--muted,#8a8a8a)}
 
 /* ---------- 选句与批注 ---------- */
 /* 正文的选中由我们自己的长按接管，关掉系统选择才不会同时冒出系统菜单 */
 .rd-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .rd-sel{background:rgba(244,182,194,.45);border-radius:3px}
-.rd-mark{display:inline-block;width:8px;height:8px;margin-left:1px;border-radius:50%;background:#f4b6c2;vertical-align:super;position:relative;cursor:pointer}
+/* 批注圈是零宽锚点：视觉用 ::before 绝对定位画，行内不占宽高。
+   分页测量时不带这些记号，若记号占行内宽度/抬升行高，渲染就比测量多绕行，
+   排得满的页会溢出底栏——这是「个别页溢出、后几页又偏空」的根源 */
+.rd-mark{display:inline-block;width:0;height:0;position:relative;cursor:pointer}
+.rd-mark::before{content:'';position:absolute;left:1px;top:-14px;width:8px;height:8px;border-radius:50%;background:#f4b6c2}
 /* 我是实心点，他是空心圈：同一句只有他的批注时画空心 */
-.rd-mark-his{background:transparent;border:1.5px solid #f4b6c2;box-sizing:border-box}
+.rd-mark-his::before{background:transparent;border:1.5px solid #f4b6c2;box-sizing:border-box}
 /* 同一句两人都留过批注：实心点外加一圈，成为双圈 */
-.rd-mark-both{background:#f4b6c2;box-shadow:0 0 0 1.6px #fff,0 0 0 3.2px #f4b6c2}
-.rd-mark b{position:absolute;left:9px;top:-5px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
-/* 他读过的句子句尾：极淡的铅笔竖线，只表示「他经过这里」，不带任何内容 */
-.rd-trace{display:inline-block;width:1px;height:.9em;margin-left:2px;vertical-align:-.08em;background:currentColor;opacity:.16;border-radius:1px;pointer-events:none}
+.rd-mark-both::before{background:#f4b6c2;box-shadow:0 0 0 1.6px #fff,0 0 0 3.2px #f4b6c2}
+.rd-mark b{position:absolute;left:10px;top:-15px;font-size:9px;font-weight:normal;line-height:1;color:#d9534f}
+/* 他读过的句子句尾：极淡的铅笔竖线，只表示「他经过这里」，不带任何内容；同样零宽 */
+.rd-trace{display:inline-block;width:0;height:0;position:relative;pointer-events:none}
+.rd-trace::before{content:'';position:absolute;left:2px;top:-.82em;width:1px;height:.9em;background:currentColor;opacity:.16;border-radius:1px}
 /* 同句第一次撞上时的一行提示 */
 .rd-pop-same{font-size:12px;line-height:1.6;opacity:.65;padding-bottom:2px}
 .rd-selbar{position:absolute;z-index:6;display:flex;transform:translateX(-50%);border-radius:12px;background:#2b2b2b;box-shadow:0 6px 22px rgba(0,0,0,.25);overflow:hidden}
@@ -129,12 +419,16 @@
 .rd-prev-text{font-size:15px;line-height:1.7;white-space:pre-wrap;overflow-y:auto}
 .rd-pop-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .rd-pop-item{padding:10px 0;border-bottom:1px solid var(--line,#eee);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.rd-pop-who{font-size:11px;opacity:.55;margin-bottom:4px}
+/* 署名不再独占一行：跟在正文首行前面，省掉一条批注三行的松散感 */
+.rd-pop-who{display:inline;font-size:10px;opacity:.42;margin-right:5px;letter-spacing:.2px}
 .rd-pop-text{font-size:14px;line-height:1.6;white-space:pre-wrap}
 /* 我是实心点，他是空心圈；他的回应缩进一层 */
-.rd-pop-mine .rd-pop-who::before{content:'●';font-size:9px;margin-right:4px;vertical-align:1px}
-.rd-pop-his .rd-pop-who::before{content:'○';font-size:9px;margin-right:4px;vertical-align:1px}
+.rd-pop-mine .rd-pop-who::before{content:'●';font-size:8px;margin-right:3px;vertical-align:1px}
+.rd-pop-his .rd-pop-who::before{content:'○';font-size:8px;margin-right:3px;vertical-align:1px}
 .rd-pop-reply{margin-left:20px}
+/* 回应他这句：胶囊小按钮，只出现在他的原始批注下面 */
+.rd-pop-reply-btn{margin-top:8px;border:1px solid rgba(244,182,194,.55);background:transparent;color:#c26e69;font-family:inherit;font-size:11px;line-height:1;padding:5px 11px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-pop-reply-btn:active{opacity:.6}
 .rd-pop-more{border:0;background:transparent;color:inherit;font-size:12px;opacity:.6;padding:10px 0}
 
 /* 自己批注的长按菜单（底部半框） */
@@ -153,8 +447,8 @@
 .rd-buddy-row{display:flex;align-items:center;gap:9px}
 .rd-buddy-row .rd-buddy-state{flex:1;min-width:0}
 /* 小卡头像：同读时浮一圈很轻的呼吸光；减少动态效果时只留静态光圈 */
-.rd-buddy-av{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:rgba(244,182,194,.3);display:flex;align-items:center;justify-content:center}
-.rd-buddy-av::before{content:'';display:block;width:12px;height:12px;border-radius:50%;background:rgba(244,182,194,.85)}
+.rd-buddy-av{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.9),rgba(244,182,194,.34) 62%,rgba(244,182,194,.2));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 2px rgba(255,255,255,.5)}
+.rd-buddy-av::before{content:'';display:block;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#f9dbe2,#eaa7b7);box-shadow:inset 0 1px 2px rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.08)}
 .rd-buddy-av::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid #f4b6c2;opacity:0}
 .rd-buddy-av.on::after{animation:rdTogBreath 2.8s ease-in-out infinite}
 @keyframes rdTogBreath{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.62;transform:scale(1.18)}}
@@ -168,16 +462,124 @@
 .rd-buddy-modes{display:flex;gap:8px;flex-wrap:wrap}
 .rd-buddy-modes .rd-btn-mini.on{background:rgba(244,182,194,.5)}
 
-/* 共读手账：封存一句的书架条目，只给章序号，不给内容 */
-.rd-ledger{margin:14px 16px 0;padding:10px 12px;border-radius:14px;border:1px solid var(--line,#e2e2e2);background:rgba(127,127,127,.08)}
+/* 共读手账：封存一句的书架条目，只给章序号，不给内容（按设计稿 1:1 还原） */
+.rd-ledger{margin:18px 16px 0;border:1px solid rgba(244,182,194,.3);border-radius:13px;padding:10px 13px 9px;background:linear-gradient(180deg,var(--w-card,#fff),var(--w-bg,#faf9f5))}
 .rd-ledger[hidden]{display:none!important}
-.rd-ledger-t{font-size:11px;opacity:.55;margin-bottom:4px;letter-spacing:.04em}
-.rd-ledger-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px;line-height:1.7}
-.rd-ledger-row .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
-.rd-ledger-row .a{flex:none;font-size:11px;opacity:.5}
+.rd-ledger-t{position:relative;display:flex;align-items:center;gap:6px;font-size:9.5px;letter-spacing:.12em;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-ledger-t::before{content:'';width:11px;height:1px;background:var(--w-pink,#f4b6c2)}
+.rd-ledger-row{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
+.rd-lmain{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-lbook{font-size:11.5px;font-weight:600;color:var(--w-ink,#1a1712)}
+.rd-lnote{font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-lch{flex:none;font-size:9px;padding:4px 8px;border-radius:999px;border:1px solid var(--w-hair,rgba(26,23,18,.09));color:var(--w-mut,rgba(26,23,18,.52))}
 /* 封存纸条展开后，浮层末尾那行「你终于读到这了」 */
-.rd-pop-unsealed{margin-top:5px;font-size:11px;opacity:.55}
+.rd-pop-unsealed{margin-top:6px;font-size:11px;opacity:.55;display:flex;align-items:center;gap:5px}
+.rd-pop-unsealed::before{content:'';width:12px;height:1px;background:currentColor;opacity:.5;flex:none}
 /* 错过七天：旧句被划掉留成淡字，点一下他有概率接一句 */
 .rd-pop-cross{font-size:11px;opacity:.5;margin:2px 0 5px}
-.rd-pop-old{font-size:13px;line-height:1.6;opacity:.42;text-decoration:line-through;margin-bottom:6px;white-space:pre-wrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-pop-old{font-size:13px;line-height:1.6;opacity:.42;text-decoration:line-through;text-decoration-color:rgba(217,83,79,.5);text-decoration-thickness:1.5px;margin-bottom:6px;white-space:pre-wrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
+
+/* ---------- Hero 深色封面卡 ---------- */
+.rd-hero-card{position:relative;margin:12px 16px 0;border-radius:18px;padding:15px;color:#f3ecdd;background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%);box-shadow:0 10px 26px rgba(0,0,0,.16);overflow:hidden}
+/* 三层高光叠出纸面质感：左上主暖光（比设计稿更亮，真机才看得出）+ 右上微光 + 左下粉光 */
+.rd-hero-card::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 18% 14%,rgba(255,240,210,.18),transparent 58%),radial-gradient(120% 90% at 88% -12%,rgba(255,235,200,.13),transparent 55%),radial-gradient(90% 70% at -4% 112%,rgba(244,182,194,.1),transparent 52%)}
+/* 书签从卡片顶沿垂下，不再跟着内边距飘在标题上方 */
+.rd-hero-top{position:relative;display:flex;justify-content:flex-end;align-items:flex-start}
+.rd-hero-mark{position:absolute;top:-15px;left:0;width:9px;height:22px;border-radius:0 0 3px 3px;background:#f4b6c2;box-shadow:0 1px 4px rgba(244,182,194,.35)}
+.rd-hero-date{text-align:right;font-size:10px;line-height:1.6}
+.rd-hero-date b{display:block;font-weight:600;opacity:.66}
+.rd-hero-date span{opacity:.42;font-variant-numeric:tabular-nums}
+.rd-hero-title{position:relative;margin-top:13px;width:202px;font-size:19px;font-weight:700;line-height:1.45;letter-spacing:.02em}
+.rd-hero-tags{position:relative;display:flex;gap:6px;margin-top:11px}
+.rd-hero-tag{font-size:9px;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid rgba(243,236,221,.3);opacity:.9}
+.rd-hero-bar{position:relative;margin-top:15px;height:2px;border-radius:2px;background:rgba(243,236,221,.16)}
+.rd-hero-bar i{display:block;height:100%;width:0;border-radius:2px;background:#f4b6c2;transition:width .25s ease}
+.rd-hero-foot{position:relative;display:flex;justify-content:flex-end;margin-top:13px}
+.rd-hero-go{border:0;background:#f6efdf;color:#221c14;font-size:11px;font-weight:600;font-family:inherit;padding:7px 14px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-hero-go:active{opacity:.82}
+
+/* ---------- 阅读记录（按设计稿 1:1 还原） ---------- */
+.rd-stat{margin:22px 18px 0;color:var(--w-ink,#1a1712)}
+.rd-stat-label{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-stat-h{margin-top:9px;font-size:22px;font-weight:700;letter-spacing:.01em;color:var(--w-ink,#1a1712)}
+.rd-stat-nums{display:flex;margin-top:12px;font-size:10px;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-sg{padding:0 11px;border-left:1px solid var(--w-hair,rgba(26,23,18,.09))}
+.rd-sg:first-child{padding-left:0;border-left:0}
+.rd-sg b{font-weight:600;color:var(--w-mut,rgba(26,23,18,.52));font-variant-numeric:tabular-nums}
+
+/* ---------- 分组卡（按设计稿 1:1 还原） ---------- */
+.rd-groups-block{margin:24px 18px 0;color:var(--w-ink,#1a1712)}
+.rd-groups-head{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+.rd-glabel{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-gtitle{font-size:15.5px;font-weight:700}
+.rd-gnew{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gnew:active{opacity:.6}
+.rd-ghead-r{display:flex;align-items:center;gap:12px}
+.rd-gsort{font-size:10.5px;color:var(--w-mut,rgba(26,23,18,.52));padding-bottom:2px;border:0;background:transparent;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gsort:active{opacity:.6}
+/* 排序模式：分组卡可拖，默认分组固定 */
+#rd-shelf.rd-sorting .rd-gk[data-gid]{cursor:grab;outline:1px dashed rgba(26,23,18,.22);outline-offset:2px}
+#rd-shelf.rd-sorting .rd-gk[data-gid="all"]{cursor:default;outline-color:transparent}
+.rd-gk-drag{opacity:.65;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.18)!important}
+.rd-ggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 15px 0}
+.rd-ggrid>*:nth-child(even){margin-top:20px}
+.rd-gk{position:relative;min-width:0;border-radius:14px;padding:12px;background:var(--w-card,#fff);border:1px solid var(--w-hair,rgba(26,23,18,.09));box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-gk:active{opacity:.78}
+.rd-gn{position:absolute;top:12px;right:24px;font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+/* 他新回了批注：卡片右上角一个小粉点，不计数、不写「新消息」 */
+.rd-gnewdot{position:absolute;top:16px;right:12px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
+.rd-gstack{display:flex;min-height:36px}
+.rd-gsb{width:26px;aspect-ratio:3/4;border-radius:4px;margin-left:-9px;font-size:10px;font-weight:700;color:rgba(56,45,32,.6);box-shadow:0 2px 6px rgba(0,0,0,.16);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.rd-gsb:first-child{margin-left:0}
+.rd-gt{margin-top:11px;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-gs{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+/* ---------- 分组详情页（按设计稿 1:1 还原） ---------- */
+.rd-detail{display:flex;flex-direction:column}
+.rd-dd-head{margin:16px 18px 0;color:var(--w-ink,#1a1712)}
+.rd-dd-label{font-size:10px;letter-spacing:.14em;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-dd-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+.rd-dd-t{font-size:15.5px;font-weight:700}
+.rd-dd-t span{font-weight:400;font-size:12.5px;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-dd-sub{font-size:10px;color:var(--w-faint,rgba(26,23,18,.42));padding-bottom:2px}
+.rd-dd-pills{display:flex;gap:8px;margin-top:13px}
+.rd-dd-pill{font-size:10.5px;padding:5.5px 13px;border-radius:999px;border:1px solid rgba(26,23,18,.25);color:var(--w-ink,#1a1712);line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+[data-theme="dark"] .rd-dd-pill{border-color:rgba(255,255,255,.22)}
+.rd-dd-pill.on{background:var(--w-ink,#1a1712);color:var(--w-bg,#faf9f5);border-color:var(--w-ink,#1a1712);font-weight:600}
+.rd-dd-feat{display:flex;gap:12px;margin:15px 15px 0}
+.rd-dd-fcov{position:relative;width:56%;aspect-ratio:3/4;border-radius:15px;padding:13px;color:var(--w-cink,#f3ecdd);background:linear-gradient(150deg,#352e23 0%,#1e1a13 100%);box-shadow:0 8px 22px rgba(0,0,0,.14);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-fcov::after{content:'';position:absolute;inset:0;background:radial-gradient(110% 80% at 90% -10%,rgba(255,235,200,.1),transparent 55%)}
+.rd-dd-ftop{position:relative;display:flex;justify-content:space-between;align-items:flex-start}
+.rd-dd-fnum{font-size:15px;font-weight:300;opacity:.5;line-height:1}
+.rd-dd-ftag{font-size:8.5px;letter-spacing:.06em;padding:2px 7px;border-radius:999px;border:1px solid rgba(243,236,221,.3);opacity:.85}
+.rd-dd-ft{position:relative;font-size:12.5px;font-weight:700;line-height:1.5}
+.rd-dd-fm{position:relative;margin-top:5px;font-size:9.5px;opacity:.5;font-variant-numeric:tabular-nums}
+.rd-dd-flist{flex:1;display:flex;flex-direction:column;min-width:0}
+.rd-dd-frow{flex:1;display:flex;align-items:center;gap:9px;border-top:1px solid var(--w-hair,rgba(26,23,18,.09));padding:6px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-frow:first-child{border-top:0}
+.rd-dd-fn{font-size:16px;font-weight:300;color:var(--w-faint,rgba(26,23,18,.42));line-height:1}
+.rd-dd-fi{flex:1;min-width:0}
+.rd-dd-fit{font-size:11.5px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-dd-fim{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+.rd-dd-fch{color:var(--w-faint,rgba(26,23,18,.42));font-size:15px;line-height:1}
+.rd-dd-gridwrap{position:relative;margin:16px 15px 0;height:272px}
+/* 网格区可自由滚动 */
+.rd-dd-gridscroll{height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:8px;box-sizing:border-box}
+.rd-dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* 筛选后没有书时的空态：跨满两列 */
+.rd-dd-none{grid-column:1/-1;padding:28px 0;text-align:center;font-size:12px;color:var(--w-faint,rgba(26,23,18,.42))}
+.rd-dd-grid>*:nth-child(even){margin-top:24px}
+.rd-dd-gi{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-dd-gi:active{opacity:.78}
+.rd-dd-gc{position:relative;aspect-ratio:3/4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:rgba(56,45,32,.5);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+/* 置顶标记：封面上角一个小粉点 */
+.rd-dd-pin{position:absolute;top:8px;left:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
+.rd-dd-fcov.rd-fcov-pin::before{content:'';position:absolute;top:10px;left:10px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3);z-index:2}
+/* 他新回了批注：封面右上角小粉点，和置顶点（左上）分开 */
+.rd-dd-new{position:absolute;top:8px;right:8px;width:5px;height:5px;border-radius:50%;background:#f4b6c2;box-shadow:0 0 0 2px rgba(244,182,194,.3)}
+.rd-dd-gt{margin-top:7px;font-size:11px;font-weight:600;color:var(--w-ink,#1a1712);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-dd-gm{margin-top:2px;font-size:9.5px;color:var(--w-faint,rgba(26,23,18,.42));font-variant-numeric:tabular-nums}
+/* 底部渐隐：纯视觉，pointer-events:none 不拦书卡点击；滚到底时淡出，最后一排不被遮 */
+.rd-dd-fade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,var(--w-bg,#faf9f5));pointer-events:none;transition:opacity .18s ease}

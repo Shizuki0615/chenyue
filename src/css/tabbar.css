@@ -15,6 +15,9 @@
   background:color-mix(in srgb, var(--tabbar-bg-color, var(--tabbar-base-bg, #ffffff)) calc(var(--tabbar-bg-a, 1) * 100%), transparent);
   border:1px solid rgba(0,0,0,.12);
   border-radius:var(--tabbar-radius, 22px); padding:8px 6px; z-index:2;
+  /* #1633 底栏上下位置微调（设置→底部栏美化「上下位置」滑杆；正值下移、负值上移）。
+     用 translateY 只做视觉平移、不改 flex 布局，不影响圆点与页面高度；0 时无位移。 */
+  transform:translateY(var(--tabbar-y,0px));
   /* v3.6.x：去掉 box-shadow——纯白背景上 0 2px 8px rgba(0,0,0,.05) 投影
      就是卡片下方一道淡灰（用户反馈"形状旁边还有一点灰色"）；
      有边框已足够区分，无投影更干净（深色模式 dark.css 覆盖同去） */
@@ -23,17 +26,37 @@
    面积只有一条窄栏，与 #562 抽屉「刻意不加 backdrop-filter」的整屏卡顿红线不冲突 */
 .tabbar.tabbar-blur-on { -webkit-backdrop-filter:blur(var(--tabbar-blur, 10px)); backdrop-filter:blur(var(--tabbar-blur, 10px)); }
 .tabbar .tab {
+  position:relative;
   display:flex; align-items:center; justify-content:center; flex:1;
-  color:var(--muted); cursor:pointer; padding:12px 6px; border-radius:14px;
-  transition:color .18s ease, background .18s ease, opacity .18s ease;
+  color:var(--muted); cursor:pointer; padding:12px 6px; border-radius:16px;
+  transition:color .18s ease, opacity .18s ease;
   /* #769 整栏透明度的图标层（personalize.js 已算好 12% 下限，见 applyTabbarStyle） */
   opacity:var(--tabbar-ico-a, 1);
 }
-.tabbar .tab.active { color:var(--ink); background:transparent; }
-.tabbar .tab svg { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); }
+/* 2026-11-02：选中块改为内缩伪元素（上下 2px / 左右 5px）——4/8 那档缩得过小，回调一档。
+   过渡改在伪元素上。 */
+.tabbar .tab::before {
+  content:''; position:absolute;
+  top:2px; bottom:2px; left:5px; right:5px;
+  /* 2026-11-02：选中块圆角跟随底栏圆角（--tabbar-radius，默认 22px）同步——
+     按同心圆口径取「外圆角 − 上下内缩 2px」，默认落到 20px；用户改底栏圆角时块一起变。 */
+  border-radius:calc(var(--tabbar-radius, 22px) - 2px); background:transparent; box-shadow:none;
+  transition:background .18s ease, box-shadow .18s ease;
+  z-index:0; pointer-events:none;
+}
+/* 当前分区：浅色块 + 软阴影（深色模式见 dark.css） */
+.tabbar .tab.active {
+  color:var(--ink);
+  background:transparent; box-shadow:none;
+}
+.tabbar .tab.active::before {
+  background:var(--tabbar-active-bg, rgba(0,0,0,.05));
+  box-shadow:var(--tabbar-active-shadow, 0 1px 5px rgba(0,0,0,.055));
+}
+.tabbar .tab svg { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); position:relative; z-index:1; }
 /* #769 上传的按钮图片：与默认 SVG 同尺寸同槽位（svg 隐藏、img 顶上，见 paintTabIcon），
    圆角随尺寸等比缩放（23px 档 ≈ 7px，与桌面图标观感一致） */
-.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); }
+.tabbar .tab img { width:var(--tabbar-ico-size, 23px); height:var(--tabbar-ico-size, 23px); object-fit:cover; display:block; border-radius:calc(var(--tabbar-ico-size, 23px) * .3); position:relative; z-index:1; }
 /* #769 触摸显形（防「栏消失找不回」设计缺陷）：任一透明度 < 50% 时挂 tabbar-faint，
    按压瞬间描边显形 + 图标全可见——看不见也知道那里有导航、能点 */
 .tabbar.tabbar-faint:active { border-color:rgba(120,120,120,.85); }
@@ -41,14 +64,19 @@
 /* 独立全屏页（聊天等）隐藏底部导航 */
 .tabbar[hidden] { display:none; }
 
-/* 全屏页：去手机内边距；各区块自行对齐 */
-.phone.no-statusbar { padding:0; }
+/* 全屏页：去手机内边距；各区块自行对齐
+   #1611：顶部留白按桌面手机壳的 --phone-top-pad 补回——Mochi/时间/电量那一行
+   在桌面与所有全屏页（聊天/设置/阅读等）保持同一高度；移动/平板/全屏形态该变量为 0，
+   行为与原来完全一致。 */
+.phone.no-statusbar { padding:0; padding-top:var(--phone-top-pad,0px); }
 /* #状态栏常驻：真机语义——时间/电量/品牌那一行在桌面与所有全屏页（聊天/设置等）
    都常驻，不再随全屏页隐藏。原为 display:none（切进聊天就消失）。
    .phone 此时 padding:0，故在此补回与桌面一致的左右边距，避免品牌/时间贴边。 */
 .phone.no-statusbar .statusbar {
-  padding-left: calc(18px + var(--mochi-side-adj,0px));
-  padding-right: calc(18px + var(--mochi-side-adj,0px));
+  /* #1611：桌面页状态栏的有效左距＝手机壳 18px＋状态栏自身 4px＝22px；全屏页壳 padding 归 0，
+     这里补 22px，Mochi/时间/电量水平位置也与桌面一致（原 18px 比桌面少 4px）。 */
+  padding-left: calc(22px + var(--mochi-side-adj,0px));
+  padding-right: calc(22px + var(--mochi-side-adj,0px));
   flex-shrink: 0;
 }
 .page.full { padding: 0; }

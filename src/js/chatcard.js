@@ -724,7 +724,7 @@
     groupsBar.innerHTML = '';
     const grps = groups[cur] || [];
     const allCount = grps.reduce((s, g) => s + (Array.isArray(g[1]) ? g[1].length : 0), 0);
-    const chips = [['', '全部', allCount]].concat(grps.map(g => [g[0], g[0], Array.isArray(g[1]) ? g[1].length : 0]));
+    const chips = [['', '全部', allCount]].concat(grps.map(g => [g[0], ccGroupLabel(g[0]), Array.isArray(g[1]) ? g[1].length : 0]));
     chips.forEach(([val, label, n]) => {
       const c = document.createElement('span');
       c.className = 'cc-g-chip' + (curGroup === val ? ' sel' : '');
@@ -742,6 +742,15 @@
 
   // v3.6.x：HTML 转义——文件名/字卡内容/分组名是用户输入，直接拼 innerHTML 会破坏结构或注入
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  // 2026-10-26：分组展示统一用「调侃」——默认数据/内部池键仍保留「吐槽」以兼容旧库与旧调用，
+  // 这里只改显示，点击/筛选/拖动/重命名仍拿真实 gname。
+  function ccGroupLabel(name) {
+    const s = String(name == null ? '' : name);
+    if (s === '小小吐槽') return '小小调侃';
+    if (s === '吐槽') return '调侃';
+    if (s === '吐槽·回应') return '调侃·回应';
+    return s;
+  }
 
   // ================= v3.30.x：分组停用开关 UI =================
   // 分组 header 右侧眼睛按钮：点击停用/启用该分组。停用只影响「使用」
@@ -830,7 +839,7 @@
   // 分组 header HTML（停用标记 + 眼睛按钮），render 与局部重建共用
   function groupHeaderHtml(gname, count) {
     const off = isGroupOff(ccOffScope(), cur, gname);
-    return '<span class="ccg-name">' + esc(gname) + (off ? '<em class="ccg-off-tag">已停用</em>' : '') + '</span>' +
+    return '<span class="ccg-name">' + esc(ccGroupLabel(gname)) + (off ? '<em class="ccg-off-tag">已停用</em>' : '') + '</span>' +
       '<span class="ccg-count">' + count + '</span>' +
       '<button type="button" class="ccg-toggle' + (off ? ' off' : '') + '" title="' + (off ? '启用该分组' : '停用该分组') + '">' + (off ? ICON_EYE_OFF : ICON_EYE_ON) + '</button>';
   }
@@ -843,7 +852,7 @@
       ev.stopPropagation();
       const off = toggleGroupOff(cur, gname);
       refreshGroupHeaderUI(gname);
-      toast(off ? '已停用分组「' + gname + '」：该分组字卡不再被联系人使用' : '已启用分组「' + gname + '」：该分组字卡恢复使用');
+      toast(off ? '已停用分组「' + ccGroupLabel(gname) + '」：该分组字卡不再被联系人使用' : '已启用分组「' + ccGroupLabel(gname) + '」：该分组字卡恢复使用');
     });
   }
   // 就地更新某个分组的 header 停用视觉（不重建列表 DOM）
@@ -1985,7 +1994,7 @@
             if (typeof c !== 'string' || !c) return;
             if (type === 'sticker' || type === 'image') {
               const nm = ccCardNameAny(c);
-              if (nm && nm.toLowerCase().indexOf(kw) >= 0) out.push({ t: nm, cat: gname });
+              if (nm && nm.toLowerCase().indexOf(kw) >= 0) out.push({ t: nm, cat: ccGroupLabel(gname) });
               return;
             }
             if (window.ccTextCardOnly && !window.ccTextCardOnly(c)) {
@@ -1993,7 +2002,7 @@
               if (!(bar > 0 && c.slice(bar + 3).indexOf('data:audio') === 0)) return;
             }
             const txt = c.split('|||')[0] || c;
-            if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: gname });
+            if (txt && txt.toLowerCase().indexOf(kw) >= 0) out.push({ t: txt, cat: ccGroupLabel(gname) });
           });
         });
       });
@@ -2005,7 +2014,7 @@
     try {
       if (window.cardLockOpen && !window.cardLockOpen()) return out; // #319 锁定＝搜不到系统预设字卡
       const d = window.DEFAULT_CARD_DATA || {};
-      Object.keys(d).forEach(function (k) { (d[k] || []).forEach(function (grp) { const gname = grp[0]; const cards = grp[1] || []; cards.forEach(function (c) { if (c && String(c).toLowerCase().indexOf(kw) >= 0) out.push({ t: String(c), cat: gname }); }); }); });
+      Object.keys(d).forEach(function (k) { (d[k] || []).forEach(function (grp) { const gname = grp[0]; const cards = grp[1] || []; cards.forEach(function (c) { if (c && String(c).toLowerCase().indexOf(kw) >= 0) out.push({ t: String(c), cat: ccGroupLabel(gname) }); }); }); });
     } catch (e) {}
     return out;
   } });
@@ -2134,7 +2143,7 @@
         row.dataset.gidx = String(gi);
         const builtin = (BUILTIN[cur] || []).some(b => b[0] === gname);
         row.innerHTML = '<button class="mg-handle" aria-label="拖动排序">' + handleSvg + '</button>' +
-          '<span class="mg-name">' + esc(gname) + '</span><span class="mg-count">' + arr.length + ' 张</span>' +
+          '<span class="mg-name">' + esc(ccGroupLabel(gname)) + '</span><span class="mg-count">' + arr.length + ' 张</span>' +
           (builtin ? '<span class="mg-tag">内置</span>' : '<button class="mg-rn" aria-label="重命名">' + editSvg + '</button><button class="mg-del">✕</button>');
         attachGroupRowDrag(row, gi);
         if (!builtin) {
@@ -3324,7 +3333,7 @@
       if (!window.openModal) { ccFullDoExport('all'); return; }
       window.openModal('导出自定义字卡', '', (mode) => { if (mode) ccFullDoExport(mode); }, {
         noInput: true,
-        staticText: '选择导出范围（四档）：\n· 公用聊天字卡：全桌面共享（不含互动功能字卡），含分组与停用开关\n· 专属聊天字卡：只含当前桌面联系人的字卡（不含互动功能字卡），含分组与停用开关；寻踪日常 / 今日情话 / 他 六类题库（询问 / 小问题 / 好奇 / 吐槽 / 查岗 / 邀请）随本档导出\n· 互动功能字卡（单独）：摸鱼 / 吃饭 / 经期 / 喝水 / 同频 / 伸手 / 此间 / 房间 / 存钱罐 / 漂流瓶 / 互动回应 / 音乐——公用与专属两个库都导，含停用开关；不用这些功能可忽略本档\n· 全量导出：以上全部\n注意：「专属」「互动功能字卡（专属库部分）」换机恢复时，请切到对应联系人桌面再导入；导出文件不代替 设置→数据备份 的整包备份',
+        staticText: '选择导出范围（四档）：\n· 公用聊天字卡：全桌面共享（不含互动功能字卡），含分组与停用开关\n· 专属聊天字卡：只含当前桌面联系人的字卡（不含互动功能字卡），含分组与停用开关；寻踪日常 / 今日情话 / 他六类题库（询问 / 小问题 / 好奇 / 调侃 / 查岗 / 邀请）随本档导出\n· 互动功能字卡（单独）：摸鱼 / 吃饭 / 经期 / 喝水 / 同频 / 伸手 / 此间 / 房间 / 存钱罐 / 漂流瓶 / 互动回应 / 音乐——公用与专属两个库都导，含停用开关；不用这些功能可忽略本档\n· 全量导出：以上全部\n注意：「专属」「互动功能字卡（专属库部分）」换机恢复时，请切到对应联系人桌面再导入；导出文件不代替 设置→数据备份 的整包备份',
         pills: [
           { label: '公用聊天字卡', value: 'pub' },
           { label: '专属聊天字卡', value: 'own' },
@@ -3409,7 +3418,7 @@
               const nOwn = (wantOwn ? ccFullCardCount(data.ccOwn) : 0) + (wantFun ? ccFullCardCount(data.ccOwnFun) : 0);
               if (nOwn) parts.push('专属库 ' + nOwn + ' 张');
             }
-            if (wantOwn) { parts.push('寻踪/情话 ' + nItems + ' 条'); parts.push('他 题库 ' + nTa + ' 题'); }
+            if (wantOwn) { parts.push('寻踪/情话 ' + nItems + ' 条'); parts.push('他题库 ' + nTa + ' 题'); }
             if (!parts.length) parts.push('0 张');
             ccSaveExportJson(JSON.stringify(out), fname, 'mochi 自定义字卡（' + scopeName + '）',
             '已导出' + scopeName + '：' + parts.join(' · ') +
@@ -3438,7 +3447,7 @@
             ccFullImportFile(f, mode);
           }
         },
-        staticText: '导入范围：文件里包含的各库（公用聊天字卡 / 专属聊天字卡 / 互动功能字卡 / 寻踪日常 / 今日情话 / 他 六类题库）——公用、专属、互动功能、全量四种导出文件都支持，文件里没有的部分不动。\n注意：「专属」部分会导入到当前桌面联系人——如文件来自别的桌面，请先切到对应联系人桌面再导入。\n选择导入方式：\n· 追加合并：保留现有字卡，按内容去重并入（推荐）\n· 整包替换：文件里包含的各库清空后完全使用文件内容，未包含在文件里的现有字卡会丢失',
+        staticText: '导入范围：文件里包含的各库（公用聊天字卡 / 专属聊天字卡 / 互动功能字卡 / 寻踪日常 / 今日情话 / 他六类题库）——公用、专属、互动功能、全量四种导出文件都支持，文件里没有的部分不动。\n注意：「专属」部分会导入到当前桌面联系人——如文件来自别的桌面，请先切到对应联系人桌面再导入。\n选择导入方式：\n· 追加合并：保留现有字卡，按内容去重并入（推荐）\n· 整包替换：文件里包含的各库清空后完全使用文件内容，未包含在文件里的现有字卡会丢失',
         pills: [
           { label: '追加合并（自动去重）', value: 'merge' },
           { label: '整包替换（覆盖现有）', value: 'replace' }
@@ -3596,8 +3605,8 @@
         if (window.quoteCardsRefreshCounts) { try { window.quoteCardsRefreshCounts(); } catch (e) {} }
         if (window.ckCardsRefreshCounts) { try { window.ckCardsRefreshCounts(); } catch (e) {} }
         toast(mode === 'replace'
-          ? '已整包替换：聊天字卡 ' + stat.cc + ' 张 · 寻踪/情话 ' + stat.items + ' 条 · 他 题库 ' + stat.ta + ' 题'
-          : '已合并导入：聊天字卡新增 ' + stat.cc + ' 张 · 寻踪/情话新增 ' + stat.items + ' 条 · 他 题库新增 ' + stat.ta + ' 题');
+          ? '已整包替换：聊天字卡 ' + stat.cc + ' 张 · 寻踪/情话 ' + stat.items + ' 条 · 他题库 ' + stat.ta + ' 题'
+          : '已合并导入：聊天字卡新增 ' + stat.cc + ' 张 · 寻踪/情话新增 ' + stat.items + ' 条 · 他题库新增 ' + stat.ta + ' 题');
       } catch (e) {
         toast('导入处理失败：' + ((e && e.message) || '内部错误'));
         try { if (window.__jsErrors) window.__jsErrors.push('[字卡全量导入] ' + ((e && e.message) || e)); } catch (e0) {}
@@ -5186,7 +5195,7 @@
       const open = window.cardLockOpen();
       el.textContent = open
         ? '当前状态：系统预设字卡已解锁（二级验证已通过），联系人回复与各功能可正常取用。'
-        : '当前状态：系统预设字卡已全部锁定（防未成年人保护，不是 bug），联系人回复与各功能均取不到系统预设字卡。不输密码也能正常使用，密码只管两件事：解锁系统预设字卡、跳过开屏的 2 个问答。注意（#499 豁免说明）：聊天情绪字卡、他 的心情、聊天回应字卡这三大互动链不受锁定影响，未解锁也照常使用；受影响的只有默认聊天字卡、词典（含词典拼字）等系统预设池。锁定时若自定义字卡（含 mj 字卡）一张都没添加，回复会更单薄（情绪/回应字卡仍在，但少了系统预设内容），建议先在自定义字卡里添加几张；如已成年，请回开屏公告区点「输入密码解锁」输入二级验证密码，解锁后刷新生效。';
+        : '当前状态：系统预设字卡已全部锁定（防未成年人保护，不是 bug），联系人回复与各功能均取不到系统预设字卡。不输密码也能正常使用，密码只管两件事：解锁系统预设字卡、跳过开屏的 2 个问答。注意（#499 豁免说明）：聊天情绪字卡、他的心情、聊天回应字卡这三大互动链不受锁定影响，未解锁也照常使用；受影响的只有默认聊天字卡、词典（含词典拼字）等系统预设池。锁定时若自定义字卡（含 mj 字卡）一张都没添加，回复会更单薄（情绪/回应字卡仍在，但少了系统预设内容），建议先在自定义字卡里添加几张；如已成年，请回开屏公告区点「输入密码解锁」输入二级验证密码，解锁后刷新生效。';
     }
     render();
     document.addEventListener('mochi-cardlock-open', render);

@@ -73,33 +73,134 @@ const DEFAULT_QUESTIONS = [
 { id: 'k_t6', cat: 'text', text: '今天有什么开心的小事吗？', enabled: true },
 { id: 'k_t7', cat: 'text', text: '如果我现在就在你身边，你想做什么？', enabled: true },
 { id: 'k_a1', cat: 'action', type: 'action', text: '摸摸头', enabled: true,
-taToMe: '他 想摸摸你的头', meToTa: '他 想让你摸摸 他 的头',
+taToMe: '他想摸摸你的头', meToTa: '他想让你摸摸他的头',
 accept: ['乖，过来', '嗯，轻轻的', '闭上眼，我轻一点'],
 reject: ['哼，不要', '下次吧', '现在不行，等下'] },
 { id: 'k_a2', cat: 'action', type: 'action', text: '拍拍肩', enabled: true,
-taToMe: '他 想拍拍你的肩', meToTa: '他 想让你拍拍 他 的肩',
+taToMe: '他想拍拍你的肩', meToTa: '他想让你拍拍他的肩',
 accept: ['嗯，辛苦了', '正好有点累', '被你拍到了'],
 reject: ['别拍，痒', '不要，自己来', '肩膀没空'] },
 { id: 'k_a3', cat: 'action', type: 'action', text: '揉揉头', enabled: true,
-taToMe: '他 想揉揉你的头发', meToTa: '他 想让你揉揉 他 的头发',
+taToMe: '他想揉揉你的头发', meToTa: '他想让你揉揉他的头发',
 accept: ['嗯，舒服', '再来一下', '头发都被你揉乱了'],
 reject: ['发型会乱', '不要揉', '刚整理好的'] },
 { id: 'k_a4', cat: 'action', type: 'action', text: '抱抱', enabled: true,
-taToMe: '他 想抱抱你', meToTa: '他 想让你抱抱 他',
+taToMe: '他想抱抱你', meToTa: '他想让你抱抱他',
 accept: ['过来，抱紧', '嗯，再久一点', '被你抱住了'],
 reject: ['现在不方便', '等下再抱', '人多，不要'] },
 { id: 'k_a5', cat: 'action', type: 'action', text: '牵手', enabled: true,
-taToMe: '他 想牵你的手', meToTa: '他 想让你牵 他 的手',
+taToMe: '他想牵你的手', meToTa: '他想让你牵他的手',
 accept: ['嗯，牵着', '手伸过来', '一直牵着好不好'],
 reject: ['手心出汗了', '不要，痒', '现在没空'] },
 { id: 'k_a6', cat: 'action', type: 'action', text: '贴贴', enabled: true,
-taToMe: '他 想跟你贴贴', meToTa: '他 想让你跟 他 贴贴',
+taToMe: '他想跟你贴贴', meToTa: '他想让你跟他贴贴',
 accept: ['嗯，贴着', '脸凑过来', '贴着好暖'],
 reject: ['脸会红', '不要贴', '太近了'] }
 ];
 const CATS_CKQ = [['single', '单选查岗'], ['text', '文字查岗'], ['action', '互动动作']];
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function toast(t) { if (typeof window.toast === 'function') window.toast(t); }
+const PT = window.presetTextEdit;
+function ckEditKey(cat) { return 'ckq:' + (cat || 'daily'); }
+function CK_OPT_KEY(q, oi) { return 'ckqopt:' + (q.id || '') + ':' + oi; }
+const CK_ACT_FIELDS = [['taToMe', 'ckqa:'], ['meToTa', 'ckqb:']];
+function ckMiniPen(attr, val, title) {
+if (!PT) return '';
+return '<button type="button" class="preset-edit-btn preset-edit-mini" ' + attr + '="' + val + '" title="' + title + '" aria-label="' + title + '">' +
+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+}
+function optMiniPen(idx, oi) { return ckMiniPen('data-opt-ck-idx', idx + '|' + oi, '编辑这个选项'); }
+function respMiniPen(idx, field) { return ckMiniPen('data-resp-ck-idx', idx + '|' + field, field === 'accept' ? '编辑「好呀」回应句' : '编辑「不要」回应句'); }
+function ckApplyEdits(d) {
+if (!PT || !d || !Array.isArray(d.questions)) return;
+const plan = [];
+d.questions.forEach(function (q) {
+if (!q || q.isPreset !== true || !q.text) return;
+const base = q.text; // 只拿读盘时的原文案去匹配，避免链式改名自己套自己
+let next = base;
+PT.apply(ckEditKey(q.cat), function (nv, orig) { if (orig === base) next = nv; });
+const act = [];
+if (Array.isArray(q.options)) {
+q.options.forEach(function (o, oi) {
+if (!o || typeof o.t !== 'string') return;
+const ok = CK_OPT_KEY(q, oi);
+const cur = o.t;
+let nv2 = cur;
+PT.apply(ok, function (v, orig) { if (orig === cur) nv2 = v; });
+if (nv2 !== cur) act.push(['option', oi, nv2]);
+});
+}
+if (q.type === 'action') {
+CK_ACT_FIELDS.forEach(function (pair) {
+const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
+const cur = q[field];
+if (typeof cur !== 'string') return;
+let nv2 = cur;
+PT.apply(pfx, function (v, orig) { if (orig === cur) nv2 = v; });
+if (nv2 !== cur) act.push([field, nv2]);
+});
+[['accept', 'ckqacc:'], ['reject', 'ckqrej:']].forEach(function (pair) {
+const field = pair[0], pfx = pair[1] + (q.id || '');
+if (!Array.isArray(q[field])) return;
+const block = q[field].join('\n');
+let nv3 = block;
+PT.apply(pfx, function (v, orig) { if (orig === block) nv3 = v; });
+if (nv3 !== block) act.push(['lines', field, nv3]);
+});
+}
+if (next !== base || act.length) plan.push([q, next, act]);
+});
+plan.forEach(function (p) {
+p[0].text = p[1];
+p[2].forEach(function (a) {
+if (a[0] === 'option') {
+if (p[0].options && p[0].options[a[1]]) p[0].options[a[1]].t = a[2];
+} else if (a[0] === 'lines') {
+p[0][a[1]] = a[2].split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+} else {
+p[0][a[0]] = a[1];
+}
+});
+});
+}
+function ckStoreData(d) {
+if (!PT || !d || !Array.isArray(d.questions)) return d;
+const qs = d.questions.map(function (q) {
+if (!q || q.isPreset !== true || !q.text) return q;
+const orig = PT.original(ckEditKey(q.cat), q.text);
+let out = orig === q.text ? q : Object.assign({}, q, { text: orig });
+if (Array.isArray(q.options)) {
+let optChanged = false;
+const opts = q.options.map(function (o, oi) {
+if (!o || typeof o.t !== 'string') return o;
+const o2 = PT.original(CK_OPT_KEY(q, oi), o.t);
+if (o2 === o.t) return o;
+optChanged = true;
+return Object.assign({}, o, { t: o2 });
+});
+if (optChanged) out = Object.assign({}, out, { options: opts });
+}
+if (q.type === 'action') {
+CK_ACT_FIELDS.forEach(function (pair) {
+const field = pair[0], pfx = pair[1] + (q.cat || 'daily');
+const cur = q[field];
+if (typeof cur !== 'string') return;
+const o2 = PT.original(pfx, cur);
+if (o2 !== cur) out = Object.assign({}, out, { [field]: o2 });
+});
+[['accept', 'ckqacc:'], ['reject', 'ckqrej:']].forEach(function (pair) {
+const field = pair[0], pfx = pair[1] + (q.id || '');
+if (!Array.isArray(q[field])) return;
+const block = q[field].join('\n');
+const o2 = PT.original(pfx, block);
+if (o2 === block) return;
+out = Object.assign({}, out, { [field]: o2.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) });
+});
+}
+return out;
+});
+return Object.assign({}, d, { questions: qs });
+}
 function cardPopupBusy() {
 return ['modal-mask', 'tc-mask', 'qa-mask'].some(function (id) {
 const el = document.getElementById(id);
@@ -112,6 +213,15 @@ if (ci && document.activeElement === ci) return true;
 const ae = document.activeElement;
 return !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
 }
+function ckCopyQuestion(q) {
+const nq = Object.assign({}, q);
+if (Array.isArray(q.options)) nq.options = q.options.map(function (o) {
+return Object.assign({}, o, { reply: Array.isArray(o.reply) ? o.reply.slice() : o.reply });
+});
+if (Array.isArray(q.accept)) nq.accept = q.accept.slice();
+if (Array.isArray(q.reject)) nq.reject = q.reject.slice();
+return nq;
+}
 function ckMerge(d) {
 const ids = {};
 (d.questions || []).forEach(q => { if (q && q.id) ids[q.id] = true; });
@@ -121,7 +231,7 @@ merged.forEach(id => { if (id) mergedSet[id] = true; });
 let changed = false;
 DEFAULT_QUESTIONS.forEach(q => {
 if (!mergedSet[q.id] && !ids[q.id]) {
-const nq = Object.assign({}, q);
+const nq = ckCopyQuestion(q);
 nq.isPreset = true;
 d.questions.push(nq);
 changed = true;
@@ -151,7 +261,7 @@ if (d.settings.useDefault === undefined) d.settings.useDefault = true;
 if (!Array.isArray(d.questions) || !d.questions.length) {
 const isNew = !store.get(KEY);
 d.questions = DEFAULT_QUESTIONS.map(q => {
-const nq = Object.assign({}, q);
+const nq = ckCopyQuestion(q);
 nq.isPreset = true;
 return nq;
 });
@@ -161,6 +271,7 @@ if (!isNew && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } cat
 if (ckMerge(d) && !ckAutoHold(KEY)) { try { store.set(KEY, JSON.stringify(d)); } catch (e) {} }
 }
 if (!Array.isArray(d.groups)) d.groups = [];
+ckApplyEdits(d); // 覆盖只在返回的内存数据上生效（上面的写盘仍用原文）
 return d;
 }
 function ckLoadFrom(s) {
@@ -173,7 +284,7 @@ if (d.settings.useDefault === undefined) d.settings.useDefault = true;
 if (!Array.isArray(d.questions) || !d.questions.length) {
 const isNew = !s.get(KEY);
 d.questions = DEFAULT_QUESTIONS.map(q => {
-const nq = Object.assign({}, q);
+const nq = ckCopyQuestion(q);
 nq.isPreset = true;
 return nq;
 });
@@ -183,11 +294,12 @@ if (!isNew && !ckAutoHoldIn(s, KEY)) { try { s.set(KEY, JSON.stringify(d)); } ca
 if (ckMerge(d) && !ckAutoHoldIn(s, KEY)) { try { s.set(KEY, JSON.stringify(d)); } catch (e) {} }
 }
 if (!Array.isArray(d.groups)) d.groups = [];
+ckApplyEdits(d); // 跨桌面抽题也按新文案；目标桌面 store 仍留原文
 return d;
 }
 function ckSave(d) {
 if (window.xyBigWriteBlocked && window.xyBigWriteBlocked(store, KEY, '查岗问题库')) return false;
-try { store.set(KEY, JSON.stringify(d)); } catch (e) {}
+try { store.set(KEY, JSON.stringify(ckStoreData(d))); } catch (e) {}
 return true;
 }
 function pgCatOff(ns, cat) { return !!(window.presetGroup && window.presetGroup.isOff(ns, cat || 'daily')); }
@@ -237,7 +349,7 @@ preset = pool[Math.floor(Math.random() * pool.length)];
 }
 if (window.chatAskReply) window.chatAskReply(msgIdx, answer, preset);
 }, {
-staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('他 想跟你互动：' + qText) : ('他 问你：' + qText)),
+staticText: isDeskCard ? (deskCard.hint + qText) : (isAction ? ('他想跟你互动：' + qText) : ('他问你：' + qText)),
 pills: isSingle ? optList.map(function (o) { return { label: o.t, value: o.t }; }) : null,
 pill: isSingle ? affirmOptValue(optList) : undefined,
 noInput: isSingle,
@@ -247,10 +359,10 @@ pillSubmit: true
 window.buildDeskCkCard = function (q) {
 const dir = Math.random() < 0.5 ? 'toMe' : 'meToTa';
 if (dir === 'meToTa') {
-return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗 他。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
+return { deskCkDir: dir, text: '要不要来查查我呀？', hint: '联系人想让你来查岗他。', opts: [{ t: '好呀', reply: null }, { t: '不要', reply: null }], askType: 'single' };
 }
 const isSingle = q && q.type === 'single' && Array.isArray(q.options) && q.options.length;
-return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: '他 来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
+return { deskCkDir: dir, text: (q && q.text) ? q.text : '在干嘛呢？想你了。', hint: '他来查岗了。', opts: isSingle ? q.options : null, askType: isSingle ? 'single' : 'text' };
 };
 function pushCkQuestion(cfg, forceQ, opts) {
 if (!window.chatAddSystem) return false;
@@ -263,7 +375,7 @@ const isDeskCk = !!(opts && opts.deskCk);
 const deskCkCard = isDeskCk ? window.buildDeskCkCard(q) : null;
 const deskCkDir = deskCkCard ? deskCkCard.deskCkDir : null;
 const isAction = !isDeskCk && q.type === 'action';
-let actionOpts = null, actionText = q.text, actionHint = '他 来查岗了。', askOpts = null, askType;
+let actionOpts = null, actionText = q.text, actionHint = '他来查岗了。', askOpts = null, askType;
 if (isDeskCk) {
 actionText = deskCkCard.text;
 actionHint = deskCkCard.hint;
@@ -272,7 +384,7 @@ askType = deskCkCard.askType;
 } else if (isAction) {
 const dir = Math.random() < 0.5 ? 'ta-to-me' : 'me-to-ta';
 actionText = (dir === 'me-to-ta' ? (q.meToTa || q.text) : (q.taToMe || q.text));
-actionHint = '他 想跟你互动。';
+actionHint = '他想跟你互动。';
 const acc = Array.isArray(q.accept) && q.accept.length ? q.accept : ['乖，过来。'];
 const rej = Array.isArray(q.reject) && q.reject.length ? q.reject : ['下次吧。'];
 actionOpts = [{ t: '好呀', reply: acc }, { t: '不要', reply: rej }];
@@ -384,14 +496,31 @@ const idx = d.questions.indexOf(q);
 const isSingle = q.type === 'single' && Array.isArray(q.options) && q.options.length;
 const isAction = q.type === 'action';
 const tag = isAction ? '互动动作' : (isSingle ? '单选·' + q.options.length + '选项' : '文字');
+const actEdited = !!(PT && isAction && (
+PT.isEdited('ckqa:' + (q.cat || 'daily'), q.taToMe || '') ||
+PT.isEdited('ckqb:' + (q.cat || 'daily'), q.meToTa || '') ||
+PT.isEdited('ckqacc:' + (q.id || ''), (q.accept || []).join('\n')) ||
+PT.isEdited('ckqrej:' + (q.id || ''), (q.reject || []).join('\n'))
+));
+const optEdited = !!(PT && (q.options || []).some((o, oi) => o && typeof o.t === 'string' && PT.isEdited(CK_OPT_KEY(q, oi), o.t)));
+const edited = !!(PT && (PT.isEdited(ckEditKey(q.cat), q.text) || actEdited || optEdited));
 html += '<div class="ta-row' + (!useDefault ? ' off' : '') + '">' +
 '<label class="toggle"><input type="checkbox"' + (q.enabled !== false ? ' checked' : '') + ' data-idx="' + idx + '"><span class="tk"></span></label>' +
-'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known">系统</span></span>' +
+'<span class="ta-txt">' + esc(q.text) + ' <span class="tc-known">' + tag + '</span> <span class="tc-known' + (edited ? ' edited' : '') + '">' + (edited ? '已改' : '系统') + '</span></span>' +
+(PT ? '<button type="button" class="preset-edit-btn" data-idx="' + idx + '" title="编辑这张系统字卡" aria-label="编辑这张系统字卡"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>' : '') +
 '</div>';
 if (isSingle) {
-html += '<div class="tc-qopts">选项：' + q.options.map(o => esc(o.t)).join(' / ') + '</div>';
+html += '<div class="tc-qopts">选项：' + q.options.map((o, oi) => esc(o.t) + optMiniPen(idx, oi)).join(' / ') + '</div>';
 } else if (isAction) {
-html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + ' / 我对他：' + esc(q.meToTa || q.text) + '</div>';
+const miniPen = function (field) {
+if (!PT) return '';
+return '<button type="button" class="preset-edit-btn preset-edit-mini" data-act-idx="' + idx + '" data-act-field="' + field +
+'" title="编辑这句系统文案" aria-label="编辑这句系统文案"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
+};
+html += '<div class="tc-qopts">他对我：' + esc(q.taToMe || q.text) + miniPen('taToMe') +
+' / 我对他：' + esc(q.meToTa || q.text) + miniPen('meToTa') + '</div>';
+html += '<div class="tc-qopts">好呀：' + (q.accept || []).map(esc).join(' / ') + respMiniPen(idx, 'accept') +
+' / 不要：' + (q.reject || []).map(esc).join(' / ') + respMiniPen(idx, 'reject') + '</div>';
 }
 });
 container.innerHTML = html;
@@ -405,6 +534,77 @@ const d2 = ckLoad();
 const q = d2.questions[Number(cb.dataset.idx)];
 if (q) q.enabled = cb.checked;
 ckSave(d2);
+});
+});
+container.querySelectorAll('.preset-edit-btn[data-idx]').forEach(btn => {
+btn.addEventListener('click', () => {
+const d2 = ckLoad();
+const q = d2.questions[Number(btn.dataset.idx)];
+if (!q || q.isPreset !== true) return;
+PT.open({
+key: ckEditKey(q.cat),
+shown: q.text,
+exists: function (next) {
+return d2.questions.some(function (x) {
+return x && x !== q && (x.cat || 'daily') === (q.cat || 'daily') && x.text === next;
+});
+},
+onChanged: function () { renderCkSysInto(container, search); }
+});
+});
+});
+container.querySelectorAll('.preset-edit-mini[data-opt-ck-idx]').forEach(btn => {
+btn.addEventListener('click', () => {
+const d2 = ckLoad();
+const pair = String(btn.dataset.optCkIdx || '').split('|');
+const q = d2.questions[Number(pair[0])];
+const oi = Number(pair[1]);
+if (!q || q.isPreset !== true || !Array.isArray(q.options) || !q.options[oi]) return;
+PT.open({
+key: CK_OPT_KEY(q, oi),
+shown: q.options[oi].t || '',
+exists: function (next) {
+return q.options.some(function (o, j) { return j !== oi && o && o.t === next; });
+},
+onChanged: function () { renderCkSysInto(container, search); }
+});
+});
+});
+container.querySelectorAll('.preset-edit-mini[data-resp-ck-idx]').forEach(btn => {
+btn.addEventListener('click', () => {
+const d2 = ckLoad();
+const pair = String(btn.dataset.respCkIdx || '').split('|');
+const q = d2.questions[Number(pair[0])];
+const field = pair[1];
+if (!q || q.isPreset !== true || !Array.isArray(q[field])) return;
+PT.open({
+key: (field === 'accept' ? 'ckqacc:' : 'ckqrej:') + (q.id || ''),
+shown: q[field].join('\n'),
+multiline: true,
+rows: 5,
+title: field === 'accept' ? '编辑「好呀」回应句' : '编辑「不要」回应句',
+onChanged: function () { renderCkSysInto(container, search); }
+});
+});
+});
+container.querySelectorAll('.preset-edit-mini[data-act-idx]').forEach(btn => {
+btn.addEventListener('click', () => {
+const d2 = ckLoad();
+const q = d2.questions[Number(btn.dataset.actIdx)];
+const field = btn.dataset.actField;
+if (!q || q.isPreset !== true || !field) return;
+const pfx = (field === 'taToMe' ? 'ckqa:' : 'ckqb:') + (q.cat || 'daily');
+PT.open({
+key: pfx,
+shown: q[field] || '',
+title: field === 'taToMe' ? '编辑「他对我」文案' : '编辑「我对他」文案',
+exists: function (next) {
+return d2.questions.some(function (x) {
+return x && x !== q && x.type === 'action' && (x.cat || 'daily') === (q.cat || 'daily') && x[field] === next;
+});
+},
+onChanged: function () { renderCkSysInto(container, search); }
+});
 });
 });
 }
@@ -431,7 +631,7 @@ return '<div class="ta-add">' +
 '<input id="ckq-new-' + blockKey + '" type="text" placeholder="' + (isActionCat ? '动作名，如 摸摸头' : '添加问题…') + '">' +
 '<button class="ta-add-btn" data-key="' + blockKey + '" data-cat="' + (cat || 'text') + '" data-grp="' + (grp || '') + '">添加</button>' +
 (isActionCat
-? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（他对我 / 我对他），如&#10;他 想摸摸你的头&#10;他 想让你摸摸 他 的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
+? '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="4" placeholder="两行文案（他对我 / 我对他），如&#10;他想摸摸你的头&#10;他想让你摸摸他的头&#10;——下面再写回应，accept~回应;回应 换行 reject~回应;回应"></textarea>'
 : '<textarea id="ckq-opts-' + blockKey + '" class="ta-opts tc-input" rows="3" placeholder="每行一个选项。可写 选项~他回应；多条回应用 ; 分隔，如 在想你~就知道。;嗯，这次信你。" hidden></textarea>') +
 '</div>';
 }
@@ -527,8 +727,8 @@ q.options = opts;
 } else if (type === 'action') {
 const optsEl = document.getElementById('ckq-opts-' + key);
 const lines = (optsEl ? optsEl.value : '').split(/\r?\n/).map(s => s.trim());
-q.taToMe = lines[0] || ('他 想' + v + '你');
-q.meToTa = lines[1] || ('他 想让你' + v + ' 他');
+q.taToMe = lines[0] || ('他想' + v + '你');
+q.meToTa = lines[1] || ('他想让你' + v + ' 他');
 const acc = [], rej = [];
 for (let i = 2; i < lines.length; i++) {
 const ln = lines[i]; if (!ln) continue;
@@ -626,6 +826,10 @@ if (ckTab === 'sys') renderCkSysInto(document.getElementById('ckq-sys-cats'), ck
 else renderCkMineInto(document.getElementById('ckq-mine-cats'), ckSearch);
 });
 }
+if (PT) PT.onRebuild(function () {
+if (ckTab !== 'sys') return;
+renderCkSysInto(document.getElementById('ckq-sys-cats'), ckSearch);
+});
 function renderCkSettings() {
 const el = document.getElementById('ckq-default');
 if (el) el.checked = (ckLoad().settings || {}).useDefault !== false;
@@ -657,7 +861,7 @@ toast('已导入 ' + lines.length + ' 个文字查岗问题');
 }
 const nowBtn = document.getElementById('ckq-now');
 if (nowBtn) nowBtn.addEventListener('click', () => {
-if (window.triggerCkQuestion()) toast('他 在聊天里来查岗了');
+if (window.triggerCkQuestion()) toast('他在聊天里来查岗了');
 });
 if (page) {
 const showPage = (tab) => {
@@ -710,7 +914,7 @@ if (!Array.isArray(idbData.questions) || !idbData.questions.length) return;
 const local = ckLoad();
 if (idbData.questions.length > (Array.isArray(local.questions) ? local.questions.length : 0)) {
 ckMerge(idbData);
-try { store.set(KEY, JSON.stringify(idbData)); } catch (e) {}
+try { store.set(KEY, JSON.stringify(ckStoreData(idbData))); } catch (e) {}
 try { window.refreshCkCardCounts(); } catch (e) {}
 }
 } catch (e) {}

@@ -8,6 +8,22 @@ if (!body) return;
 const chatLoadingEl = document.getElementById('chat-loading'); // v3.26.x：聊天记录加载进度条
 const uid = window.activePrefix();
 const store = window.activeStore();
+// #1618：心意币文案里的品牌名——与状态栏左上角可自定义文字同步（默认 Mochi）
+function coinBrandNow() {
+try { if (window.mochiCoinBrand) return window.mochiCoinBrand(); } catch (e) {}
+return 'Mochi';
+}
+// #1618：品牌名改了以后，已渲染的「向 TA 申请心意币」回执卡就地刷新（不必整窗重建）
+window.mochiRefreshCoinBrand = function () {
+try {
+const nodes = body.querySelectorAll('.msg-poke[data-askcoin="1"]');
+for (let i = 0; i < nodes.length; i++) {
+const span = nodes[i].querySelector('span');
+if (!span) continue;
+span.textContent = '🪙 ' + chatPartnerName() + ' 向 ' + coinBrandNow() + ' 申请了心意币 ¥' + (Number(nodes[i].dataset.askFen || 0) / 100).toFixed(2);
+}
+} catch (e) {}
+};
 function closeIme() {
 try {
 const ae = document.activeElement;
@@ -1766,6 +1782,8 @@ if (m.inviteContent) s += '|I' + m.inviteContent;
 if (m.askQuestion) s += '|Q' + m.askQuestion;
 if (m.askFen != null) s += '|K' + m.askFen;
 if (m.dishName) s += '|D' + m.dishName;
+if (m.lyricSong) s += '|YS' + m.lyricSong;
+if (m.lyricArtist) s += '|YA' + m.lyricArtist;
 } catch (e) {}
 return s;
 }
@@ -2619,8 +2637,8 @@ function refreshChatAvatars() {
 avatarBatchCache = null;
 fillAvatar('chat-user-av', 'cs-avatar-user');
 fillAvatar('chat-partner-av', 'cs-avatar-partner');
-document.querySelectorAll('.msg-in .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-partner'));
-document.querySelectorAll('.msg-out .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-user'));
+document.querySelectorAll('.msg-in .msg-av, .msg-ask-in .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-partner'));
+document.querySelectorAll('.msg-out .msg-av, .msg-ask-out .msg-av').forEach(av => fillAvatar(av, 'cs-avatar-user'));
 }
 window.refreshChatAvatars = refreshChatAvatars;
 fillAvatar('chat-user-av', 'cs-avatar-user');
@@ -2900,6 +2918,7 @@ return chatScrollMax() - cb.scrollTop <= 8;
 // 气泡永远落在视口下方）；TA 自发消息的 #162/#378/#416 不打扰契约零改动。
 let chatUserFollowScroll = false;
 function maybeScrollChatBottom(side) {
+if (bulkPaint) return; // #1656：整窗重画既有消息＝不是新消息到达，绝不据此贴底或置 pendingOutScroll
 if (batchRendering) {
 if (side === 'out') pendingOutScroll = true;
 return; // #492 follow 标记批量渲染期不消费，留待真实追加时生效
@@ -3739,7 +3758,7 @@ return str;
 }
 // FIX 2026-09-15 #490 引用预览条与气泡同轨显示（「联系人发的消息，引用后看到的和引用的不一致」
 // EC-PAD01 SE Chrome 等多机型同报）：气泡正文渲染统一过 renderMsg 的 T()——in 侧走 taFit
-// 称呼替换（字卡库以 ta/TA/他 作中性人称占位，默认字卡 110+ 处；联系人性别设为他/她后
+// 称呼替换（字卡库以 ta/TA/他作中性人称占位，默认字卡 110+ 处；联系人性别设为他/她后
 // 气泡全是替换词）、双侧回填 {ta}/{me} 昵称占位符；引用预览条此前直出存储原文＝气泡显示
 // 「她想你了」、预览还是「ta想你了」两轨不一致；发送后引用块 quoteHtml 又走 taFit，预览
 // 与落定引用块也对不上。此助手与 T() 同序同规则，仅作显示层替换、不改存储原文
@@ -4021,28 +4040,35 @@ wrap.appendChild(b);
 } else {
 const quicks = (type === 'curious' ? (rec.curiousQuick || []) : []).filter(q => typeof q === 'string' && q);
 if (quicks.length) {
-const chips = document.createElement('div');
-chips.className = 'ip-chips';
+// 2026-10-26 P1：快捷选项一行一个；点一行直接发送（仍可在下方输入框改自定义答案）
+const list = document.createElement('div');
+list.className = 'ip-quick-list';
 quicks.forEach(q => {
 const c = document.createElement('button');
-c.className = 'ip-chip';
+c.type = 'button';
+c.className = 'ip-quick';
 c.textContent = q;
-c.addEventListener('click', () => { try { inp.value = q; inp.focus(); } catch (e) {} });
-chips.appendChild(c);
+c.addEventListener('click', () => { doSend(q); });
+list.appendChild(c);
 });
-wrap.appendChild(chips);
+wrap.appendChild(list);
 }
 const row = document.createElement('div');
 row.className = 'ip-row';
 const inp = document.createElement('input');
 inp.className = 'ip-input';
 inp.type = 'text';
-inp.placeholder = type === 'roast' ? (window.taFit ? window.taFit('回 他 一句…') : '回 他 一句…') : '输入你的回答…';
+inp.placeholder = type === 'roast' ? (window.taFit ? window.taFit('回他一句…') : '回他一句…') : '输入你的回答…';
 const send = document.createElement('button');
+send.type = 'button';
 send.className = 'ip-send';
-send.textContent = type === 'roast' ? (window.taFit ? window.taFit('回他') : '回他') : '回答';
-const doSend = () => {
-const v = (inp.value || '').trim();
+// 2026-10-26 P2：回答键做成和聊天发送键同款（38px 圆 + 纸飞机，颜色跟随发送键设置）
+const sendLabel = type === 'roast' ? (window.taFit ? window.taFit('回他') : '回他') : '回答';
+send.setAttribute('aria-label', sendLabel);
+send.setAttribute('title', sendLabel);
+send.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
+const doSend = (rawVal) => {
+const v = (rawVal != null ? String(rawVal) : (inp.value || '')).trim();
 if (!v) return;
 // FIX 2026-09-30 #1462：提交前先收键盘（口径同 #512 askDismissIme／#542 弹窗 close——blur 先行）。
 // 就地作答框（.ip-input，安卓已转 .ce-box）此刻持有焦点，随后 chatAskReply/chatCuriousReply/
@@ -4068,14 +4094,14 @@ window.chatRoastReply(idx, v, reply);
 } else if (type === 'ask' && window.chatAskReply) {
 const defs = ['收到你的回答。', '好呀，我知道了。', '你这么说，我记住了。'];
 const pool = window.getInteractPool ? window.getInteractPool('询问·回应', defs) : defs;
-// FIX 2026-09-17 #648 与吐槽/好奇分支同款走 pickAskCardReply（预设池媒体守卫）——
+// FIX 2026-09-17 #648 与调侃/好奇分支同款走 pickAskCardReply（预设池媒体守卫）——
 // 原裸抽 pool[random] 会把功能池里混入的媒体卡原样发进 rec.askReply＝互动卡直出令牌串
 window.chatAskReply(idx, v, (window.pickAskCardReply ? window.pickAskCardReply(pool) : pool[Math.floor(Math.random() * pool.length)]));
 }
 if (window.logFish) window.logFish();
 delete inplaceDrafts[idx];
 };
-send.addEventListener('click', doSend);
+send.addEventListener('click', () => doSend());
 inp.addEventListener('keydown', (e) => {
 if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); doSend(); }
 });
@@ -4096,40 +4122,6 @@ if (fi) setTimeout(() => { try { fi.focus(); } catch (e) {} }, 60);
 return true;
 }
 if (body) {
-let rpPressTimer = null;
-let rpPressSuppressClick = false;
-body.addEventListener('pointerdown', (e) => {
-const rpCard = e.target.closest('.msg-rp-card');
-if (!rpCard) return;
-const rpItem = rpCard.closest('.msg-rp');
-if (!rpItem || rpItem.dataset.idx === undefined) return;
-const rpShownDEl = rpItem.querySelector('.msg-rp-status');
-const rpShownD = rpShownDEl ? rpShownDEl.textContent : '';
-const rpHitD = msgRecFromEl(rpItem, function (m) { return rpStatusText(m) === rpShownD; }); // #1477：下标快路径＋data-mk 身份校正；同身份多份取与显示一致那份
-if (!rpHitD) return;
-const rpRec = rpHitD.rec;
-if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return;
-rpPressTimer = setTimeout(() => {
-rpPressTimer = null;
-rpPressSuppressClick = true;
-if (window.openModal) {
-window.openModal('退回这个红包？', '', () => {
-rpRec.rpStatus = 'returned';
-const w = rpWalletGet();
-w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
-rpWalletSet(w);
-saveMsgsNow();
-if (!rpPatchStatusInPlace(msgs.indexOf(rpRec))) renderWindow(true, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
-setTimeout(() => addIn('你退回了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
-}, { okText: '退回', cancelText: '取消' });
-}
-}, 500);
-});
-const rpClearPress = () => { if (rpPressTimer) { clearTimeout(rpPressTimer); rpPressTimer = null; } };
-body.addEventListener('pointerup', rpClearPress);
-body.addEventListener('pointerleave', rpClearPress);
-body.addEventListener('pointercancel', rpClearPress);
 body.addEventListener('click', (e) => {
 // #1005 问卷卡也进「点卡片浮现收藏」这一套：守卫必须认得 .msg-survey-card，否则点问卷卡时
 // 会先被这里把它自己的 .show-fav 抹掉再补上（切不成开关）；点卡片外也要能把它的心形收起来。
@@ -4142,7 +4134,20 @@ e.stopPropagation();
 // v3.28.x：心形不只挂在 .msg-ask 家族（红包/送花/礼物/佳肴是 .msg-rp/.msg-flower/.msg-gift），
 // 改为按最近的 data-idx 容器定位，保证所有带心形的互动卡片都能收藏
 const fItem = favBtn.closest('[data-idx]');
-if (fItem && fItem.dataset.idx !== undefined) window.favCardFromMsg(Number(fItem.dataset.idx));
+if (fItem && fItem.dataset.idx !== undefined) {
+const fIdx = Number(fItem.dataset.idx);
+const added = window.favCardFromMsg(fIdx);
+// 2026-10-26：已收藏状态常红（含原本已收藏），不再只在按下的瞬间红一下
+try {
+const fRec = msgs[fIdx];
+if (added || (fRec && favCardAlready(fRec))) {
+favBtn.classList.add('is-fav');
+favBtn.setAttribute('aria-pressed', 'true');
+const tx = favBtn.querySelector('.msg-fav-heart-txt');
+if (tx) tx.textContent = '已收藏';
+}
+} catch (eFav) {}
+}
 return;
 }
 // #985：礼物卡的【领取】与【回复】——两条都只对「联系人送我的礼物」出现（giftSelf 的 TA 自买卡
@@ -4184,7 +4189,6 @@ return;
 }
 const rpCard = e.target.closest('.msg-rp-card');
 if (rpCard) {
-if (rpPressSuppressClick) { rpPressSuppressClick = false; return; }
 e.stopPropagation();
 const rpItem = rpCard.closest('.msg-rp');
 if (!rpItem || rpItem.dataset.idx === undefined) return;
@@ -4192,27 +4196,8 @@ const rpShownEl = rpItem.querySelector('.msg-rp-status');
 const rpShown = rpShownEl ? rpShownEl.textContent : '';
 const rpHit = msgRecFromEl(rpItem, function (m) { return rpStatusText(m) === rpShown; }); // #1477：旧下标会把同屏别的消息当成这张卡；同身份多份时取「与卡片显示一致」那份
 if (!rpHit) return;
-const rpIdx = rpHit.idx;
-const rpRec = rpHit.rec;
-if (!rpRec || rpRec.special !== 'redpacket') return;
-if ((rpRec.rpStatus || 'pending') !== 'pending') return; // #1477：与卡片状态文案同口径（falsy＝待领取）
-if (rpRec.side === 'out') { toast(window.taFit ? window.taFit('等待 他 领取') : '等待 他 领取'); return; } // #1477：与「我 发出」渲染同侧判据（side 缺失的历史卡＝联系人发出，可领）
-rpRec.rpStatus = 'received';
-rpRec.rpOpenedAt = Date.now();
-const wallet = rpWalletGet();
-wallet.myBalance += Math.round((rpRec.rpAmount || 0) * 100);
-rpWalletSet(wallet);
-saveMsgsNow();
-const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
-// FIX 2026-09-15 #517 用户要求：领取联系人发来的红包不再弹黑色提示浮层（#cc-toast 黑底白字，见
-// chat-pages.css 的 #cc-toast / chat.js 的 toast()）。领取反馈已有两处、信息零丢失——①卡片自身状态
-// 就地转「已领取」（rpPatchStatusInPlace，不重建窗口）②聊天里 poke 留痕「你领取了红包（心意币 ¥x）」。
-// 黑色浮层只是重复打扰。勿恢复：原为 toast('已领取' + amtTxt);
-// 注：本条上方「等待 TA 领取」的 toast 是无效操作提示（点自己发出的未领红包），语义不同，保留。
-if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-setTimeout(() => addIn('你领取了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(400, 1000));
-// v3.29.x #807：红包领后捎一句话（我领 TA 的红包方向）——等 poke 留痕落地后再掷概率，别抢在留痕前
-setTimeout(() => rpCollectFeedback('in'), randInt(1100, 2200));
+// 2026-10-26：点整卡只开拆红包小窗，领取/拒收都在窗里做
+if (rpHit.rec && rpHit.rec.special === 'redpacket') openRpOpen(rpHit.rec, rpHit.idx);
 return;
 }
 if (e.target.closest('.msg-inplace')) return;
@@ -4221,12 +4206,8 @@ if (e.target.closest('.msg-inplace')) return;
 const surveyCard = e.target.closest('.msg-survey-card');
 if (surveyCard) {
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
-// #1005 收藏心形默认隐藏、点卡片才浮现（再点卡片外收起）——用户报「批量设置问卷后发送到聊天里
-// 的卡片直接显示了收藏的按钮」。与单题卡同一套 .show-fav 开关：先记本次点击前的状态，清掉别处
-// 已浮现的心形后按需加回本卡（＝点一下浮现、再点一下收起），随后照旧打开问卷详情。
-const sHadFav = surveyCard.classList.contains('show-fav');
-body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav, .msg-survey-card.show-fav').forEach(c => c.classList.remove('show-fav'));
-if (!sHadFav) surveyCard.classList.add('show-fav');
+// 2026-10-26 B 版：收藏心形常显；点整卡不再开详情/切收藏，只有「查看详情」按钮响应
+if (!e.target.closest('.msg-survey-detail-btn')) return;
 const sItem = surveyCard.closest('.msg-survey');
 const sIdx = sItem && sItem.dataset.idx !== undefined ? Number(sItem.dataset.idx) : -1;
 const sRec = sIdx >= 0 ? msgs[sIdx] : null;
@@ -4241,18 +4222,11 @@ if (!item || item.dataset.idx === undefined) return;
 const idx = Number(item.dataset.idx);
 const rec = msgs[idx];
 if (!rec) return;
-if (card.classList.contains('answered') && rec.special === 'ask' && (rec.askType === 'single' || rec.askType === 'multi') && Array.isArray(rec.askOptions) && rec.askOptions.length) {
-e.stopPropagation();
+// 2026-10-26：所有已答问卡不再点开——两行常驻 + 收藏心形直接显示，点卡不做任何事
+if (card.classList.contains('answered')) { e.stopPropagation(); return; }
 const hadFav = card.classList.contains('show-fav');
 body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav').forEach(c => c.classList.remove('show-fav'));
 if (!hadFav) card.classList.add('show-fav');
-expandCardInPlace(idx, 'ask');
-return;
-}
-const hadFav = card.classList.contains('show-fav');
-body.querySelectorAll('.msg-ask-card.show-fav, .msg-choose-card.show-fav').forEach(c => c.classList.remove('show-fav'));
-if (!hadFav) card.classList.add('show-fav');
-if (card.classList.contains('answered')) { e.stopPropagation(); return; } // 已作答：只切换收藏按钮
 e.stopPropagation(); // 不冒泡触发气泡操作菜单
 let type = null;
 if (rec.special === 'ask-choose') type = 'choose';
@@ -4260,6 +4234,8 @@ else if (rec.special === 'ask-curious') type = 'curious';
 else if (rec.special === 'ask-roast') type = 'roast';
 else if (rec.special === 'ask-card') type = 'ask';
 if (!type) return;
+// 2026-10-26：单选/多选/选一个的选项已经直接铺在卡上，别再弹旧的「点卡展开」区
+if ((type === 'ask' || type === 'choose') && card.querySelector('.msg-ask-opts')) return;
 const ok = expandCardInPlace(idx, type);
 if (!ok) {
 try {
@@ -4367,6 +4343,11 @@ cb.scrollTop = Math.min(cb.scrollTop, realMax); // 超界显式钳回；未超�
 }
 let batchRendering = false;
 let pendingOutScroll = false;
+// #1656：整窗重画（既有记录逐条重画）期间置真——renderMsg 每个分支末尾都会叫
+// maybeScrollChatBottom(rec.side)，旧实现把这当成「新到了一条 out 消息」把 pendingOutScroll
+// 置真，于是任何 keepScroll 的整窗重画（删一条消息、原位收口…）在换装时又被拽到最底，
+// 前面刚刚按高度差补回的阅读位置白算。重画既有记录 ≠ 新消息到达，一律不许动滚动位。
+let bulkPaint = false;
 let appendTarget = null;
 // FIX 2026-09-20 #878（用户报障「聊天里发送的礼物卡片没有任何动画缓冲突然出现很突兀，
 // 互动卡片都有这个问题」）：入场动画类原先在 renderMsg 建节点时加（原 4405 行位置），
@@ -4663,7 +4644,10 @@ return true;
 window.__chatPumpDiag = function () { return { flying: batchRendering, stalled: chatPumpStalled(), sinceMs: chatPump ? Date.now() - chatPump.at : -1, incidents: (window.__chatRenderIncidents || []).slice(-3) }; }; // 只观测不改写：供 verify 脚本与真机诊断回读
 function renderWindow(keepScroll, clampTop, forceSync) {
 
-  try { if (!keepScroll && window.__mochiPhase) window.__mochiPhase('chat-renderWindow'); } catch (e0) {}const len = msgs.length;
+  try { if (!keepScroll && window.__mochiPhase) window.__mochiPhase('chat-renderWindow'); } catch (e0) {}
+// #1655：渲染前把老聊天里「他的心愿 + 我送出」的重复卡并成一张（幂等；只在 msgs 变化后跑一次）
+try { dedupeWishGiftCards(); } catch (e0) {}
+const len = msgs.length;
 chatRebuilding = false; // #841e：新一轮渲染先复位空窗标志（被作废的旧分帧轮不得把进度条留在屏上）
 const prevTop = keepScroll ? body.scrollTop : 0;
 const prevHeight = keepScroll ? body.scrollHeight : 0;
@@ -4724,6 +4708,8 @@ const myToken = ++_rwToken;
 const myPump = { at: Date.now(), token: myToken, done: false, watch: 0, rescue: null }; // #1313：本轮的泵（进展时间戳＋接管入口＋是否已收装）
 // #1313：分帧链与「接管」共用同一份逐条画（判据与 #919a 一字不差；抛错的下标计入 threwIdx 而不是丢掉本轮）
 const paintRange = function (end) {
+bulkPaint = true; // #1656：整窗重画既有记录期间挂闸（见 maybeScrollChatBottom）
+try {
 for (; i < end; i++) {
 const _rm = msgs[i];
 if (!_rm || typeof _rm !== 'object') { skippedIdx.push(i); continue; } // #919a 记录位空洞/坏记录跳过不画：renderMsg(undefined) 抛 TypeError 打断整轮分帧构建（setTimeout 链断＝不换装不贴底、batchRendering 卡死，屏上停在窗口最旧的几十条、退出重进才恢复；用户设备 buildChunk→renderMsg「reading 'side'」实锤）
@@ -4737,6 +4723,7 @@ const m = renderMsg(_rm, i); // #1326：真实下标要在挂载之前落定，�
 m.dataset.idx = i; // 覆盖 renderMsg 内的 msgs.length-1（批量渲染时必须为真实下标）
 } catch (eThrow) { threwIdx.push(i); } // #1313：单条记录不许带走整轮构建（链断＝永久空白，见上面 #919a 那条真机实锤）
 }
+} finally { bulkPaint = false; }
 };
 const finishSwap = function () {
 if (myPump.done) return; // #1313：本轮已经收过装（正常跑完或看门狗接管），任何迟到的续链不得二次换装
@@ -4804,6 +4791,8 @@ chatPump = myPump; chatPumpArmWatch(myPump); // #1313：登记本轮的泵并排
 setTimeout(buildChunk, 0); // #718 分帧构建
 return;
 }
+bulkPaint = true; // #1656：同步整窗重画同样挂闸（重画既有 out 记录不得把视口拽到底）
+try {
 for (; i < len; i++) {
 const _rm = msgs[i];
 if (!_rm || typeof _rm !== 'object') { skippedIdx.push(i); continue; } // #919b 同 #919a：同步整窗路径也不得被单条空记录打断（异常一路上抛，调用方紧随的贴底/收尾整段跳过）
@@ -4817,6 +4806,7 @@ const m = renderMsg(_rm, i); // #1326：真实下标要在挂载之前落定，�
 m.dataset.idx = i; // 覆盖 renderMsg 内的 msgs.length-1（批量渲染时必须为真实下标）
 } catch (eThrow) { threwIdx.push(i); } // #1313：同步整窗路径同理——单条记录不许把异常抛给调用方（那会连贴底/撤进度条一起跳过，屏上停在被清空的状态）
 }
+} finally { bulkPaint = false; }
 finishSwap();
 }
 // FIX 2026-09-21 #951（用户报障：切换桌面联系人之后打开聊天页面「还是会闪屏一下然后恢复正常，
@@ -5820,30 +5810,32 @@ return rec ? { rec: rec, idx: _i } : null;
 // 题列表/状态/答案全部以快照字段持久化在消息记录上（surveyQs/surveyStatus/surveyAnswers），
 // 作答进度由 ta-ask.js 经 chatSyncSurveyCard 回写；渲染只读 rec 字段，不依赖问卷实时状态
 // （撤回问卷重置为草稿后，历史卡片仍保留最后一次快照，合理）。
+// 2026-10-26 B 版：问卷摘要气泡（只露前 2 题，N 题收进详情，收藏常驻，查看详情独立按钮）
 function surveyCardHtml(rec) {
 const qs = Array.isArray(rec.surveyQs) ? rec.surveyQs : [];
 const answers = Array.isArray(rec.surveyAnswers) ? rec.surveyAnswers : [];
 const done = rec.surveyStatus === 'done';
 const nDone = answers.filter(a => typeof a === 'string' && a.trim()).length;
+const showQs = qs.slice(0, 2);
+const moreN = Math.max(0, qs.length - showQs.length);
 let rows = '';
-qs.forEach((q, i) => {
+showQs.forEach((q, i) => {
 const a = answers[i] || '';
 rows += '<div class="msg-survey-item' + (a ? ' answered' : '') + '">' +
 '<div class="msg-survey-q">' + (i + 1) + '. ' + escTxt(q.text || '') + '</div>' +
-(Array.isArray(q.options) && q.options.length
-// #1415：多选题的答案是「A、B」整串——原来拿它去和单个选项比全文，多选题永远一个都不亮
-? '<div class="msg-survey-opts">' + q.options.map(o => '<span class="msg-survey-opt' + (window.mochiAnswerHits && window.mochiAnswerHits(o, a) ? ' sel' : '') + '">' + escTxt(o) + '</span>').join('') + '</div>'
-: '') +
 (a ? '<div class="msg-survey-a">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(a) : a) + '</div>' : '') +
 '</div>';
 });
-return '<div class="msg-survey-card' + (done ? ' done' : '') + '">' +
+const moreHtml = moreN > 0 ? '<div class="msg-survey-more">…还有 ' + moreN + ' 道题</div>' : '';
+return '<div class="msg-ask-card msg-survey-card' + (done ? ' done' : ' answered') + '">' +
 '<div class="msg-survey-head">你发出的问卷 · ' + qs.length + ' 题</div>' +
-'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + '</div>' +
-// #1005 底部提示行尾加一枚右向箭头＝「整张卡片可点」的暗示（提示文案本就写着「点击查看…」，
-// 心形改为点卡片才浮现后，卡片得自己把「能点」摆出来）；收藏心形默认隐藏，由 body click 的
-// surveyCard 分支加 .show-fav 浮现
-'<div class="msg-survey-tip">' + (done ? '已交卷 · 点击查看问卷详情' : '他 正在作答 · 已答 ' + nDone + '/' + qs.length + '，点击查看进度') + '<span class="msg-survey-chev">\u203A</span></div>' +
+'<div class="msg-survey-status">' + (done ? '已交卷' : (nDone > 0 ? '他作答中 · 已答 ' + nDone + '/' + qs.length : '等待他作答')) + '</div>' +
+'<div class="msg-survey-list">' + (rows || '<div class="msg-survey-item">（问卷内容缺失）</div>') + moreHtml + '</div>' +
+// 2026-10-26：查看详情独立小圆按钮，收藏心形常驻，整卡不再点出详情
+// v8.58.7：详情按钮改为与问卡同款小圆箭头（只留图标，aria-label 保留语义）
+'<div class="msg-survey-actions">' +
+'<button type="button" class="msg-survey-detail-btn" data-sv-detail="1" aria-label="' + (done ? '查看问卷详情' : '查看作答进度') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
+'</div>' +
 favHeartHtml(rec) +
 '</div>';
 }
@@ -5859,7 +5851,11 @@ r.surveyStatus = status;
 r.surveyAnswers = Array.isArray(answers) ? answers : [];
 saveMsgs();
 const el = body.querySelector('.msg-survey[data-idx="' + i + '"]');
-if (el) el.innerHTML = surveyCardHtml(r);
+if (el) {
+// 2026-10-26 B 版：行内已带头像/时间，重画必须连气泡骨架一起重建，不能只换卡面
+el.innerHTML = askBubbleHtml(r, surveyCardHtml(r));
+askBubbleFillAvatar(el, r);
+}
 return;
 }
 }
@@ -5893,6 +5889,69 @@ if (!rec || rec.special !== 'wish') return false;
 if (rec.wishSent) return false; // 卡片自己记着的既成事实，优先于任何实时推断
 return !window.giftTaWishHas || window.giftTaWishHas(rec.wishGiftId);
 }
+// ===== #1655 心愿兑现只留一张卡 =====
+// 用户反馈（2026-11-11 截图）：「他的心愿」+「我送出」两张同商品卡上下叠着，内容重复；
+// 口径：只留上面那张「他的心愿」，把「我送出 + 我的赠言 + 他的回应」都并进去。
+// 新礼物在 gift-shop 调 chatMergeWishGift 时就地并入；老聊天里的重复卡由 dedupeWishGiftCards
+// 在渲染前补做一次（幂等，按 giftId 把后出现的「我送出」礼物卡并入前面那张心愿卡并删除）。
+let wishDedupeSig = '';
+function mergeGiftIntoWishCard(w, g) {
+if (!w || !g) return false;
+w.giftMerged = true;
+w.wishSent = w.wishSent || g.ts || Date.now();
+if (!w.giftBoxId) w.giftBoxId = g.giftBoxId || '';
+w.giftWish = w.giftWish || g.giftWish || '';
+if (w.giftPrice == null) w.giftPrice = g.giftPrice;
+w.giftTs = w.giftTs || g.ts || 0;
+w.giftCat = w.giftCat || g.giftCat || w.wishGiftCat || '';
+w.giftEmoji = w.giftEmoji || g.giftEmoji || '';
+return true;
+}
+function dedupeWishGiftCards() {
+try {
+if (!Array.isArray(msgs) || !msgs.length) return false;
+const sig = msgs.length + ':' + ((msgs[msgs.length - 1] || {}).ts || 0);
+if (sig === wishDedupeSig) return false;
+wishDedupeSig = sig;
+let changed = false;
+for (let i = 0; i < msgs.length; i++) {
+const g = msgs[i];
+if (!g || g.special !== 'gift' || g.side !== 'out' || !g.giftId) continue;
+let wi = -1;
+for (let j = i - 1; j >= 0; j--) {
+const w = msgs[j];
+if (!w || w.special !== 'wish' || w.wishGiftId !== g.giftId || w.giftMerged) continue;
+wi = j; break;
+}
+if (wi < 0) continue;
+mergeGiftIntoWishCard(msgs[wi], g);
+try { chatTailDrop(g); } catch (e) {}
+msgs.splice(i, 1);
+i--;
+changed = true;
+}
+if (changed) saveMsgs();
+return changed;
+} catch (e) { return false; }
+}
+// gift-shop 送出礼物时调用：若聊天里有同一件商品待兑现的心愿卡，就并入它并返回 true（调用方不再发礼物卡）
+window.chatMergeWishGift = function (giftRec) {
+try {
+if (!giftRec || giftRec.special !== 'gift' || giftRec.side !== 'out' || !giftRec.giftId) return false;
+let wi = -1;
+for (let i = msgs.length - 1; i >= 0; i--) {
+const w = msgs[i];
+if (!w || w.special !== 'wish' || w.wishGiftId !== giftRec.giftId || w.giftMerged) continue;
+wi = i; break;
+}
+if (wi < 0) return false;
+mergeGiftIntoWishCard(msgs[wi], giftRec);
+saveMsgs();
+// 聊天页正看着就重画这一格（市场页里 chat 不可见，回来时 enterChat 会整窗重画）
+try { wishPatchCard(wi); } catch (e) {}
+return true;
+} catch (e) { return false; }
+};
 function wishDoneHtml() {
 // 此处不能用 renderMsg 局部的 T()，用同层其它提示的 taFit 口径（失焦/兜底同理）
 return '<div class="msg-wish-done">\u2713 ' + escTxt(window.taFit ? window.taFit('已送出') : '已送出') + '</div>';
@@ -5929,6 +5988,282 @@ if (acts) acts.outerHTML = wishDoneHtml();
 } catch (e) {}
 }
 window.chatWishSettled = chatWishSettled;
+// ===== 2026-10-26 提问卡片气泡化 =====
+// 「TA 问我」(special:'ask-card') 与「我问 TA」(special:'ask') 两张卡从居中卡片改成左右气泡：
+// 按 rec.side 挂 msg-ask-in/msg-ask-out，头像/时间复用普通消息的 .msg-side/.msg-av/.msg-time，
+// 让时间轴五档样式与换头像刷新都跟普通消息共用同一套选择器。卡内结构与作答逻辑暂不动。
+function askBubbleSideHtml(rec) {
+const timeHtml = rec.ts ? '<span class="msg-time">' + fmtTime(rec.ts) + '</span>' : '';
+return '<div class="msg-side"><div class="msg-av"></div>' + timeHtml + '</div>';
+}
+function askBubbleHtml(rec, cardHtml) {
+const side = askBubbleSideHtml(rec);
+return rec.side === 'out' ? cardHtml + side : side + cardHtml;
+}
+function askBubbleFillAvatar(root, rec) {
+if (!root) return;
+const av = root.querySelector('.msg-av');
+if (av) fillAvatar(av, rec.side === 'out' ? 'cs-avatar-user' : 'cs-avatar-partner');
+}
+// ---- 2026-10-26 未答卡面：选项直接铺开（用户定：全部单列，不做双列） ----
+// 单选/选一个：整行按钮，点一下即答；多选：勾选行 + 底部提交；>6 个先折叠。
+// 这些选项和旧的「点卡展开」.msg-inplace 是两套 DOM：这里首屏渲染，旧的保留给已答回看。
+function askOptReplyList(o) {
+const r = o && o.reply;
+if (Array.isArray(r)) return r.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim());
+if (typeof r === 'string') return r.split(';').map(s => s.trim()).filter(Boolean);
+return [];
+}
+const ASK_LINE_DONE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+const ASK_SUBMIT_PLANE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+// 已答统一两行：你 / 他标签 + 正文（用户定稿：标签做成小胶囊，你行句尾加小勾）
+function askAnsweredLinesHtml(youText, taText) {
+const y = String(youText == null ? '' : youText);
+const t = String(taText == null ? '' : taText);
+let html = '<div class="msg-ask-lines">';
+if (y) html += '<div class="ask-line"><span class="ask-line-who">你</span><span class="ask-line-txt">' + escTxt(y) + '</span><span class="ask-line-done" aria-hidden="true">' + ASK_LINE_DONE_SVG + '</span></div>';
+if (t) html += '<div class="ask-line"><span class="ask-line-who">他</span><span class="ask-line-txt">' + escTxt(t) + '</span></div>';
+html += '</div>';
+return html;
+}
+// 我这边（出站「问问他」）已答卡右下角的小箭头：只负责展开/收起完整选项，点整卡仍然无操作
+const ASK_VIEW_ARROW_HTML = '<button type="button" class="msg-ask-view-arrow" data-ask-view="1" aria-label="查看选项" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>';
+function askSingleOptsHtml(opts) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) {
+const o = opts[i];
+const t = String((o && o.t) || '');
+rows += '<button type="button" class="ask-opt-btn' + (i >= 6 ? ' ask-opt-extra' : '') + '" data-ask-opt="' + i + '"' + (i >= 6 ? ' hidden' : '') + '>' + escTxt(t) + '</button>';
+}
+if (opts.length > 6) rows += '<button type="button" class="ask-opt-more" data-ask-more="1">展开全部（' + opts.length + '）</button>';
+return '<div class="msg-ask-opts">' + rows + '</div>';
+}
+function askMultiOptsHtml(opts, capN) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) {
+const o = opts[i];
+const t = String((o && o.t) || '');
+rows += '<div class="ask-opt-row ask-opt-chk' + (i >= 6 ? ' ask-opt-extra' : '') + '" data-ask-opt="' + i + '"' + (i >= 6 ? ' hidden' : '') + '><span class="ask-opt-box"></span><span class="ask-opt-t">' + escTxt(t) + '</span></div>';
+}
+if (opts.length > 6) rows += '<button type="button" class="ask-opt-more" data-ask-more="1">展开全部（' + opts.length + '）</button>';
+const submitHint = capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案';
+rows += '<button type="button" class="ask-opt-submit" data-ask-submit="1" disabled aria-label="' + submitHint + '">' +
+  '<span class="ask-opt-submit-txt">' + submitHint + '</span>' +
+  '<span class="ask-opt-submit-ic" aria-hidden="true">' + ASK_SUBMIT_PLANE_SVG + '</span>' +
+  '</button>';
+return '<div class="msg-ask-opts is-multi">' + rows + '</div>';
+}
+// 出站「我问 TA」：选项默认折叠，展开后只读（不显示 ~TA回应，避免剧透）
+function askOutgoingOptsHtml(opts) {
+let rows = '';
+for (let i = 0; i < opts.length; i++) rows += '<div class="ask-opt-static">' + escTxt(String((opts[i] && opts[i].t) || '')) + '</div>';
+return '<button type="button" class="ask-opt-toggle" data-ask-toggle="1">查看选项（' + opts.length + '）</button>' +
+'<div class="msg-ask-opts ask-opts-readonly" hidden>' + rows + '</div>';
+}
+// 长问题超过 4 行折叠：先量高度再决定要不要露「展开」按钮（fragment / 隐藏页里量不到就等可见）
+let askClampIO = null;
+function askClampMeasure(root) {
+try {
+const q = root.querySelector('.msg-ask-q.ask-q-clamp');
+if (!q) return;
+const btn = q.nextElementSibling;
+if (!btn || !btn.classList || !btn.classList.contains('ask-q-toggle')) return;
+if (q.scrollHeight > q.clientHeight + 2) btn.hidden = false;
+} catch (e) {}
+}
+function askBindQuestionClamp(root) {
+if (!root) return;
+const q = root.querySelector('.msg-ask-q');
+if (!q || q.dataset.askClamp === '1') return;
+q.dataset.askClamp = '1';
+q.classList.add('ask-q-clamp');
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'ask-q-toggle';
+btn.textContent = '展开';
+btn.hidden = true;
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const open = q.classList.toggle('ask-q-open');
+btn.textContent = open ? '收起' : '展开';
+});
+q.parentNode.insertBefore(btn, q.nextSibling);
+if (askClampIO) { try { askClampIO.unobserve(root); } catch (e) {} }
+if (typeof IntersectionObserver === 'function') {
+if (!askClampIO) {
+askClampIO = new IntersectionObserver((entries) => {
+entries.forEach(en => {
+if (!en.isIntersecting) return;
+askClampMeasure(en.target);
+try { askClampIO.unobserve(en.target); } catch (e) {}
+});
+}, { rootMargin: '80px' });
+}
+askClampIO.observe(root);
+} else {
+let tries = 0;
+const retry = () => {
+if (!root.isConnected && tries++ < 20) { setTimeout(retry, 50); return; }
+askClampMeasure(root);
+};
+setTimeout(retry, 0);
+}
+}
+function askSyncMultiSubmit(root, capN) {
+const submit = root.querySelector('.ask-opt-submit');
+if (!submit) return;
+const picked = root.querySelectorAll('.ask-opt-chk.on').length;
+const hint = picked ? '提交（已选 ' + picked + (capN ? '/' + capN : '') + ' 个）' : (capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案');
+submit.disabled = !picked;
+submit.classList.toggle('is-ready', picked > 0);
+submit.setAttribute('aria-label', hint);
+submit.title = hint;
+const txt = submit.querySelector('.ask-opt-submit-txt');
+if (txt) txt.textContent = hint;
+}
+function askBindOptions(root, rec, idx) {
+if (!root || !rec) return;
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec.options) ? rec.options : []);
+const choiceOpts = Array.isArray(rec.choiceOptions) ? rec.choiceOptions : [];
+const isChoose = rec.special === 'ask-choose';
+const activeOpts = isChoose ? choiceOpts : opts;
+const multi = rec.special === 'ask-card' && (rec.askType === 'multi' || (rec.type === 'multi' && opts.length));
+const capN = multi && rec.askMultiMax >= 2 && rec.askMultiMax <= 6 ? rec.askMultiMax : 0;
+// 单选 / 选一个：点一下即答
+root.querySelectorAll('.ask-opt-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const i = Number(btn.getAttribute('data-ask-opt'));
+if (isChoose) {
+const o = choiceOpts[i];
+if (!o) return;
+const prefIdx = typeof rec.choicePref === 'number' ? rec.choicePref : 0;
+const prefTxt = choiceOpts[prefIdx] ? choiceOpts[prefIdx].t : '';
+const isPref = i === prefIdx;
+const isLiked = o.liked === true || o.liked === 'true';
+const matchTxt = isPref ? '✦ 刚好想到了一起'
+: isLiked ? '你们想得不一样，不过他似乎很喜欢你的答案'
+: '这次没有选到一起。他心里想的是：「' + prefTxt + '」';
+if (window.chatChooseReply) window.chatChooseReply(idx, String(o.t || ''), o, matchTxt);
+if (window.logFish) window.logFish();
+return;
+}
+const o = opts[i];
+if (!o) return;
+let _cr = null;
+if (window.taAskChatReplyOn && window.taAskChatReplyOn() && window.genChatStyleReply) _cr = window.genChatStyleReply();
+if (_cr && window.chatAskReply) window.chatAskReply(idx, String(o.t || ''), _cr, { raw: true });
+else if (window.chatAskReply) window.chatAskReply(idx, String(o.t || ''), o.reply);
+if (window.logFish) window.logFish();
+});
+});
+// 多选：整行点一下＝勾上/取消，底部提交才算落地
+if (multi) {
+root.querySelectorAll('.ask-opt-chk').forEach(row => {
+row.addEventListener('click', (e) => {
+e.stopPropagation();
+const on = row.classList.contains('on');
+if (!on && capN && root.querySelectorAll('.ask-opt-chk.on').length >= capN) { toast('这题最多选 ' + capN + ' 个'); return; }
+row.classList.toggle('on', !on);
+askSyncMultiSubmit(root, capN);
+});
+});
+const submit = root.querySelector('.ask-opt-submit');
+if (submit) submit.addEventListener('click', (e) => {
+e.stopPropagation();
+const pickedIdx = [];
+root.querySelectorAll('.ask-opt-chk.on').forEach(row => pickedIdx.push(Number(row.getAttribute('data-ask-opt'))));
+if (!pickedIdx.length) return;
+pickedIdx.sort((a, b) => a - b);
+const answers = [];
+const replies = [];
+pickedIdx.forEach(i => {
+const o = opts[i];
+if (!o) return;
+answers.push(String(o.t || ''));
+askOptReplyList(o).forEach(s => replies.push(s));
+});
+if (window.chatAskReply) window.chatAskReply(idx, answers.join('、'), replies.length ? replies : undefined);
+if (window.logFish) window.logFish();
+});
+askSyncMultiSubmit(root, capN);
+}
+// 超过 6 个：展开/收起；收起时清掉被藏起来的勾选，免得提交了看不见的选项
+root.querySelectorAll('.ask-opt-more').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const open = btn.getAttribute('data-open') === '1';
+const extras = root.querySelectorAll('.ask-opt-extra');
+if (open) {
+extras.forEach(el => { el.setAttribute('hidden', ''); if (el.classList.contains('on')) el.classList.remove('on'); });
+} else {
+extras.forEach(el => el.removeAttribute('hidden'));
+}
+btn.setAttribute('data-open', open ? '0' : '1');
+btn.textContent = open ? '展开全部（' + activeOpts.length + '）' : '收起选项';
+if (multi) askSyncMultiSubmit(root, capN);
+});
+});
+// 出站只读选项：默认折叠，点开/收起
+root.querySelectorAll('.ask-opt-toggle').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const box = btn.nextElementSibling;
+if (!box || !box.classList.contains('msg-ask-opts')) return;
+const open = !box.hidden;
+box.hidden = open;
+btn.textContent = open ? ('查看选项（' + activeOpts.length + '）') : '收起选项';
+});
+});
+// 只读选项本身不触发整卡收藏心形
+root.querySelectorAll('.ask-opt-static').forEach(el => el.addEventListener('click', (e) => e.stopPropagation()));
+}
+// 我这边已答卡的小箭头：展开/收起完整选项（选中高亮、其余淡化，右侧保留 ~TA回应）
+function askBindAnsweredView(root, rec) {
+if (!root || !rec) return;
+const btn = root.querySelector('.msg-ask-view-arrow');
+if (!btn) return;
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+const card = btn.closest('.msg-ask-card');
+if (!card) return;
+const old = card.querySelector('.msg-ask-opts.ask-opts-answered');
+if (old) {
+old.remove();
+btn.classList.remove('is-open');
+btn.setAttribute('aria-expanded', 'false');
+return;
+}
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : [];
+if (!opts.length) return;
+const answer = String(rec.askAnswer != null ? rec.askAnswer : '');
+let rows = '';
+opts.forEach(o => {
+const t = String((o && o.t) || '');
+const hit = window.mochiAnswerHits ? window.mochiAnswerHits(t, answer) : (!!answer && t === answer);
+const rl = askOptReplyList(o);
+const rt = rl.length ? (rl.length > 1 ? rl[0] + ' 等' + rl.length + '条' : rl[0]) : '';
+rows += '<div class="ask-opt-row ask-opt-view' + (hit ? ' on' : ' off') + '">' +
+'<span class="ask-opt-t">' + escTxt(t) + '</span>' +
+(rt ? '<span class="ask-opt-reply">' + escTxt(rt) + '</span>' : '') +
+'</div>';
+});
+const box = document.createElement('div');
+box.className = 'msg-ask-opts ask-opts-answered';
+box.innerHTML = rows;
+box.querySelectorAll('.ask-opt-view').forEach(el => el.addEventListener('click', (e2) => e2.stopPropagation()));
+const heart = card.querySelector('.msg-fav-heart');
+if (heart && heart.parentNode === card) card.insertBefore(box, heart); else card.appendChild(box);
+btn.classList.add('is-open');
+btn.setAttribute('aria-expanded', 'true');
+});
+}
+function askBubbleAfterRender(root, rec, idx) {
+askBubbleFillAvatar(root, rec);
+askBindQuestionClamp(root);
+askBindOptions(root, rec, idx);
+askBindAnsweredView(root, rec);
+}
 function renderMsg(rec, atIdx) {
 const m = document.createElement('div');
 m.dataset.mk = msgKeyOf(rec); // FIX 2026-09-15 #491 身份锚随渲染写入，批量渲染只覆盖 data-idx 不动它
@@ -5954,7 +6289,7 @@ const __fit = rec.side !== 'out' && !!window.taFit;
 const __taNm = chatPartnerName();
 const __meNm = chatUserName();
 // v3.26.x：拍一拍人称修复——taFit（称呼）期间把 {ta}/{me} 掩成控制符，先替换称呼再回填昵称，
-// 昵称（含默认 TA、含「他」的名字）永不被称呼功能改写成 他/ta/她；字卡文案里的独立
+// 昵称（含默认 TA、含「他」的名字）永不被称呼功能改写成他/ta/她；字卡文案里的独立
 // ta/TA/他（非占位符）仍按称呼替换（字卡库中性占位设计不变）
 const T = (s) => {
 let t = s;
@@ -5970,34 +6305,45 @@ if (typeof t === 'string' && t.indexOf('{me}') >= 0) t = t.split('{me}').join(__
 return t;
 };
 if (rec.special === 'invite') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.inviteStatus === 'answered';
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
-'<div class="msg-ask-q">' + T('邀请他') + ' · ' + escTxt(rec.inviteContent || rec.text || '') + '</div>' +
+const inviteContent = rec.inviteContent || rec.text || '';
+const inviteTitle = answered ? T('邀请他') : T('邀请他') + ' · ' + escTxt(inviteContent);
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+'<div class="msg-ask-q">' + inviteTitle + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ ' + escTxt(T(askCardReplyClean(rec.inviteAnswer) || '他 回应了你')) + '</div>'
-: '<div class="msg-ask-tip">' + T('等待 他 回应…') + '</div>') +
+? askAnsweredLinesHtml(inviteContent, T(askCardReplyClean(rec.inviteAnswer) || '他回应了你'))
+: '<div class="msg-ask-tip">' + T('等待他回应…') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 // #1415：多选题与单选题在「等 TA 从选项里挑」这一点上是同一件事，提示语共用一句
 const askIsPick = rec.askType === 'single' || rec.askType === 'multi';
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
-'<div class="msg-ask-q">' + T('问问他') + ' · ' + escTxt(rec.askQuestion || '') + '</div>' +
+const optsOut = Array.isArray(rec.askOptions) ? rec.askOptions : [];
+const askQ = rec.askQuestion || '';
+const askTitle = answered ? T('问问他') : T('问问他') + ' · ' + escTxt(askQ);
+const askTa = rec.askReply ? T(askCardReplyClean(rec.askReply)) : T(rec.askAnswer || '回答了你');
+// 我这边已答且出过选项：右下角小箭头回看；接收侧与无选项的文字题不出现
+const askShowArrow = answered && optsOut.length > 0;
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + (askShowArrow ? ' has-ask-arrow' : '') + '">' +
+'<div class="msg-ask-q">' + askTitle + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ ' + T('他：') + escTxt(T(rec.askAnswer || '回答了你')) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
-: '<div class="msg-ask-tip">' + (askIsPick ? T('等待 他 选择…') : T('等待 他 回答…')) + '</div>') +
+? askAnsweredLinesHtml(askQ, askTa)
+: '<div class="msg-ask-tip">' + (askIsPick ? T('等待他选择…') : T('等待他回答…')) + '</div>' + (optsOut.length ? askOutgoingOptsHtml(optsOut) : '')) +
 favHeartHtml(rec) +
-'</div>';
+(askShowArrow ? ASK_VIEW_ARROW_HTML : '') +
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -6019,7 +6365,11 @@ m.className = 'msg-poke' + (rec.mailNotice ? ' mail-notice' : '');
 m.innerHTML = '<span>' + (rec.nickKeep ? escTxt(rec.text) : pokeIconHtml(pokePersonMap(rec.text, __taNm, __meNm))) + '</span>' +
 (rec.img ? '<img class="msg-poke-img" src="' + attrEsc(rec.img) + '" alt="新头像">' : '');
 if (rec.mailNotice) {
-m.addEventListener('click', () => { if (window.openMailPage) window.openMailPage(); });
+m.addEventListener('click', () => {
+// #1614：通知带了信件 id → 直达那封信；旧通知没有 id 仍打开信箱列表
+if (rec.mailId && window.openMailLetter) { window.openMailLetter(rec.mailId); return; }
+if (window.openMailPage) window.openMailPage();
+});
 }
 appendMsg(m);
 maybeScrollChatBottom(rec.side);
@@ -6100,7 +6450,7 @@ return m;
 }
 if (rec.special === 'snake') {
 m.className = 'msg-rps';
-const snkResTxt = rec.snkResult === 'win' ? '你赢了' : rec.snkResult === 'lose' ? T('他 赢了') : '平局';
+const snkResTxt = rec.snkResult === 'win' ? '你赢了' : rec.snkResult === 'lose' ? T('他赢了') : '平局';
 const snkClr = rec.snkResult === 'win' ? '#34c759' : rec.snkResult === 'lose' ? '#ff6b6b' : '#888';
 m.innerHTML = '<div class="msg-rps-card msg-snake-card">' +
 '<div class="msg-snake-title">🐍 双人贪吃蛇</div>' +
@@ -6113,21 +6463,23 @@ maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'redpacket') {
-m.className = 'msg-rp';
+// 2026-10-26：红包卡贴发送方头像（左收/右发）；整卡点击进拆红包小窗，按钮不再外露
+m.className = 'msg-rp ' + (rec.side === 'out' ? 'msg-rp-out' : 'msg-rp-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
-const sideTxt = rec.side === 'out' ? '我' : chatPartnerName();
 const cls = rpStatusCls(rec);
 const rpIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9c3 2 6 3 9 3s6-1 9-3"/><circle cx="12" cy="9" r="1.4"/></svg>';
-m.innerHTML = '<div class="msg-rp-card' + (cls ? ' ' + cls : '') + '">' +
+const rpPending = (rec.rpStatus || 'pending') === 'pending';
+const rpHint = rpPending && rec.side !== 'out' ? '点击拆开' : '点击查看';
+const cardHtml = '<div class="msg-rp-card' + (cls ? ' ' + cls : '') + '">' +
 '<div class="msg-rp-top"><span class="msg-rp-ico">' + rpIco + '</span><span class="msg-rp-label">红包 · 心意币</span></div>' +
 '<div class="msg-rp-amt">¥' + escTxt(Number(rec.rpAmount || 0).toFixed(2)) + '</div>' +
 '<div class="msg-rp-wish">' + escTxt(rec.rpWish || '心意') + '</div>' +
 '<div class="msg-rp-foot">' +
-'<span class="msg-rp-side">' + escTxt(sideTxt) + ' 发出</span>' +
 '<span class="msg-rp-status">' + escTxt(rpStatusText(rec)) + '</span>' +
+'<span class="msg-rp-hint">' + rpHint + '<span class="msg-rp-chev">\u203A</span></span>' +
 '</div>' +
-favHeartHtml(rec) +
 '</div>';
+m.innerHTML = askBubbleHtml(rec, cardHtml);
 if (rec.rpCover) {
 const cover = rpCoverGet(rec.side);
 if (cover) {
@@ -6139,13 +6491,16 @@ card.style.backgroundImage = 'url("' + cover + '")';
 }
 }
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 // v3.15.x：TA 向 Mochi 申请心意币的回执卡（金额与红包同款随机分布）
 if (rec.special === 'askcoin') {
 m.className = 'msg-poke';
-m.innerHTML = '<span>🪙 ' + escTxt(chatPartnerName()) + ' 向 Mochi 申请了心意币 ¥' + (Number(rec.askFen || 0) / 100).toFixed(2) + '</span>';
+m.dataset.askcoin = '1';
+m.dataset.askFen = String(Number(rec.askFen || 0));
+m.innerHTML = '<span>🪙 ' + escTxt(chatPartnerName()) + ' 向 ' + escTxt(coinBrandNow()) + ' 申请了心意币 ¥' + (Number(rec.askFen || 0) / 100).toFixed(2) + '</span>';
 appendMsg(m);
 maybeScrollChatBottom(rec.side);
 return m;
@@ -6196,18 +6551,23 @@ if (rec.special === 'wish') {
 m.className = 'msg-gift msg-wish';
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const wStill = wishCardIsPending(rec); // #1316：卡片自己记的 wishSent 优先，其次才是「TA 心愿单此刻还有这件」
+const wMerged = !!rec.giftMerged; // #1655：已并入「我送出」的赠言/价格/心意柜指针与他的回应
+const wNote = String(rec.giftWish || '').trim();
+const wPrice = wMerged ? (rec.giftPrice != null ? rec.giftPrice : rec.wishGiftPrice) : rec.wishGiftPrice;
 const wgc = ((window.GIFT_CAT_COLOR || {})[rec.wishGiftCat]) || '#f2f2f5';
 m.innerHTML = '<div class="msg-gift-card msg-wish-card">' +
-'<div class="msg-wish-tag">' + escTxt(T('他 的心愿')) + '</div>' +
+'<div class="msg-wish-tag">' + escTxt(T(wMerged ? '他的心愿 · 已实现' : '他的心愿')) + '</div>' +
 '<div class="msg-gift-emoji" style="background:' + escTxt(wgc) + '">' + (rec.wishGiftImg ? '<img class="msg-gift-img" src="' + escTxt(rec.wishGiftImg) + '" alt="">' : escTxt(rec.wishGiftEmoji || '\uD83C\uDF81')) + '</div>' +
 '<div class="msg-gift-name">' + escTxt(rec.wishGiftName || '礼物') + '</div>' +
 '<div class="msg-gift-divider"></div>' +
 '<div class="msg-gift-wish">\u201C' + escTxt(T(rec.text || '想要这个')) + '\u201D</div>' +
-'<div class="msg-gift-foot"><span class="mg-side">' + escTxt(chatPartnerName() + T(' 许愿')) + '</span>' +
-'<span class="msg-gift-price">\u00A5' + escTxt(Number(rec.wishGiftPrice || 0).toFixed(2)) + '</span></div>' +
+(wMerged && wNote && wNote !== String(rec.text || '').trim() ? '<div class="msg-gift-wish msg-gift-mine">\u201C' + escTxt(wNote) + '\u201D</div>' : '') +
+'<div class="msg-gift-foot"><span class="mg-side">' + escTxt(wMerged ? T('我 送出') : (chatPartnerName() + T(' 许愿'))) + '</span>' +
+'<span class="msg-gift-price">\u00A5' + escTxt(Number(wPrice || 0).toFixed(2)) + '</span></div>' +
 (wStill
-? '<div class="msg-wish-acts"><button class="msg-wish-buy" type="button">' + T('送 他') + '</button></div>'
+? '<div class="msg-wish-acts"><button class="msg-wish-buy" type="button">' + T('送他') + '</button></div>'
 : '<div class="msg-wish-done">\u2713 ' + T('已送出') + '</div>') +
+(wMerged ? giftCardReplHtml(rec) : '') +
 favHeartHtml(rec) +
 '</div>';
 appendMsg(m);
@@ -6234,74 +6594,87 @@ return m;
 }
 if (rec.special === 'ask-choose') {
 
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.choiceStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+const opts = Array.isArray(rec.choiceOptions) ? rec.choiceOptions : [];
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ 你选择了：' + escTxt(rec.choiceAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.choiceReply))) + '</div>'
-: '<div class="msg-ask-tip">点击选择你的答案</div>') +
+? askAnsweredLinesHtml(rec.choiceAnswer, T(askCardReplyClean(rec.choiceReply)) || '…')
+: (opts.length ? askSingleOptsHtml(opts) : '<div class="msg-ask-tip">点击选择你的答案</div>')) +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-curious') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.curiousStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ 你：' + escTxt(rec.curiousAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.curiousReply))) + '</div>'
-: '<div class="msg-ask-tip">' + T('点击回答 他 的好奇') + '</div>') +
+? askAnsweredLinesHtml(rec.curiousAnswer, T(askCardReplyClean(rec.curiousReply)) || '…')
+: '<div class="msg-ask-tip">' + T('点击回答他的好奇') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-roast') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.roastStatus === 'answered';
-m.innerHTML = '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ 你：' + escTxt(rec.roastAnswer) + '</div><div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.roastReply))) + '</div>'
-: '<div class="msg-ask-tip">' + T('点击回 他 一句') + '</div>') +
+? askAnsweredLinesHtml(rec.roastAnswer, T(askCardReplyClean(rec.roastReply)) || '…')
+: '<div class="msg-ask-tip">' + T('点击回他一句') + '</div>') +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-survey') {
-m.className = 'msg-ask msg-survey';
+// 2026-10-26 B 版：问卷摘要卡并入问卡气泡骨架（右出站 + 头像/时间 + 固定宽度）
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in') + ' msg-survey';
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
-m.innerHTML = surveyCardHtml(rec);
+m.innerHTML = askBubbleHtml(rec, surveyCardHtml(rec));
 appendMsg(m);
+askBubbleFillAvatar(m, rec);
 maybeScrollChatBottom(rec.side);
 return m;
 }
 if (rec.special === 'ask-card') {
-m.className = 'msg-ask';
+m.className = 'msg-ask ' + (rec.side === 'out' ? 'msg-ask-out' : 'msg-ask-in');
 m.dataset.idx = __msgAt; // #1326：分支重写读调用方给的这一格
 const answered = rec.askStatus === 'answered';
 const isSingle = rec.askType === 'single' || (rec.type === 'single' && Array.isArray(rec.options) && rec.options.length);
 // #1415：多选题的提示要说出这一拍的规则（勾完要点提交，点一下不会落地）
 const isMulti = rec.askType === 'multi' || (rec.type === 'multi' && Array.isArray(rec.options) && rec.options.length);
-m.innerHTML = '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
+const opts = Array.isArray(rec.askOptions) ? rec.askOptions : (Array.isArray(rec.options) ? rec.options : []);
+// #1480：题自带「最多N」的卡，勾选侧与提交文案同受这道闸
+const capN = (isMulti && rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;
+// 2026-10-26：单选/多选选项直接铺在卡上（全部单列）；文字题仍点卡展开输入
+const pendingHtml = isMulti && opts.length ? askMultiOptsHtml(opts, capN)
+: isSingle && opts.length ? askSingleOptsHtml(opts)
+: '<div class="msg-ask-tip">' + T('点击回答他的提问') + '</div>';
+m.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card' + (answered ? ' answered' : '') + '">' +
 '<div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text) + '</div>' +
 (answered
-? '<div class="msg-ask-a">✓ 已回答：' + escTxt(rec.askAnswer) + '</div>' + (rec.askReply ? '<div class="msg-choose-r">' + T('他：') + escTxt(T(askCardReplyClean(rec.askReply))) + '</div>' : '')
-// #1480：题自带「最多N」的卡，提示直接把限选数说出来（勾选那侧同受这道闸）
-: '<div class="msg-ask-tip">' + (isMulti ? ((rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? '最多选 ' + rec.askMultiMax + ' 个，选完点「提交」' : '可多选，选完点「提交」') : isSingle ? '点击选择你的答案' : T('点击回答 他 的提问')) + '</div>') +
+? askAnsweredLinesHtml(rec.askAnswer, T(askCardReplyClean(rec.askReply)) || '…')
+: pendingHtml) +
 favHeartHtml(rec) +
-'</div>';
+'</div>');
 appendMsg(m);
+askBubbleAfterRender(m, rec, __msgAt);
 maybeScrollChatBottom(rec.side);
 return m;
 }
@@ -6326,6 +6699,25 @@ m.dataset.pendingRead = '1';
 b.dataset.orig = rec.orig || retractSafeHtml(rec); // FIX #572d：仍是「快照优先」，无快照才走安全兜底（不再裸直出 rec.text）
 b.innerHTML = '<span style="opacity:.6;font-size:12px;cursor:pointer">' + (rec.side === 'out' ? '我' : '对方') + '撤回了一条消息</span>';
 bindToggle(b, rec.side);
+} else if (rec.special === 'lyric') {
+// 音乐模块「歌词传情」：歌名/歌手 + 封面小图 + 引号歌词句，卡面颜色沿用气泡表面
+b.style.padding = '10px 12px';
+const lyricLineTxt = String(rec.lyricLine || rec.text || '');
+const lyricSongTxt = String(rec.lyricSong || '');
+const lyricArtistTxt = String(rec.lyricArtist || '');
+const lyricCoverTxt = String(rec.lyricCover || '');
+b.innerHTML = '<div class="msg-lyric-card">' +
+'<div class="msg-lyric-head">' +
+(lyricCoverTxt ? '<img class="msg-lyric-cover" src="' + attrEsc(lyricCoverTxt) + '" alt="">' : '') +
+'<div class="msg-lyric-meta">' +
+'<div class="msg-lyric-song">' + escTxt(lyricSongTxt || '歌词') + '</div>' +
+(lyricArtistTxt ? '<div class="msg-lyric-artist">' + escTxt(lyricArtistTxt) + '</div>' : '') +
+'</div></div>' +
+'<div class="msg-lyric-line">「' + escTxtBr(lyricLineTxt) + '」</div>' +
+'</div>';
+const lyricCoverEl = b.querySelector('.msg-lyric-cover');
+if (lyricCoverEl) lyricCoverEl.addEventListener('error', function () { this.style.display = 'none'; });
+maybeScrollChatBottom(rec.side);
 } else if (rec.type === 'sticker' || rec.type === 'image') {
 b.style.padding = '6px';
 b.style.background = '';
@@ -6473,7 +6865,7 @@ chatRetractToggleAfter('rcm'); // #871：情绪字卡明细开合同样是滚动
 fillAvatar(av, rec.side === 'out' ? 'cs-avatar-user' : 'cs-avatar-partner');
 if (rec.side === 'in') {
 av.style.cursor = 'pointer';
-av.title = T('对 他 拍一拍');
+av.title = T('对他拍一拍');
 // FIX 2026-09-14 #G1 点联系人头像打不开拍一拍（多机型同报、含内嵌浏览器；要求零机型分支防复发）：
 // 纯 click 监听在部分内核/内嵌浏览器上不可靠——点按期消息区 DOM 重渲把目标拆走、滚动回弹期按位漂移、
 // 长按候选判定吞 click 等都会让合成 click 丢失。改「touch 布点 + pointer 布点 + click 兜底」五保险
@@ -6767,7 +7159,7 @@ deskMsgTimer = setTimeout(() => { if (deskMsgEl) deskMsgEl.hidden = true; }, 600
 function extractDeskMsg(rec) {
 let text = rec.text || '';
 // v3.26.x：拍一拍/系统消息存 {ta}/{me} 占位符，桌面弹窗预览需回填昵称
-// （renderMsg 走 T() 替换，此处同义；不走 taFit 称呼改写，避免昵称被改成 他/她）
+// （renderMsg 走 T() 替换，此处同义；不走 taFit 称呼改写，避免昵称被改成他/她）
 // v3.30.x：拍一拍人称昵称制——poke/ask-msg 整体走 pokePersonMap（{ta}/{me} 与字卡写死的
 // TA/ta/他/她 一律按昵称回填，与聊天内渲染一致；须在回填前整体替换，防昵称含 TA/他/她 被二次改写）
 // FIX 2026-09-16 #616：nickKeep 的昵称事件消息除外——桌面横幅预览与聊天内渲染同口径原样呈现
@@ -7225,7 +7617,7 @@ opts = opts || {};
   const _tagExtra = Array.isArray(opts.tagExtra) ? opts.tagExtra.filter(md => md && String(md.tag || '').trim()).map(md => ({ tag: String(md.tag), label: md.label == null ? '' : String(md.label) })) : null;
   const _tagMerged = (_tagExtra && _tagExtra.length) ? (_tagMood ? _tagMood.concat(_tagExtra) : _tagExtra) : _tagMood;
   // v3.16.x：gInv = 联系人主动邀请的游戏类型（pong/snake/rps），随消息持久化供小游戏记录识别
-	return addRec({ side: 'in', text: text, initiative: opts.initiative, special: opts.special, rateAllow: opts.rateAllow, game: opts.game, quote: opts.quote, qidx: opts.qidx, type: opts.type, img: opts.img, parts: opts.parts, mailNotice: opts.mailNotice, gInv: opts.gInv, silent: opts.silent, nightAllow: opts.nightAllow, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers, dedupExempt: opts.dedupExempt, nickKeep: opts.nickKeep, mood: opts.mood || _tagMerged || undefined });
+	return addRec({ side: 'in', text: text, initiative: opts.initiative, special: opts.special, rateAllow: opts.rateAllow, game: opts.game, quote: opts.quote, qidx: opts.qidx, type: opts.type, img: opts.img, parts: opts.parts, mailNotice: opts.mailNotice, mailId: opts.mailId, gInv: opts.gInv, silent: opts.silent, nightAllow: opts.nightAllow, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askMultiMax: opts.askMultiMax, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers, dedupExempt: opts.dedupExempt, nickKeep: opts.nickKeep, mood: opts.mood || _tagMerged || undefined });
 }
 // v3.27.x：对话型回复补「正在输入」过渡——TA 回应先 showTyping 再落地，消除气泡凭空冒出的突兀感。
 // items 可为单条文本或数组（数组=逐条连发，条与条之间再出一次 typing）。仅当前桌面生效：期间切走
@@ -7321,7 +7713,7 @@ opts = opts || {};
 // 音乐互动等）经此处放行；不透传则调用方写的豁免标记会被本函数的白名单就地吞掉。
 opts.nightAllow = opts.nightAllow === true;
 	opts.rateAllow = opts.rateAllow === true; // #1341：限流的豁免位同要经本白名单透传
-return addIn(text, { special: opts.special || 'poke', silent: opts.silent, nightAllow: opts.nightAllow, rateAllow: opts.rateAllow, img: opts.img, mailNotice: opts.mailNotice, nickKeep: opts.nickKeep, game: opts.game, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askTs: opts.askTs, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers });
+return addIn(text, { special: opts.special || 'poke', silent: opts.silent, nightAllow: opts.nightAllow, rateAllow: opts.rateAllow, img: opts.img, mailNotice: opts.mailNotice, mailId: opts.mailId, nickKeep: opts.nickKeep, game: opts.game, askQuestion: opts.askQuestion, askStatus: opts.askStatus, askOptions: opts.askOptions, askType: opts.askType, askMultiMax: opts.askMultiMax, askTs: opts.askTs, choiceQuestion: opts.choiceQuestion, choiceOptions: opts.choiceOptions, choicePref: opts.choicePref, choiceCat: opts.choiceCat, choiceStatus: opts.choiceStatus, choiceAnswer: opts.choiceAnswer, choiceReply: opts.choiceReply, choiceMatch: opts.choiceMatch, curiousQuestion: opts.curiousQuestion, curiousQuick: opts.curiousQuick, curiousReplies: opts.curiousReplies, curiousFollowup: opts.curiousFollowup, curiousQid: opts.curiousQid, curiousCat: opts.curiousCat, curiousStatus: opts.curiousStatus, curiousAnswer: opts.curiousAnswer, curiousReply: opts.curiousReply, roastText: opts.roastText, roastCat: opts.roastCat, roastStatus: opts.roastStatus, roastAnswer: opts.roastAnswer, roastReply: opts.roastReply, rpAmount: opts.rpAmount, rpWish: opts.rpWish, rpStatus: opts.rpStatus, rpTs: opts.rpTs, rpCover: opts.rpCover, askFen: opts.askFen, askTs: opts.askTs, deskCk: opts.deskCk, deskCkDir: opts.deskCkDir, surveyTs: opts.surveyTs, surveyQs: opts.surveyQs, surveyStatus: opts.surveyStatus, surveyAnswers: opts.surveyAnswers });
 };
 window.chatAddIn = function (text, opts) {
 // FIX 2026-09-15 #492：opts.follow = 用户主动通道（帮我决定/多人决定结果发到聊天）——落聊天
@@ -7333,6 +7725,31 @@ if (opts && opts.enter && !chatVisible()) enterChat();
 return r;
 };
 window.chatAddGift = function (rec) { if (!rec.ts) rec.ts = Date.now(); return addRec(rec); };
+// 音乐模块「歌词传情」：side 默认 out（我发给 TA）；side:'in' 用于 TA 主动挑句发来
+window.chatAddLyricCard = function (data) {
+if (!data || !data.line) return null;
+const side = data.side === 'in' ? 'in' : 'out';
+const rec = {
+side: side,
+text: String(data.line),
+special: 'lyric',
+lyricLine: String(data.line),
+lyricSong: String(data.song || ''),
+lyricArtist: String(data.artist || ''),
+lyricCover: /^https?:\/\//i.test(String(data.cover || '')) ? String(data.cover) : ''
+};
+if (data.nightAllow === true) rec.nightAllow = true;
+if (data.silent === true) rec.silent = true;
+if (data.rateAllow === true) rec.rateAllow = true;
+const r = addRec(rec);
+// 正常提醒：他发来的歌词卡落地后响普通消息音；silent 或被闸门挡下时不响（避免「响一声却没有消息」）
+if (r && side === 'in' && data.silent !== true && window.playSfx) { try { window.playSfx('in'); } catch (e) {} }
+if (r && side === 'out') {
+try { scheduleReply(); } catch (e) {}
+try { if (window.logFish) window.logFish(); } catch (e) {}
+}
+return r;
+};
 // ===== #985 礼物卡的【领取】与【追加回复】（用户 2026-09-21 直派）=====
 // 三条口径：
 // ①「联系人送我礼物」的卡片可点击领取——未点＝待领取（卡片与心意柜都标出来）；礼物本身早已
@@ -7402,6 +7819,47 @@ function giftPatchCard(idx) {
   }
   return true;
 }
+// #1655：心愿卡就地打补丁（同 giftPatchCard 口径，不整窗重建）：礼物并入后补赠言行、底栏换
+// 「我 送出」与实付价、动作区换「已送出」、补回复区。卡片不在屏上（虚拟列表外/切了页）＝
+// 不做事，下次渲染自然带上并入态；绝不能因为找不到节点就回退整窗重建（会打断阅读位置）。
+function wishPatchCard(idx) {
+  try {
+    const rec = msgs[idx];
+    if (!rec || rec.special !== 'wish' || !body) return false;
+    const el = body.querySelector('.msg-wish[data-idx="' + idx + '"]');
+    if (!el) return false;
+    const card = el.querySelector('.msg-wish-card');
+    if (!card) return false;
+    const fit = function (s) { return window.taFit ? window.taFit(s) : s; };
+    const tag = card.querySelector('.msg-wish-tag');
+    if (tag) tag.textContent = fit(rec.giftMerged ? '他的心愿 · 已实现' : '他的心愿');
+    const note = String(rec.giftWish || '').trim();
+    const mine = card.querySelector('.msg-gift-mine');
+    if (rec.giftMerged && note && note !== String(rec.text || '').trim()) {
+      if (mine) mine.textContent = '\u201C' + note + '\u201D';
+      else {
+        const wl = card.querySelector('.msg-gift-wish');
+        if (wl) wl.insertAdjacentHTML('afterend', '<div class="msg-gift-wish msg-gift-mine">\u201C' + escTxt(note) + '\u201D</div>');
+      }
+    } else if (mine) mine.remove();
+    const sideEl = card.querySelector('.msg-gift-foot .mg-side');
+    if (sideEl) sideEl.textContent = rec.giftMerged ? fit('我 送出') : (chatPartnerName() + fit(' 许愿'));
+    const priceEl = card.querySelector('.msg-gift-foot .msg-gift-price');
+    if (priceEl) {
+      const p = rec.giftMerged ? (rec.giftPrice != null ? rec.giftPrice : rec.wishGiftPrice) : rec.wishGiftPrice;
+      priceEl.textContent = '\u00A5' + Number(p || 0).toFixed(2);
+    }
+    const acts = card.querySelector('.msg-wish-acts');
+    if (acts && !wishCardIsPending(rec)) acts.outerHTML = wishDoneHtml();
+    const repl = card.querySelector('.msg-gift-repl');
+    if (repl) { repl.innerHTML = giftReplRows(rec); repl.hidden = !giftReplList(rec).length; }
+    else if (rec.giftMerged && giftReplList(rec).length) {
+      const heart = card.querySelector('.msg-fav-heart');
+      if (heart) heart.insertAdjacentHTML('beforebegin', giftCardReplHtml(rec));
+    }
+    return true;
+  } catch (e) { return false; }
+}
 function giftClaimNow(idx) {
   const rec = msgs[idx];
   if (!giftIsIncoming(rec)) return false;
@@ -7467,13 +7925,14 @@ window.chatGiftAttachReplyTo = function (cid, giftTs, who, text, recRef) {
       if (!rec) {
         for (let i = msgs.length - 1; i >= 0; i--) {
           const r = msgs[i];
-          if (r && r.special === 'gift' && r.ts === giftTs) { rec = r; idx = i; break; }
+          // #1655：并卡后「我送出」礼物卡已不存在——按并入时记下的 giftTs 认领那张「他的心愿」卡
+          if (r && ((r.special === 'gift' && r.ts === giftTs) || (r.special === 'wish' && r.giftTs === giftTs))) { rec = r; idx = i; break; }
         }
       }
       if (!rec) return false;
       if (!rec.giftBoxId) return false;   // 存量卡没有心意柜指针＝没有可写的地方（不出动作区，同渲染口径）
       if (window.giftBoxAttachReply) window.giftBoxAttachReply(rec.giftBoxId, whoNorm, text, cid);
-      giftPatchCard(idx);
+      if (rec.special === 'wish') wishPatchCard(idx); else giftPatchCard(idx);
       return true;
     }
     if (!window.chatDeskCardReply) return false;
@@ -7618,7 +8077,7 @@ window.chatAppendToDeskMsg = function (cid, text, opts) {
 opts = opts || {};
 const cur = window.__activeCid || 'default';
 if (cid === cur) {
-if (window.chatAddSystem) window.chatAddSystem(text, { special: opts.special, img: opts.img, mailNotice: opts.mailNotice });
+if (window.chatAddSystem) window.chatAddSystem(text, { special: opts.special, img: opts.img, mailNotice: opts.mailNotice, mailId: opts.mailId });
 return;
 }
 if (!window.idbGet || !window.idbSet) return;
@@ -7631,7 +8090,7 @@ try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
 // v3.26.x #90：跨桌面追加后同步条数账本（下次冷启动大键读失败时它就是守卫依据）
 try { chatLedgerSave('xy-home-v2:' + cid, arr.length, msgsBytes(arr)); } catch (e) {}
 };
-const mkRec = function () { return { side: 'in', special: opts.special || 'poke', text: text, ts: Date.now(), mailNotice: !!opts.mailNotice }; };
+const mkRec = function () { return { side: 'in', special: opts.special || 'poke', text: text, ts: Date.now(), mailNotice: !!opts.mailNotice, mailId: opts.mailId }; };
 const attempt = function () {
 tries++;
 if (tries > 5) { deskAppendInbox(cid, [mkRec()]); return; } // #1200：重试预算耗尽改落中转箱，不再静默丢（弹窗已发＝消息必须可达）
@@ -7756,6 +8215,8 @@ window.chatDeskCardReply = function (cid, cardSpecial, cardTs, statusKey, patch,
       for (let i = arr.length - 1; i >= 0; i--) {
         const r = arr[i];
         if (r && r.special === cardSpecial && r.ts === cardTs && !r.retracted) { hit = r; break; }
+        // #1655：并卡后的「我送出」回执落在「他的心愿」卡上（giftTs＝送出时刻）
+        if (r && cardSpecial === 'gift' && r.special === 'wish' && r.giftTs === cardTs && !r.retracted) { hit = r; break; }
       }
       // 卡不在 / 已被回答过（幂等闸）＝无事可做，不凭空补气泡
       if (!hit || hit[statusKey] === 'answered') return;
@@ -7817,7 +8278,7 @@ window.chatDeskHistPush = function (cid, entry) {
 // 后台收到查岗通知切回浏览器后，到该联系人即可看到并回答（incoming-requests 后台分支调用）。
 window.chatAppendDeskCkTo = function (cid, q) {
   const field = (window.buildDeskCkCard ? window.buildDeskCkCard(q) : null)
-    || { deskCkDir: 'toMe', text: '在干嘛呢？想你了。', hint: '他 来查岗了。', opts: null, askType: 'text' };
+    || { deskCkDir: 'toMe', text: '在干嘛呢？想你了。', hint: '他来查岗了。', opts: null, askType: 'text' };
   window.chatAppendDeskRec(cid, {
     side: 'in', special: 'ask-card', text: field.text,
     askQuestion: field.text, askOptions: field.opts, askType: field.askType,
@@ -7879,7 +8340,8 @@ addInTyped(reply || '…');
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你选择了：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.choiceQuestion || rec.text || '') + '</div>' + askAnsweredLinesHtml(answer, window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + favHeartHtml(rec) + '</div>');
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatCuriousReply = function (msgIdx, answer, reply, followup) {
@@ -7895,7 +8357,8 @@ addInTyped(followup ? [reply || '…', followup] : (reply || '…'));
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.curiousQuestion || rec.text || '') + '</div>' + askAnsweredLinesHtml(answer, window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + favHeartHtml(rec) + '</div>');
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatRoastReply = function (msgIdx, answer, reply) {
@@ -7911,7 +8374,8 @@ addInTyped(reply || '…');
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div><div class="msg-ask-a">✓ 你：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-choose-card answered"><div class="msg-ask-q">' + escTxt(rec.roastText || rec.text || '') + '</div>' + askAnsweredLinesHtml(answer, window.taFit ? window.taFit(askCardReplyClean(reply) || '…') : (askCardReplyClean(reply) || '…')) + favHeartHtml(rec) + '</div>');
+askBubbleAfterRender(el, rec, msgIdx);
 }
 };
 window.chatAskReply = function (msgIdx, answer, reply, opts) {
@@ -7996,7 +8460,8 @@ addInTyped(finalReply);
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + msgIdx + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text || '') + '</div><div class="msg-ask-a">✓ 已回答：' + escTxt(answer) + '</div><div class="msg-choose-r">' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(askCardReplyClean(finalReply)) : askCardReplyClean(finalReply)) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + escTxt(rec.askQuestion || rec.text || '') + '</div>' + askAnsweredLinesHtml(answer, window.taFit ? window.taFit(askCardReplyClean(finalReply)) : askCardReplyClean(finalReply)) + favHeartHtml(rec) + '</div>');
+askBubbleAfterRender(el, rec, msgIdx);
 }
 return finalReply;
 };
@@ -8511,7 +8976,7 @@ break;
 }
 fav.push({ side: 'out', text: lastMineText, type: favType, ts: Date.now(), by: 'ta', parts: favParts });
 saveFav(fav);
-setTimeout(() => { if (!sameCid()) return; toast('他 收藏了你的一条消息'); }, 1200);
+setTimeout(() => { if (!sameCid()) return; toast('他收藏了你的一条消息'); }, 1200);
 }
 }
 	if (rep.type === 'text' || rep.type === 'sticker' || rep.type === 'image') {
@@ -9075,22 +9540,52 @@ window.__cardSearchFns.push({ name: '聊天系统回应', fn: function (kw) {
 // 亲亲/贴贴申请弹窗，我同意后系统消息里没有相关消息」——口径对齐换头像邀请（avatar-lib replyMeInvite）
 // 与听歌邀请（music-player sm-req-*）：同意/拒绝都写一条 chatAddSystem 留痕。
 // 猜拳/游戏类邀请不传 onDecline，保持原样（对局结束另有系统消息，避免同一件事留痕两次）。
-function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
-const mask = document.getElementById('modal-mask');
-if ((mask && !mask.hidden) || !window.openModal) { onAccept(); return; }
-window.openModal(title, '', (v) => {
-if (v === '1') onAccept();
-else if (typeof onDecline === 'function') onDecline();
+// v8.73.8 FIX（作者 2026-11-05：连着来两个邀请时，第二个还没选，第一个就被自动同意）：
+// 旧守卫是「已有弹窗占屏就 onAccept()」——第二个邀请的确认框弹不出来，直接算成用户同意。
+// 贴贴当年已单独做挂起重投（见下条注释），但猜拳/游戏/读书邀请仍走这里。
+// 现在统一改成排队：占屏时只入队，等 modal/tc/qa/call/applock 全部让开再逐条弹；
+// 层关闭（hidden 变化）由 MutationObserver 泵下一条。任何邀请都必须由用户真点同意/拒绝。
+const INVITE_BUSY_IDS = ['modal-mask', 'tc-mask', 'qa-mask', 'call-mask', 'applock-mask'];
+const _inviteQ = [];
+let _inviteWatch = null;
+function _inviteBusy() {
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el && !el.hidden) return true;
+}
+return false;
+}
+function _invitePump() {
+if (!_inviteQ.length) return;
+// 弹窗组件不可用＝连确认框都没法弹，退回旧口径（立刻同意），别把邀请卡死在队列
+if (!window.openModal) { const job = _inviteQ.shift(); try { job.onAccept(); } catch (e) {} return; }
+if (_inviteBusy()) return;
+const job = _inviteQ.shift();
+window.openModal(job.title, '', (v) => {
+if (v === '1') job.onAccept();
+else if (typeof job.onDecline === 'function') job.onDecline();
 // #1422：婉拒句改从系统预设取（分组名随邀请类型走），整组/逐句关掉就什么都不发——
 //   这句是「我」发的婉拒，关掉后留空比抓别的组顶上去诚实。
-else { const _dl = presetReplyPick(declineGroup || '游戏邀请·婉拒', declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
+else { const _dl = presetReplyPick(job.declineGroup || '游戏邀请·婉拒', job.declinePool || INVITE_DECLINE); if (_dl) addOut(_dl); }
 }, {
 noInput: true,
 lock: true,
 pills: [{ label: '同意', value: '1' }, { label: '拒绝', value: '0' }],
 pill: '1', // v3.16.x：邀请弹窗默认选中「同意」，无需手动点选直接确定
-staticText: staticText
+staticText: job.staticText
 });
+}
+function openInviteConfirm(title, staticText, onAccept, declinePool, declineGroup, onDecline) {
+_inviteQ.push({ title: title, staticText: staticText, onAccept: onAccept, declinePool: declinePool, declineGroup: declineGroup, onDecline: onDecline });
+if (!_inviteWatch && window.MutationObserver) {
+const onHide = function () { try { _invitePump(); } catch (e) {} };
+_inviteWatch = new MutationObserver(onHide);
+for (let i = 0; i < INVITE_BUSY_IDS.length; i++) {
+const el = document.getElementById(INVITE_BUSY_IDS[i]);
+if (el) { try { _inviteWatch.observe(el, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) {} }
+}
+}
+_invitePump();
 }
 // ==== #1435：贴贴邀请的「挂起等待」：弹窗本体（形态抄 openInviteConfirm，一字不差：锁屏、
 // 默认选中「同意」、不自动关）＋ 挂起状态机（落盘/重投时机/超时）。====
@@ -9211,6 +9706,8 @@ if (!_cpAny()) _cpStop();
 });
 try { if (window.mochiOnDataReady) window.mochiOnDataReady(function () { _cpPump(window.__activeCid || 'default'); if (_cpAny()) _cpStart(); }); } catch (e) {}
 function openInvitePanelFor(kind, name) {
+// 2026-10-28：读书邀请同意后直接打开书架（与桌面读书图标同一条 rdOpen）
+if (kind === 'reading') { try { if (window.readingOpen) window.readingOpen(); } catch (e) {} return; }
 if (kind === 'cuddle') {
 try { if (navigator.vibrate) navigator.vibrate([30, 60, 90]); } catch (e) {}
 try { const _cr = presetReplyPick('贴贴·回应', CUDDLE_REPLIES); if (_cr) addInTyped(name + ' ' + _cr); } catch (e) {}
@@ -9239,12 +9736,20 @@ gomoku: { title: '游戏邀请' },
 linkup: { title: '游戏邀请' },
 match3: { title: '游戏邀请' },
 auction: { title: '游戏邀请' },
-cuddle: { title: '贴贴邀请' }
+cuddle: { title: '贴贴邀请' },
+reading: { title: '读书邀请' }
 };
+// 2026-10-28：他主动邀你读书（回复设置「主动邀请读书」门）——话术内置，不占用字卡库题库
+const READING_INVITE_LINES = ['一起读会儿书吗？', '想和你共读一章，来嘛', '陪我读一会儿书好不好？', '书架里那本还没看完，一起读？'];
+const READING_DECLINE = ['现在不太想读呢。', '等会儿再一起读好不好。', '眼睛有点累，晚点陪你读。', '下次再一起读嘛。'];
 function sendTaInvite(inv, name) {
 const meta = INVITE_KIND_META[inv && inv.kind] || INVITE_KIND_META.rps;
+const _readingInv = inv.kind === 'reading';
 // v3.16.x：邀请消息带 gInv 游戏类型字段（渲染仍走 poke），供聊天统计「小游戏记录」识别 TA 主动邀请
-addIn(name + ' ' + (inv.text || ''), { special: 'poke', initiative: true, gInv: inv.kind });
+// 2026-10-28：读书不是小游戏，不带 gInv（否则会被「小游戏记录」误收）
+const _pokeOpts = { special: 'poke', initiative: true };
+if (inv.kind && !_readingInv) _pokeOpts.gInv = inv.kind;
+addIn(name + ' ' + (inv.text || ''), _pokeOpts);
 showTyping();
 setTimeout(() => {
 hideTyping();
@@ -9265,16 +9770,23 @@ return;
 }
 openInviteConfirm(name + ' 的' + meta.title, name + ' ' + (inv.text || ''), () => {
 if (_cuddleInv && window.chatAddSystem) window.chatAddSystem('你接受了 ' + name + ' 的贴贴邀请');
+// 2026-10-28：读书同意同样留痕（对齐贴贴/听歌/换头像邀请口径）
+if (_readingInv && window.chatAddSystem) window.chatAddSystem('你接受了 ' + name + ' 的读书邀请');
 openInvitePanelFor(inv.kind, name);
-}, _cuddleInv ? CUDDLE_DECLINE : null, _cuddleInv ? '贴贴·婉拒' : '游戏邀请·婉拒', _cuddleInv ? () => {
+}, _cuddleInv ? CUDDLE_DECLINE : (_readingInv ? READING_DECLINE : null), _cuddleInv ? '贴贴·婉拒' : (_readingInv ? '读书·婉拒' : '游戏邀请·婉拒'), _cuddleInv ? () => {
 if (window.chatAddSystem) window.chatAddSystem('你拒绝了 ' + name + ' 的贴贴邀请');
 const _cl = presetReplyPick('贴贴·婉拒', CUDDLE_DECLINE); if (_cl) addOut(_cl);
-} : null);
+} : (_readingInv ? () => {
+if (window.chatAddSystem) window.chatAddSystem('你拒绝了 ' + name + ' 的读书邀请');
+const _rl = presetReplyPick('读书·婉拒', READING_DECLINE); if (_rl) addOut(_rl);
+} : null));
 }, randInt(700, 1400));
 }
 window.sendTaInvite = sendTaInvite;
 function tryActiveInvite(c) {
 if (!chatVisible()) return false;
+// 2026-10-28：五类主动邀请共用的总闸（100＝不打折）；未命中就走普通主动消息，不叠任何邀请门
+if (!hit(cfgn(c, 'ai-invite-prob', 100))) return false;
 const name = chatPartnerName();
 let inv = null;
 if (window.taInviteDraw) {
@@ -9291,6 +9803,14 @@ const GINV_POOL = [
 { kind: 'auction', text: '拍卖会上新啦，来跟我抢拍品呀' }
 ];
 inv = GINV_POOL[Math.floor(Math.random() * GINV_POOL.length)]; }
+}
+// 2026-10-28：taInviteDraw 未命中时的两个独立门——他邀你读书 / 他邀你听歌。
+// 读书发一条内置话术的邀请（同意后开书架）；听歌直接弹他现有的听歌邀请面板（无歌/已有邀请在屏就让路）。
+if (!inv && cfgn(c, 'ai-reading-en', 1) === 1 && hit(cfgn(c, 'ai-reading-prob', 5))) {
+inv = { kind: 'reading', text: READING_INVITE_LINES[Math.floor(Math.random() * READING_INVITE_LINES.length)] };
+}
+if (!inv && cfgn(c, 'ai-music-en', 1) === 1 && hit(cfgn(c, 'ai-music-prob', 5))) {
+if (window.taMusicInviteNow && window.taMusicInviteNow()) return true;
 }
 if (!inv || !inv.text) return false;
 sendTaInvite(inv, name);
@@ -9862,7 +10382,7 @@ const MORE_CATS = ['chat', 'game', 'tool', 'ask'];
 // 禁止在群聊里使用【小游戏】【TA的提问】【互动】功能。聊天页打开时关闭该模式、恢复全部分类。
 let moreGroupMode = false;
 const GROUP_MORE_ITEM_IDS = new Set(['more-decide', 'more-gdecide', 'more-search', 'more-divine']);
-function applyMoreCat(cat, group) {
+function applyMoreCat(cat, group, silent) {
 if (group === true || group === false) moreGroupMode = group;
 if (moreGroupMode) cat = 'tool'; // 群聊模式强制锁定「工具」分类
 if (MORE_CATS.indexOf(cat) < 0) cat = 'chat';
@@ -9871,7 +10391,14 @@ const showTab = !moreGroupMode || t.dataset.mcat === 'tool'; // 群聊模式隐�
 t.hidden = !showTab;
 t.classList.toggle('sel', t.dataset.mcat === cat);
 });
-if (moreGridAsk) moreGridAsk.hidden = cat !== 'ask';
+if (moreGridAsk) {
+moreGridAsk.hidden = cat !== 'ask';
+// v8.75.5：功能图标可以跨页签拖进「他的提问」；这一格里现在可能混有拖进来的功能项，
+// 不再只看原生提问项，统一按分类显隐（寻踪关闭时仍然收起）。
+moreGridAsk.querySelectorAll('.more-item').forEach(it => {
+it.hidden = !!(it.id === 'more-ck' && window.checkinEnabled && !window.checkinEnabled());
+});
+}
 if (moreGridFun) {
 moreGridFun.hidden = cat === 'ask';
 moreGridFun.querySelectorAll('.more-item').forEach(it => {
@@ -9879,13 +10406,417 @@ if (moreGroupMode) it.hidden = !GROUP_MORE_ITEM_IDS.has(it.id); // 群聊模式�
 else it.hidden = it.dataset.mcat !== cat || (it.id === 'more-ck' && window.checkinEnabled && !window.checkinEnabled()); // #823 寻踪关闭时收起「更多功能」里的寻踪
 });
 }
-if (!moreGroupMode) store.set('more-cat', cat);
+if (!moreGroupMode && !silent) store.set('more-cat', cat);
+}
+// v8.74.2 用户 2026-11-05：四个页签内容行数不同，切页签时面板高度跳来跳去。
+// 新版 P2 打开时把四个分类都量一遍（同步切换、不写 more-cat），取最高值写成两个
+// 网格的 min-height——切到短页签只留白、不再缩高；旧版/群聊模式不碰。
+function stabilizeMorePanelHeight() {
+if (!morePanel || moreGroupMode) return;
+if (!morePanel.classList.contains('chat-input-v2')) {
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+return;
+}
+const sel = document.querySelector('#more-tabs .more-tab.sel');
+let cur = (sel && MORE_CATS.indexOf(sel.dataset.mcat) >= 0) ? sel.dataset.mcat : 'chat';
+if (moreGridFun) moreGridFun.style.minHeight = '';
+if (moreGridAsk) moreGridAsk.style.minHeight = '';
+let max = 0;
+MORE_CATS.forEach((cat) => {
+applyMoreCat(cat, false, true);
+const grid = cat === 'ask' ? moreGridAsk : moreGridFun;
+if (grid) max = Math.max(max, Math.ceil(grid.getBoundingClientRect().height));
+});
+applyMoreCat(cur, false, true);
+const h = max ? max + 'px' : '';
+if (moreGridFun) moreGridFun.style.minHeight = h;
+if (moreGridAsk) moreGridAsk.style.minHeight = h;
 }
 // v3.16.x：群聊页打开共享更多面板时复用同一分类过滤
 window.applyMoreCat = applyMoreCat;
 // v3.26.x：群聊打开/关闭共享面板时切换群聊过滤模式
 window.setMoreGroupMode = (on) => { moreGroupMode = !!on; applyMoreCat('tool', !!on); };
 document.querySelectorAll('#more-tabs .more-tab').forEach(t => t.addEventListener('click', (e) => { e.stopPropagation(); applyMoreCat(t.dataset.mcat); }));
+// v8.74.7 用户 2026-11-05：四个分类页签长按拖动排序（全局一份，松手落盘 more-tabs-order）。
+// 只做横向排序，不复制桌面图标的自由坐标；群聊模式（只剩工具页签）不启用拖动。
+// v8.75.5 用户 2026-11-06：轻点后 380ms 计时器没清，会误入拖动态并吞掉下一次 click（切页签滞涩）。
+// 保留长按排序，补上按下→抬起之间的取消路径：轻点立即切页，不再残留拖动态。
+(function initMoreTabDrag() {
+const moreTabs = document.getElementById('more-tabs');
+if (!moreTabs) return;
+const DEF = ['chat', 'tool', 'game', 'ask'];
+const gStore = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const readOrder = () => {
+let a = null;
+try { const g = gStore(); a = JSON.parse(g.get('more-tabs-order') || 'null'); } catch (e) {}
+const arr = (Array.isArray(a) ? a : []).filter(k => DEF.indexOf(k) >= 0);
+DEF.forEach(k => { if (arr.indexOf(k) < 0) arr.push(k); });
+return arr;
+};
+const applyOrder = () => {
+const at = document.getElementById('gc-more-at');
+readOrder().forEach(k => {
+const t = moreTabs.querySelector('.more-tab[data-mcat="' + k + '"]');
+if (t) moreTabs.insertBefore(t, at || null);
+});
+};
+applyOrder();
+let pressTimer = 0, dragTab = null, startX = 0, startY = 0, pointerId = null;
+let swallowNextClick = false, pressMoved = false;
+const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
+const detachPress = () => {
+document.removeEventListener('pointermove', pressMove);
+document.removeEventListener('pointerup', pressEnd, true);
+document.removeEventListener('pointercancel', pressEnd, true);
+};
+function pressMove(e) {
+if (!pressTimer) return;
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14) {
+pressMoved = true;
+swallowNextClick = true;
+clearPress();
+detachPress();
+}
+}
+function pressEnd() { clearPress(); detachPress(); }
+const saveOrder = () => {
+const order = Array.from(moreTabs.querySelectorAll('.more-tab')).map(t => t.dataset.mcat).filter(k => k);
+try { const g = gStore(); if (g) g.set('more-tabs-order', JSON.stringify(order)); } catch (e) {}
+};
+function onMove(e) {
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (!dragTab) {
+if (pressTimer && (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8)) clearPress();
+return;
+}
+if (e.cancelable) e.preventDefault();
+const list = Array.from(moreTabs.querySelectorAll('.more-tab')).filter(t => t !== dragTab);
+const at = document.getElementById('gc-more-at');
+let placed = false;
+for (let i = 0; i < list.length; i++) {
+const r = list[i].getBoundingClientRect();
+if (e.clientX < r.left + r.width / 2) { moreTabs.insertBefore(dragTab, list[i]); placed = true; break; }
+}
+if (!placed) { if (at) moreTabs.insertBefore(dragTab, at); else moreTabs.appendChild(dragTab); }
+}
+function endDrag(e) {
+if (e && e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+document.removeEventListener('pointermove', onMove);
+document.removeEventListener('pointerup', endDrag, true);
+document.removeEventListener('pointercancel', endDrag, true);
+clearPress();
+detachPress();
+if (!dragTab) return;
+dragTab.classList.remove('more-tab-dragging');
+moreTabs.classList.remove('more-tabs-dragging');
+dragTab = null;
+saveOrder();
+swallowNextClick = true;
+}
+moreTabs.addEventListener('pointerdown', (e) => {
+if (moreGroupMode) return;
+const tab = e.target && e.target.closest ? e.target.closest('.more-tab') : null;
+if (!tab) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+clearPress();
+detachPress();
+swallowNextClick = false;
+pressMoved = false;
+startX = e.clientX; startY = e.clientY; pointerId = e.pointerId;
+document.addEventListener('pointermove', pressMove);
+document.addEventListener('pointerup', pressEnd, true);
+document.addEventListener('pointercancel', pressEnd, true);
+pressTimer = setTimeout(() => {
+pressTimer = 0;
+detachPress();
+dragTab = tab;
+tab.classList.add('more-tab-dragging');
+moreTabs.classList.add('more-tabs-dragging');
+try { tab.setPointerCapture(pointerId); } catch (err) {}
+document.addEventListener('pointermove', onMove, { passive: false });
+document.addEventListener('pointerup', endDrag, true);
+document.addEventListener('pointercancel', endDrag, true);
+}, 380);
+});
+moreTabs.addEventListener('click', (e) => {
+if (!swallowNextClick) return;
+swallowNextClick = false;
+e.preventDefault();
+e.stopPropagation();
+}, true);
+// v8.75.10 用户 2026-11-06：轻点切页不再等合成 click（部分内核 click 有延迟，观感滞涩）。
+// pointerup 直接切；随后那一下合成 click 由上面的 capture 吞掉，避免同一次轻点切两次。
+moreTabs.addEventListener('pointerup', (e) => {
+if (dragTab || swallowNextClick || pressMoved) return;
+const tab = e.target && e.target.closest ? e.target.closest('.more-tab') : null;
+if (!tab || tab.hidden || moreGroupMode) return;
+applyMoreCat(tab.dataset.mcat);
+swallowNextClick = true;
+});
+moreTabs.addEventListener('contextmenu', (e) => { if (dragTab) e.preventDefault(); });
+})();
+
+// v8.75.5 用户 2026-11-06：长按拖动的是「更多」面板里的功能图标（不是分类页签）。
+// 四个分类共用一份图标顺序（more-icons-order）；拖到别的分类页签上停留/松手，
+// 图标改属那个分类（more-icons-cat），跨页签也能保持位置。
+(function initMoreIconDrag() {
+if (!moreGridFun || !moreGridAsk) return;
+const gStore = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const validCat = (k) => MORE_CATS.indexOf(k) >= 0;
+const allItems = () => Array.from(document.querySelectorAll('#more-grid-fun .more-item, #more-grid-ask .more-item'));
+// 原生提问项没有 data-mcat，统一打上 ask，之后跨页签的显隐/保存都按同一口径
+moreGridAsk.querySelectorAll('.more-item').forEach(it => { if (!it.dataset.mcat) it.dataset.mcat = 'ask'; });
+const moveToCat = (item, cat) => {
+const target = cat === 'ask' ? moreGridAsk : moreGridFun;
+if (item.parentElement !== target) target.appendChild(item);
+item.dataset.mcat = cat;
+};
+const applySavedLayout = () => {
+let cats = {};
+try { const g = gStore(); cats = JSON.parse(g.get('more-icons-cat') || '{}') || {}; } catch (e) { cats = {}; }
+allItems().forEach(it => {
+if (!it.id) return;
+let cat = cats[it.id];
+if (!validCat(cat)) cat = it.parentElement === moreGridAsk ? 'ask' : (validCat(it.dataset.mcat) ? it.dataset.mcat : 'chat');
+moveToCat(it, cat);
+});
+let order = [];
+try { const g = gStore(); order = JSON.parse(g.get('more-icons-order') || 'null') || []; } catch (e) { order = []; }
+if (Array.isArray(order) && order.length) {
+const rank = {};
+order.forEach((id, i) => { if (id && rank[id] == null) rank[id] = i; });
+[moreGridFun, moreGridAsk].forEach(grid => {
+const items = Array.from(grid.querySelectorAll('.more-item'));
+items.sort((a, b) => {
+const ra = rank[a.id], rb = rank[b.id];
+if (ra == null && rb == null) return 0;
+if (ra == null) return 1;
+if (rb == null) return -1;
+return ra - rb;
+});
+items.forEach(it => grid.appendChild(it));
+});
+}
+};
+const currentCat = () => {
+const sel = document.querySelector('#more-tabs .more-tab.sel');
+return sel && validCat(sel.dataset.mcat) ? sel.dataset.mcat : 'chat';
+};
+const saveState = () => {
+const order = [];
+[moreGridFun, moreGridAsk].forEach(grid => grid.querySelectorAll('.more-item').forEach(it => { if (it.id) order.push(it.id); }));
+const cats = {};
+allItems().forEach(it => { if (it.id) cats[it.id] = validCat(it.dataset.mcat) ? it.dataset.mcat : (it.parentElement === moreGridAsk ? 'ask' : 'chat'); });
+try {
+const g = gStore();
+if (g) {
+g.set('more-icons-order', JSON.stringify(order));
+g.set('more-icons-cat', JSON.stringify(cats));
+}
+} catch (e) {}
+};
+applySavedLayout();
+try { applyMoreCat(currentCat(), undefined, true); } catch (e) {}
+let pressTimer = 0, dragItem = null, dragGhost = null, dragCat = '', startX = 0, startY = 0, lastX = 0, lastY = 0, pointerId = null;
+let grabDX = 0, grabDY = 0;
+let hoverCat = '', hoverTab = null, hoverTimer = 0, swallowIconClick = false;
+const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = 0; } };
+const detachPress = () => {
+document.removeEventListener('pointermove', pressMove);
+document.removeEventListener('pointerup', pressEnd, true);
+document.removeEventListener('pointercancel', pressEnd, true);
+};
+function pressMove(e) {
+if (!pressTimer) return;
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+lastX = e.clientX; lastY = e.clientY;
+if (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14) {
+swallowIconClick = true;
+clearPress();
+detachPress();
+}
+}
+function pressEnd() { clearPress(); detachPress(); }
+const clearHover = () => {
+if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = 0; }
+if (hoverTab) { hoverTab.classList.remove('more-tab-drop'); hoverTab = null; }
+hoverCat = '';
+};
+const showHover = (tab) => {
+const cat = tab.dataset.mcat;
+if (!validCat(cat) || hoverCat === cat) return;
+clearHover();
+hoverCat = cat;
+hoverTab = tab;
+tab.classList.add('more-tab-drop');
+hoverTimer = setTimeout(() => {
+hoverTimer = 0;
+if (hoverCat === cat && dragItem) switchToTab(cat);
+clearHover();
+}, 220);
+};
+const switchToTab = (cat) => {
+if (!dragItem || !validCat(cat) || cat === dragCat) return;
+moveToCat(dragItem, cat);
+dragCat = cat;
+applyMoreCat(cat);
+dragItem.hidden = false;
+};
+const tabAt = (x, y) => {
+const hit = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+const direct = hit && hit.closest ? hit.closest('#more-tabs .more-tab') : null;
+if (direct && !direct.hidden) return direct;
+let best = null, bestD = 10;
+document.querySelectorAll('#more-tabs .more-tab').forEach(t => {
+if (t.hidden) return;
+const r = t.getBoundingClientRect();
+const cx = Math.max(r.left, Math.min(x, r.right));
+const cy = Math.max(r.top, Math.min(y, r.bottom));
+const d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+if (d < bestD) { best = t; bestD = d; }
+});
+return best;
+};
+const startGhost = (item) => {
+const g = document.createElement('div');
+g.className = 'more-item more-item-ghost';
+g.innerHTML = item.innerHTML;
+g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+const r = item.getBoundingClientRect();
+g.style.width = (r.width || 64) + 'px';
+g.style.height = (r.height || 80) + 'px';
+g.style.transform = 'translate3d(' + (lastX - grabDX) + 'px,' + (lastY - grabDY) + 'px,0)';
+document.body.appendChild(g);
+return g;
+};
+const moveGhost = () => {
+if (!dragGhost) return;
+dragGhost.style.transform = 'translate3d(' + (lastX - grabDX) + 'px,' + (lastY - grabDY) + 'px,0)';
+};
+const clearGhost = () => {
+if (dragGhost) {
+try { dragGhost.remove(); } catch (e) {}
+dragGhost = null;
+}
+};
+function onMove(e) {
+if (e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+if (!dragItem) {
+if (pressTimer && (Math.abs(e.clientX - startX) > 14 || Math.abs(e.clientY - startY) > 14)) {
+swallowIconClick = true;
+clearPress();
+}
+return;
+}
+if (e.cancelable) e.preventDefault();
+lastX = e.clientX; lastY = e.clientY;
+moveGhost();
+const tabEl = tabAt(lastX, lastY);
+if (tabEl && !tabEl.hidden) {
+if (!moreGroupMode && tabEl.dataset.mcat !== dragCat) showHover(tabEl);
+else if (hoverCat) clearHover();
+return;
+}
+if (hoverCat) clearHover();
+const grid = dragItem.parentElement;
+if (grid !== moreGridFun && grid !== moreGridAsk) return;
+const under = document.elementFromPoint ? document.elementFromPoint(lastX, lastY) : null;
+const target = under && under.closest ? under.closest('.more-item') : null;
+if (target === dragItem) return;
+if (target && !target.hidden && target.parentElement === grid) {
+const r = target.getBoundingClientRect();
+const cx = r.left + r.width / 2;
+const band = r.height * 0.3;
+let after;
+if (lastY < r.top + band) after = false;
+else if (lastY > r.bottom - band) after = true;
+else after = lastX >= cx;
+if (after) grid.insertBefore(dragItem, target.nextSibling);
+else grid.insertBefore(dragItem, target);
+return;
+}
+const vis = Array.from(grid.querySelectorAll('.more-item')).filter(it => !it.hidden && it !== dragItem);
+let placed = false;
+for (let i = 0; i < vis.length; i++) {
+const r = vis[i].getBoundingClientRect();
+if (lastY < r.top + r.height / 2 || (lastY <= r.bottom && lastX < r.left + r.width / 2)) {
+grid.insertBefore(dragItem, vis[i]);
+placed = true;
+break;
+}
+}
+if (!placed) grid.appendChild(dragItem);
+}
+function endDrag(e) {
+if (e && e.pointerId != null && pointerId != null && e.pointerId !== pointerId) return;
+document.removeEventListener('pointermove', onMove);
+document.removeEventListener('pointerup', endDrag, true);
+document.removeEventListener('pointercancel', endDrag, true);
+clearPress();
+detachPress();
+clearHover();
+if (!dragItem) { clearGhost(); return; }
+const x = (e && e.clientX != null) ? e.clientX : lastX;
+const y = (e && e.clientY != null) ? e.clientY : lastY;
+const tabEl = tabAt(x, y);
+const overTab = !!(tabEl && !tabEl.hidden);
+if (overTab && tabEl.dataset.mcat !== dragCat && !moreGroupMode) switchToTab(tabEl.dataset.mcat);
+clearGhost();
+dragItem.classList.remove('more-item-dragging');
+moreGridFun.classList.remove('more-icons-dragging');
+moreGridAsk.classList.remove('more-icons-dragging');
+try { if (dragItem.releasePointerCapture && pointerId != null) dragItem.releasePointerCapture(pointerId); } catch (err) {}
+dragItem = null;
+dragCat = '';
+saveState();
+if (!overTab) swallowIconClick = true;
+}
+[moreGridFun, moreGridAsk].forEach(grid => {
+grid.addEventListener('pointerdown', (e) => {
+if (moreGroupMode) return;
+const item = e.target && e.target.closest ? e.target.closest('.more-item') : null;
+if (!item || item.hidden) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+clearPress();
+detachPress();
+clearHover();
+swallowIconClick = false;
+startX = e.clientX; startY = e.clientY; lastX = e.clientX; lastY = e.clientY; pointerId = e.pointerId;
+document.addEventListener('pointermove', pressMove);
+document.addEventListener('pointerup', pressEnd, true);
+document.addEventListener('pointercancel', pressEnd, true);
+pressTimer = setTimeout(() => {
+pressTimer = 0;
+detachPress();
+dragItem = item;
+dragCat = currentCat();
+const ir = item.getBoundingClientRect();
+grabDX = Math.min(Math.max(0, lastX - ir.left), ir.width || 0);
+grabDY = Math.min(Math.max(0, lastY - ir.top), ir.height || 0);
+item.classList.add('more-item-dragging');
+moreGridFun.classList.add('more-icons-dragging');
+moreGridAsk.classList.add('more-icons-dragging');
+dragGhost = startGhost(item);
+try { if (item.setPointerCapture && pointerId != null) item.setPointerCapture(pointerId); } catch (err) {}
+try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
+document.addEventListener('pointermove', onMove, { passive: false });
+document.addEventListener('pointerup', endDrag, true);
+document.addEventListener('pointercancel', endDrag, true);
+}, 300);
+});
+grid.addEventListener('click', (e) => {
+if (!swallowIconClick) return;
+swallowIconClick = false;
+e.preventDefault();
+e.stopPropagation();
+}, true);
+grid.addEventListener('contextmenu', (e) => {
+if (dragItem || (e.target && e.target.closest && e.target.closest('.more-item'))) e.preventDefault();
+});
+});
+})();
 moreBtn.addEventListener('click', (e) => {
 e.stopPropagation();
 if (morePanel.hidden) {
@@ -9902,6 +10833,7 @@ const tb = document.getElementById('gc-more-at');
 if (tb) tb.hidden = true;
 }
 morePanel.hidden = !morePanel.hidden;
+if (!morePanel.hidden) stabilizeMorePanelHeight();
 });
 document.addEventListener('click', (e) => {
 if (!morePanel.hidden && !morePanel.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
@@ -10125,7 +11057,7 @@ function sendPoke(action) {
 // FIX 2026-09-17 #648g 面板单点防御：媒体形态串（存量导入/令牌化产物）不当拍一拍短语发出
 if (!pokeTextOnly(action)) { toast('这条不是文字拍一拍，已跳过'); return; }
 // v3.26.x：存 {me}/{ta} 占位符而非字面昵称——渲染 T() 回填「我的昵称 + TA 的昵称」
-// （跟随改名），称呼功能（taFit）不再把昵称槽位改写成 他/ta/她
+// （跟随改名），称呼功能（taFit）不再把昵称槽位改写成他/ta/她
 let text;
 if (action.indexOf('你') >= 0) {
 if (action.charAt(0) === '你') {
@@ -10445,7 +11377,7 @@ return -1;
 function sendRps(mine) {
 closeRpsPanel();
 const mineName = { rock: '石头', scissors: '剪刀', paper: '布' }[mine] || '';
-addRec({ side: 'in', special: 'poke', text: '我出了 ' + mineName + '，等 他 出拳…', nightAllow: true, rateAllow: true });
+addRec({ side: 'in', special: 'poke', text: '我出了 ' + mineName + '，等他出拳…', nightAllow: true, rateAllow: true });
 showTyping();
 setTimeout(() => {
 hideTyping();
@@ -10668,7 +11600,7 @@ function rpStatusText(rec) {
 const st = rec.rpStatus || 'pending';
 if (st === 'received') return '已领取';
 if (st === 'expired') return '已过期·退回';
-if (st === 'returned') return '已退回';
+if (st === 'returned') return '已拒收';
 return rec.side === 'out' ? (window.taFit ? window.taFit('待他领取') : '待他领取') : '待领取'; // #1477：side 缺失的历史卡与渲染的「联系人 发出」同侧＝待我领取
 }
 function rpStatusCls(rec) {
@@ -10677,6 +11609,137 @@ if (st === 'received') return 'opened';
 if (st === 'expired' || st === 'returned') return 'expired';
 return '';
 }
+// ===== 2026-10-26 红包拆开小窗：领取/拒收都在窗里 =====
+let rpOpenCur = null;
+function rpOpenEl(id) { return document.getElementById(id); }
+function rpClaimIncoming(rpIdx, rpRec) {
+if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return false;
+// 小窗开着时可能又进新消息：按对象重新定位下标，避免拿旧 idx 改错条
+const i = (rpIdx >= 0 && msgs[rpIdx] === rpRec) ? rpIdx : msgs.indexOf(rpRec);
+if (i < 0) return false;
+rpIdx = i;
+rpRec.rpStatus = 'received';
+rpRec.rpOpenedAt = Date.now();
+const wallet = rpWalletGet();
+wallet.myBalance += Math.round((rpRec.rpAmount || 0) * 100);
+rpWalletSet(wallet);
+saveMsgsNow();
+const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
+if (!rpPatchStatusInPlace(rpIdx)) renderWindow(true, true); // FIX 2026-09-07 #230 状态流转不整窗重建（闪屏）
+setTimeout(() => addIn('你领取了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(400, 1000));
+setTimeout(() => rpCollectFeedback('in'), randInt(1100, 2200));
+return true;
+}
+function rpRejectIncoming(rpIdx, rpRec) {
+if (!rpRec || rpRec.special !== 'redpacket' || (rpRec.rpStatus || 'pending') !== 'pending' || rpRec.side === 'out') return false;
+const i = (rpIdx >= 0 && msgs[rpIdx] === rpRec) ? rpIdx : msgs.indexOf(rpRec);
+if (i < 0) return false;
+rpRec.rpStatus = 'returned';
+const w = rpWalletGet();
+w.systemBalance += Math.round((rpRec.rpAmount || 0) * 100);
+rpWalletSet(w);
+saveMsgsNow();
+const amtTxt = '（心意币 ¥' + Number(rpRec.rpAmount || 0).toFixed(2) + '）';
+if (!rpPatchStatusInPlace(i)) renderWindow(true, true);
+setTimeout(() => addIn('你拒收了红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }), randInt(300, 800));
+// 拒收后 TA 按概率回一句（避开「嫌少」这类话）
+setTimeout(() => rpRejectFeedback(), randInt(900, 1600));
+return true;
+}
+function rpOpenSetStage(stage) {
+const btns = rpOpenEl('rp-open-btns');
+const cfm = rpOpenEl('rp-open-confirm');
+const st = rpOpenEl('rp-open-status');
+const done = rpOpenEl('rp-open-done');
+const note = rpOpenEl('rp-open-note');
+if (!btns || !cfm || !st || !done || !note) return;
+btns.hidden = stage !== 'view';
+cfm.hidden = stage !== 'confirm';
+st.hidden = stage !== 'done';
+done.hidden = stage !== 'done';
+note.hidden = stage === 'done';
+if (stage === 'view') note.textContent = '领取后心意币会存入你的余额；拒收会退回给' + chatPartnerName() + '。';
+if (stage === 'confirm') note.textContent = '确定拒收这个红包？拒收后会退回给' + chatPartnerName() + '。';
+}
+function rpOpenShowDone(title, sub, doneLabel) {
+const st = rpOpenEl('rp-open-status');
+if (st) st.innerHTML = escTxt(title) + (sub ? '<span class="rp-open-status-sub">' + escTxt(sub) + '</span>' : '');
+const done = rpOpenEl('rp-open-done');
+if (done) { done.textContent = doneLabel || '知道了'; done.hidden = false; }
+rpOpenSetStage('done');
+}
+function openRpOpen(rec, idx) {
+if (!rec || rec.special !== 'redpacket') return;
+rpOpenCur = { rec: rec, idx: idx };
+rpOpenBind();
+const from = rpOpenEl('rp-open-from');
+if (from) from.textContent = rec.side === 'out' ? '你发出的红包' : '来自 ' + chatPartnerName();
+const amt = rpOpenEl('rp-open-amt');
+if (amt) amt.textContent = '¥' + Number(rec.rpAmount || 0).toFixed(2);
+const wish = rpOpenEl('rp-open-wish');
+if (wish) wish.textContent = rec.rpWish || '心意';
+// 2026-10-26：有封面就整张铺封面（同红包卡：白膜保证可读）；没封面白底
+const box = rpOpenEl('rp-open-box');
+if (box) {
+box.classList.remove('has-cover');
+box.style.backgroundImage = '';
+const cover = rec.rpCover ? rpCoverGet(rec.side) : '';
+if (cover) {
+box.classList.add('has-cover');
+box.style.backgroundImage = 'url("' + cover + '")';
+}
+}
+const ta = window.taFit ? window.taFit('他') : '他';
+const st = rec.rpStatus || 'pending';
+if (st === 'pending' && rec.side !== 'out') {
+rpOpenSetStage('view');
+} else if (st === 'pending') {
+rpOpenShowDone('等待 ' + ta + ' 领取', '红包已发出，等对方处理。', '知道了');
+} else if (st === 'received') {
+rpOpenShowDone(rec.side === 'out' ? (ta + ' 已领取') : '已领取', rec.side === 'out' ? '心意币已转给对方。' : '心意币已存入你的余额。', '收下');
+} else if (st === 'returned') {
+rpOpenShowDone(rec.side === 'out' ? (ta + ' 已拒收') : '已拒收', rec.side === 'out' ? '心意币已退回给你。' : '心意币已退回给' + chatPartnerName() + '。', '知道了');
+} else if (st === 'expired') {
+rpOpenShowDone('已过期', '这个红包已经过期了。', '知道了');
+} else {
+rpOpenShowDone(rpStatusText(rec), '', '知道了');
+}
+const mask = rpOpenEl('rp-open-mask');
+if (mask) {
+mask.hidden = false;
+const box = mask.querySelector('.rp-open-box');
+if (box) { box.style.animation = 'none'; void box.offsetWidth; box.style.animation = ''; }
+}
+}
+function rpOpenClose() {
+const mask = rpOpenEl('rp-open-mask');
+if (mask) mask.hidden = true;
+rpOpenCur = null;
+}
+function rpOpenBind() {
+const mask = rpOpenEl('rp-open-mask');
+if (!mask || mask.__rpOpenBound) return;
+mask.__rpOpenBound = true;
+mask.addEventListener('click', (e) => { if (e.target === mask) rpOpenClose(); });
+const bind = (id, fn) => { const el = rpOpenEl(id); if (el) el.addEventListener('click', fn); };
+bind('rp-open-close', rpOpenClose);
+bind('rp-open-done', rpOpenClose);
+bind('rp-open-reject', () => rpOpenSetStage('confirm'));
+bind('rp-open-cancel', () => rpOpenSetStage('view'));
+bind('rp-open-claim', () => {
+if (!rpOpenCur) return;
+const rec = rpOpenCur.rec, idx = rpOpenCur.idx;
+if (!rpClaimIncoming(idx, rec)) return;
+rpOpenShowDone('已领取', '心意币已存入你的余额。', '收下');
+});
+bind('rp-open-sure', () => {
+if (!rpOpenCur) return;
+const rec = rpOpenCur.rec, idx = rpOpenCur.idx;
+if (!rpRejectIncoming(idx, rec)) return;
+rpOpenShowDone('已拒收', '心意币已退回给' + chatPartnerName() + '。', '知道了');
+});
+}
+rpOpenBind();
 // FIX 2026-09-07 #230 红包状态流转闪屏：领取/退回/TA领取/TA退回此前一律 renderWindow
 // 整窗重建——body.innerHTML='' 后全部气泡（img 重新解码）＝肉眼整屏闪一下，是 #211/#220
 // 同根因（整窗重建闪动）家族的最后一条未收口路径；领红包必经此处＝所有机型每次必闪
@@ -10697,6 +11760,9 @@ const cls = rpStatusCls(rec);
 if (cls) card.classList.add(cls);
 const st = card.querySelector('.msg-rp-status');
 if (st) st.textContent = rpStatusText(rec);
+// 2026-10-26：领/拒后卡面提示从「点击拆开」切到「点击查看」
+const hint = card.querySelector('.msg-rp-hint');
+if (hint) hint.innerHTML = '点击查看<span class="msg-rp-chev">\u203A</span>';
 return true;
 }
 // v3.28.x：TA 每日发红包上限次数可设——对话设置「TA 每日发红包上限」cs-rp-daily-max
@@ -10846,23 +11912,39 @@ addInTyped(rep.text, { type: rep.type, parts: rep.parts, tag: pyMultiDrawn ? '�
 }, randInt(800, 2000));
 }
 }
+function rpRejectProb() {
+let v = 20;
+try { const s = parseFloat(store.get('cs-rp-reject-prob')); if (isFinite(s)) v = Math.max(0, Math.min(100, s)); } catch (e) {}
+return v;
+}
+// 我拒收 TA 的红包后，TA 按概率回一句（避开「嫌少」这类话）
+function rpRejectFeedback() {
+const myCid = window.__activeCid || 'default';
+if (Math.random() >= 0.35) return;
+const defs = ['怎么不收？', '是不喜欢吗？', '收下嘛。', '这个也不收？', '好吧，那我留着。', '你不收我会有点难过。', '那我下次换个方式。', '是不是我哪里惹你了？'];
+const pool = window.getInteractPool ? window.getInteractPool('红包·拒收', defs) : defs;
+const txt = pick(pool && pool.length ? pool : defs);
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn(txt, { silent: true, nightAllow: true, rateAllow: true }); }, randInt(800, 1800));
+}
 function handleSendResponse(msg) {
 const idx = msgs.indexOf(msg);
 if (idx < 0) return;
 const rec = msgs[idx];
 if (!rec || rec.rpStatus !== 'pending') return;
 const myCid = window.__activeCid || 'default';
-const r = Math.random();
+const rejectP = rpRejectProb();
+const claimP = Math.max(0, 90 - rejectP);
+const r = Math.random() * 100;
 const wallet = rpWalletGet();
 const amtFen = Math.round((rec.rpAmount || 0) * 100);
-if (r < 0.2) {
+if (r < rejectP) {
 rec.rpStatus = 'returned';
 wallet.myBalance += amtFen;
 rpWalletSet(wallet);
 saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 退回了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
-} else if (r < 0.9) {
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他拒收了你的红包（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）', { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(500, 1200));
+} else if (r < rejectP + claimP) {
 rec.rpStatus = 'received';
 rec.rpOpenedAt = Date.now();
 wallet.systemBalance += amtFen;
@@ -10870,7 +11952,7 @@ rpWalletSet(wallet);
 saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
 const amtTxt = '（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）';
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
 rpCollectFeedback('out');
 }
 }
@@ -10888,7 +11970,7 @@ saveMsgsNow();
 if (!rpPatchStatusInPlace(idx)) renderWindow(false, true); // FIX 2026-09-07 #230 红包状态流转不整窗重建（闪屏）
 const amtTxt = '（心意币 ¥' + Number(rec.rpAmount || 0).toFixed(2) + '）';
 const myCid = window.__activeCid || 'default';
-setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他 领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
+setTimeout(() => { if ((window.__activeCid || 'default') !== myCid) return; addIn('他领取了你的红包' + amtTxt, { special: 'poke', nightAllow: true, rateAllow: true }); }, randInt(400, 1000));
 rpCollectFeedback('out');
 }
 function rpExpireCheck() {
@@ -10914,7 +11996,7 @@ function rpRenderBalance() {
 const el = document.getElementById('rp-balance');
 if (!el) return;
 const w = rpWalletGet();
-el.textContent = '心意币 ¥' + (w.myBalance / 100).toFixed(2) + ' · ' + chatPartnerName() + ' ¥' + (w.systemBalance / 100).toFixed(2) + ' · 向 Mochi 申请心意币';
+el.textContent = '心意币 ¥' + (w.myBalance / 100).toFixed(2) + ' · ' + chatPartnerName() + ' ¥' + (w.systemBalance / 100).toFixed(2) + ' · 向 ' + coinBrandNow() + ' 申请心意币';
 }
 // v3.15.x：余额行改为「向 Mochi 申请心意币」——不再直接改账本数值；
 // 选收款方（我/TA）输入申请金额，确定即模拟 Mochi 打款并入账（累加），留空点【完成】结束
@@ -10928,10 +12010,10 @@ const fmtYuan = (n) => (Math.round(n * 100) / 100).toFixed(2);
 const hintTxt = () => {
 const w = rpWalletGet();
 return '当前：心意币 ¥' + (w.myBalance / 100).toFixed(2) + ' · ' + taName + ' ¥' + (w.systemBalance / 100).toFixed(2) +
-(doneAny ? '\n已到账，可继续为' + LBL[side] + '申请；留空点【完成】结束' : '\n选择收款方，输入申请金额点【申请】，Mochi 打款后自动入账；留空点【完成】结束');
+(doneAny ? '\n已到账，可继续为' + LBL[side] + '申请；留空点【完成】结束' : '\n选择收款方，输入申请金额点【申请】，' + coinBrandNow() + ' 打款后自动入账；留空点【完成】结束');
 };
 let ctl = null;
-ctl = window.openModal('向 Mochi 申请心意币', '', (arg) => {
+ctl = window.openModal('向 ' + coinBrandNow() + ' 申请心意币', '', (arg) => {
 const picked = (arg === 'my' || arg === 'ta');
 const el = document.getElementById('modal-input');
 const raw = String(picked ? ((el && el.value) || '') : (arg == null ? '' : arg)).trim();
@@ -10946,7 +12028,7 @@ const w = rpWalletGet();
 	rpWalletSet(w); rpRenderBalance();
 	// v3.16.x：聊天侧申请同步记入主页申请流水
 	try { if (window.giftCoinLedgerAdd) window.giftCoinLedgerAdd('ask', target === 'my' ? fen : 0, target === 'ta' ? fen : 0, '聊天申请'); } catch (e) {}
-	toast('Mochi 已打款，' + LBL[target] + ' +¥' + fmtYuan(fen / 100));
+	toast(coinBrandNow() + ' 已打款，' + LBL[target] + ' +¥' + fmtYuan(fen / 100));
 doneAny = true;
 side = target === 'my' ? 'ta' : 'my';
 if (ctl) {
@@ -11366,15 +12448,11 @@ const dp = document.getElementById('chat-decision-panel');
 if (dp) dp.hidden = true;
 });
 }
+// #1652：反问（你问完 / 邀请完，他偶尔反过来发一张卡）——实现收口到 ta-ask.js 的
+// window.taFollowupAsk：那边统一受「他的询问」等各总开关、互动卡频率档位、60 分钟总闸门、
+// 夜间静默、答题截止时间约束，基准概率 12%（原实现写死 35% 且全部绕过，用户实报「每次都要回发」）。
 function maybeFollowupAskCard() {
-if (Math.random() >= 0.35) return;
-const roll = Math.random();
-try {
-if (roll < 0.25 && window.triggerTaAskNow) { window.triggerTaAskNow(); return; }
-if (roll < 0.5 && window.triggerTaChooseNow) { window.triggerTaChooseNow(); return; }
-if (roll < 0.75 && window.triggerTaCuriousNow) { window.triggerTaCuriousNow(); return; }
-if (window.triggerTaRoastNow) window.triggerTaRoastNow();
-} catch (e) {}
+try { if (window.taFollowupAsk) window.taFollowupAsk(); } catch (e) {}
 }
 const chatAskPanel = document.getElementById('chat-ask-panel');
 const chatAskTitle = document.getElementById('chat-ask-title');
@@ -11513,11 +12591,19 @@ if (segs.length <= 1) return false;
 return segs.indexOf(o) >= 0;
 }
 window.mochiAnswerHits = mochiAnswerHits;
-// v3.26.x #809：问问TA「思考时间（秒）」——同帮我决定/多人决定的 stepper（1~10 秒），
+// v3.26.x #809：问问TA「思考时间（秒）」——同帮我决定/多人决定的 stepper（下限 1 秒），
 // per-cid 持久化（store 即当前桌面命名空间），默认 3 秒＝原随机 1.5~4 秒的常用档；
 // 只在 ask（问问TA）模式显示，invite（邀请TA）模式隐藏（.gs-row[hidden] 已有 #727 兜底）。
+// 2026-10-31：上限 10 秒已去掉（用户直派）——只保留「至少 1 秒」的下限，脏值/0/负数回退 3。
 function askThinkSecsLoad() {
-try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1 && n <= 10) ? n : 3; } catch (e) { return 3; }
+try { const n = parseInt(store.get('ask-think-secs'), 10); return (n >= 1) ? n : 3; } catch (e) { return 3; }
+}
+// 2026-10-31：设定值＝最长等待，实际回答时间是 1 秒 ~ 上限 之间随机（类似聊天回复的随机延迟）：
+// 设 30 秒也可能 3 秒就答，只是最坏情况等到 30 秒。
+function askThinkDelayMs() {
+const max = askThinkSecsLoad();
+if (max <= 1) return 1000;
+return Math.round((1 + Math.random() * (max - 1)) * 1000);
 }
 function ensureChatAskThinkRow() {
 if (!chatAskPanel) return;
@@ -11527,18 +12613,31 @@ let row = chatAskPanel.querySelector('.chat-ask-think-row');
 if (!row) {
 row = document.createElement('div');
 row.className = 'gs-row chat-ask-think-row';
-row.innerHTML = '<span>思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-max="10" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
+// 2026-10-31：不设 data-max＝无上限（原 10 秒封顶已去掉），仍保留下限 1
+row.innerHTML = '<span>最长思考时间（秒）</span><div class="stepper" id="chat-ask-think" data-min="1" data-step="1"><button type="button" class="stp-min">−</button><input class="stp-val" id="chat-ask-think-val" readonly><button type="button" class="stp-max">+</button></div>';
 const actions = askBody.querySelector('.chat-ask-actions');
 if (actions) askBody.insertBefore(row, actions); else askBody.appendChild(row);
 const val = row.querySelector('.stp-val');
 const clampSave = () => {
 let n = parseInt(val.value, 10);
-if (!(n >= 1 && n <= 10)) n = 3;
+// 2026-10-31：只夹下限——用户可以把思考时间设到 10 秒以上（不设上限）
+if (!(n >= 1)) n = 3;
 val.value = n;
 store.set('ask-think-secs', String(n));
 };
 row.querySelector('.stp-min').addEventListener('click', (e) => { if (e) e.stopPropagation(); val.value = (parseInt(val.value, 10) || 3) - 1; clampSave(); });
 row.querySelector('.stp-max').addEventListener('click', (e) => { if (e) e.stopPropagation(); val.value = (parseInt(val.value, 10) || 3) + 1; clampSave(); });
+// 2026-10-31：点数字可直接输入（设 30 秒不必点 27 次 +）；非法值不保存
+val.addEventListener('click', (e) => {
+if (e) e.stopPropagation();
+if (!window.openModal) return;
+window.openModal('最长思考时间（秒）', String(askThinkSecsLoad()), (v) => {
+const n = parseInt(v, 10);
+if (!(n >= 1)) { toast('请输入 1 以上的整数'); return; }
+val.value = n;
+clampSave();
+}, { inputmode: 'numeric', placeholder: '1 以上的整数' });
+});
 }
 row.hidden = chatAskMode !== 'ask';
 row.querySelector('.stp-val').value = askThinkSecsLoad();
@@ -11668,12 +12767,19 @@ const invGroups = document.getElementById('invite-groups');
 const invList = document.getElementById('invite-list');
 const invSave = document.getElementById('chat-ask-save');
 const isInvite = chatAskMode === 'invite';
+	// 2026-10-28：编辑开关每次打开「邀请他」面板都从关闭起（不怕上次开着忘了关）
+	if (isInvite) tiInviteEdit = false;
 	if (invGroups) invGroups.hidden = !isInvite;
 	if (invList) invList.hidden = !isInvite;
 	if (invSave) invSave.hidden = !isInvite;
 	// v3.26.x：批量设置问卷按钮只在「问问TA」模式显示（邀请TA 模式隐藏）
 	const bulkBtn = document.getElementById('chat-ask-bulk');
 	if (bulkBtn) bulkBtn.hidden = isInvite;
+	// 2026-10-28：听歌 / 读书快捷邀请与直达说明随「邀请他」模式一起显示
+	const quickInv = document.getElementById('chat-ask-quick');
+	if (quickInv) quickInv.hidden = !isInvite;
+	const modHint = document.getElementById('chat-ask-mod-hint');
+	if (modHint) modHint.hidden = !isInvite;
 	// #1188：邀请记录块只在「邀请TA」模式显示（问问TA 模式与批量问卷按钮同款收法）；
 	// 每次打开都复位成「列表收起 + 只准备露最近 5 个历史日期组 + 历史日期全部收起」
 	const invHist = document.getElementById('chat-ask-hist');
@@ -11807,7 +12913,9 @@ saveMsgs();
 saveMsgsNow(); // v3.26.x #489：回答即落盘（同 chatAskReply 先例），切桌面 flush 前不止内存一份
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + (window.taFit ? window.taFit('他：') : '他：') + escTxt(window.taFit ? window.taFit(text) : text) + '</div>' + favHeartHtml(rec) + '</div>';
+const _hasOpts = Array.isArray(rec.askOptions) && rec.askOptions.length > 0;
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered' + (_hasOpts ? ' has-ask-arrow' : '') + '"><div class="msg-ask-q">' + (window.taFit ? window.taFit('问问他') : '问问他') + '</div>' + askAnsweredLinesHtml(content, window.taFit ? window.taFit(text) : text) + favHeartHtml(rec) + (_hasOpts ? ASK_VIEW_ARROW_HTML : '') + '</div>');
+askBubbleAfterRender(el, rec, i);
 }
 }
 addInTyped(text);
@@ -11824,12 +12932,34 @@ if (window.renderAskRecords) window.renderAskRecords();
 setTimeout(() => { if (!sameCid()) return; maybeFollowupAskCard(); }, 1200);
 }
 applyAskAnswer();
-}, askThinkSecsLoad() * 1000); // #809：思考时间用户可调（1~10 秒），默认 3 秒；原 1500+rand*2500
+}, askThinkDelayMs()); // #809：思考时间用户可调（默认 3 秒）；2026-10-31：改为「上限」语义，1 秒~上限随机
 }
+}
+// 2026-10-28：邀请里点名「听歌 / 读书」→ 他同意后直接把用户带到对应模块页。
+// 判据只看邀请内容里的模块词（字卡点卡与手输同一条发送链），不新增第二套邀请数据类型；
+// 两类都提到时按先出现的那一类算。
+function inviteModuleOf(content) {
+  const s = String(content || '');
+  const m = s.search(/听歌|听音乐|一起听|听一首|听听歌|放首歌|放首音乐/);
+  const r = s.search(/读书|看书|共读|读会儿书|读一会书|看会儿书|看一会书|读一本书|读本书/);
+  if (m < 0 && r < 0) return '';
+  if (m < 0) return 'reading';
+  if (r < 0) return 'music';
+  return r < m ? 'reading' : 'music';
+}
+// 走桌面图标同一条打开链（音乐页的 renderPage / 读书的书架渲染都在各自模块里）：
+// 图标即便被收进装修库的隐藏池也仍在 DOM，.click() 照常触发它自己的开页逻辑。
+function inviteOpenModule(kind) {
+  if (kind !== 'music' && kind !== 'reading') return false;
+  const app = document.querySelector('.app[data-app="' + kind + '"]');
+  if (!app) return false;
+  try { app.click(); return true; } catch (e) { return false; }
 }
 // v3.26.x：邀请发送逻辑从 submitChatAsk 抽出，供「我的邀请」字卡点卡直接复用（可重复发送，
 // 行为与手动输入一致：TA 接受/拒绝/未回应，随消息持久化）
-function sendInviteContent(content) {
+function sendInviteContent(content, kind) {
+// 2026-10-28：快捷按钮传死类型（话术以后被人改掉也不会认错）；字卡/手输仍走关键词兜底
+const inviteKind = (kind === 'music' || kind === 'reading') ? kind : inviteModuleOf(content);
 closeChatAskPanel();
 addRec({ side: 'out', text: '邀请：' + content, special: 'invite', inviteContent: content, inviteStatus: 'pending' });
 const inviteIdx = msgs.length - 1;
@@ -11851,16 +12981,21 @@ const sameCid = () => (window.__activeCid || 'default') === myCid;
 // v3.26.x #489：接受/拒绝与话术在发送时当场掷定（延迟落地时可能已在别的桌面，
 // pickAskCardReply/chatPartnerName 取的是别的联系人的池子/名字）
 const myName = chatPartnerName();
-const roll = Math.random();
+// 2026-10-28：接受/拒绝概率改由「回复设置 → 其他 → 我发出的邀请」控制（默认 60/25，剩余＝未回应）。
+// 拒绝先按剩余额度收窄，保证两项之和不超过 100；只覆盖字卡与快捷听歌/读书，音乐页邀请不受影响。
+const _invCfg = cfg();
+const invAcc = Math.max(0, Math.min(100, Number(cfgn(_invCfg, 'invite-accept-prob', 60)) || 0));
+const invRej = Math.max(0, Math.min(100 - invAcc, Number(cfgn(_invCfg, 'invite-reject-prob', 25)) || 0));
+const roll = Math.random() * 100;
 let status, answer, reply = null;
-if (roll < 0.6) {
+if (roll < invAcc) {
 status = '接受';
 answer = myName + ' 接受了你的邀请';
 const pool = window.getInteractPool
 ? window.getInteractPool('邀请他·接受', ['好，我答应你。', '可以呀。', '我陪你。', '走吧。', '嗯，陪你。'])
 : ['好，我答应你。', '可以呀。', '我陪你。', '走吧。', '嗯，陪你。'];
 reply = (window.pickAskCardReply ? window.pickAskCardReply(pool) : pool[Math.floor(Math.random() * pool.length)]);
-} else if (roll < 0.85) {
+} else if (roll < invAcc + invRej) {
 status = '拒绝';
 answer = myName + ' 拒绝了你的邀请';
 const pool = window.getInteractPool
@@ -11889,10 +13024,26 @@ saveMsgsNow(); // v3.26.x #489：结果即落盘，切桌面 flush 前不止内�
 taFavCard(rec);
 const el = body.querySelector('.msg-ask[data-idx="' + i + '"]');
 if (el) {
-el.innerHTML = '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('邀请他') : '邀请他') + ' · ' + escTxt(content) + '</div><div class="msg-ask-a">✓ ' + escTxt(window.taFit ? window.taFit(answer) : answer) + '</div>' + favHeartHtml(rec) + '</div>';
+el.innerHTML = askBubbleHtml(rec, '<div class="msg-ask-card answered"><div class="msg-ask-q">' + (window.taFit ? window.taFit('邀请他') : '邀请他') + '</div>' + askAnsweredLinesHtml(content, window.taFit ? window.taFit(answer) : answer) + favHeartHtml(rec) + '</div>');
+askBubbleAfterRender(el, rec, i);
 }
 }
 if (reply) addInTyped(reply, null, randInt(800, 1400));
+// 2026-10-28：他接受听歌 / 读书邀请 → 稍后带到对应模块页（先用 toast 说明要去哪）。
+// 只在发起邀请的那张桌面、且仍停在聊天页时跳：这 1 秒里你自己切走了就不抢页。
+if (status === '接受' && inviteKind && sameCid()) {
+  const chatPg = document.getElementById('page-chat');
+  if (chatPg && !chatPg.hidden) {
+    const modName = inviteKind === 'music' ? '音乐' : '读书';
+    toast(myName + ' 答应了，正在打开' + modName + '…');
+    setTimeout(function () {
+      if (!sameCid()) return;
+      const pg = document.getElementById('page-chat');
+      if (!pg || pg.hidden) return;
+      inviteOpenModule(inviteKind);
+    }, 1200);
+  }
+}
 try {
 const list = JSON.parse(store.get(histKey) || '[]');
 // v3.26.x #489：按 ts 去重——跨桌面补投递路径可能已记过同一条
@@ -11908,6 +13059,14 @@ setTimeout(() => { if (!sameCid()) return; maybeFollowupAskCard(); }, 1200);
 applyInviteResult();
 }, 1500 + Math.random() * 2500);
 }
+// 2026-10-28：快捷邀请按钮——点卡片就走同一条发送链，并把类型钉死给 sendInviteContent
+function bindInviteQuickBtn(id, content, kind) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.addEventListener('click', function () { sendInviteContent(content, kind); });
+}
+bindInviteQuickBtn('chat-ask-quick-music', '想和你一起听歌', 'music');
+bindInviteQuickBtn('chat-ask-quick-reading', '想和你一起读书', 'reading');
 // ===================== #1188 邀请记录（「邀请TA」半框顶部） =====================
 // 需求（用户直派）：「邀请卡片功能缺少邀请历史记录」＋「当天的历史记录只显示当天的，其他时间的
 // 记录默认折叠，分页加载」。
@@ -11954,9 +13113,9 @@ function ihClock(ts) {
 function ihItemHtml(x) {
   const st = (x.st === '接受' || x.st === '拒绝' || x.st === '未回应') ? x.st : '';
   const words = x.a && String(x.a) !== st ? String(x.a) : '';
-  const verdict = !st ? '' : (st === '接受' ? '<span class="ih-ok">✓ 他 接受了</span>'
-    : st === '拒绝' ? '<span class="ih-no">✕ 他 拒绝了</span>'
-    : '<span class="ih-nu">… 他 未回应</span>');
+  const verdict = !st ? '' : (st === '接受' ? '<span class="ih-ok">✓ 他接受了</span>'
+    : st === '拒绝' ? '<span class="ih-no">✕ 他拒绝了</span>'
+    : '<span class="ih-nu">… 他未回应</span>');
   const tail = verdict && words ? ' · ' : '';
   const ta = words ? escTxt(window.taFit ? window.taFit(words) : words) : '';
   return '<div class="tc-listitem"><div class="tc-li-q">' + escTxt(x.q) + '</div>' +
@@ -12016,7 +13175,7 @@ const chatAskHistClear = document.getElementById('chat-ask-hist-clear');
 if (chatAskHistClear) chatAskHistClear.addEventListener('click', (e) => {
   e.stopPropagation();
   if (!window.openModal) { toast('弹窗组件未就绪'); return; }
-  window.openModal('清空本桌面的全部邀请记录？（不可恢复，问问他 的记录不受影响）', '', () => {
+  window.openModal('清空本桌面的全部邀请记录？（不可恢复，问问他的记录不受影响）', '', () => {
     try {
       const all = JSON.parse(store.get('invite-ask-history') || '[]');
       const keep = Array.isArray(all) ? all.filter(x => x && x.type !== 'invite') : [];
@@ -12102,6 +13261,8 @@ return myInviteCurGroup;
 // v3.x：邀请TA ——批量管理模式态（预设为系统内置分组：仅自建分组可进批量，可重命名/删除分组）
 let tiInviteBatch = false;   // 批量管理模式开关
 let tiInviteSel = new Set(); // 批量勾选：当前自建分组内字卡下标集合
+// 2026-10-28：编辑开关——默认关闭，只有打开才露 ✎/✕ 且点卡不发送（每次打开面板重置为关闭）
+let tiInviteEdit = false;
 function renderInviteBank() {
 const wrap = document.getElementById('invite-groups');
 const list = document.getElementById('invite-list');
@@ -12145,6 +13306,13 @@ add.textContent = '＋ 分组';
 add.title = '新建我的邀请分组';
 add.addEventListener('click', (e) => { e.stopPropagation(); myInviteNewGroup(); });
 wrap.appendChild(add);
+// 2026-10-28：编辑开关 chip（顶部分组栏右侧）——关闭时字卡只有「点卡发送」，打开才露修改/删除
+const editChip = document.createElement('span');
+editChip.className = 'emoji-g-chip inv-g-edit' + (tiInviteEdit ? ' on' : '');
+editChip.textContent = tiInviteEdit ? '完成' : '编辑';
+editChip.title = '编辑开关：打开后才能修改/删除邀请字卡（编辑时点卡不发送）';
+editChip.addEventListener('click', (e) => { e.stopPropagation(); toggleInviteEdit(); });
+wrap.appendChild(editChip);
 // v3.x：批量管理 chip（顶部分组栏右侧）——进入后批量勾选字卡，亦可在自建分组上 ✎重命名/✕删除
 const batch = document.createElement('span');
 batch.className = 'emoji-g-chip inv-g-batch' + (tiInviteBatch ? ' on' : '');
@@ -12186,10 +13354,12 @@ return;
 }
 cur.cards.forEach((c, i) => {
 const item = document.createElement('div');
-item.className = 'cc-item glass';
+item.className = 'cc-item glass' + (tiInviteEdit ? ' inv-editing' : '');
 item.innerHTML = '<div class="cc-txt"><div class="t">' + escTxt(c) + '</div></div>';
-	// v3.28：所有分组（含预设）的字卡都给「修改/删除」按钮——预设分组已持久化，myInviteEdit/myInviteDel 可直接写回（用户反馈预设字卡没法单独编辑）
-	item.addEventListener('click', () => { sendInviteContent(c); });
+	// 2026-10-28：编辑开关关闭＝点卡直接发送；打开＝卡片只用于修改/删除，点卡不发送。
+	// 预设分组已持久化（v3.28），开关打开时同样可改可删。
+	if (!tiInviteEdit) item.addEventListener('click', () => { sendInviteContent(c); });
+	if (tiInviteEdit) {
 	const ops = document.createElement('div');
 ops.className = 'poke-card-ops';
 const eb = document.createElement('button');
@@ -12207,6 +13377,7 @@ db.addEventListener('click', (e) => { e.stopPropagation(); myInviteDel(i, c); })
 ops.appendChild(eb);
 	ops.appendChild(db);
 	item.appendChild(ops);
+	}
 	list.appendChild(item);
 	});
 }
@@ -12219,8 +13390,16 @@ toast('预设为系统内置分组，请切换到自建分组后批量管理');
 return;
 }
 tiInviteBatch = !tiInviteBatch;
+tiInviteEdit = false; // 编辑开关与批量管理互斥
 tiInviteSel.clear();
 renderInviteBank();
+}
+// 2026-10-28：编辑开关——打开后才露修改/删除，且编辑态点卡不发送
+function toggleInviteEdit() {
+tiInviteEdit = !tiInviteEdit;
+if (tiInviteEdit) { tiInviteBatch = false; tiInviteSel.clear(); }
+renderInviteBank();
+if (tiInviteEdit) toast('编辑模式：点 ✎ 修改、✕ 删除；点「完成」退出');
 }
 function myInviteCurGroupArr() {
 const g = myInviteG().find(x => Array.isArray(x) && Array.isArray(x[1]) && x[0] === myInviteCurGroup);
@@ -12633,72 +13812,31 @@ if (last) {
 try { last.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e2) { last.scrollIntoView(); }
 }
 });
-const chatCallPanel = document.getElementById('chat-call-panel');
-const chatCallClose = document.getElementById('chat-call-close');
-const callPanelName = document.getElementById('call-panel-name');
-const callPanelStatus = document.getElementById('call-panel-status');
-const callPanelDial = document.getElementById('call-panel-dial');
-const callPanelDialVt = document.getElementById('call-panel-dial-vt');
-const callPanelHang = document.getElementById('call-panel-hang');
-let callPanelTimer = null;
-function fmtCallDur(sec) {
-if (isNaN(sec) || sec < 0) return '00:00';
-const m = Math.floor(sec / 60), s = sec % 60;
-return (m < 10 ? '0' + m : '' + m) + ':' + (s < 10 ? '0' + s : '' + s);
-}
-function updateCallPanel() {
-if (!chatCallPanel || chatCallPanel.hidden) return;
-const pName = chatPartnerName();
-if (callPanelName) callPanelName.textContent = pName;
-let st = null;
-try { st = (window.getCallState && window.getCallState()) || null; } catch (err) { st = null; }
-if (st && st.status !== 'ended') {
-if (callPanelStatus) {
-callPanelStatus.textContent =
-st.status === 'connected' ? ('与 ' + (st.name || pName) + ' 通话中 · ' + fmtCallDur(st.durationSec)) :
-st.status === 'ringing' ? ((st.name || pName) + ' 来电…') :
-st.status === 'calling' ? ('正在呼叫 ' + (st.name || pName) + '…') : '通话中';
-}
-if (callPanelDial) callPanelDial.hidden = true;
-if (callPanelDialVt) callPanelDialVt.hidden = true;
-if (callPanelHang) callPanelHang.hidden = false;
-} else {
-if (callPanelStatus) callPanelStatus.textContent = '空闲 · 选择拨打语音或视频通话';
-if (callPanelDial) callPanelDial.hidden = false;
-if (callPanelDialVt) callPanelDialVt.hidden = false;
-if (callPanelHang) callPanelHang.hidden = true;
-}
-}
-function openChatCall() {
-if (!chatCallPanel) return;
+// v8.74.4 通话入口从「一个更多项 + 半框」改为「语音 / 视频两个直达项」；旧半框已删除。
+function closeCallEntryLayers() {
 const pc = document.getElementById('poke-card'); if (pc) pc.hidden = true;
 const ep = document.getElementById('emoji-panel'); if (ep) ep.hidden = true;
 const askP = document.getElementById('chat-ask-panel'); if (askP) closeChatAskPanel();
 const cs = document.getElementById('chat-search'); if (cs) cs.hidden = true;
 const dv = document.getElementById('chat-divine-panel'); if (dv) dv.hidden = true;
 const rp = document.getElementById('chat-rps-panel'); if (rp) rp.hidden = true;
+const rp2 = document.getElementById('chat-rp-panel'); if (rp2) rp2.hidden = true;
+const callP = document.getElementById('chat-call-panel'); if (callP) callP.hidden = true;
 if (window.closeAvlib) window.closeAvlib();
-chatCallPanel.hidden = false;
-closeIme();
-updateCallPanel();
-clearInterval(callPanelTimer);
-callPanelTimer = setInterval(updateCallPanel, 1000);
+if (morePanel) morePanel.hidden = true;
 }
-function closeChatCall() {
-if (chatCallPanel) chatCallPanel.hidden = true;
-clearInterval(callPanelTimer);
-callPanelTimer = null;
+function dialFromMore(asVideo) {
+closeCallEntryLayers();
+closeIme();
+if (window.placeCall) { try { window.placeCall(asVideo); } catch (e) {} return; }
+const name = chatPartnerName();
+addRec({ side: 'out', text: '拨打 ' + name + (asVideo ? ' 视频通话' : ' 语音通话'), special: 'call' });
+if (window.logFish) window.logFish();
 }
 const moreCall = document.getElementById('more-call');
-// #641：通话设置页「打开通话半框」跨页直达入口（call.js 调用）
-window.openChatCallPanel = openChatCall;
-if (moreCall) {
-moreCall.addEventListener('click', (e) => {
-e.stopPropagation();
-if (morePanel) morePanel.hidden = true;
-openChatCall();
-});
-}
+if (moreCall) moreCall.addEventListener('click', (e) => { e.stopPropagation(); dialFromMore(false); });
+const moreCallVt = document.getElementById('more-call-vt');
+if (moreCallVt) moreCallVt.addEventListener('click', (e) => { e.stopPropagation(); dialFromMore(true); });
 const morePong = document.getElementById('more-pong');
 if (morePong) {
 morePong.addEventListener('click', (e) => {
@@ -12781,35 +13919,6 @@ const say = pool.length ? pool[Math.floor(Math.random() * pool.length)] : ''; //
 if (say) addRec({ side: 'in', text: say, nightAllow: true, rateAllow: true });
 }, randInt(900, 1600));
 };
-if (chatCallClose) chatCallClose.addEventListener('click', (e) => { e.stopPropagation(); closeChatCall(); });
-if (callPanelDial) callPanelDial.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.placeCall) window.placeCall();
-else {
-const name = chatPartnerName();
-addRec({ side: 'out', text: '拨打 ' + name + ' 语音通话', special: 'call' });
-if (window.logFish) window.logFish();
-}
-setTimeout(updateCallPanel, 120);
-});
-if (callPanelDialVt) callPanelDialVt.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.placeCall) window.placeCall(true);
-else {
-const name = chatPartnerName();
-addRec({ side: 'out', text: '拨打 ' + name + ' 视频通话', special: 'call' });
-if (window.logFish) window.logFish();
-}
-setTimeout(updateCallPanel, 120);
-});
-if (callPanelHang) callPanelHang.addEventListener('click', (e) => {
-e.stopPropagation();
-if (window.hangupCall) window.hangupCall();
-setTimeout(updateCallPanel, 120);
-});
-document.addEventListener('contact-switched', function () {
-try { closeChatCall(); } catch (e) {}
-});
 if (pokeClose) pokeClose.addEventListener('click', (e) => { e.stopPropagation(); closePokeCard(); });
 // 冷启动回填预算把字卡库大键挂起在 IDB（__xyIdbDeferredKeys）时，聊天页表情包/拍一拍
 // 面板会读成空库。这里在面板打开时按需取回（复用字卡库同一套 hydrateLibScopes），
@@ -13280,17 +14389,49 @@ return { kind: 'card', special: special, q: q, mine: mine, ta: ta, ts: rec.ts ||
 }
 window.favCardFromMsg = function (idx) {
 const rec = msgs[idx];
-if (!rec) return;
+if (!rec) return false;
 const f = cardSnapshot(rec);
-if (!f) return;
-if (window.addMyFavItem(f)) toast('已收藏互动卡片');
-else toast('已收藏过这张卡片');
+if (!f) return false;
+if (window.addMyFavItem(f)) { toast('已收藏互动卡片'); return true; }
+toast('已收藏过这张卡片');
+return false;
 };
+// 2026-10-26：收藏心形常红——按「我的收藏」同一套判重口径（by/kind/q/text/ts）算卡片是否已收藏；
+// 缓存按 fav-msgs 原始串 + 待落盘队列末项失效，渲染多张卡时不重复解析大收藏包。
+let favHeartCacheKey = null;
+let favHeartCacheSet = null;
+function favHeartSet() {
+try {
+const raw = store.get('fav-msgs') || '[]';
+const cid = favCid();
+const pend = (favHold(cid) && favPending[cid]) ? favPending[cid] : null;
+// 用长度 + 首尾片段做签名，避免每张卡都把整个收藏包拼一份新字符串
+const sig = raw.length + ':' + raw.slice(0, 48) + ':' + raw.slice(-48);
+const key = sig + '|' + (pend ? (pend.length + ':' + JSON.stringify(pend[pend.length - 1] || '')) : '0');
+if (key === favHeartCacheKey && favHeartCacheSet) return favHeartCacheSet;
+const set = {};
+(getFav() || []).forEach(x => {
+if ((x.by || 'me') !== 'me') return;
+set[(x.kind || 'msg') + '|' + (x.q || '') + '|' + (x.text || '') + '|' + x.ts] = 1;
+});
+favHeartCacheKey = key;
+favHeartCacheSet = set;
+return set;
+} catch (e) { return {}; }
+}
+function favCardAlready(rec) {
+try {
+const f = cardSnapshot(rec);
+if (!f) return false;
+return !!favHeartSet()[(f.kind || 'msg') + '|' + (f.q || '') + '|' + (f.text || '') + '|' + f.ts];
+} catch (e) { return false; }
+}
 // #1005 收藏心形一律默认隐藏、点卡片浮现（.show-fav，见 body click 里各卡片分支）：#713 当年
 // 给问卷卡加的 always=true 常显按钮被用户点名「卡片直接显示了收藏的按钮」，现收回成与单题卡
 // 同一套机制（问卷卡的浮现分支在 surveyCard 那里）。
 function favHeartHtml(rec) {
-const heart = '<button class="msg-fav-heart" title="收藏整张互动卡片"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>收藏</button>';
+const isFav = favCardAlready(rec);
+const heart = '<button class="msg-fav-heart' + (isFav ? ' is-fav' : '') + '" title="收藏整张互动卡片" aria-pressed="' + (isFav ? 'true' : 'false') + '"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span class="msg-fav-heart-txt">' + (isFav ? '已收藏' : '收藏') + '</span></button>';
 let time = '';
 if (rec && rec.ts) {
 const who = rec.side === 'out' ? chatUserName() : chatPartnerName();
@@ -13303,7 +14444,7 @@ const _favProbCard = (window.favCfg ? window.favCfg().taCard : 30);
 if (!rec || Math.random() * 100 >= _favProbCard) return;
 const f = cardSnapshot(rec);
 if (!f) return;
-if (window.addTaFavItem(f)) setTimeout(() => toast('他 收藏了你们的互动卡片'), 1200);
+if (window.addTaFavItem(f)) setTimeout(() => toast('他收藏了你们的互动卡片'), 1200);
 }
 function closeMsgActions() {
 if (msgActions && typeof msgActions.__maFollowStop === 'function') { try { msgActions.__maFollowStop(); } catch (e) {} } // FIX 2026-09-16 #642 摘跟随监听
@@ -13501,6 +14642,12 @@ window.addEventListener('scroll', req, true);
 bar.__maFollowStop = stop;
 return place;
 };
+// #1654：游戏结算卡（猜拳 / Pong / 打砖块 / 记忆翻牌 / 贪吃蛇 / 五子棋 / 四子棋 / 合作扫雷 /
+// 连连看 / 消消乐 / 拍卖会）不是 .msg-bubble，原来长按、右键完全没有反应＝用户删不掉。
+// 这里给它们单独一条「删除」入口（操作条只出这一枚按钮），删的只是聊天里的这张卡，
+// 不影响已结算的金币/战绩账本（那些各自另有记录）。
+const GAME_CARD_SPECIALS = { rps: 1, pong: 1, brick: 1, memory: 1, snake: 1, gomoku: 1, c4: 1, ms: 1, linkup: 1, match3: 1, auction: 1 };
+function isGameCardRec(rec) { return !!(rec && GAME_CARD_SPECIALS[rec.special]); }
 function msgActionEligible(t) {
 // 沿用原「点气泡弹菜单」的判定规则：可弹返回 {item, b}，不可弹返回 null（引用气泡/拍一拍/撤回/已读不回等）
 // FIX 2026-09-15 #507 语音播放按钮不算「点气泡」——否则轻点/长按播放按钮都会布气泡轻点/长按
@@ -13508,7 +14655,12 @@ function msgActionEligible(t) {
 // 不来＝点播永远播不出；健康内核也菜单/播放双触发）。播放走 fillVoiceBubble 的 touch 直驱；
 // 菜单入口保留在同气泡非按钮区（波纹/名称区），长按弹菜单原语义不丢。
 const b = t.closest('.msg-bubble');
-if (!b) return null;
+if (!b) {
+// #1654：游戏结算卡也允许弹操作条（只给「删除」一枚按钮，见 openMsgActionsAt）
+const gc = t.closest('.msg-rps, .msg-pong');
+if (!gc || gc.dataset.idx === undefined) return null;
+return { item: gc, b: gc.querySelector('.msg-rps-card, .msg-pong-card') || gc, game: true };
+}
 if (t.closest('.msg-voice-play')) return null;
 if (t.closest('.msg-quote')) return null;
 const item = b.closest('.msg');
@@ -13537,6 +14689,13 @@ if (_j >= 0) { _qi = _j; _qr = msgs[_j]; }
 activeMsgSnap = { idx: _qi, rec: _qr, mk: _mk, ts: _qr ? (_qr.ts || 0) : 0, side: _qr ? (_qr.side || '') : '', text: _qr ? String(_qr.text || '').slice(0, 80) : '' };
 activeSide = item.classList.contains('msg-out') ? 'out' : 'in';
 if (!msgActions) return;
+// #1654：游戏结算卡只出「删除」一枚按钮——引用/复制/收藏/撤回/编辑对它都不成立
+const isGameCard = isGameCardRec(_qr) || item.classList.contains('msg-rps') || item.classList.contains('msg-pong');
+const gameDelBtn = msgActions.querySelector('.ma-del-game');
+if (isGameCard) {
+msgActions.querySelectorAll('.ma-btn').forEach(function (btn) { if (btn !== gameDelBtn) btn.hidden = true; });
+} else {
+msgActions.querySelectorAll('.ma-btn[data-act="quote"], .ma-btn[data-act="copy"], .ma-btn[data-act="fav"]').forEach(function (btn) { btn.hidden = false; });
 msgActions.querySelectorAll('.ma-mine').forEach(b2 => b2.hidden = activeSide !== 'out');
 const delBtn = msgActions.querySelector('.ma-del-ta');
 if (delBtn) {
@@ -13544,6 +14703,8 @@ let delEn = false;
 try { delEn = store.get('cs-del-ta-msg') === '1'; } catch (e) {}
 delBtn.hidden = !(delEn && activeSide === 'in');
 }
+}
+if (gameDelBtn) gameDelBtn.hidden = !isGameCard;
 msgActions.hidden = false;
 // FIX 2026-09-16 #642 打开即挂「跟随锚点」并立即定位一次：定位算法与旧块一致（上方居中、
 // 放不下换下方、clamp 视口内），此后键盘开合动画/vv 平移/贴底滚动/图片撑高都会实时跟随气泡
@@ -13582,7 +14743,8 @@ return (idx0 >= 0 && msgs[idx0]) ? { idx: idx0, rec: msgs[idx0] } : { idx: -1, r
 }
 body.addEventListener('contextmenu', (e) => {
 // 长按/右键由应用接管：抑制系统默认菜单与文本选中，但不吞掉「引用气泡跳原消息」等其它元素自身行为
-if (e.target.closest('.msg-bubble') && !e.target.closest('.msg-quote')) {
+// #1654：游戏结算卡不是 .msg-bubble，右键/长按同样要放进来（否则外层这道门先挡掉，里面永远收不到）
+if ((e.target.closest('.msg-bubble') || e.target.closest('.msg-rps, .msg-pong')) && !e.target.closest('.msg-quote')) {
 e.preventDefault();
 // FIX 2026-09-14 #G2 长按气泡打不开引用/动作菜单（多机型同报；要求零机型分支防复发）：长按原由
 // touchstart+500ms 定时器触发，但部分内核在按住期间会因手指微移发 touchmove、或长按手势被系统
@@ -13786,6 +14948,17 @@ renderWindow(true);
 toast('已删除该消息');
 }
 closeMsgActions();
+} else if (act === 'del-game') {
+// #1654：删掉这张游戏结算卡（只删聊天里的记录；金币/战绩账本另有记录，不受影响）
+if (activeMsgEl && idx >= 0 && msgs[idx] && isGameCardRec(msgs[idx])) {
+chatTailDrop(msgs[idx]);
+msgs.splice(idx, 1);
+sessionChangedIdx.clear();
+saveMsgs();
+renderWindow(true);
+toast('已删除该游戏卡片');
+}
+closeMsgActions();
 }
 }
 msgActions.addEventListener('click', (e) => {
@@ -13887,10 +15060,10 @@ if (manageBtn) manageBtn.classList.toggle('sel', favBatch);
 const barEl = document.getElementById('fav-batch-bar');
 if (barEl) { barEl.hidden = !favBatch; syncBatchBar(); }
 const title = favTab === 'ta' ? partnerName + ' 的收藏' : myName + ' 的收藏';
-let empty = favTab === 'ta' ? '他 还没有收藏' : '暂无收藏';
+let empty = favTab === 'ta' ? '他还没有收藏' : '暂无收藏';
 if (favKind !== 'all') {
 const K_EMPTY = { msg: '聊天消息', card: '互动卡片', mail: '信件', feed: '朋友圈' };
-empty = (favTab === 'ta' ? '他 还没有收藏' : '暂无') + K_EMPTY[favKind];
+empty = (favTab === 'ta' ? '他还没有收藏' : '暂无') + K_EMPTY[favKind];
 }
 const h = document.createElement('div');
 h.className = 'cc-group-header';
@@ -13901,7 +15074,7 @@ favList.innerHTML += '<div class="fav-empty">' + empty + '</div>';
 return;
 }
 const FAV_KIND_LABEL = {
-'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '吐槽',
+'ask-choose': '小问题', 'ask-curious': '好奇', 'ask-roast': '调侃',
 'ask-card': '问问他', 'invite': '邀请他', 'ask': '问问他', 'ask-survey': '问卷',
 'redpacket': '红包', 'flower': '送花', 'gift': '礼物', 'dish': '佳肴'
 };
@@ -17017,6 +18190,70 @@ window.__chatDbLoadedPrefix = function () {
     return p.indexOf('xy-home-v2:') === 0 ? p.slice('xy-home-v2:'.length) : '';
   } catch (e) { return ''; }
 };
+// ===== v8.74.1 新版输入栏 P1 / P2（全局开关 cs-input-v2；关闭时旧版路径零改动） =====
+// P1：表情（左）+ 输入框 + 右侧同一槽位的 ⋯ / 发送；P2：点 ⋯ 打开现有 #chat-more-panel，
+// 面板里的 图片 / 语音 / 继续说 / 批量 只是代理入口，点按等于点原按钮，不复制第二套逻辑。
+(function initChatInputV2() {
+try {
+const page = document.getElementById('page-chat');
+const panel = document.getElementById('chat-more-panel');
+if (!page) return;
+const v2Store = () => { try { return window.xyStore ? window.xyStore('xy-home-v2') : null; } catch (e) { return null; } };
+const v2On = () => { const g = v2Store(); try { return !!(g && g.get('cs-input-v2') === '1'); } catch (e) { return false; } };
+window.chatInputV2On = v2On;
+const inputText = () => { const i = document.getElementById('chat-input'); return i ? String(i.innerText || i.textContent || '').trim() : ''; };
+const sendAllowed = () => { try { return (store.get('cs-send-show') || 'show') !== 'hide'; } catch (e) { return true; } };
+let obs = null;
+function syncSlot() {
+const row = page.querySelector('.chat-input-row');
+if (!row) return;
+if (!page.classList.contains('chat-input-v2')) { row.classList.remove('v2-has-text'); return; }
+row.classList.toggle('v2-has-text', !!(sendAllowed() && inputText()));
+}
+function syncProxies() {
+const set = function (id, ok) { const el = document.getElementById(id); if (el) el.classList.toggle('v2-proxy-off', !ok); };
+set('more-v2-img', true);
+let mic = false, cont = false, batch = false;
+try { mic = (typeof voiceEnabled === 'function') ? voiceEnabled() : false; } catch (e) {}
+try { cont = (typeof contSayOn === 'function') ? contSayOn('cs-trigger-bar') : false; } catch (e) {}
+try { batch = (typeof batchEnabled === 'function') ? batchEnabled() : false; } catch (e) {}
+set('more-v2-mic', mic); set('more-v2-cont', cont); set('more-v2-batch', batch);
+}
+function applyV2() {
+const on = v2On();
+page.classList.toggle('chat-input-v2', on);
+if (panel) panel.classList.toggle('chat-input-v2', on);
+const input = document.getElementById('chat-input');
+if (on) {
+syncProxies();
+if (input && !obs && window.MutationObserver) {
+obs = new MutationObserver(syncSlot);
+obs.observe(input, { childList: true, subtree: true, characterData: true });
+}
+} else if (obs) { obs.disconnect(); obs = null; }
+syncSlot();
+try { document.dispatchEvent(new Event('chat-input-v2-changed')); } catch (e) {}
+}
+window.applyChatInputV2 = applyV2;
+const input = document.getElementById('chat-input');
+if (input) input.addEventListener('input', syncSlot);
+const proxyMap = { 'more-v2-img': 'chat-img-btn', 'more-v2-mic': 'chat-mic-btn', 'more-v2-cont': 'chat-continue-btn', 'more-v2-batch': 'chat-batch-btn' };
+Object.keys(proxyMap).forEach((pid) => {
+const p = document.getElementById(pid);
+if (!p) return;
+p.addEventListener('click', (e) => {
+e.stopPropagation();
+const src = document.getElementById(proxyMap[pid]);
+if (src) { try { src.click(); } catch (err) {} }
+if (panel) panel.hidden = true;
+});
+});
+const moreBtn = document.getElementById('chat-more-btn');
+if (moreBtn) moreBtn.addEventListener('click', () => { setTimeout(syncProxies, 0); });
+document.addEventListener('contact-switched', () => { try { applyV2(); } catch (e) {} });
+applyV2();
+} catch (e) {}
+})();
 bootAutoSend();
 // FIX 2026-09-01 #120：启动不再无条件预读当前桌面聊天——大历史桌面（账本 b 超门槛）
 // 冷启动跳过，进入聊天页才读（enterChat 会 loadMsgs），防低端机"打开网站"即崩溃。

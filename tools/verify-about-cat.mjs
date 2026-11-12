@@ -3,9 +3,10 @@
 //   「拆成多个分类分组入口」：关于段 = 应用信息 / 帮助与支持 / 隐私与法律 / 联系与反馈；
 //   使用说明（#row-guide）与新手引导（#row-guidebook）移入「帮助与支持」；
 //   新增 版本与更新 / 开源与致谢 / 隐私与数据安全 / 联系作者 四个只读入口（openModal）。
-//   #792（2026-09-18 用户直派）扩：关于段顶部新增 #about-storage-note 警示条 + 首位新分组
-//   「数据与存储（重要）」5 个只读行（自动清数据/存储权限/无痕模式/备份恢复/是不是bug自查，
-//   弹窗文案在 personalize.js initAboutInfo，短版在 settings-help.js）——分组 5→6、行 12→17。
+//   #792（2026-09-18 用户直派）扩：新增「数据与存储（重要）」5 个只读行（自动清数据/存储权限/
+//   无痕模式/备份恢复/是不是bug自查，弹窗文案在 personalize.js initAboutInfo，短版在 settings-help.js）
+//   ——分组 5→6、行 12→17。2026-10-28 用户指定：应用信息整组移到「数据与存储（重要）」之前，
+//   B1/B2 的标题与行顺序断言同步调整。
 // 断言：①src 静态——四分类标题/四个新行 id/功能大全收录/哨兵登记；②行为——分类归属、六个入口
 //   顺序、版本号注入、四个弹窗标题、使用说明进出页、功能说明胶囊。
 // 用法：node tools/verify-about-cat.mjs
@@ -118,8 +119,8 @@ const info = J(await ev(`(function(){
   var guide=document.getElementById('row-guide'); var gb=document.getElementById('row-guidebook');
   return JSON.stringify({titles:titles,ids:ids,guidesec:guide?guide.closest('.them-sec').dataset.sec:null,gbsec:gb?gb.closest('.them-sec').dataset.sec:null,gbgrp:gb?(gb.closest('.set-group').querySelector('.gs-title')||{}).textContent:'',groups:sec.querySelectorAll('.set-group').length});
 })()`));
-ok(JSON.stringify(info.titles) === JSON.stringify(['数据与存储（重要）', '应用信息', '帮助与支持', '常见问题', '隐私与法律', '联系与反馈']), 'B1 关于段六个分类标题正确', JSON.stringify(info.titles));
-ok(JSON.stringify(info.ids) === JSON.stringify(['row-faq-st-lose', 'row-faq-st-perm', 'row-faq-st-incog', 'row-faq-st-backup', 'row-faq-st-bug', 'row-about', 'row-changelog', 'row-opensource', 'row-guide', 'row-guidebook', 'row-faq-app', 'row-faq-app2', 'row-faq-addcard', 'row-faq-fullscreen', 'row-faq-preset', 'row-faq-noacct', 'row-faq-twostore', 'row-faq-notify', 'row-privacy', 'row-contact']), 'B2 二十个入口行顺序正确', JSON.stringify(info.ids));
+ok(JSON.stringify(info.titles) === JSON.stringify(['应用信息', '数据与存储（重要）', '帮助与支持', '常见问题', '隐私与法律', '联系与反馈']), 'B1 关于段六个分类标题正确', JSON.stringify(info.titles));
+ok(JSON.stringify(info.ids) === JSON.stringify(['row-about', 'row-changelog', 'row-opensource', 'row-faq-st-lose', 'row-faq-st-perm', 'row-faq-st-incog', 'row-faq-st-backup', 'row-faq-st-bug', 'row-guide', 'row-guidebook', 'row-faq-app', 'row-faq-app2', 'row-faq-addcard', 'row-faq-fullscreen', 'row-faq-preset', 'row-faq-noacct', 'row-faq-twostore', 'row-faq-notify', 'row-privacy', 'row-contact']), 'B2 二十个入口行顺序正确', JSON.stringify(info.ids));
 ok(info.guidesec === 'about' && info.gbsec === 'about', 'B3 使用说明与新手引导都在关于段', info.guidesec + '/' + info.gbsec);
 ok((info.gbgrp || '').trim() === '帮助与支持', 'B4 新手引导与使用说明同组（帮助与支持）', info.gbgrp);
 ok(info.groups === 6, 'B5 关于段六个 set-group', String(info.groups));

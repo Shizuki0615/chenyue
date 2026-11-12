@@ -45,6 +45,238 @@
 
   const uid = window.activePrefix();
   const ls = window.activeStore();
+  // #1644 系统预设字卡编辑：覆盖表/弹窗/恢复/重名逻辑收在 preset-edit.js 公共层
+  //（全局 xy-home-v2:default-card-edits，所有桌面共用）；本文件只负责把覆盖套进
+  // DEFAULT_CARD_DATA 的四个主列表并刷新它们。
+  const PT = window.presetTextEdit;
+  function replacePresetCardInData(cat, oldText, newText) {
+    let changed = false;
+    ((DATA[cat] || [])).forEach(function (g) {
+      const arr = g && g[1];
+      if (!Array.isArray(arr)) return;
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === oldText) { arr[i] = newText; changed = true; }
+      }
+    });
+    return changed;
+  }
+  // 只用于「从原始数据重建后」重放覆盖（启动 / 词典重建）：对已是新文案的列表再跑一次
+  // 会把 A→B、C→A 这类链式改名的 B 再套成别的文案，故编辑保存后不再整表重放，
+  // 只在编辑点就地替换一条（见 openPresetCardEditor 的 onChanged）。
+  function applyPresetEditsToData(onlyCat) {
+    (onlyCat ? [onlyCat] : Object.keys(DATA)).forEach(function (cat) {
+      PT.apply(cat, function (newText, orig) {
+        ((DATA[cat] || [])).forEach(function (g) {
+          const arr = g && g[1];
+          if (!Array.isArray(arr)) return;
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i] === orig) arr[i] = newText;
+          }
+        });
+      });
+    });
+  }
+  function notifyPresetCardEdited() {
+    try { document.dispatchEvent(new Event('preset-card-edited')); } catch (e) {}
+  }
+  // #1644 列表文案要拼进 innerHTML（颜文字自带 < > & 引号），必须先转义
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  // 同分类重名检测：改出来的文案不能与同分类另一张字卡重复
+  //（重名会让「原文案↔新文案」的对应关系失真，恢复/关闭键都会认错卡）
+  function presetTextTaken(cat, text, except) {
+    let hit = false;
+    ((DATA[cat] || [])).forEach(function (g) {
+      ((g && g[1]) || []).forEach(function (c) {
+        if (!hit && c === text && c !== except) hit = true;
+      });
+    });
+    return hit;
+  }
+  function openPresetCardEditor(cat, shown, draft) {
+    PT.open({
+      key: cat,
+      shown: shown,
+      draft: draft,
+      exists: function (next) { return presetTextTaken(cat, next, shown); },
+      onChanged: function (next) {
+        replacePresetCardInData(cat, shown, next);
+        notifyPresetCardEdited();
+      }
+    });
+  }
+  // 覆盖表在 IDB 回填后整体重载时（LS 不可用设备），重新套回主列表
+  if (PT && PT.onRebuild) PT.onRebuild(function () { applyPresetEditsToData(); notifyPresetCardEdited(); });
+
+  // ================= #1649 系统预设卡覆盖（移除 / 移动 / 分组改名 / 排序）=================
+  // 内置数据不能真删：移除＝全局名单，随时可在「管理分组 → 已删除」恢复；移动/改名/排序同理。
+  // 全部存全局覆盖表 xy-home-v2:default-card-overrides，所有联系人桌面共用。结构：
+  // { removed:{分类:{原文案:{from:移除时所在分组}}},
+  //   moved:{分类:{原文案:{g:目标分组, from:原分组}}},
+  //   renames:{分类:{原分组名:新分组名}},
+  //   order:{分类:[分组名…]}, groups:{分类:{自建分组名:1}} }
+  // 原文案永远是身份：文案被编辑后，移除/移动仍按原文案找回同一张卡。
+  const ovStore = window.xyStore('xy-home-v2');
+  const OV_KEY = 'default-card-overrides';
+  function parseOverrides(rawStr) {
+    const out = { removed: {}, moved: {}, renames: {}, order: {}, groups: {} };
+    try {
+      const raw = JSON.parse(rawStr || '{}');
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+      ['removed', 'moved', 'renames'].forEach(function (k) {
+        const src = raw[k];
+        if (!src || typeof src !== 'object' || Array.isArray(src)) return;
+        Object.keys(src).forEach(function (cat) {
+          const m = src[cat];
+          if (!m || typeof m !== 'object' || Array.isArray(m)) return;
+          const dst = {};
+          Object.keys(m).forEach(function (t) {
+            const v = m[t];
+            if (k === 'renames') {
+              if (typeof v === 'string' && v.trim()) dst[t] = v;
+            } else if (v && typeof v === 'object') {
+              const g = typeof v.g === 'string' ? v.g : '';
+              const from = typeof v.from === 'string' ? v.from : '';
+              if (k === 'moved' && g) dst[t] = { g: g, from: from };
+              if (k === 'removed') dst[t] = { from: from };
+            } else if (typeof v === 'string') {
+              if (k === 'moved') dst[t] = { g: v, from: '' };
+              if (k === 'removed') dst[t] = { from: '' };
+            }
+          });
+          out[k][cat] = dst;
+        });
+      });
+      const ord = raw.order;
+      if (ord && typeof ord === 'object' && !Array.isArray(ord)) {
+        Object.keys(ord).forEach(function (cat) {
+          if (Array.isArray(ord[cat])) out.order[cat] = ord[cat].filter(function (x) { return typeof x === 'string'; });
+        });
+      }
+      const gp = raw.groups;
+      if (gp && typeof gp === 'object' && !Array.isArray(gp)) {
+        Object.keys(gp).forEach(function (cat) {
+          const m = gp[cat];
+          if (m && typeof m === 'object' && !Array.isArray(m)) out.groups[cat] = m;
+        });
+      }
+    } catch (e) {}
+    return out;
+  }
+  let ovRawAtBoot = null;
+  const OV = (function () {
+    try { ovRawAtBoot = ovStore.get(OV_KEY); } catch (e) { ovRawAtBoot = null; }
+    return parseOverrides(ovRawAtBoot);
+  })();
+  function saveOverrides() {
+    try { ovStore.set(OV_KEY, JSON.stringify(OV)); } catch (e) {}
+  }
+  // 分组改名：反查原名（新名 -> 原名）。关闭键仍按原名记，改名后旧键继续生效。
+  function presetGroupOrigin(cat, name) {
+    const rn = OV.renames[cat] || {};
+    const keys = Object.keys(rn);
+    for (let i = 0; i < keys.length; i++) if (rn[keys[i]] === name) return keys[i];
+    return name;
+  }
+  // 取某分类当前所有卡片文案（含重复）
+  function presetTakeAll(cat, text) {
+    const out = [];
+    ((DATA[cat]) || []).forEach(function (g) {
+      const arr = g && g[1];
+      if (!Array.isArray(arr)) return;
+      for (let i = arr.length - 1; i >= 0; i--) {
+        if (arr[i] === text) { arr.splice(i, 1); out.push(g[0]); }
+      }
+    });
+    return out;
+  }
+  function presetTakeCard(cat, text) {
+    const hit = presetTakeAll(cat, text);
+    return hit.length ? hit[0] : null;
+  }
+  function presetEnsureGroup(cat, name) {
+    if (!Array.isArray(DATA[cat])) DATA[cat] = [];
+    const groups = DATA[cat];
+    let g = null;
+    for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i][0] === name) { g = groups[i]; break; }
+    if (!g) { g = [name, []]; groups.push(g); }
+    return g;
+  }
+  function presetShownText(cat, orig) { return PT ? PT.text(cat, orig) : orig; }
+  // 把覆盖表套进某一分类（只用于「从原始数据重建后」：启动 / 词典重建）
+  function applyPresetOverridesToData(onlyCat) {
+    Object.keys(goffExp).forEach(function (k) { delete goffExp[k]; });
+    (onlyCat ? [onlyCat] : Object.keys(DATA)).forEach(function (cat) {
+      const groups = DATA[cat];
+      if (!Array.isArray(groups)) return;
+      // 1) 分组改名（先还原原名再套，重复执行幂等）
+      const rn = OV.renames[cat] || {};
+      if (Object.keys(rn).length) {
+        groups.forEach(function (g) {
+          if (!g) return;
+          const orig = presetGroupOrigin(cat, g[0]);
+          g[0] = rn[orig] || orig;
+        });
+      }
+      // 2) 移动：从原分组摘出，放进目标分组
+      const mv = OV.moved[cat] || {};
+      Object.keys(mv).forEach(function (origText) {
+        const rec = mv[origText];
+        const shown = presetShownText(cat, origText);
+        let resolved = shown;
+        let taken = presetTakeAll(cat, shown);
+        if (!taken.length && shown !== origText) { resolved = origText; taken = presetTakeAll(cat, origText); }
+        if (!taken.length) return;
+        const tg = presetEnsureGroup(cat, rec.g || '');
+        taken.forEach(function () { tg[1].push(resolved); });
+      });
+      // 3) 移除（按原文案与当前文案都清一遍，避免编辑后漏删）
+      const rm = OV.removed[cat] || {};
+      Object.keys(rm).forEach(function (origText) {
+        const shown = presetShownText(cat, origText);
+        presetTakeAll(cat, shown);
+        if (shown !== origText) presetTakeAll(cat, origText);
+      });
+      // 4) 自建分组即使暂时为空也保留
+      Object.keys(OV.groups[cat] || {}).forEach(function (name) { presetEnsureGroup(cat, name); });
+      // 5) 排序（未列出的分组按原相对顺序排后面）。
+      // 预设里存在同名分组（如两组都叫「结束聊天」），不能按名字查一个下标——那样两组会
+      // 粘在一起、挤出别的组；这里按出现顺序逐个消费排位，同名分组各自拿到自己的位置。
+      const order = OV.order[cat];
+      if (Array.isArray(order) && order.length) {
+        const slots = {};
+        order.forEach(function (nm, i) { (slots[nm] || (slots[nm] = [])).push(i); });
+        const keyed = groups.map(function (g, i) {
+          const q = slots[g[0]];
+          const k = q && q.length ? q.shift() : 1e9 + i;
+          return { g: g, k: k };
+        });
+        keyed.sort(function (a, b) { return a.k - b.k; });
+        groups.length = 0;
+        keyed.forEach(function (x) { groups.push(x.g); });
+      }
+    });
+  }
+  // LS 不可用设备：IDB 回填后覆盖只在 IDB 里，重读一次再套（先覆盖、后文案编辑）
+  document.addEventListener('mochi-restore-done', function () {
+    try {
+      const empty = !Object.keys(OV.removed).length && !Object.keys(OV.moved).length &&
+        !Object.keys(OV.renames).length && !Object.keys(OV.order).length && !Object.keys(OV.groups).length;
+      if (!empty) return;
+      let raw = null;
+      try { raw = ovStore.get(OV_KEY); } catch (e) { return; }
+      if (!raw || raw === ovRawAtBoot) return;
+      ovRawAtBoot = raw;
+      const fresh = parseOverrides(raw);
+      Object.keys(OV).forEach(function (k) { OV[k] = fresh[k]; });
+      applyPresetOverridesToData();
+      applyPresetEditsToData();
+      notifyPresetCardEdited();
+    } catch (e) {}
+  });
   // v3.6.x：轻提示（复用 cc-toast 风格）
   function toast(msg) {
     let t = document.getElementById('cc-toast');
@@ -85,7 +317,12 @@
     const e = goffExp[cat];
     if (e && e.src === src && e.names === names) return e.set;
     const kill = new Set(names), set = new Set();
-    src.forEach(g => { if (kill.has(g[0])) (g[1] || []).forEach(c => set.add(c)); });
+    // #1649 分组改名后，历史关闭键里存的是原名——两个名字都认
+    src.forEach(g => {
+      if (!g) return;
+      const orig = presetGroupOrigin(cat, g[0]);
+      if (kill.has(g[0]) || (orig !== g[0] && kill.has(orig))) (g[1] || []).forEach(c => set.add(c));
+    });
     goffExp[cat] = { src, names, set };
     return set;
   }
@@ -98,7 +335,7 @@
   // ================= #1315 「整组停用」共用出口（供 mountCardView 以外的预设字卡页接入）==========
   // 需求＝用户实报「字卡库→系统预设字卡→其他互动功能字卡 的单独分组无法选择关闭使用」：
   // #926 的分组开关只覆盖 mountCardView 那四个列表，而【系统预设字卡】入口下另有 12 个由各页
-  // 自渲染的预设池（情绪/回应/TA的心情/寻踪日常/今日情话/位置卡/TA 的询问·小问题·好奇·吐槽·
+  // 自渲染的预设池（情绪/回应/TA的心情/寻踪日常/今日情话/位置卡/TA 的询问·小问题·好奇·调侃·
   // 查岗·邀请），它们只有逐张开关——一个分组几十张，想停掉整组只能一张张点，等于够不到「关闭使用」。
   // 机制与上面同构，但**另存一份键**（pg-groups-off，id 用「<页>:<分类>」）：dc-groups-off 的语义
   // 已被 #926 的针与 #932 的自检账绑在 mountCardView 的分类名单上，把别的页面塞进同一份名单＝改动
@@ -192,7 +429,14 @@
     const gU = function (k) { const v = st.get('dc-use-' + k); return v === null ? true : v === '1'; };
     const gC = function (k) { const v = st.get('dc-cat-' + k); return v === null ? true : v === '1'; };
     const gOff = function (cat, c) {
-      if (st.get('dc-off-' + cat + ':' + c) === '1') return true;
+      // #1644 编辑后列表/抽取都用新文案，但旧桌面可能存着原文案的 dc-off 键：
+      // 新文案没有显式开关值时回退查原文案，编辑不会把原本关掉的卡悄悄重新启用。
+      const direct = st.get('dc-off-' + cat + ':' + c);
+      if (direct === '1') return true;
+      if (direct !== '0') {
+        const orig = PT.original(cat, c);
+        if (orig && orig !== c && st.get('dc-off-' + cat + ':' + orig) === '1') return true;
+      }
       return groupOffFor(cat, c, st);
     };
     return {
@@ -300,6 +544,10 @@
     } catch (e) {}
   }
   mergeDictCustom();
+  // #1649 先套删除/移动/分组改名/排序，再套文案编辑（两步都只从原始数据重建后重放才安全）。
+  // 运行期增删自建词条只重建词典，见 dictCustomAdd/Remove 里的重放。
+  applyPresetOverridesToData();
+  applyPresetEditsToData();
   function dictCustomAdd(kind, text) {
     const v = String(text == null ? '' : text).replace(/\s+/g, '');
     if (!v) return { ok: false, msg: '内容为空，先输入再保存' };
@@ -313,6 +561,9 @@
     arr.push(v);
     dictCustWrite(key, arr);
     mergeDictCustom();
+    // #1649/#1644 词典从原始文案重建后单独重放词典覆盖，避免冲掉删除/移动/改名与改过的文案
+    applyPresetOverridesToData('dict');
+    applyPresetEditsToData('dict');
     try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
     return { ok: true, msg: (kind === 'quote' ? '已存为语录：' : '已存为词：') + v };
   }
@@ -327,6 +578,9 @@
     });
     if (n) {
       mergeDictCustom();
+      // #1649/#1644 同 dictCustomAdd：词典重建后单独重放词典覆盖
+      applyPresetOverridesToData('dict');
+      applyPresetEditsToData('dict');
       try { if (window.quoteSpellResetDict) window.quoteSpellResetDict(); } catch (e) {}
     }
     return n > 0;
@@ -385,14 +639,18 @@
   function isGroupOff(cat, gname) {
     const o = groupOffRecord(ls);
     const names = o && o[cat];
-    return !!(names && names.indexOf(gname) >= 0);
+    if (!names || !names.length) return false;
+    if (names.indexOf(gname) >= 0) return true;
+    const orig = presetGroupOrigin(cat, gname);
+    return orig !== gname && names.indexOf(orig) >= 0;
   }
   function setGroupOff(cat, gname, off) {
     const cur = groupOffRecord(ls) || {};
     const arr = (cur[cat] || []).slice();
-    const i = arr.indexOf(gname);
-    if (off && i < 0) arr.push(gname);
-    if (!off && i >= 0) arr.splice(i, 1);
+    const orig = presetGroupOrigin(cat, gname);
+    const drop = function (nm) { const i = arr.indexOf(nm); if (i >= 0) arr.splice(i, 1); };
+    if (off) { if (arr.indexOf(gname) < 0 && arr.indexOf(orig) < 0) arr.push(gname); }
+    else { drop(gname); drop(orig); }
     const next = {};
     Object.keys(cur).forEach(k => { if (k !== cat && Array.isArray(cur[k]) && cur[k].length) next[k] = cur[k].slice(); });
     if (arr.length) next[cat] = arr;
@@ -639,25 +897,25 @@
   //   点击弹 openModal 静态说明，讲清该功能何时触发、概率控制什么、如何彻底关。用事件委托避免
   //   为每个分类单独绑监听。
   const DCF_DESC = {
-    fish: '【摸鱼】联系人按你摸鱼/钓鱼的进度，在桌面上飘出「摸鱼浮字」打趣你；点击浮字可抓包，抓包会结算 他 自上次被抓以来涨的全部摸鱼值（他 补一份总账、你得同额），并在聊天里回应。\n触发时机：页面在前台时每 60 秒检查一次摸鱼值变化，仅在摸鱼值上涨、距上次 ≥45 分钟、当天不超过 12 次时判定；后台不触发。\n概率 = 每次判定出现浮字的概率（默认 35%），0% = 不出现浮字（本页字卡也可逐张关闭）。',
+    fish: '【摸鱼】联系人按你摸鱼/钓鱼的进度，在桌面上飘出「摸鱼浮字」打趣你；点击浮字可抓包，抓包会结算他自上次被抓以来涨的全部摸鱼值（他补一份总账、你得同额），并在聊天里回应。\n触发时机：页面在前台时每 60 秒检查一次摸鱼值变化，仅在摸鱼值上涨、距上次 ≥45 分钟、当天不超过 12 次时判定；后台不触发。\n概率 = 每次判定出现浮字的概率（默认 35%），0% = 不出现浮字（本页字卡也可逐张关闭）。',
     eat: '【吃饭】到饭点（早 06:30–09:30、午 11:00–13:30、晚 17:00–19:30、夜宵 21:30–23:30）时，联系人主动来聊天提醒你吃饭，并按概率补一句「追问关心」（夜宵时段用夜宵关心话术）。\n触发时机：每 4 分钟判定一次，每个饭点每天只提醒一次，23:00–06:00 静默。主提醒由本功能自带的概率（默认 2%）控制；本项概率只控制提醒之后是否补发追问。\n概率 = 补发追问的概率（默认 35%），0% = 只提醒、不追问。',
-    period: '【经期·温柔化】处于经期时，联系人的每条文字回复有概率被加上温柔前缀/后缀（如「抱抱」「慢慢来」）。\n触发时机：他 每生成一条文字回复时判定一次，仅经期生效。\n概率 = 每条回复被温柔化的概率（默认 25%），0% = 不加温柔前缀/后缀。\n拼接时前缀、正文、动作各自是一张字卡，中间空一格（与单气泡拼字同款，不是被粘成一串）。\n（本项属经期专属语态，词典拼字/梦角自由造句全关也只停各自玩法；但「回复设置→多字卡回复」总开关关闭时本项一并不改写——加前缀/动作＝往同一条气泡里拼第二张字卡，归那颗总开关管。想单独停掉温柔语态只认本页概率与逐张开关。）\n（预测期的「梦角关心」是独立的一项「他的关心」，另见其说明。）',
+    period: '【经期·温柔化】处于经期时，联系人的每条文字回复有概率被加上温柔前缀/后缀（如「抱抱」「慢慢来」）。\n触发时机：他每生成一条文字回复时判定一次，仅经期生效。\n概率 = 每条回复被温柔化的概率（默认 25%），0% = 不加温柔前缀/后缀。\n拼接时前缀、正文、动作各自是一张字卡，中间空一格（与单气泡拼字同款，不是被粘成一串）。\n（本项属经期专属语态，词典拼字/梦角自由造句全关也只停各自玩法；但「回复设置→多字卡回复」总开关关闭时本项一并不改写——加前缀/动作＝往同一条气泡里拼第二张字卡，归那颗总开关管。想单独停掉温柔语态只认本页概率与逐张开关。）\n（预测期的「梦角关心」是独立的一项「他的关心」，另见其说明。）',
     water: '【喝水】每天 06:00–23:00，联系人会来聊天里催你喝水；当天已打卡达标时改为约 1/4 概率发夸奖。\n触发时机：页面在前台时每 8 分钟判定一次，至少隔 50 分钟、每天最多 4 条；打开喝水页时也可能补发；后台不触发。\n概率 = 每次判定发出催水的概率（默认 35%），0% = 完全不催。',
     sync: '【同频】在「同频」页长按敲三下（每下长按 0.35 秒、三下需在 5 秒内完成）时，联系人有概率接住并回应你。\n触发时机：靠你主动长按触发，无冷却、无每日上限；回应会发到聊天（可在同频页关掉「发到聊天」）。\n概率 = 敲三下后接住的概率（默认 60%），0% = 永远接不住。',
-    reach: '【伸手】在「伸手」页长按 0.5 秒时，联系人有概率回应你（温热/微凉/发丝等触感＋悄悄话，会发到聊天，可在该页关掉）。\n触发时机：靠你主动长按触发，无冷却、无每日上限。\n概率 = 主动伸手被回应的概率（默认 55%），0% = 主动伸手时只飘字、不留卡。\n（打开伸手页时 他 也可能主动碰你（距上次 >6 小时 70%、否则 25%），该被动回应不受本项控制。）',
+    reach: '【伸手】在「伸手」页长按 0.5 秒时，联系人有概率回应你（温热/微凉/发丝等触感＋悄悄话，会发到聊天，可在该页关掉）。\n触发时机：靠你主动长按触发，无冷却、无每日上限。\n概率 = 主动伸手被回应的概率（默认 55%），0% = 主动伸手时只飘字、不留卡。\n（打开伸手页时他也可能主动碰你（距上次 >6 小时 70%、否则 25%），该被动回应不受本项控制。）',
     cjian: '【此间】在「此间」页点「感知」时，联系人有概率补一句气息/落空的话术（只在页内显示，不发聊天）。\n触发时机：靠你点「感知」触发；按钮自带 4 秒防抖，梦角状态最多每 15 分钟变化一次。\n概率 = 每次感知出现话术的概率（默认 100%），0% = 感知不出话术。',
-    room: '【房间】在「我们的房间」里进屋、用家具、开关灯、点 他、点窗等互动时，联系人可能冒泡说话（气泡只在房间内显示）。\n触发时机：靠你点击触发，无每日上限；他 自己走动/做动作不会发字卡。\n概率 = 每次互动冒泡的概率（默认 100%），0% = 点了也不冒泡。',
-    piggy: '【存钱罐】切到心意币「存钱」页时，他 可能往存钱罐里塞心意币，并发一条系统消息。\n触发时机：每次切换/打开该页判定一次；距上次越久越容易（>12 小时 45%、>1 小时 25%、否则 12%）。\n概率 = 本次判定是否放行（默认 100%），0% = 不塞币也不发系统消息。\n（真实存钱罐的存/取款关心、他 取币另有各自的概率，不受本项控制。）',
-    drift: '【漂流瓶】捞出漂流瓶时，瓶内话术（海风/他的话/他的回应）从「漂流瓶」字卡池抽取。\n触发时机：打开漂流瓶页、捡瓶前、从后台切回时结算；捡瓶有 20 秒冷却，他 瓶每天最多 3 个；他 回应在发布后 6–40 小时结算（45% 概率会回应，同时最多 2 个）。\n概率 = 抽到字卡话术的概率（默认 100%），0% = 不出字卡（普通瓶仍有内置兜底、不会空白；他 回应瓶则不再生成）。',
+    room: '【房间】在「我们的房间」里进屋、用家具、开关灯、点他、点窗等互动时，联系人可能冒泡说话（气泡只在房间内显示）。\n触发时机：靠你点击触发，无每日上限；他自己走动/做动作不会发字卡。\n概率 = 每次互动冒泡的概率（默认 100%），0% = 点了也不冒泡。',
+    piggy: '【存钱罐】切到心意币「存钱」页时，他可能往存钱罐里塞心意币，并发一条系统消息。\n触发时机：每次切换/打开该页判定一次；距上次越久越容易（>12 小时 45%、>1 小时 25%、否则 12%）。\n概率 = 本次判定是否放行（默认 100%），0% = 不塞币也不发系统消息。\n（真实存钱罐的存/取款关心、他取币另有各自的概率，不受本项控制。）',
+    drift: '【漂流瓶】捞出漂流瓶时，瓶内话术（海风/他的话/他的回应）从「漂流瓶」字卡池抽取。\n触发时机：打开漂流瓶页、捡瓶前、从后台切回时结算；捡瓶有 20 秒冷却，他瓶每天最多 3 个；他回应在发布后 6–40 小时结算（45% 概率会回应，同时最多 2 个）。\n概率 = 抽到字卡话术的概率（默认 100%），0% = 不出字卡（普通瓶仍有内置兜底、不会空白；他回应瓶则不再生成）。',
     interact: '【互动回应】你主动做的各种小互动（戳一戳 / 拍一拍 / 拉拉手等）时，联系人回应的字卡。\n⚠ 当前版本本项概率尚未接线到回应抽取，调整暂不生效（回应的实际概率由回复设置里的相关项控制）。\n触发时机：你主动互动时。\n概率 = 预留的回应字卡概率（默认 100%），设计意图为 0% = 互动不回应字卡，修复接线后生效。',
-    music: '【音乐】播放歌曲时，他 偶尔会「暂停一下再恢复」来逗你。\n触发时机：每开始一首歌判定一次（自带 3% 概率、同一首只触发一次、距上次 ≥10 分钟）；命中后 10–25 秒随机暂停，3.5 秒后恢复。\n概率 = 暂停/恢复时是否附上字卡气泡（默认 100%），0% = 仍有暂停动作和系统消息，但不出字卡。',
-    reading: '【共读批注】一起读书时，联系人在正文句边留下的小纸条，以及越过你那条批注之后给出的回应。\n触发时机：翻到一页并停住后判定（自带 45% 概率），目标章按 他 自己那份阅读进度取；越过你批注的那句后，下次打开时判定一次回应（自带 62% 概率）。\n本概率 = 在原有节奏之上是否放行（默认 100%）：100% = 保持原节奏，0% = 他 不再留纸条、也不再回应你的批注。\n另有硬规则不受本项影响：他的批注只在你读到的正文里浮现（不剧透）、每章最多 3 条且至少隔 8 句、夜间 22:00–07:00 不生成。',
-    checkin: '【寻踪日常】联系人定期更新「他 的日常」（在哪里 / 在做什么 / 想对你说），并推送到聊天。\n触发机制与时间：首次打开（数据就绪后）立即生成一条；此后每隔 1–8 小时随机更新一次，页面在前台时每 60 秒检查一次；后台不更新，从后台切回后 90 秒冷静期内不更新。\n推送内容：每次更新向聊天发三条——「更新了一条日常」提示 + 日常内容 + 30% 概率的「提醒你来寻踪」。\n概率 = 本次更新是否推送这三条到聊天的概率（默认 100%），0% = 完全不发（寻踪页与历史记录照常生成）。\n想整体停用：设置 → 工具 → 寻踪（他 的日常）总开关——关闭后连日常生成与记录一起停用、聊天里的寻踪入口收起（桌面【寻踪】图标仍在，进去写明「已禁用」，页里「他在身边 · 位置感知」照常可用），与本概率是两层东西。',
+    music: '【音乐】播放歌曲时，他偶尔会「暂停一下再恢复」来逗你。\n触发时机：每开始一首歌判定一次（自带 3% 概率、同一首只触发一次、距上次 ≥10 分钟）；命中后 10–25 秒随机暂停，3.5 秒后恢复。\n概率 = 暂停/恢复时是否附上字卡气泡（默认 100%），0% = 仍有暂停动作和系统消息，但不出字卡。',
+    reading: '【共读批注】一起读书时，联系人在正文句边留下的小纸条，以及越过你那条批注之后给出的回应。\n触发时机：翻到一页并停住后判定（自带 45% 概率），目标章按他自己那份阅读进度取；越过你批注的那句后，下次打开时判定一次回应（自带 62% 概率）。\n本概率 = 在原有节奏之上是否放行（默认 100%）：100% = 保持原节奏，0% = 他不再留纸条、也不再回应你的批注。\n另有硬规则不受本项影响：他的批注只在你读到的正文里浮现（不剧透）、每章最多 3 条且至少隔 8 句、夜间 22:00–07:00 不生成。',
+    checkin: '【寻踪日常】联系人定期更新「他的日常」（在哪里 / 在做什么 / 想对你说），并推送到聊天。\n触发机制与时间：首次打开（数据就绪后）立即生成一条；此后每隔 1–8 小时随机更新一次，页面在前台时每 60 秒检查一次；后台不更新，从后台切回后 90 秒冷静期内不更新。\n推送内容：每次更新向聊天发三条——「更新了一条日常」提示 + 日常内容 + 30% 概率的「提醒你来寻踪」。\n概率 = 本次更新是否推送这三条到聊天的概率（默认 100%），0% = 完全不发（寻踪页与历史记录照常生成）。\n想整体停用：设置 → 工具 → 寻踪（他的日常）总开关——关闭后连日常生成与记录一起停用、聊天里的寻踪入口收起（桌面【寻踪】图标仍在，进去写明「已禁用」，页里「他在身边 · 位置感知」照常可用），与本概率是两层东西。',
     pomo: '【番茄钟】你用番茄钟完成一段专注时，联系人在聊天里发「去休息一会儿」（如有奖励还会附上摸鱼补偿）的消息。\n触发时机：每完成一段「专注」结算一次（休息段不发），需番茄钟页的「发到聊天」开关也打开。\n概率 = 完成后发这条消息的概率（默认 100%），0% = 不发。',
-    care: '【他的关心（经期）】经期中、经前预警日（提前天数见经期页「提醒设置」）、或经期推迟时，联系人主动发消息。v3.42.x #559 起按「语境 × 经期规律」分级：经期中发「经期关心」（附「经期关心」标签，语料=字卡库「经期」tab「经期关心」分组+经期页自管理关心语）；经前预警日/推迟发「经期预警」（附「经期预警」标签）。分级判据=近 3 次周期变异系数 CV<0.2（很规律/较规律）视为预测可信，否则预测仅参考——①经前预警：预测可信按配置预警日发确定口吻（「经前预警」组）；预测仅参考只在最接近的一次预警日发「按记录推算、仅供参考」版（「经前预警·不规律」组）。②推迟：预测可信晚 ≥5 天发「比平时晚了 N 天，你一向很准」（「经期推迟」组），晚 ≥10 天升关注档、措辞带就医建议（「经期推迟·关注」组）；预测仅参考不说「推迟」（预测误差可能比推迟天数还大），晚 ≥10 天才以「距上次经期已经 N 天」间隔口吻轻提（「经期推迟·不规律」组）。各语料 {d} 自动替换为具体天数。\n触发时机：他 每条文字/表情/图片回复后、打开经期页、保存提醒设置时各判定一次；每个语境每天最多一条；23:00–06:00 深夜静默（不发、也不占当天名额，白天再触发照常）。\n本概率 = 在原有闸门之上统一放行（默认 100%）：经期中第 1–2 天另有 90%、第 3–4 天 70%、第 5+ 天 55%，经前预警/推迟预警 75% 的基数；本项 100% = 保持原节奏，0% = 完全不发。\n与经期页那个「梦角关心」按钮是「与」的关系：本项设 0%、或那边关掉，任一成立就一条都不发（不必两个都关）。被本项拦成 0% 而经期页仍显示「已开启」时，经期页「提醒设置」底部会当场写出这一条与打开方式，不再静默不发。',
+    care: '【他的关心（经期）】经期中、经前预警日（提前天数见经期页「提醒设置」）、或经期推迟时，联系人主动发消息。v3.42.x #559 起按「语境 × 经期规律」分级：经期中发「经期关心」（附「经期关心」标签，语料=字卡库「经期」tab「经期关心」分组+经期页自管理关心语）；经前预警日/推迟发「经期预警」（附「经期预警」标签）。分级判据=近 3 次周期变异系数 CV<0.2（很规律/较规律）视为预测可信，否则预测仅参考——①经前预警：预测可信按配置预警日发确定口吻（「经前预警」组）；预测仅参考只在最接近的一次预警日发「按记录推算、仅供参考」版（「经前预警·不规律」组）。②推迟：预测可信晚 ≥5 天发「比平时晚了 N 天，你一向很准」（「经期推迟」组），晚 ≥10 天升关注档、措辞带就医建议（「经期推迟·关注」组）；预测仅参考不说「推迟」（预测误差可能比推迟天数还大），晚 ≥10 天才以「距上次经期已经 N 天」间隔口吻轻提（「经期推迟·不规律」组）。各语料 {d} 自动替换为具体天数。\n触发时机：他每条文字/表情/图片回复后、打开经期页、保存提醒设置时各判定一次；每个语境每天最多一条；23:00–06:00 深夜静默（不发、也不占当天名额，白天再触发照常）。\n本概率 = 在原有闸门之上统一放行（默认 100%）：经期中第 1–2 天另有 90%、第 3–4 天 70%、第 5+ 天 55%，经前预警/推迟预警 75% 的基数；本项 100% = 保持原节奏，0% = 完全不发。\n与经期页那个「梦角关心」按钮是「与」的关系：本项设 0%、或那边关掉，任一成立就一条都不发（不必两个都关）。被本项拦成 0% 而经期页仍显示「已开启」时，经期页「提醒设置」底部会当场写出这一条与打开方式，不再静默不发。',
     memo: '【备忘提醒】你有未完成的备忘时，联系人在聊天里催一件，带「备忘提醒」标签。\n触发时机：启动 60 秒后首次、之后每 4 分钟判定一次、回前台补触发；至少隔 2 天、23:00–06:00 静默。\n本概率 = 在备忘页自带的「备忘提醒」开关/概率（默认 2%）之上是否放行（默认 100%）：100% = 保持原节奏，0% = 完全不催备忘。\n备忘页里自己的开关仍独立有效。',
-    ask: '【他主动提问】联系人在聊天里主动发起的问题卡：关心询问 / 小问题 / 好奇卡片 / 互动 / 吐槽，带你作答选项。\n触发时机：五类各自定时判定（首次 60–150 秒、之后每 240–300 秒），各有冷却（30/45/90 分钟），任一互动卡发出后 60 分钟内其余类型不再自动触发；无深夜静默。\n本概率 = 在各类自带的触发概率（询问/小问题/好奇/吐槽默认 5%、他分享你的字卡默认 4%）与冷却之上是否统一放行（默认 100%）：100% = 保持原节奏，0% = 完全不主动提问。\n#1153 频率整体档：设置 → 回复设置 →「互动卡频率」四档（原频率 / 稍安静 / 安静 / 很安静）可把这五类（以及邀请三类、音乐邀请）的概率、提问卡冷却与 60 分钟跨类型间隔一起整体往下缩放；「原频率」（默认）＝完全保持现在的节奏，没有比它更高的档。\n不影响查岗（查岗走自己的「跨桌面查岗」）。',
-    deskcheck: '【跨桌面查岗·回应】其他桌面的联系人来查岗、你回答后，他 是否从「跨桌面查岗」字卡池抽 1–5 张作为回应。\n触发时机：查岗本身由全局「跨桌面查岗频率」控制（原频率：每 60 秒判定、每次 2% 概率、冷却 30 分钟；安静 1% / 3 小时（默认）；更安静 0.5% / 6 小时；最安静 0.2% / 12 小时），本项不控制是否来查岗，只控制回答之后的回应。\n概率 = 回答后抽回应字卡的概率（默认 50%），0% = 只给文字回复、不抽字卡。\n（本项为独立入口，不受「其他互动功能字卡」总开关约束。）'
+    ask: '【他主动提问】联系人在聊天里主动发起的问题卡：关心询问 / 小问题 / 好奇卡片 / 互动 / 调侃，带你作答选项。\n触发时机：五类各自定时判定（首次 60–150 秒、之后每 240–300 秒），各有冷却（30/45/90 分钟），任一互动卡发出后 60 分钟内其余类型不再自动触发；无深夜静默。\n本概率 = 在各类自带的触发概率（询问/小问题/好奇/调侃默认 5%、他分享你的字卡默认 4%）与冷却之上是否统一放行（默认 100%）：100% = 保持原节奏，0% = 完全不主动提问。\n#1153 频率整体档：设置 → 回复设置 →「互动卡频率」四档（原频率 / 稍安静 / 安静 / 很安静）可把这五类（以及邀请三类、音乐邀请）的概率、提问卡冷却与 60 分钟跨类型间隔一起整体往下缩放；「原频率」（默认）＝完全保持现在的节奏，没有比它更高的档。\n不影响查岗（查岗走自己的「跨桌面查岗」）。',
+    deskcheck: '【跨桌面查岗·回应】其他桌面的联系人来查岗、你回答后，他是否从「跨桌面查岗」字卡池抽 1–5 张作为回应。\n触发时机：查岗本身由全局「跨桌面查岗频率」控制（原频率：每 60 秒判定、每次 2% 概率、冷却 30 分钟；安静 1% / 3 小时（默认）；更安静 0.5% / 6 小时；最安静 0.2% / 12 小时），本项不控制是否来查岗，只控制回答之后的回应。\n概率 = 回答后抽回应字卡的概率（默认 50%），0% = 只给文字回复、不抽字卡。\n（本项为独立入口，不受「其他互动功能字卡」总开关约束。）'
   };
   // 注入「功能说明」标签到每个概率行（含新启用的 checkin/pomo）——复用 .gs-row .tag 样式，
   // 标签带 data-fdesc/<data-dname，交给下方 document 级事件委托。
@@ -759,6 +1017,7 @@
   const V_PAD = 0.8;    // 视口上下各多渲染 0.8 屏（重建频率 ≈ 每滚 0.8 屏一次）
   const V_MINW = 24;    // 窗口条目数下限（小屏/高条目时兜底，避免窗口过窄）
   const V_EST = 55;     // 未实测条目高度初值：.cc-item 13+13 padding + 行高 + 9 margin
+  let activePresetManager = null;   // #1648 同一时间只允许一个预设列表处于管理态
   function mountCardView(ids, allowedKeys, emptyText, searchKeys) {
     const viewList = document.getElementById(ids.list);
     const viewTabs = document.getElementById(ids.tabs);
@@ -776,6 +1035,468 @@
       q: '',
       curGroup: ''
     };
+    // #1648/#1649 管理字卡：批量勾选移除 / 移动（系统预设卡只做移除，可恢复）；
+    // 「管理分组」负责分组改名 / 删除自建分组 / 拖拽排序，以及恢复已移除的字卡。
+    let manageMode = false;
+    const managed = new Set();
+    let manageBar = null;
+    const toolWrap = document.createElement('div');
+    toolWrap.className = 'cc-toolbar cc-preset-manage-tools';
+    const manageIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>';
+    const groupIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M8 13h8"/></svg>';
+    toolWrap.innerHTML = '<button type="button" class="cc-tool cc-manage-toggle">' + manageIcon + '管理字卡</button>' +
+      '<button type="button" class="cc-tool cc-group-toggle">' + groupIcon + '管理分组</button>';
+    viewTabs.parentNode.insertBefore(toolWrap, viewTabs);
+    const manageBtn = toolWrap.querySelector('.cc-manage-toggle');
+    const groupBtn = toolWrap.querySelector('.cc-group-toggle');
+    function selKey(cat, c) { return cat + '\u0001' + c; }
+    function selectedItems() {
+      const out = [];
+      managed.forEach(function (k) {
+        const p = k.split('\u0001');
+        if (p.length < 2) return;
+        out.push({ cat: p[0], c: p.slice(1).join('\u0001') });
+      });
+      return out;
+    }
+    function updateManageCount() {
+      if (!manageBar) return;
+      const cnt = manageBar.querySelector('.cc-m-count');
+      if (cnt) cnt.textContent = '已选 ' + managed.size + ' 张';
+    }
+    // 覆盖表 / 卡片数据变更后的统一收尾：清分组展开缓存、刷新计数、四个预设列表按新数据重排
+    function afterPresetDataChange() {
+      Object.keys(goffExp).forEach(function (k) { delete goffExp[k]; });
+      refreshLibCount();
+      renderGroupsBar();
+      notifyPresetCardEdited();
+      updateManageCount();
+    }
+    // 找到某张卡当前所在分组（用于移动前确认，避免同组移动把卡摘掉）
+    function locateCard(cat, c) {
+      const groups = DATA[cat] || [];
+      for (let gi = 0; gi < groups.length; gi++) {
+        const g = groups[gi];
+        const arr = g && g[1];
+        if (!Array.isArray(arr)) continue;
+        const i = arr.indexOf(c);
+        if (i >= 0) return { group: g[0], arr: arr, idx: i };
+      }
+      return null;
+    }
+    // 移除选中：只记全局移除名单（内置数据不能真删），可在「管理分组 → 已移除」恢复
+    function deleteSelected() {
+      const items = selectedItems();
+      if (!items.length) { toast('请先勾选字卡'); return; }
+      if (!window.openModal) { toast('弹窗组件不可用'); return; }
+      window.openModal('移除选中的 ' + items.length + ' 张字卡？', '', function () {
+        let cnt = 0;
+        items.forEach(function (it) {
+          const from = presetTakeCard(it.cat, it.c);
+          if (from === null) return;
+          const orig = PT ? PT.original(it.cat, it.c) : it.c;
+          OV.removed[it.cat] = OV.removed[it.cat] || {};
+          OV.removed[it.cat][orig] = { from: from };
+          cnt++;
+        });
+        if (!cnt) { toast('选中的字卡已不在列表里'); return; }
+        saveOverrides();
+        managed.clear();
+        afterPresetDataChange();
+        toast('已移除 ' + cnt + ' 张，可在「管理分组」里恢复');
+      }, { noInput: true, staticText: '系统预设卡是内置数据，这里只做「移除」：从列表与回复抽取池里消失，不会真的删除；随时可以在「管理分组 → 已移除的字卡」恢复。' });
+    }
+    // 移动选中：把卡从当前分组摘出放进目标分组（目标不存在则新建）
+    function moveSelectedTo(target) {
+      const items = selectedItems();
+      if (!items.length) { toast('请先勾选字卡'); return; }
+      if (!target) return;
+      let cnt = 0;
+      items.forEach(function (it) {
+        const hit = locateCard(it.cat, it.c);
+        if (!hit || hit.group === target) return;
+        hit.arr.splice(hit.idx, 1);
+        const orig = PT ? PT.original(it.cat, it.c) : it.c;
+        OV.moved[it.cat] = OV.moved[it.cat] || {};
+        OV.moved[it.cat][orig] = { g: target, from: hit.group };
+        // 只有目标分组本来不存在（新建的）才登记为自建分组；移到内置分组不改变它的归属，
+        // 否则内置分组会被误标成可删除的自建分组
+        const existed = (DATA[it.cat] || []).some(function (g) { return g && g[0] === target; });
+        presetEnsureGroup(it.cat, target)[1].push(it.c);
+        if (!existed) {
+          OV.groups[it.cat] = OV.groups[it.cat] || {};
+          OV.groups[it.cat][target] = 1;
+        }
+        cnt++;
+      });
+      if (!cnt) { toast('选中的字卡已经在这个分组里'); return; }
+      saveOverrides();
+      managed.clear();
+      afterPresetDataChange();
+      toast('已移动 ' + cnt + ' 张到「' + target + '」');
+    }
+    // 移动目标面板（列出当前分类的分组；可在底部新建分组后直接移入）
+    let moveMask = null;
+    function renderMoveList() {
+      const listEl = moveMask.querySelector('.mg-list');
+      const cats = {};
+      selectedItems().forEach(function (it) { cats[it.cat] = 1; });
+      const catOrder = [view.cur].concat(Object.keys(cats).filter(function (c) { return c !== view.cur; }));
+      listEl.innerHTML = '';
+      let shown = 0;
+      const seen = {};
+      catOrder.forEach(function (cat) {
+        ((DATA[cat]) || []).forEach(function (g) {
+          if (!g || !g[0] || seen[g[0]]) return;
+          seen[g[0]] = 1;
+          shown++;
+          const row = document.createElement('div');
+          row.className = 'mg-row';
+          row.innerHTML = '<span class="mg-name">' + escHtml(g[0]) + '</span>' +
+            '<span class="mg-count">' + ((g[1] || []).length) + ' 张</span>';
+          row.addEventListener('click', function () {
+            moveSelectedTo(g[0]);
+            moveMask.hidden = true;
+          });
+          listEl.appendChild(row);
+        });
+      });
+      if (!shown) listEl.innerHTML = '<div class="mg-empty">暂无分组，先新建一个</div>';
+    }
+    function openMovePanel() {
+      if (!selectedItems().length) { toast('请先勾选字卡'); return; }
+      if (!moveMask) {
+        moveMask = document.createElement('div');
+        moveMask.className = 'mg-mask';
+        moveMask.hidden = true;
+        moveMask.innerHTML = '<div class="mg-panel"><div class="mg-head"><span>移动到分组</span>' +
+          '<button type="button" class="mg-close">✕</button></div>' +
+          '<div class="mg-list"></div>' +
+          '<button type="button" class="mg-add">＋ 新建分组并移入</button></div>';
+        document.body.appendChild(moveMask);
+        moveMask.querySelector('.mg-close').addEventListener('click', function () { moveMask.hidden = true; });
+        moveMask.addEventListener('click', function (e) { if (e.target === moveMask) moveMask.hidden = true; });
+        moveMask.querySelector('.mg-add').addEventListener('click', function () {
+          if (!window.openModal) return;
+          window.openModal('新建分组并移入', '', function (v) {
+            const name = String(v == null ? '' : v).trim();
+            if (!name) return;
+            const cats = {};
+            selectedItems().forEach(function (it) { cats[it.cat] = 1; });
+            Object.keys(cats).forEach(function (c) {
+              OV.groups[c] = OV.groups[c] || {};
+              OV.groups[c][name] = 1;
+            });
+            moveSelectedTo(name);
+            moveMask.hidden = true;
+          }, { maxlength: 20 });
+        });
+      }
+      renderMoveList();
+      moveMask.hidden = false;
+    }
+    function selectAllVisible() {
+      const all = [];
+      flat.forEach(function (it) { if (!it.header) all.push(selKey(it.cat || view.cur, it.c)); });
+      const every = all.length && all.every(function (k) { return managed.has(k); });
+      if (every) all.forEach(function (k) { managed.delete(k); });
+      else all.forEach(function (k) { managed.add(k); });
+      render();
+      updateManageCount();
+    }
+    function enterManage() {
+      if (manageMode) return;
+      if (activePresetManager && activePresetManager !== manageSelf) activePresetManager.exitManage();
+      activePresetManager = manageSelf;
+      manageMode = true;
+      managed.clear();
+      toolWrap.style.display = 'none';
+      viewList.classList.add('cc-managing');
+      if (!manageBar) {
+        manageBar = document.createElement('div');
+        manageBar.className = 'cc-manage-bar';
+        manageBar.innerHTML = '<span class="cc-m-count">已选 0 张</span>' +
+          '<button type="button" class="cc-m-btn" data-m="all">全选</button>' +
+          '<button type="button" class="cc-m-btn cc-m-del" data-m="del">删除</button>' +
+          '<button type="button" class="cc-m-btn" data-m="move">移动</button>' +
+          '<button type="button" class="cc-m-btn" data-m="exit">退出</button>';
+        document.body.appendChild(manageBar);
+        manageBar.addEventListener('click', function (e) {
+          const b = e.target.closest('.cc-m-btn');
+          if (!b) return;
+          const m = b.dataset.m;
+          if (m === 'all') selectAllVisible();
+          else if (m === 'del') deleteSelected();
+          else if (m === 'move') openMovePanel();
+          else if (m === 'exit') exitManage();
+        });
+      }
+      manageBar.hidden = false;
+      render();
+      updateManageCount();
+    }
+    function exitManage() {
+      if (!manageMode) return;
+      manageMode = false;
+      managed.clear();
+      viewList.classList.remove('cc-managing');
+      toolWrap.style.display = '';
+      if (manageBar) manageBar.hidden = true;
+      if (activePresetManager === manageSelf) activePresetManager = null;
+      render();
+    }
+    // ---------- 管理分组（改名 / 删除自建分组 / 拖拽排序 / 恢复已移除） ----------
+    let mgMask = null;
+    let mgMode = 'groups';
+    function ensureMgPanel() {
+      if (mgMask) return;
+      mgMask = document.createElement('div');
+      mgMask.className = 'mg-mask';
+      mgMask.hidden = true;
+      mgMask.innerHTML = '<div class="mg-panel"><div class="mg-head"><span class="mg-title">管理分组</span>' +
+        '<button type="button" class="mg-close">✕</button></div>' +
+        '<div class="mg-list"></div><div class="mg-foot"></div></div>';
+      document.body.appendChild(mgMask);
+      mgMask.querySelector('.mg-close').addEventListener('click', function () { mgMask.hidden = true; });
+      mgMask.addEventListener('click', function (e) { if (e.target === mgMask) mgMask.hidden = true; });
+    }
+    function removedCountOf() {
+      let n = 0;
+      Object.keys(OV.removed).forEach(function (c) { n += Object.keys(OV.removed[c] || {}).length; });
+      return n;
+    }
+    // 分组拖动排序：落点后写 OV.order，刷新列表
+    function attachMgDrag(row, gi) {
+      const handle = row.querySelector('.mg-handle');
+      if (!handle) return;
+      handle.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        const listEl = mgMask.querySelector('.mg-list');
+        const rect = row.getBoundingClientRect();
+        const offsetY = e.clientY - rect.top;
+        const clone = row.cloneNode(true);
+        clone.classList.add('mg-drag-clone');
+        clone.style.position = 'fixed';
+        clone.style.left = rect.left + 'px';
+        clone.style.top = rect.top + 'px';
+        clone.style.width = rect.width + 'px';
+        clone.style.margin = '0';
+        document.body.appendChild(clone);
+        row.classList.add('mg-dragging');
+        let dropIdx = gi;
+        const onMove = function (ev) {
+          ev.preventDefault();
+          clone.style.top = (ev.clientY - offsetY) + 'px';
+          const rows = Array.from(listEl.querySelectorAll('.mg-row'));
+          dropIdx = rows.length;
+          for (let i = 0; i < rows.length; i++) {
+            if (rows[i] === row) continue;
+            const r = rows[i].getBoundingClientRect();
+            if (ev.clientY < r.top + r.height / 2) { dropIdx = i; break; }
+          }
+          listEl.querySelectorAll('.mg-drop-line').forEach(function (el) { el.remove(); });
+          const line = document.createElement('div');
+          line.className = 'mg-drop-line';
+          if (dropIdx >= rows.length) listEl.appendChild(line);
+          else listEl.insertBefore(line, rows[dropIdx]);
+        };
+        const onUp = function () {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          clone.remove();
+          row.classList.remove('mg-dragging');
+          listEl.querySelectorAll('.mg-drop-line').forEach(function (el) { el.remove(); });
+          if (dropIdx === gi || dropIdx === gi + 1) return;
+          const groups = DATA[view.cur] || [];
+          let target = dropIdx < gi ? dropIdx : dropIdx - 1;
+          if (target < 0) target = 0;
+          if (target > groups.length - 1) target = groups.length - 1;
+          if (target === gi) return;
+          const moved = groups.splice(gi, 1)[0];
+          groups.splice(target, 0, moved);
+          OV.order[view.cur] = groups.map(function (g) { return g && g[0]; }).filter(Boolean);
+          saveOverrides();
+          afterPresetDataChange();
+          renderGroupPanel();
+          toast('分组顺序已保存');
+        };
+        document.addEventListener('pointermove', onMove, { passive: false });
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+        e.preventDefault();
+      });
+    }
+    function renameGroup(oldName) {
+      if (!window.openModal) return;
+      const cat = view.cur;
+      window.openModal('重命名分组', oldName, function (v) {
+        const name = String(v == null ? '' : v).trim();
+        if (!name || name === oldName) return;
+        const groups = DATA[cat] || [];
+        if (groups.some(function (g) { return g && g[0] === name; })) { toast('分组「' + name + '」已存在'); return; }
+        const g = groups.filter(function (x) { return x && x[0] === oldName; })[0];
+        if (!g) return;
+        g[0] = name;
+        const orig = presetGroupOrigin(cat, oldName);
+        OV.renames[cat] = OV.renames[cat] || {};
+        OV.renames[cat][orig] = name;
+        if (OV.groups[cat] && OV.groups[cat][oldName]) {
+          delete OV.groups[cat][oldName];
+          OV.groups[cat][name] = 1;
+        }
+        const mv = OV.moved[cat] || {};
+        Object.keys(mv).forEach(function (t) {
+          if (!mv[t]) return;
+          if (mv[t].g === oldName) mv[t].g = name;
+          if (mv[t].from === oldName) mv[t].from = name;
+        });
+        if (Array.isArray(OV.order[cat])) OV.order[cat] = OV.order[cat].map(function (x) { return x === oldName ? name : x; });
+        if (view.curGroup === oldName) view.curGroup = name;
+        saveOverrides();
+        afterPresetDataChange();
+        renderGroupPanel();
+        toast('已重命名为「' + name + '」');
+      }, { maxlength: 20, staticText: '只改显示名：整组开关、已改文案与移动记录都会跟着新名字继续生效。' });
+    }
+    function deleteCustomGroup(name) {
+      const cat = view.cur;
+      if (!(OV.groups[cat] && OV.groups[cat][name])) return;
+      if (!window.openModal) return;
+      window.openModal('删除分组「' + name + '」？', '', function () {
+        const groups = DATA[cat] || [];
+        const g = groups.filter(function (x) { return x && x[0] === name; })[0];
+        const mv = OV.moved[cat] || {};
+        if (g) {
+          (g[1] || []).forEach(function (c) {
+            const orig = PT ? PT.original(cat, c) : c;
+            const rec = mv[orig];
+            if (rec && rec.g === name) {
+              const back = rec.from && rec.from !== name ? rec.from : '';
+              delete mv[orig];
+              if (back) presetEnsureGroup(cat, back)[1].push(c);
+              else if (groups[0] && groups[0] !== g) groups[0][1].push(c);
+            } else if (groups[0] && groups[0] !== g) {
+              groups[0][1].push(c);
+            }
+          });
+        }
+        // 已移除的卡若记着这个分组，改回它原来的分组；移动记录指向该分组的一并清掉
+        const rm = OV.removed[cat] || {};
+        Object.keys(rm).forEach(function (t) {
+          if (rm[t] && rm[t].from === name) {
+            const rec = mv[t];
+            rm[t].from = rec && rec.from ? rec.from : '';
+          }
+        });
+        Object.keys(mv).forEach(function (t) { if (mv[t] && mv[t].g === name) delete mv[t]; });
+        DATA[cat] = groups.filter(function (x) { return x !== g; });
+        delete OV.groups[cat][name];
+        if (Array.isArray(OV.order[cat])) OV.order[cat] = OV.order[cat].filter(function (x) { return x !== name; });
+        if (view.curGroup === name) view.curGroup = '';
+        saveOverrides();
+        afterPresetDataChange();
+        renderGroupPanel();
+        toast('已删除分组「' + name + '」');
+      }, { noInput: true, staticText: '组内的系统字卡会退回原分组，不会丢失；内置系统分组不可删除。' });
+    }
+    function restoreRemoved(cat, origText) {
+      const rec = (OV.removed[cat] || {})[origText];
+      if (!rec) return;
+      delete OV.removed[cat][origText];
+      if (!Object.keys(OV.removed[cat]).length) delete OV.removed[cat];
+      const shown = presetShownText(cat, origText);
+      const groups = Array.isArray(DATA[cat]) ? DATA[cat] : (DATA[cat] = []);
+      let target = rec.from;
+      if (!target || !groups.some(function (g) { return g && g[0] === target; })) target = groups.length ? groups[0][0] : '常用';
+      presetEnsureGroup(cat, target)[1].push(shown);
+      saveOverrides();
+      afterPresetDataChange();
+      renderGroupPanel();
+      toast('已恢复：' + (shown.length > 16 ? shown.slice(0, 16) + '…' : shown));
+    }
+    function renderGroupPanel() {
+      ensureMgPanel();
+      const titleEl = mgMask.querySelector('.mg-title');
+      const listEl = mgMask.querySelector('.mg-list');
+      const footEl = mgMask.querySelector('.mg-foot');
+      const cat = view.cur;
+      if (mgMode === 'restore') {
+        titleEl.textContent = '已移除的字卡';
+        listEl.innerHTML = '';
+        let total = 0;
+        Object.keys(OV.removed).forEach(function (c) {
+          const m = OV.removed[c] || {};
+          Object.keys(m).forEach(function (origText) {
+            total++;
+            const row = document.createElement('div');
+            row.className = 'mg-row';
+            row.innerHTML = '<span class="mg-name">' + escHtml(presetShownText(c, origText)) + '</span>' +
+              '<span class="mg-tag">' + escHtml(tabLabel(c)) + '</span>';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'mg-rn mg-restore';
+            btn.textContent = '恢复';
+            btn.addEventListener('click', function () { restoreRemoved(c, origText); });
+            row.appendChild(btn);
+            listEl.appendChild(row);
+          });
+        });
+        if (!total) listEl.innerHTML = '<div class="mg-empty">没有已移除的字卡</div>';
+        footEl.innerHTML = '';
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'mg-add';
+        back.textContent = '返回分组列表';
+        back.addEventListener('click', function () { mgMode = 'groups'; renderGroupPanel(); });
+        footEl.appendChild(back);
+        return;
+      }
+      titleEl.textContent = '管理分组';
+      const groups = DATA[cat] || [];
+      listEl.innerHTML = '';
+      const handleSvg = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+      const editSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>';
+      groups.forEach(function (g, gi) {
+        if (!g) return;
+        const custom = !!(OV.groups[cat] && OV.groups[cat][g[0]]);
+        const row = document.createElement('div');
+        row.className = 'mg-row';
+        row.dataset.gidx = String(gi);
+        row.innerHTML = '<button type="button" class="mg-handle" aria-label="拖动排序">' + handleSvg + '</button>' +
+          '<span class="mg-name">' + escHtml(g[0]) + '</span>' +
+          '<span class="mg-count">' + ((g[1] || []).length) + ' 张</span>' +
+          '<button type="button" class="mg-rn" aria-label="重命名">' + editSvg + '</button>' +
+          (custom ? '<button type="button" class="mg-del" aria-label="删除分组">✕</button>' : '<span class="mg-tag">系统</span>');
+        attachMgDrag(row, gi);
+        row.querySelector('.mg-rn').addEventListener('click', function (e) { e.stopPropagation(); renameGroup(g[0]); });
+        if (custom) row.querySelector('.mg-del').addEventListener('click', function (e) { e.stopPropagation(); deleteCustomGroup(g[0]); });
+        listEl.appendChild(row);
+      });
+      if (!groups.length) listEl.innerHTML = '<div class="mg-empty">暂无分组</div>';
+      footEl.innerHTML = '';
+      const nRemoved = removedCountOf();
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'mg-add';
+      add.textContent = '已移除的字卡（' + nRemoved + '）';
+      if (!nRemoved) { add.disabled = true; add.style.opacity = '.45'; }
+      add.addEventListener('click', function () {
+        if (!nRemoved) return;
+        mgMode = 'restore';
+        renderGroupPanel();
+      });
+      footEl.appendChild(add);
+    }
+    function openGroupsPanel() {
+      if (manageMode) exitManage();
+      mgMode = 'groups';
+      renderGroupPanel();
+      mgMask.hidden = false;
+    }
+    const manageSelf = { exitManage: exitManage };
+    manageBtn.addEventListener('click', function () { if (manageMode) exitManage(); else enterManage(); });
+    groupBtn.addEventListener('click', openGroupsPanel);
 
     // ================= 虚拟窗口状态 =================
     // 实测（headless 390×844，空数据）：预设字卡 main 分类 4621 张旧版全量渲染 =
@@ -873,10 +1594,17 @@
         d.innerHTML = groupHeaderHTML(it.glabel, it.count, goff);
       } else {
         const off = isCardOff(it.cat, it.c);
-        d.className = 'cc-item glass' + (off ? ' off' : '');
+        d.className = 'cc-item glass' + (off ? ' off' : '') +
+          (manageMode && managed.has(selKey(it.cat || view.cur, it.c)) ? ' sel' : '');
         // 整页为系统预设字卡，统一标【系统】与自定义字卡区分（#301：词典自建词条标「自建」）；
+        // #1644 改过文案的系统卡标「已改」并给一支铅笔（自建词条的身份是用户原文，不参与编辑）；
         // 右侧单卡开关——逐张开启/关闭该字卡（关闭后功能/聊天回复不再抽取）
-        d.innerHTML = '<div class="cc-txt"><div class="t">' + it.c + ' <span class="tc-known">' + (window.__dictCustomSet && window.__dictCustomSet.has(it.c) ? '自建' : '系统') + '</span></div></div>' +
+        const isCustom = !!(window.__dictCustomSet && window.__dictCustomSet.has(it.c));
+        const isEdited = !isCustom && !!(PT && PT.isEdited(it.cat, it.c));
+        d.innerHTML = '<div class="cc-txt"><div class="t">' + escHtml(it.c) + ' <span class="tc-known' +
+          (isEdited ? ' edited' : '') + '">' + (isCustom ? '自建' : isEdited ? '已改' : '系统') + '</span></div></div>' +
+          (isCustom ? '' : '<button type="button" class="preset-edit-btn" title="编辑这张系统字卡" aria-label="编辑这张系统字卡">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>') +
           '<label class="toggle ccard-toggle"><input type="checkbox"' + (off ? '' : ' checked') + '><span class="tk"></span></label>';
       }
       d.dataset.idx = i;
@@ -1009,6 +1737,7 @@
     }
     // change 事件委托——list 单一监听器替代每卡一个；窗口重建后 dataset.idx 仍指向 flat
     viewList.addEventListener('change', (e) => {
+      if (manageMode) return;   // #1648 管理态只做勾选，不直接改开关
       const input = e.target;
       if (!input || input.type !== 'checkbox') return;
       const head = input.closest('.cc-group-header');
@@ -1032,7 +1761,32 @@
       item.classList.toggle('off', nowOff);
       toastCard(rec.c, nowOff);
     });
+    // #1644 行内铅笔：点按钮不进开关、直接打开该卡的编辑弹窗（自建词典词条不渲染此按钮）
+    viewList.addEventListener('click', (e) => {
+      if (manageMode) return;
+      const btn = e.target.closest('.preset-edit-btn');
+      if (!btn) return;
+      const item = btn.closest('.cc-item');
+      if (!item) return;
+      const rec = flat[Number(item.dataset.idx)];
+      if (!rec || rec.header) return;
+      openPresetCardEditor(rec.cat || view.cur, rec.c);
+    });
+    // #1648 管理态：点整行 = 勾选/取消（铅笔与开关在 CSS 里已隐藏）
+    viewList.addEventListener('click', (e) => {
+      if (!manageMode) return;
+      if (e.target.closest('.cc-group-header')) return;
+      const item = e.target.closest('.cc-item');
+      if (!item) return;
+      const rec = flat[Number(item.dataset.idx)];
+      if (!rec || rec.header) return;
+      const k = selKey(rec.cat || view.cur, rec.c);
+      if (managed.has(k)) managed.delete(k); else managed.add(k);
+      item.classList.toggle('sel');
+      updateManageCount();
+    });
     viewTabs.addEventListener('click', (e) => {
+      if (manageMode) exitManage();
       const tab = e.target.closest('.cc-tab[data-type]');
       if (!tab) return;
       if (view.keys.indexOf(tab.dataset.type) < 0) return;
@@ -1062,7 +1816,10 @@
       // 页面隐藏时滚动容器的 scrollTop 归零、渲染树销毁：重新显示必须按新滚动位置重排
       if (typeof MutationObserver !== 'undefined') {
         try {
-          new MutationObserver(() => { if (!pageEl.hidden) requestLayout(true); })
+          new MutationObserver(() => {
+            if (pageEl.hidden) { if (manageMode) exitManage(); }
+            else requestLayout(true);
+          })
             .observe(pageEl, { attributes: true, attributeFilter: ['hidden'] });
         } catch (e) {}
       }
@@ -1266,6 +2023,14 @@
     list: 'dk-list', tabs: 'dk-tabs', groupsBar: 'dk-groups-bar', search: 'dk-search-input', page: 'page-deskcheck'
   }, ['deskcheck'], '暂无联系人跨桌面查岗字卡', ['deskcheck']);
 
+  // #1644 任一系统字卡改文案/恢复原文后，四个预设列表都按 DATA 的新文案重排
+  //（含跨 tab 搜索结果里的同一张卡；隐藏页先重排，打开时窗口按新高度重排）
+  document.addEventListener('preset-card-edited', function () {
+    [dcView, dictView, fcView, dkView].forEach(function (v) {
+      if (v && v.render) { try { v.render(); } catch (e) {} }
+    });
+  });
+
   // 入口/返回
   const li = document.getElementById('li-default-cards');
   if (li) {
@@ -1365,7 +2130,7 @@
     return (DATA[cat] || []).slice();
   };
   // v3.7.x：互动回应预设池读取（供互动卡片回复侧使用）——name 分组名（邀请TA·接受/
-  // 邀请TA·拒绝/问问TA·回应/小问题·回应/好奇·回应/吐槽·回应/询问·回应），
+  // 邀请TA·拒绝/问问TA·回应/小问题·回应/好奇·回应/调侃·回应/询问·回应），
   // 与「互动回应」tab 展示同源（DEFAULT_CARD_DATA.interact）；数据缺失时回退 fallback
   // v3.13.x：泛化为 getLibPool(分类, 分组, 兜底)——摸鱼浮字/同频/伸手/喝水/存钱罐
   // 各功能统一走它取同源池（消费侧再按 isDefaultCardOff(分类, 文案) 过滤已关卡片）
@@ -1380,7 +2145,7 @@
     arr = arr.slice();
     // FIX 2026-09-30 #1498 消费端总闸下沉到取池口（本函数原先只「取组」、过滤全靠每个调用方自己
     //   记着过 isDefaultCardOff）：auction（拍卖）／五子棋／连线／消消乐／四子棋／记忆翻牌／钓鱼／
-    //   音乐 等 8 个模块与 chat.js「吐槽·回应」、ta-ask.js「询问·回应」等处是**裸抽**
+    //   音乐 等 8 个模块与 chat.js「调侃·回应」、ta-ask.js「询问·回应」等处是**裸抽**
     //   （getInteractPool(name, fb) 后直接 pool[random]），用户逐张关闭或整组停用「互动回应」
     //   字卡后它们照旧使用（用户报障「设置了禁止使用的字卡，联系人还是能使用」的多机型同现）。
     //   这里对【预设组内容 + 兜底数组】这一半统一过闸——已过滤的调用方再过滤一次是幂等的
@@ -1397,7 +2162,7 @@
   // 走 getLibPool 同一出口，逐张开关、整组停用、二级密码锁与自建卡并入全部沿用既有闸；
   // 系统预设总档的缩放由 reading.js 在掷签点套 dcfGet('reading')。
   window.getReadingAnnoCards = function (kind) {
-    const group = kind === 'reply' ? '他 回应我的批注' : '他 留在句边';
+    const group = kind === 'reply' ? '他回应我的批注' : '他留在句边';
     try { return window.getLibPool('reading', group, []); } catch (e) { return []; }
   };
   // FIX 2026-09-30 #1498 兜底池必须同过一道闸（与 getLibPool 同一判据，零机型分支）：

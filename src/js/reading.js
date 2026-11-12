@@ -10,11 +10,64 @@
 
   // 书架索引键（只存书目元信息，条目很小）
   const RD_INDEX_KEY = 'reading-books';
-  // 字号/行距偏好：全局小键，不进备份白名单也不进书架索引
+  // 字号/行距/背景偏好：全局小键，不进备份白名单也不进书架索引
   const RD_PREFS_KEY = 'reading-prefs';
+  const RD_BG_KEY = 'reading-bg';
+  const RD_COOP_KEY = 'reading-coop';
+  const RD_LAMP_KEY = 'reading-lamp';
+  const RD_BOOKMARK_KEY = 'reading-bookmark';
+  const RD_HABIT_SYNC_KEY = 'reading-habit-sync';
+  // 他「读得慢」和「读得快」的日子各占多少比例（0-100，默认 30 / 10）
+  const RD_SLOW_CHANCE_KEY = 'reading-slow-chance';
+  const RD_FAST_CHANCE_KEY = 'reading-fast-chance';
+  // 回应提醒：进书时页脚提一句 + 书架分组卡小点（默认开）
+  const RD_REPLY_TIP_KEY = 'reading-reply-tip';
+  // 主按钮颜色：只存预设名，真正生效的是写进页面根节点的 CSS 变量
+  const RD_PRIMARY_KEY = 'reading-primary';
+  // 翻页动画：paper＝纸页翻动、slide＝轻滑淡入、off＝直接换页
+  const RD_TURN_KEY = 'reading-turn';
+  const RD_TURN_LABEL = { paper: '纸页', slide: '轻滑', off: '关闭' };
+  function rdTurnMode() {
+    try {
+      const v = String(store.get(RD_TURN_KEY) || '');
+      return (v === 'paper' || v === 'slide' || v === 'off') ? v : 'paper';
+    } catch (e) { return 'paper'; }
+  }
+  let rdReplyTipUntil = 0;
+  function rdReplyTipOn() {
+    try {
+      const raw = store.get(RD_REPLY_TIP_KEY);
+      if (raw == null || raw === '') return true;
+      return String(raw) !== '0';
+    } catch (e) { return true; }
+  }
   // 阅读习惯：只记「哪天、读多久、翻几页、大约几点」，不记正文；小键随备份一起走
   const RD_HABIT_KEY = 'reading-habits';
   const RD_HABIT_DAYS = 45;
+  // 分组：自定义分组；组本身只存 id/name/createdAt，书的归属由 book.gid 标记
+  const RD_GROUP_KEY = 'reading-groups';
+  const RD_DEFAULT_GROUP_ID = 'all';
+  // Hero 卡 / 共读手账 的自定义底色（白名单属性，防破坏布局）
+  const RD_HERO_CSS_KEY = 'reading-hero-css';
+  const RD_LEDGER_CSS_KEY = 'reading-ledger-css';
+  // Hero 预设：只换底色；浅底预设额外带文字反色，不塞 box-shadow（保留设计稿阴影）
+  const RD_HERO_PRESETS = [
+    { id: 'ink',   label: '墨夜', css: 'background:linear-gradient(152deg,#2f2920 0%,#1d1913 80%)' },
+    { id: 'wine',  label: '酒红', css: 'background:linear-gradient(145deg,#4a1a1f 0%,#2a0e12 80%);color:#f5dfe2' },
+    { id: 'teal',  label: '青墨', css: 'background:linear-gradient(155deg,#1d3a3a 0%,#0f2020 80%);color:#dceee8' },
+    { id: 'blue',  label: '蓝夜', css: 'background:linear-gradient(150deg,#1e2a4a 0%,#121830 80%);color:#dde3f5' },
+    { id: 'paper', label: '纸感', css: 'background:linear-gradient(160deg,#fdfbf4 0%,#f6efe0 72%,#efe6d2 100%);color:#3d3426' },
+    { id: 'custom', label: '自定义', css: '' }
+  ];
+  // 共读手账底色预设：只换底色，边框保持设计稿的粉色
+  const RD_LEDGER_PRESETS = [
+    { id: 'cream', label: '奶油', css: 'background:linear-gradient(180deg,#fdfbf6,#f8f3e9)' },
+    { id: 'pink',  label: '薄粉', css: 'background:rgba(244,182,194,.08)' },
+    { id: 'blue',  label: '雾蓝', css: 'background:rgba(120,147,173,.09)' },
+    { id: 'grey',  label: '烟灰', css: 'background:rgba(0,0,0,.035)' },
+    { id: 'dark',  label: '夜间', css: 'background:linear-gradient(180deg,#201e1a,#191714)' },
+    { id: 'custom', label: '自定义', css: '' }
+  ];
   // IDB 键前缀：正文 / 目录 / 批注
   const RD_BODY_P = 'xy-home-v2:reading-body:';
   const RD_TOC_P = 'xy-home-v2:reading-toc:';
@@ -35,6 +88,72 @@
     t._timer = setTimeout(function () { t.className = 'cc-toast'; }, 2200);
   }
 
+  // ===== CSS 属性白名单过滤 =====
+  // 只允许纯观感属性，position/margin/width/height/overflow/display/transform/z-index 等布局
+  // 相关一律拒绝，防止误写把 hero 卡或手账撑破、盖住整个页面。
+  // 另：expression() / url() / @import / 带 {} 的选择器块直接丢掉——只接受「声明」。
+  const RD_SAFE_CSS_PROPS = [
+    'background','background-color','background-image','background-size','background-position',
+    'background-repeat','background-attachment','background-blend-mode',
+    'color','border','border-color','border-style','border-width','border-radius',
+    'border-top','border-bottom','border-left','border-right',
+    'border-top-left-radius','border-top-right-radius','border-bottom-left-radius','border-bottom-right-radius',
+    'outline','outline-color','outline-style','outline-width','outline-offset',
+    'box-shadow','text-shadow','opacity','filter','mix-blend-mode',
+    'font-family','font-size','font-weight','font-style','font-variant','line-height','letter-spacing',
+    'text-align','text-transform','text-decoration','text-indent','white-space','word-break',
+    'border-top-color','border-bottom-color','border-left-color','border-right-color',
+    'border-top-width','border-bottom-width','border-left-width','border-right-width',
+    'border-top-style','border-bottom-style','border-left-style','border-right-style',
+    'border-image','border-image-source','border-image-slice','border-image-width','border-image-repeat',
+    '-webkit-background-clip','background-clip','-webkit-text-fill-color'
+  ];
+  function rdFilterSafeCss(raw, scopeLabel) {
+    scopeLabel = scopeLabel || '自定义样式';
+    if (!raw || typeof raw !== 'string') return { out: '', blocked: 0 };
+    if (raw.indexOf('{') >= 0 || raw.indexOf('}') >= 0) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 只接受「声明」（如 background:#fff;color:#111），不接受选择器块' };
+    }
+    if (/expression\s*\(|url\s*\(|@[a-z]/i.test(raw)) {
+      return { out: '', blocked: 1, reason: scopeLabel + ' 不允许 url() / expression() / @ 指令' };
+    }
+    const parts = raw.split(';');
+    const kept = [];
+    let blocked = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const seg = parts[i].trim();
+      if (!seg) continue;
+      const colon = seg.indexOf(':');
+      if (colon <= 0) { blocked++; continue; }
+      const prop = seg.slice(0, colon).trim().toLowerCase();
+      const val = seg.slice(colon + 1).trim();
+      if (!prop || !val) { blocked++; continue; }
+      if (RD_SAFE_CSS_PROPS.indexOf(prop) < 0) { blocked++; continue; }
+      if (/url\s*\(|expression\s*\(|javascript\s*:/i.test(val)) { blocked++; continue; }
+      kept.push(prop + ':' + val);
+    }
+    return { out: kept.join(';'), blocked: blocked };
+  }
+  // 注入 <style>，作用域钉死在 hero 卡 / 手账上
+  function rdApplyHeroCss(cssText) {
+    const old = document.getElementById('rd-hero-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-hero-style';
+    st.textContent = '.rd-hero-card{' + cssText + '}';
+    document.head.appendChild(st);
+  }
+  function rdApplyLedgerCss(cssText) {
+    const old = document.getElementById('rd-ledger-style');
+    if (old) old.remove();
+    if (!cssText) return;
+    const st = document.createElement('style');
+    st.id = 'rd-ledger-style';
+    st.textContent = '.rd-ledger{' + cssText + '}';
+    document.head.appendChild(st);
+  }
+
   // ===== 书架索引 =====
   function readIndex() {
     let raw = null;
@@ -52,6 +171,26 @@
       return false;
     }
   }
+
+  // ===== 分组存储 =====
+  function rdGroupLoad() {
+    try {
+      const raw = store.get(RD_GROUP_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(function (g) { return g && g.id && g.id !== RD_DEFAULT_GROUP_ID && typeof g.name === 'string'; });
+    } catch (e) { return []; }
+  }
+  function rdGroupSave(groups) {
+    try { store.set(RD_GROUP_KEY, JSON.stringify(Array.isArray(groups) ? groups : [])); return true; }
+    catch (e) { return false; }
+  }
+  function rdGroupById(groups, id) {
+    for (let i = 0; i < groups.length; i++) { if (groups[i] && groups[i].id === id) return groups[i]; }
+    return null;
+  }
+  function rdGroupId() { return 'grp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   // ===== 正文 / 目录 / 批注读写 =====
   // 写失败必须明确抛出，调用方 toast；宁可让用户知道没存上，也不静默吞掉。
@@ -103,6 +242,8 @@
     try { ok = await window.idbSet(RD_ANNO_P + id + ':' + ch, JSON.stringify(list || [])); }
     catch (e) { rdWriteFail('批注没保存上'); }
     if (!ok) rdWriteFail('批注没保存上');
+    // 目录里的章批注气泡按需取数；任何写批注都要让这一章的缓存失效
+    if (typeof rdTocBadgeDirty === 'function') rdTocBadgeDirty(id, ch);
     return true;
   }
   // 删这本书的全部键：按前缀扫，避免「改过分章后按目录章数删会剩尾巴」。
@@ -165,7 +306,9 @@
   // ===== 分章算法 =====
   // 优先级：章节标题行 → 连续两个空行聚段 → 每 8000 字硬切。
   // 硬约束：从 0 到文末每一段都被某一章覆盖，不丢字（宁可把空白并进相邻章）。
-  const RD_CH_TITLE_RE = /^\s*(第[0-9零一二三四五六七八九十百千万]+[章回节卷]|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
+  // 卷标必须自成一段或以分隔符收尾：「下卷这一章…」这类正文行不能当成标题；
+  // 「第二章的正文…」也按正文处理（第X章后紧跟「的」是句子而非标题）。
+  const RD_CH_TITLE_RE = /^\s*(?:(?:上|中|下)(?:卷|部|篇)(?=$|[\s：:·、，,—-]|第[0-9零一二三四五六七八九十百千万]+[章回卷节])|第[0-9零一二三四五六七八九十百千万]+[章回节卷](?!的)|卷[0-9零一二三四五六七八九十百千]+|序章|楔子|番外[一二三四五六七八九十]*|Chapter\s+\d+)/i;
 
   function splitChapters(text) {
     const src = String(text == null ? '' : text);
@@ -256,6 +399,10 @@
 
   // ===== 页面骨架 =====
   let page = null;
+  // 分组详情页状态：null = 首页模式；字符串 gid = 详情模式（全部书籍用 RD_DEFAULT_GROUP_ID）
+  let rdViewGroupId = null;
+  // 详情页胶囊筛选：'all' / 'reading' / 'done'
+  let rdViewGroupPill = 'all';
   function buildPage() {
     if (page) return page;
     page = document.createElement('div');
@@ -266,48 +413,150 @@
       '<div class="rd-shelf" id="rd-shelf">' +
         '<div class="chat-head">' +
           '<span class="ch-back" id="rd-shelf-back">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
           '</span>' +
           '<span class="ch-name">读书</span>' +
           '<button class="ch-settings" id="rd-import" type="button" title="导入">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
           '</button>' +
+          '<button class="ch-settings" id="rd-shelf-settings" type="button" title="设置">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' +
+          '</button>' +
         '</div>' +
-        '<div class="rd-empty" id="rd-empty">书架还是空的，点右上角导入一本</div>' +
-        '<div class="rd-grid" id="rd-grid"></div>' +
+        '<div class="rd-empty" id="rd-empty">' +
+          '<svg class="rd-empty-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.6 5 8.2 4.6 5 5.1v13.2c3.2-.5 5.6-.1 7 1.4"/><path d="M12 6.5c1.4-1.5 3.8-1.9 7-1.4v13.2c-3.2-.5-5.6-.1-7 1.4"/><path d="M12 6.5v13.2"/></svg>' +
+          '<div class="rd-empty-t">书架还是空的</div>' +
+          '<div class="rd-empty-s">点右上角导入一本，或者从聊天里粘贴一段文字</div>' +
+        '</div>' +
+        '<div class="rd-hero" id="rd-hero" hidden>' +
+          '<div class="rd-hero-card">' +
+            '<div class="rd-hero-top">' +
+              '<i class="rd-hero-mark" aria-hidden="true"></i>' +
+              '<div class="rd-hero-date"><b id="rd-hero-date"></b><span id="rd-hero-pct"></span></div>' +
+            '</div>' +
+            '<div class="rd-hero-title" id="rd-hero-title"></div>' +
+            '<div class="rd-hero-tags">' +
+              '<span class="rd-hero-tag" id="rd-hero-txt" hidden>TXT</span>' +
+              '<span class="rd-hero-tag" id="rd-hero-coop" hidden></span>' +
+            '</div>' +
+            '<div class="rd-hero-bar"><i id="rd-hero-bar-fill"></i></div>' +
+            '<div class="rd-hero-foot">' +
+              '<button class="rd-hero-go" id="rd-hero-go" type="button">继续读 →</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="rd-stat" id="rd-stat" hidden>' +
+          '<div class="rd-stat-label">阅读记录 /</div>' +
+          '<div class="rd-stat-h" id="rd-stat-h">今天读了 0 分钟</div>' +
+          '<div class="rd-stat-nums">' +
+            '<span class="rd-sg">今日 <b id="rd-stat-pages">0</b> 页</span>' +
+            '<span class="rd-sg">近 7 天 <b id="rd-stat-week">0</b> 小时</span>' +
+            '<span class="rd-sg">读完 <b id="rd-stat-done">0</b> 本</span>' +
+          '</div>' +
+        '</div>' +
         '<div class="rd-ledger" id="rd-ledger" hidden></div>' +
+        '<div class="rd-groups-block" id="rd-groups-block" hidden>' +
+          '<div class="rd-glabel">书库 /</div>' +
+          '<div class="rd-groups-head">' +
+            '<div class="rd-gtitle">我的分组</div>' +
+            '<div class="rd-ghead-r">' +
+              '<button class="rd-gsort" id="rd-gsort" type="button">排序</button>' +
+              '<button class="rd-gnew" id="rd-gnew" type="button">＋ 新建分组</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-ggrid" id="rd-ggrid"></div>' +
+        '</div>' +
+        '<div class="rd-grid" id="rd-grid"></div>' +
+        '<div class="rd-detail" id="rd-detail" hidden>' +
+          '<div class="rd-dd-head">' +
+            '<div class="rd-dd-label">书库 /</div>' +
+            '<div class="rd-dd-row"><div class="rd-dd-t" id="rd-dd-t"></div><div class="rd-dd-sub">按最近阅读</div></div>' +
+            '<div class="rd-dd-pills" id="rd-dd-pills">' +
+              '<span class="rd-dd-pill on" data-pill="all">全部</span>' +
+              '<span class="rd-dd-pill" data-pill="reading">在读</span>' +
+              '<span class="rd-dd-pill" data-pill="done">读完</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-dd-feat" id="rd-dd-feat">' +
+            '<div class="rd-dd-fcov">' +
+              '<div class="rd-dd-ftop"><span class="rd-dd-fnum">01</span><span class="rd-dd-ftag" id="rd-dd-ftag"></span></div>' +
+              '<div><div class="rd-dd-ft" id="rd-dd-ft"></div><div class="rd-dd-fm" id="rd-dd-fm"></div></div>' +
+            '</div>' +
+            '<div class="rd-dd-flist" id="rd-dd-flist"></div>' +
+          '</div>' +
+          '<div class="rd-dd-gridwrap" id="rd-dd-gridwrap">' +
+            '<div class="rd-dd-gridscroll">' +
+              '<div class="rd-dd-grid" id="rd-dd-grid"></div>' +
+            '</div>' +
+            '<div class="rd-dd-fade"></div>' +
+          '</div>' +
+        '</div>' +
         '<div class="rd-usage" id="rd-usage"></div>' +
         '<div class="rd-import" id="rd-import-panel" hidden>' +
           '<div class="rd-import-main" id="rd-import-main">' +
-            '<div class="rd-import-head"><div class="rd-import-title">导入一本书</div>' +
-              '<button class="rd-back" id="rd-import-close" type="button">关闭</button></div>' +
-            '<input class="rd-imp-name" id="rd-imp-name" type="text" maxlength="40" placeholder="书名（可留空；留空时用文件名或「粘贴的书」）">' +
-            '<label class="rd-file-label" for="rd-file">选择 TXT 文件</label>' +
-            '<input type="file" id="rd-file" accept=".txt,text/plain">' +
-            '<div class="rd-file-info" id="rd-file-info" hidden></div>' +
-            '<div class="rd-gbk-row" id="rd-gbk-row" hidden>' +
-              '<span>这段文字里乱码不少，可能不是 UTF-8</span>' +
-              '<button class="rd-btn" id="rd-gbk" type="button">按 GBK 重新解码</button>' +
+            '<div class="rd-import-head">' +
+              '<button class="ch-back rd-import-back" id="rd-import-close" type="button" aria-label="返回书架">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+              '</button>' +
+              '<span class="ch-name">导入一本书</span>' +
             '</div>' +
-            '<textarea id="rd-paste" placeholder="也可以把整本书粘贴到这里"></textarea>' +
-            '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-import-go" type="button">开始导入</button></div>' +
+            '<div class="rd-import-form" id="rd-import-form">' +
+              '<div class="rd-imp-label">书名 <span>可选</span></div>' +
+              '<input class="rd-imp-name" id="rd-imp-name" type="text" maxlength="40" placeholder="留空时用文件名或「粘贴的书」">' +
+              '<div class="rd-import-sec-title">从 TXT 文件导入</div>' +
+              '<label class="rd-file-label" for="rd-file">' +
+                '<span class="rd-file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span>' +
+                '<span class="rd-file-t">选择 TXT 文件</span>' +
+                '<span class="rd-file-sub">支持 .txt，单本 20MB 以内</span>' +
+              '</label>' +
+              '<input type="file" id="rd-file" class="rd-file-native" accept=".txt,text/plain">' +
+              '<div class="rd-file-info" id="rd-file-info" hidden></div>' +
+              '<div class="rd-gbk-row" id="rd-gbk-row" hidden>' +
+                '<span>这段文字里乱码不少，可能不是 UTF-8</span>' +
+                '<button class="rd-btn" id="rd-gbk" type="button">按 GBK 重新解码</button>' +
+              '</div>' +
+              '<div class="rd-import-or"><span>或者</span></div>' +
+              '<div class="rd-imp-label" id="rd-paste-label">粘贴正文</div>' +
+              '<textarea id="rd-paste" rows="5" placeholder="把整本书粘贴到这里"></textarea>' +
+            '</div>' +
+            '<div class="rd-import-foot rd-import-foot-main">' +
+              '<button class="rd-btn rd-btn-primary rd-btn-block" id="rd-import-go" type="button">开始导入</button>' +
+            '</div>' +
           '</div>' +
           '<div class="rd-confirm" id="rd-confirm" hidden>' +
-            '<div class="rd-import-head"><button class="rd-back" id="rd-confirm-back" type="button">返回</button>' +
-              '<div class="rd-import-title">确认分章</div>' +
-              '<button class="rd-back" id="rd-confirm-merge-all" type="button">全部合并</button></div>' +
-            '<div class="rd-confirm-bar"><button class="rd-btn rd-btn-mini" id="rd-confirm-reset" type="button">恢复自动分章</button></div>' +
+            '<div class="rd-import-head">' +
+              '<button class="ch-back rd-import-back" id="rd-confirm-back" type="button" aria-label="返回导入">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+              '</button>' +
+              '<span class="ch-name">确认分章</span>' +
+            '</div>' +
+            '<div class="rd-confirm-sum">' +
+              '<div class="rd-confirm-sum-t" id="rd-confirm-sum-t">共 0 章 · 0 字</div>' +
+              '<div class="rd-confirm-sum-h">点章节标题可改名；合并/拆分只影响这次导入</div>' +
+            '</div>' +
+            '<div class="rd-confirm-bar">' +
+              '<button class="rd-btn rd-btn-mini rd-btn-text" id="rd-confirm-reset" type="button">恢复自动分章</button>' +
+              '<button class="rd-btn rd-btn-mini rd-btn-text" id="rd-confirm-merge-all" type="button">全部合并</button>' +
+            '</div>' +
             '<div class="rd-confirm-list" id="rd-confirm-list"></div>' +
-            '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-confirm-go" type="button">确认导入</button></div>' +
+            '<div class="rd-import-foot rd-import-foot-main">' +
+              '<button class="rd-btn rd-btn-primary rd-btn-block" id="rd-confirm-go" type="button">确认导入</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
       '<div class="rd-reader" id="rd-reader" hidden>' +
-        '<div class="rd-head">' +
-          '<button class="rd-back" id="rd-reader-back" type="button">返回</button>' +
-          '<div class="rd-title" id="rd-book-title"></div>' +
-          '<button class="rd-back" id="rd-font-btn" type="button">Aa</button>' +
-          '<button class="rd-back" id="rd-toc-btn" type="button">目录</button>' +
+        '<div class="chat-head rd-reader-head">' +
+          '<button class="ch-back" id="rd-reader-back" type="button" aria-label="返回">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+          '</button>' +
+          '<span class="ch-name" id="rd-book-title"></span>' +
+          '<button class="ch-settings rd-mark-btn" id="rd-mark-btn" type="button" aria-label="书签当前页" aria-pressed="false" title="书签当前页">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5A1.5 1.5 0 017.5 3h9A1.5 1.5 0 0118 4.5V21l-6-4.2L6 21V4.5z"/></svg>' +
+          '</button>' +
+          '<button class="ch-settings" id="rd-toc-btn" type="button" aria-label="目录" title="目录">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>' +
+          '</button>' +
         '</div>' +
         '<div class="rd-body" id="rd-body"></div>' +
         '<div class="rd-foot" id="rd-foot">' +
@@ -331,21 +580,34 @@
           '</div>' +
           '<div class="rd-import-foot"><button class="rd-btn rd-btn-primary" id="rd-buddy-jump" type="button" hidden>去他那里</button></div>' +
         '</div>' +
-        '<div class="rd-prefs" id="rd-prefs" hidden>' +
-          '<div class="rd-prefs-row"><span>字号</span>' +
-            '<button class="rd-btn rd-btn-mini" data-fs="15" type="button">小</button>' +
-            '<button class="rd-btn rd-btn-mini" data-fs="17" type="button">标准</button>' +
-            '<button class="rd-btn rd-btn-mini" data-fs="19" type="button">大</button>' +
-            '<button class="rd-btn rd-btn-mini" data-fs="21" type="button">特大</button></div>' +
-          '<div class="rd-prefs-row"><span>行距</span>' +
-            '<button class="rd-btn rd-btn-mini" data-lh="1.7" type="button">紧</button>' +
-            '<button class="rd-btn rd-btn-mini" data-lh="1.9" type="button">松</button></div>' +
-        '</div>' +
-        '<div class="rd-toc" id="rd-toc" hidden>' +
-          '<div class="rd-import-head"><div class="rd-import-title">目录</div>' +
-            '<button class="rd-back" id="rd-toc-close" type="button">关闭</button></div>' +
-          '<div class="rd-toc-list" id="rd-toc-list"></div>' +
-        '</div>' +
+        '<div class="rd-toc-mask" id="rd-toc-mask" hidden></div>' +
+        '<aside class="rd-toc" id="rd-toc" role="dialog" aria-label="目录" hidden>' +
+          '<div class="rd-toc-head">' +
+            '<div class="rd-toc-head-row">' +
+              '<span class="rd-toc-title">目录</span>' +
+              '<button class="rd-toc-x" id="rd-toc-close" type="button" aria-label="关闭目录">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+              '</button>' +
+            '</div>' +
+            '<div class="rd-toc-prog">' +
+              '<div class="rd-toc-cur" id="rd-toc-cur"></div>' +
+              '<div class="rd-toc-meta"><span id="rd-toc-pos"></span><span id="rd-toc-pct"></span></div>' +
+              '<div class="rd-toc-bar"><span id="rd-toc-bar-fill"></span></div>' +
+            '</div>' +
+            '<div class="rd-toc-tabs" id="rd-toc-tabs">' +
+              '<button class="rd-toc-tab on" data-rtab="toc" type="button">目录</button>' +
+              '<button class="rd-toc-tab" data-rtab="marks" type="button">书签<span class="rd-toc-tab-n" id="rd-mark-tab-n" hidden></span></button>' +
+            '</div>' +
+            '<input class="rd-toc-search" id="rd-toc-search" type="text" placeholder="搜索章节标题">' +
+          '</div>' +
+          '<div class="rd-toc-pane" id="rd-toc-pane-toc">' +
+            '<div class="rd-toc-list" id="rd-toc-list"></div>' +
+            '<button class="rd-toc-now" id="rd-toc-now" type="button" hidden>回到当前章</button>' +
+          '</div>' +
+          '<div class="rd-toc-pane" id="rd-toc-pane-marks" hidden>' +
+            '<div class="rd-mark-list" id="rd-mark-list"></div>' +
+          '</div>' +
+        '</aside>' +
         '<div class="rd-selbar" id="rd-selbar" hidden>' +
           '<button class="rd-selbar-btn" data-act="anno" type="button">批注</button>' +
           '<button class="rd-selbar-btn" data-act="copy" type="button">复制</button>' +
@@ -386,15 +648,534 @@
     const phone = document.querySelector('.phone');
     (phone || document.body).appendChild(page);
     rdApplyPrefs(rdReadPrefs());
+    rdApplyBg();
+    rdApplyPrimary();
     return page;
+  }
+
+  // ===== 阅读设置页（独立整页，入口在书架顶栏）=====
+  let settingsPage = null;
+  const RD_PREVIEW_TEXT = '书页翻过去的时候，风从窗缝里进来，把桌上的纸吹得轻轻响。\n\n' +
+    '你读到这一句，停了停，像是在等谁从下一行走过来。窗外的天色慢慢暗下去，字却还亮着。';
+  function buildSettingsPage() {
+    if (settingsPage) return settingsPage;
+    settingsPage = document.createElement('div');
+    settingsPage.className = 'page';
+    settingsPage.id = 'page-reading-settings';
+    settingsPage.hidden = true;
+    settingsPage.innerHTML =
+      '<div class="chat-head">' +
+        '<button class="ch-back" id="rd-settings-back" type="button" aria-label="返回">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+        '</button>' +
+        '<span class="ch-name">阅读设置</span>' +
+      '</div>' +
+      '<div class="rd-set-body">' +
+        '<div class="them-tabs rd-set-tabs" id="rd-set-tabs">' +
+          '<button class="them-tab active" data-tab="beautify" type="button">美化</button>' +
+          '<button class="them-tab" data-tab="function" type="button">功能</button>' +
+          '<button class="them-tab" data-tab="data" type="button">数据</button>' +
+        '</div>' +
+        '<div class="them-sec" data-sec="beautify">' +
+          '<button class="rd-live-entry" id="rd-live-adjust" type="button">' +
+            '<span class="rd-live-entry-t">' +
+              '<span class="rd-live-entry-name">边看边调</span>' +
+              '<span class="rd-live-entry-sub">打开调色条：hero 封面卡 / 共读手账底色实时预览</span>' +
+            '</span>' +
+            '<span class="rd-live-entry-go">点击开启 ›</span>' +
+          '</button>' +
+          '<div class="rd-set-preview" id="rd-set-preview">' +
+            '<div class="rd-set-preview-h"><span>预览</span><span>即时生效</span></div>' +
+            '<div class="rd-set-preview-text" id="rd-set-preview-text">' + RD_PREVIEW_TEXT + '</div>' +
+          '</div>' +
+          '<div class="gs-title">阅读显示</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">字号</span><span class="rd-set-row-v" id="rd-set-fs-val"></span></div>' +
+              '<div class="rd-set-slider"><span>小</span><input type="range" id="rd-set-fs-range" min="12" max="30" step="1" aria-label="字号"><span>大</span></div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">行距</span><span class="rd-set-row-v" id="rd-set-lh-val"></span></div>' +
+              '<div class="rd-set-slider"><span>紧</span><input type="range" id="rd-set-lh-range" min="1.4" max="2.2" step="0.1" aria-label="行距"><span>松</span></div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读背景</span><span class="rd-set-row-v" id="rd-set-bg-val"></span></div>' +
+              '<div class="rd-bg-opts">' +
+                '<button class="rd-bg-opt" data-rd-bgopt="auto" type="button"><i class="rd-bg-sw auto"></i><span>跟随主题</span></button>' +
+                '<button class="rd-bg-opt" data-rd-bgopt="eye" type="button"><i class="rd-bg-sw eye"></i><span>护眼</span></button>' +
+                '<button class="rd-bg-opt" data-rd-bgopt="night" type="button"><i class="rd-bg-sw night"></i><span>夜间</span></button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">翻页动画</span><span class="rd-set-row-v" id="rd-set-turn-val">纸页</span></div>' +
+              '<div class="rd-bg-opts">' +
+                '<button class="rd-bg-opt" data-rd-turn="paper" type="button"><i class="rd-turn-sw paper"></i><span>纸页</span></button>' +
+                '<button class="rd-bg-opt" data-rd-turn="slide" type="button"><i class="rd-turn-sw slide"></i><span>轻滑</span></button>' +
+                '<button class="rd-bg-opt" data-rd-turn="off" type="button"><i class="rd-turn-sw off"></i><span>关闭</span></button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-set-note">字号、行距与背景只作用在阅读器。跟随主题会随全站浅色/深色切换；护眼和夜间在阅读器内固定。预览用的是内置样文，打开书后会按同一套偏好重新分页。翻页动画只管同章内翻页，跨章仍是直接换页。</div>' +
+          '<div class="gs-title">书架首页</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">Hero 封面卡</span><span class="rd-set-row-v" id="rd-set-hero-val">墨夜</span></div>' +
+              '<div class="rd-preset-opts" id="rd-hero-opts"></div>' +
+              '<button class="rd-set-custom-btn" id="rd-hero-custom" type="button">自定义 CSS</button>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">共读手账底色</span><span class="rd-set-row-v" id="rd-set-ledger-val">奶油</span></div>' +
+              '<div class="rd-preset-opts" id="rd-ledger-opts"></div>' +
+              '<button class="rd-set-custom-btn" id="rd-ledger-custom" type="button">自定义 CSS</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rd-set-note">只换底色，不改卡片里的书签、标签、进度线和按钮。自定义只接受观感属性（background / color / border / box-shadow 等），布局类属性会被拦掉。</div>' +
+          '<div class="gs-title">按钮</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">主按钮颜色</span><span class="rd-set-row-v" id="rd-set-primary-val">墨黑</span></div>' +
+              '<div class="rd-primary-opts">' +
+                '<button class="rd-primary-opt" data-rd-primary="ink" type="button" aria-pressed="false"><i></i><span>墨黑</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="pink" type="button" aria-pressed="false"><i></i><span>阅读粉</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="blue" type="button" aria-pressed="false"><i></i><span>雾蓝</span></button>' +
+                '<button class="rd-primary-opt" data-rd-primary="brown" type="button" aria-pressed="false"><i></i><span>暖棕</span></button>' +
+              '</div>' +
+              '<div class="rd-set-row-desc">用在导入、确认、他的位置卡和批注浮层的主按钮上；选完立即生效。</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="them-sec" data-sec="function" hidden>' +
+          '<div class="gs-title">共读</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row rd-set-toggle">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">共读功能</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-coop-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">关掉后不再生成他的批注、回应和封存纸条，也不再显示他的位置、灯、共读手账和书脊细纹；我的阅读进度和自己的批注不受影响。重新打开从当下继续，不补算关闭期间的阅读。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">夜间留灯</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-lamp-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">22:00–07:00 在页脚显示两盏小灯；关掉后不再显示灯，也不留深夜那句话。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">折角书签</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-bookmark-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">他领先时把进度圆点滑回来提醒你；关掉后只保留圆点位置，不再播报。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">阅读习惯同步</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-habit-sync-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">只记他哪天读、读了多久、大约几点，不记正文；关掉后小卡不再显示习惯观察。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他回应批注的概率</span><span class="rd-set-row-v" id="rd-set-reply-val">62%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-reply-range" min="0" max="100" step="5" aria-label="他回应批注的概率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">你写下批注后，他读到那一句时可能回一句。调低只是让他更常安静，位置越过的判断不受影响。</div>' +
+            '</div>' +
+            '<div class="rd-set-row rd-set-toggle rd-set-sub">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">回应提醒</span>' +
+                '<label class="toggle"><input type="checkbox" id="rd-reply-tip-toggle"><span class="tk"></span></label></div>' +
+              '<div class="rd-set-row-desc">打开后，他回了你的批注时，书架分组卡右上角有一个小点，进书时页脚提一句「他回你一句话」。不计数、不推送、不弹窗。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得慢的频率</span><span class="rd-set-row-v" id="rd-set-slow-val">30%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-slow-range" min="0" max="100" step="5" aria-label="他读得慢的频率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">调高后他更容易读得比你慢。慢的日子他会跟在你后面一小段，不贴上来。</div>' +
+            '</div>' +
+            '<div class="rd-set-row">' +
+              '<div class="rd-set-row-h"><span class="rd-set-row-t">他读得快的频率</span><span class="rd-set-row-v" id="rd-set-fast-val">10%</span></div>' +
+              '<div class="rd-set-slider"><span>从不</span><input type="range" id="rd-set-fast-range" min="0" max="100" step="5" aria-label="他读得快的频率"><span>总是</span></div>' +
+              '<div class="rd-set-row-desc">调高后他更容易读得比你快。两项相加超过 100% 时，多出来的部分会把「正常」和「快」挤掉。</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="them-sec" data-sec="data" hidden>' +
+          '<div class="gs-title">书架概览</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-stat"><span>书架</span><b id="rd-set-data-books">0 本</b></div>' +
+            '<div class="rd-set-stat"><span>正文</span><b id="rd-set-data-words">约 0.0 万字</b></div>' +
+            '<div class="rd-set-stat"><span>占用</span><b id="rd-set-data-size">约 0.0 MB</b></div>' +
+            '<div class="rd-set-stat"><span>书签</span><b id="rd-set-data-marks">0 条</b></div>' +
+            '<div class="rd-set-stat"><span>批注</span><b id="rd-set-data-annos">0 条</b></div>' +
+          '</div>' +
+          '<div class="gs-title">存储与备份</div>' +
+          '<div class="set-group glass">' +
+            '<div class="rd-set-row"><div class="rd-set-row-desc">正文只存在本机 IndexedDB，不随备份走；目录、批注、书架索引、书签会随备份走。</div></div>' +
+            '<div class="rd-set-row"><div class="rd-set-row-desc">换机恢复后正文需要重新导入，批注会按原文重新定位。</div></div>' +
+          '</div>' +
+          '<div class="rd-set-note">这一页只做只读概览，数字在每次打开设置页时刷新。</div>' +
+        '</div>' +
+      '</div>';
+    const phone = document.querySelector('.phone');
+    (phone || document.body).appendChild(settingsPage);
+    initReadingSettingsTabs();
+    rdApplyPrimary();
+    const fsRange = settingsPage.querySelector('#rd-set-fs-range');
+    if (fsRange) fsRange.addEventListener('input', function () { rdSetPrefs({ fs: Number(this.value) }); });
+    const lhRange = settingsPage.querySelector('#rd-set-lh-range');
+    if (lhRange) lhRange.addEventListener('input', function () { rdSetPrefs({ lh: Number(this.value) }); });
+    const coopToggle = settingsPage.querySelector('#rd-coop-toggle');
+    if (coopToggle) coopToggle.addEventListener('change', function () { rdSetCoop(this.checked); });
+    const lampToggle = settingsPage.querySelector('#rd-lamp-toggle');
+    if (lampToggle) lampToggle.addEventListener('change', function () { rdSetLamp(this.checked); });
+    const bmToggle = settingsPage.querySelector('#rd-bookmark-toggle');
+    if (bmToggle) bmToggle.addEventListener('change', function () { rdSetBookmark(this.checked); });
+    const habitToggle = settingsPage.querySelector('#rd-habit-sync-toggle');
+    if (habitToggle) habitToggle.addEventListener('change', function () { rdSetHabitSync(this.checked); });
+    const replyTipToggle = settingsPage.querySelector('#rd-reply-tip-toggle');
+    if (replyTipToggle) replyTipToggle.addEventListener('change', function () {
+      try { store.set(RD_REPLY_TIP_KEY, this.checked ? 1 : 0); } catch (e) {}
+      rdRenderShelf();
+    });
+    const replyRange = settingsPage.querySelector('#rd-set-reply-range');
+    if (replyRange) replyRange.addEventListener('input', function () {
+      const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+      try { store.set('reading-reply-chance', v); } catch (e) {}
+      const val = document.getElementById('rd-set-reply-val');
+      if (val) val.textContent = v + '%';
+      this.style.setProperty('--rd-pct', v + '%');
+    });
+    const slowRange = settingsPage.querySelector('#rd-set-slow-range');
+    if (slowRange) slowRange.addEventListener('input', function () {
+      const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+      try { store.set(RD_SLOW_CHANCE_KEY, v); } catch (e) {}
+      const val = document.getElementById('rd-set-slow-val');
+      if (val) val.textContent = v + '%';
+      this.style.setProperty('--rd-pct', v + '%');
+    });
+    const fastRange = settingsPage.querySelector('#rd-set-fast-range');
+    if (fastRange) fastRange.addEventListener('input', function () {
+      const v = Math.max(0, Math.min(100, Number(this.value) || 0));
+      try { store.set(RD_FAST_CHANCE_KEY, v); } catch (e) {}
+      const val = document.getElementById('rd-set-fast-val');
+      if (val) val.textContent = v + '%';
+      this.style.setProperty('--rd-pct', v + '%');
+    });
+
+    // Hero / 手账 预设色块
+    rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'), 'Hero 封面卡');
+    rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'), '共读手账底色');
+    const heroCustom = settingsPage.querySelector('#rd-hero-custom');
+    if (heroCustom) heroCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_HERO_CSS_KEY, 'Hero 封面卡', rdApplyHeroCss); });
+    const ledgerCustom = settingsPage.querySelector('#rd-ledger-custom');
+    if (ledgerCustom) ledgerCustom.addEventListener('click', function () { rdOpenCustomCssModal(RD_LEDGER_CSS_KEY, '共读手账底色', rdApplyLedgerCss); });
+
+    rdRenderPrefsActive();
+    return settingsPage;
+  }
+  // 设置页页签：只切 hidden，不复建控件，切页不丢字号/行距/开关状态
+  function initReadingSettingsTabs() {
+    if (!settingsPage) return;
+    const tabsEl = settingsPage.querySelector('#rd-set-tabs');
+    const tabs = tabsEl ? tabsEl.querySelectorAll('.them-tab') : [];
+    const secs = settingsPage.querySelectorAll('.them-sec');
+    if (!tabs.length || !secs.length) return;
+    function show(name) {
+      secs.forEach(function (s) { s.hidden = (s.getAttribute('data-sec') !== name); });
+      tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
+      if (name === 'data') rdRenderDataOverview();
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        show(t.getAttribute('data-tab'));
+        const body = settingsPage.querySelector('.rd-set-body');
+        if (body) body.scrollTop = 0;
+      });
+    });
+    show('beautify');
+  }
+  // 数据栏只读概览：全部从书架索引汇总，不为统计去读正文
+  function rdDataOverview() {
+    const list = readIndex();
+    let words = 0, bytes = 0, marks = 0, annos = 0;
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i] || {};
+      let w = 0;
+      if (Array.isArray(b.chWords)) {
+        for (let j = 0; j < b.chWords.length; j++) w += Number(b.chWords[j]) || 0;
+      } else {
+        w = Number(b.words) || 0;
+      }
+      words += w;
+      bytes += Number(b.size) || (w * 3);
+      marks += Array.isArray(b.marks) ? b.marks.length : 0;
+      annos += Number(b.annoCount) || 0;
+    }
+    return { books: list.length, words: words, bytes: bytes, marks: marks, annos: annos };
+  }
+  function rdRenderDataOverview() {
+    const d = rdDataOverview();
+    function set(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+    set('rd-set-data-books', d.books + ' 本');
+    set('rd-set-data-words', '约 ' + (d.words / 10000).toFixed(1) + ' 万字');
+    set('rd-set-data-size', '约 ' + rdMB(d.bytes) + ' MB');
+    set('rd-set-data-marks', d.marks + ' 条');
+    set('rd-set-data-annos', d.annos + ' 条');
+  }
+  function rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl, scopeLabel) {
+    const box = settingsPage && settingsPage.querySelector('#' + containerId);
+    if (!box) return;
+    let saved = '';
+    try { saved = store.get(cssKey) || ''; } catch (e) {}
+    let selectedId = '';
+    for (let i = 0; i < presets.length; i++) {
+      if (presets[i].id !== 'custom' && saved && saved === presets[i].css) { selectedId = presets[i].id; break; }
+    }
+    let h = '';
+    for (let i = 0; i < presets.length; i++) {
+      const p = presets[i];
+      const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+      h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+        '<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+        '<span>' + rdEsc(p.label) + '</span></button>';
+    }
+    box.innerHTML = h;
+    if (valLabelEl) {
+      if (!saved) valLabelEl.textContent = '默认';
+      else {
+        const sel = presets.filter(function (x) { return x.id === selectedId; })[0];
+        valLabelEl.textContent = sel ? sel.label : '自定义';
+      }
+    }
+    if (box.__rdPresetBound) return;
+    box.__rdPresetBound = true;
+    box.addEventListener('click', function (e) {
+      const btn = e.target.closest && e.target.closest('.rd-preset-chip');
+      if (!btn) return;
+      e.preventDefault();
+      const pid = btn.getAttribute('data-pid');
+      const pcss = btn.getAttribute('data-css') || '';
+      if (pid === 'custom') {
+        rdOpenCustomCssModal(cssKey, scopeLabel || '自定义', applyFn);
+        return;
+      }
+      try { store.set(cssKey, pcss); } catch (err) {}
+      applyFn(pcss);
+      rdRenderPresetOpts(containerId, presets, applyFn, cssKey, valLabelEl, scopeLabel);
+      rdRenderShelf();
+    });
+  }
+  function rdRefreshPresetOpts(cssKey) {
+    if (!settingsPage) return;
+    if (cssKey === RD_HERO_CSS_KEY) {
+      rdRenderPresetOpts('rd-hero-opts', RD_HERO_PRESETS, rdApplyHeroCss, RD_HERO_CSS_KEY, settingsPage.querySelector('#rd-set-hero-val'), 'Hero 封面卡');
+    } else {
+      rdRenderPresetOpts('rd-ledger-opts', RD_LEDGER_PRESETS, rdApplyLedgerCss, RD_LEDGER_CSS_KEY, settingsPage.querySelector('#rd-set-ledger-val'), '共读手账底色');
+    }
+  }
+  function rdOpenCustomCssModal(cssKey, label, applyFn) {
+    let cur = '';
+    try { cur = store.get(cssKey) || ''; } catch (e) {}
+    const safeHint = '只允许 background / color / border / box-shadow / filter / opacity 等观感属性。position / margin / width / display / url() / 选择器块 {} 一律拒绝。留空表示恢复默认。';
+    window.openModal('自定义 ' + label, cur, function (v) {
+      const res = rdFilterSafeCss(String(v == null ? '' : v), label);
+      if (res.reason) { rdToast(res.reason); return; }
+      if (res.blocked > 0 && !res.out) { rdToast('有 ' + res.blocked + ' 条属性被拦截，请检查'); return; }
+      if (!res.out) {
+        try { store.remove(cssKey); } catch (e) {}
+        applyFn('');
+        rdRenderShelf();
+        rdRefreshPresetOpts(cssKey);
+        rdRefreshToneChips(cssKey);
+        rdToast('已恢复默认');
+      } else {
+        try { store.set(cssKey, res.out); } catch (e) {}
+        applyFn(res.out);
+        rdRenderShelf();
+        rdRefreshPresetOpts(cssKey);
+        rdRefreshToneChips(cssKey);
+        rdToast(res.blocked > 0 ? ('应用成功 · 有 ' + res.blocked + ' 条被拦截') : (label + ' 已应用'));
+      }
+    }, { textarea: true, textareaRows: 5, textareaPlaceholder: 'background:#1a1a1a;color:#eee;border-radius:16px', staticText: safeHint });
+  }
+  function rdOpenSettings() {
+    buildSettingsPage();
+    if (!page || !settingsPage) return;
+    rdCloseLiveDrawer();
+    page.hidden = true;
+    rdApplyChrome();
+    settingsPage.hidden = false;
+    settingsPage.classList.add('full');
+    rdRenderPrefsActive();
+    rdApplyPrimary();
+    rdRenderDataOverview();
+    const body = settingsPage.querySelector('.rd-set-body');
+    if (body) body.scrollTop = 0;
+  }
+  function rdCloseSettings() {
+    if (!settingsPage) return;
+    rdCloseLiveDrawer();
+    settingsPage.hidden = true;
+    if (page) page.hidden = false;
+    rdApplyChrome();
+    rdRenderShelf();
+  }
+
+  // ===== 边看边调抽屉（挂 body，预览在上、控件在下）=====
+  let liveDrawer = null;
+  let rdLiveDragBot = 0;
+  function rdLiveApplyBottom() {
+    if (!liveDrawer) return;
+    liveDrawer.style.bottom = Math.max(0, Math.min(Math.round(window.innerHeight * 0.6), rdLiveDragBot)) + 'px';
+  }
+  function bindLiveDrag(handle) {
+    if (!handle) return;
+    handle.style.touchAction = 'none';
+    let sy = 0, sb = 0, drag = false;
+    handle.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      drag = true; sy = e.clientY; sb = rdLiveDragBot;
+      if (liveDrawer) liveDrawer.style.transition = 'none';
+      try { handle.setPointerCapture(e.pointerId); } catch (er) {}
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      rdLiveDragBot = Math.max(0, Math.min(Math.round(window.innerHeight * 0.6), Math.round(sb + sy - e.clientY)));
+      rdLiveApplyBottom();
+      e.preventDefault();
+    });
+    const up = function () {
+      if (!drag) return;
+      drag = false;
+      if (liveDrawer) liveDrawer.style.transition = 'bottom .16s ease';
+      if (rdLiveDragBot < 24) rdLiveDragBot = 0;
+      rdLiveApplyBottom();
+    };
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+    handle.style.cursor = 'grab';
+  }
+  function buildLiveDrawer() {
+    if (liveDrawer) return liveDrawer;
+    liveDrawer = document.createElement('div');
+    liveDrawer.id = 'rd-live-drawer';
+    liveDrawer.hidden = true;
+    liveDrawer.innerHTML =
+      '<div class="rd-live-grip"></div>' +
+      '<div class="rd-live-head" id="rd-live-head">' +
+        '<span class="rd-live-title">边看边调（即时生效）</span>' +
+        '<span class="rd-live-hint">按住标题行上下拖 · 让开看预览</span>' +
+        '<button class="rd-live-mini" id="rd-live-fold" type="button">收起</button>' +
+        '<button class="rd-live-mini" id="rd-live-close" type="button">✕</button>' +
+      '</div>' +
+      '<div class="rd-live-body" id="rd-live-body">' +
+        '<div class="rd-live-tone">' +
+          '<div class="rd-live-tone-h">Hero 封面卡</div>' +
+          '<div class="rd-live-chips" id="rd-live-hero-chips"></div>' +
+        '</div>' +
+        '<div class="rd-live-tone">' +
+          '<div class="rd-live-tone-h">共读手账底色</div>' +
+          '<div class="rd-live-chips" id="rd-live-ledger-chips"></div>' +
+        '</div>' +
+        '<div class="rd-live-note">改动即时生效；关掉抽屉后保留。</div>' +
+      '</div>';
+    document.body.appendChild(liveDrawer);
+    rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+    rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
+    bindLiveDrag(liveDrawer.querySelector('.rd-live-grip'));
+    bindLiveDrag(liveDrawer.querySelector('#rd-live-head'));
+    rdApplyBg();
+    return liveDrawer;
+  }
+  // 抽屉里的底色色块：和设置页共用同一套预设与存储键，改哪边都同步
+  function rdFillToneChips(containerId, presets, cssKey, applyFn, scopeLabel) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+    let saved = '';
+    try { saved = store.get(cssKey) || ''; } catch (e) {}
+    let selectedId = '';
+    for (let i = 0; i < presets.length; i++) {
+      if (presets[i].id !== 'custom' && saved && saved === presets[i].css) { selectedId = presets[i].id; break; }
+    }
+    let h = '';
+    for (let i = 0; i < presets.length; i++) {
+      const p = presets[i];
+      const on = p.id === selectedId || (p.id === 'custom' && !!saved && !selectedId);
+      h += '<button class="rd-preset-chip' + (on ? ' on' : '') + '" data-pid="' + p.id + '" data-css="' + rdEsc(p.css) + '" type="button">' +
+        '<i class="rd-preset-swatch" style="' + (p.css || 'background:transparent;border:1px dashed rgba(0,0,0,.18)') + '"></i>' +
+        '<span>' + rdEsc(p.label) + '</span></button>';
+    }
+    box.innerHTML = h;
+    box.onclick = function (e) {
+      const btn = e.target.closest && e.target.closest('.rd-preset-chip');
+      if (!btn) return;
+      e.preventDefault();
+      const pid = btn.getAttribute('data-pid');
+      const pcss = btn.getAttribute('data-css') || '';
+      if (pid === 'custom') {
+        rdOpenCustomCssModal(cssKey, scopeLabel || '自定义', applyFn);
+        return;
+      }
+      try { store.set(cssKey, pcss); } catch (err) {}
+      applyFn(pcss);
+      rdFillToneChips(containerId, presets, cssKey, applyFn, scopeLabel);
+      rdRenderShelf();
+    };
+  }
+  function rdRefreshToneChips(cssKey) {
+    if (cssKey === RD_HERO_CSS_KEY) {
+      rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+    } else {
+      rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
+    }
+  }
+  function rdOpenLiveDrawer() {
+    if (!page) return;
+    buildLiveDrawer();
+    rdLiveDragBot = 0;
+    // 边看边调必须看得见书架：收起设置页，回到首页（hero 和手账只在首页可见），抽屉浮在上面
+    if (settingsPage) settingsPage.hidden = true;
+    page.hidden = false;
+    if (rdViewGroupId !== null) { rdViewGroupId = null; rdViewGroupPill = 'all'; }
+    rdSetGroupSorting(false);
+    rdApplyChrome();
+    rdRenderShelf();
+    const body = document.getElementById('rd-live-body');
+    if (body) body.style.display = 'flex';
+    const foldBtn = document.getElementById('rd-live-fold');
+    if (foldBtn) foldBtn.textContent = '收起';
+    liveDrawer.hidden = false;
+    liveDrawer.style.transition = 'bottom .16s ease';
+    rdFillToneChips('rd-live-hero-chips', RD_HERO_PRESETS, RD_HERO_CSS_KEY, rdApplyHeroCss, 'Hero 封面卡');
+    rdFillToneChips('rd-live-ledger-chips', RD_LEDGER_PRESETS, RD_LEDGER_CSS_KEY, rdApplyLedgerCss, '共读手账底色');
+    rdLiveApplyBottom();
+    rdApplyBg();
+    rdRenderPrefsActive();
+  }
+  function rdCloseLiveDrawer() {
+    if (!liveDrawer) return;
+    liveDrawer.hidden = true;
+    rdLiveDragBot = 0;
+    const setBody = settingsPage && settingsPage.querySelector('.rd-set-body');
+    if (setBody) setBody.style.overflow = '';
+  }
+  function rdToggleLiveFold() {
+    const body = document.getElementById('rd-live-body');
+    const btn = document.getElementById('rd-live-fold');
+    if (!body) return;
+    const willFold = body.style.display !== 'none';
+    body.style.display = willFold ? 'none' : 'flex';
+    if (btn) btn.textContent = willFold ? '展开' : '收起';
   }
 
   function rdOpen() {
     buildPage();
+    rdCloseLiveDrawer();
+    rdSetGroupSorting(false);
+    // 恢复上次保存的 hero / 手账底色
+    try { rdApplyHeroCss(store.get(RD_HERO_CSS_KEY) || ''); } catch (e) {}
+    try { rdApplyLedgerCss(store.get(RD_LEDGER_CSS_KEY) || ''); } catch (e) {}
     rdRenderShelf();
     rdRetryPendingDelete();
     document.querySelectorAll('.page').forEach(function (p) { p.hidden = true; });
+    if (settingsPage) settingsPage.hidden = true;
     page.hidden = false;
+    rdApplyChrome();
     // 本页是运行时新建的，不在 tabs.js 启动时登记的 hidden 观察器名单里，翻 hidden 不会自动
     // 触发 syncChrome。照 p2-features 的做法在 rAF 里手动收起 tabbar 并补 .full。
     requestAnimationFrame(function () {
@@ -412,8 +1193,11 @@
     rdWriteProgress();
     rdHabitEndSession();
     rdCloseBookMenu();
+    rdCloseLiveDrawer();
+    if (settingsPage) settingsPage.hidden = true;
     page.classList.remove('full');
     page.hidden = true;
+    rdApplyChrome();
     const home = document.getElementById('page-phone');
     if (home) home.hidden = false;
   }
@@ -423,7 +1207,7 @@
     rdTogWatchStop();
     rdWriteProgress();
     rdHabitEndSession();
-    closeToc();
+    closeToc(true);
     rdClearSel(false);
     rdCloseSheet();
     rdClosePreview();
@@ -432,16 +1216,52 @@
     rdCloseLost();
     rdCloseBuddyCard();
     rdPopPos = -1;
-    const prefs = document.getElementById('rd-prefs');
-    if (prefs) prefs.hidden = true;
+    rdCloseLiveDrawer();
+    if (settingsPage) settingsPage.hidden = true;
     const shelf = document.getElementById('rd-shelf');
     const reader = document.getElementById('rd-reader');
     const imp = document.getElementById('rd-import-panel');
     if (shelf) shelf.hidden = false;
     if (reader) reader.hidden = true;
     if (imp) imp.hidden = true;
+    rdApplyChrome();
     rdRenderShelf();
   }
+
+  // #1616：读书模块一层一层返回——先关最上面的阅读层，再阅读器→书架→分组→（页面栈/桌面）
+  // 物理返回和页内左上角返回共用同一入口；返回 true 表示本次已消化，不再退页面。
+  function rdBackOne() {
+    if (!page || page.hidden) return false;
+    if (settingsPage && !settingsPage.hidden) return false; // 设置页是独立 .page，交给页面栈
+    // 按实际叠放从高到低：边看边调(80) → 书架菜单(60) → 阅读器批注层(10~5) → 导入面板(2)
+    const layers = [
+      ['rd-live-drawer', rdCloseLiveDrawer],
+      ['rd-book-menu', rdCloseBookMenu],
+      ['rd-group-menu', rdCloseGroupMenu],
+      ['rd-book-group-menu', rdCloseGroupMenu],
+      ['rd-anno-ops', rdCloseAnnoOps],
+      ['rd-anno-preview', rdClosePreview],
+      ['rd-anno-sheet', rdCloseSheet],
+      ['rd-buddy-card', rdCloseBuddyCard],
+      ['rd-toc', function () { closeToc(true); }],
+      ['rd-toc-mask', function () { closeToc(true); }],
+      ['rd-anno-pop', rdClosePop],
+      ['rd-lost', rdCloseLost],
+      ['rd-import-panel', rdCloseImport],
+    ];
+    for (let i = 0; i < layers.length; i++) {
+      const el = document.getElementById(layers[i][0]);
+      if (el && !el.hidden) { try { layers[i][1](); } catch (e) {} return true; }
+    }
+    const reader = document.getElementById('rd-reader');
+    if (reader && !reader.hidden) { rdShowShelf(); return true; }
+    const shelf = document.getElementById('rd-shelf');
+    if (shelf && !shelf.hidden && rdViewGroupId !== null) {
+      rdViewGroupId = null; rdViewGroupPill = 'all'; rdRenderShelf(); return true;
+    }
+    return false;
+  }
+  window.mochiReadingBack = rdBackOne;
 
   // ===== 打开一本书 =====
   // 换机恢复备份时正文不在包里：明确告知并记 missing，不白屏、不假装书还在。
@@ -469,6 +1289,7 @@
     const body = document.getElementById('rd-body');
     if (shelf) shelf.hidden = true;
     if (reader) reader.hidden = false;
+    rdApplyChrome();
     if (title) title.textContent = book.title || '未命名';
     if (body) body.textContent = '正在翻开…';
     let ch = (book.progress && book.progress.ch) || 0;
@@ -482,12 +1303,23 @@
       bd.updatedAt = Date.now();
     }
     rdBuddyAdvance(book);
+    // 翻开这本书就算看过他的回应：清掉书架小点，并在页脚提一句
+    const hadNewReply = !!book.replyNewAt && book.replyNewAt > (book.annoSeenAt || 0);
+    book.annoSeenAt = Date.now();
     saveIndex(list);
+    if (hadNewReply && rdReplyTipOn()) {
+      rdReplyTipUntil = Date.now() + 3200;
+      const tipBookId = id;
+      setTimeout(function () {
+        if (rdBook && rdBook.id === tipBookId && Date.now() >= rdReplyTipUntil) rdUpdateBar();
+      }, 3400);
+    }
     rdBook = {
       id: id, toc: toc, ch: ch, off: off,
       cache: {}, text: '', sents: [], pages: [], pageIdx: 0, anno: [],
       lostAnnos: Array.isArray(book.lostAnnos) ? book.lostAnnos : []
     };
+    rdMarkUpdateBtn();
     // 每次打开书重新给折角书签一次机会（只播一次，不随每次翻页重复）
     rdBookmarkPlayed = false;
     rdBmClearWait();
@@ -581,14 +1413,20 @@
     const cs = getComputedStyle(body);
     const padL = parseFloat(cs.paddingLeft) || 0;
     const padR = parseFloat(cs.paddingRight) || 0;
-    const w = Math.max(80, body.clientWidth - padL - padR);
-    const h = Math.max(80, body.clientHeight);
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const padB = parseFloat(cs.paddingBottom) || 0;
+    // 宽高取 getBoundingClientRect 的分数值：clientWidth/clientHeight 是取整的，
+    // 和真实内容盒差零点几像素，夹英文的页两边就会做出不同的换行
+    const rect = body.getBoundingClientRect();
+    const w = Math.max(80, rect.width - padL - padR);
+    // 正文顶部有呼吸位：分页要按内容区高度算，扣掉上下内边距，否则最后一行会被裁掉
+    const h = Math.max(80, rect.height - padT - padB);
     const fs = parseFloat(cs.fontSize) || 17;
     let lh = parseFloat(cs.lineHeight);
     if (!lh || isNaN(lh)) lh = fs * 1.8;
     const key = b.id + '|' + ch + '|' + Math.round(w) + '|' + Math.round(h) + '|' + fs + '|' + lh;
     if (RD_PAGE_CACHE[key]) return RD_PAGE_CACHE[key];
-    const pages = paginate(text, w, h, fs, lh, cs.fontFamily);
+    const pages = paginate(text, w, h, fs, lh, cs);
     RD_PAGE_CACHE[key] = pages;
     const keys = Object.keys(RD_PAGE_CACHE);
     if (keys.length > 24) delete RD_PAGE_CACHE[keys[0]];
@@ -597,16 +1435,40 @@
 
   // 真分页：用一个不可见的同宽同字号测量块，对每页末尾偏移做二分，
   // 找到「不溢出容器高度」的最大偏移；保证每次至少前进 1 个字符。
-  function paginate(text, w, h, fs, lh, ff) {
+  function paginate(text, w, h, fs, lh, cs) {
     const src = String(text == null ? '' : text);
     const n = src.length;
     if (!n) return [{ s: 0, e: 0 }];
     const box = document.createElement('div');
     box.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;' +
-      'white-space:pre-wrap;word-break:break-word;box-sizing:border-box;width:' + w + 'px;' +
+      'white-space:pre-wrap;box-sizing:border-box;width:' + w + 'px;' +
       'font-size:' + fs + 'px;line-height:' + lh + 'px;';
-    if (ff) box.style.fontFamily = ff;
+    if (cs) {
+      if (cs.fontFamily) box.style.fontFamily = cs.fontFamily;
+      // 断行设置逐项复用正文自己的 computed style：测量和渲染必须连 word-break 都一致，
+      // 否则夹英文的页（卷首引文、样文）两边换行点不同，同一片文字算出的行数就不一样
+      box.style.wordBreak = cs.wordBreak || 'normal';
+      box.style.overflowWrap = cs.overflowWrap || 'normal';
+      if (cs.lineBreak) box.style.lineBreak = cs.lineBreak;
+    }
     document.body.appendChild(box);
+    // 段首缩进：测量插和渲染同一个 .rd-ind（inline-block 2em）、走同一个 rdEsc。
+    // 以前测量塞两个全角空格、渲染插 span，宽度和断行点都有细微差别
+    const indents = Array.from(rdFindParaStarts(src));
+    function measure(a, z) {
+      if (z <= a) { box.innerHTML = ''; return; }
+      let lo2 = 0, hi2 = indents.length - 1;
+      while (lo2 <= hi2) {
+        const m2 = (lo2 + hi2) >> 1;
+        if (indents[m2] < a) lo2 = m2 + 1; else hi2 = m2 - 1;
+      }
+      let out = '', cur = a;
+      for (let i = lo2; i < indents.length && indents[i] < z; i++) {
+        out += rdEsc(src.slice(cur, indents[i])) + '<span class="rd-ind"></span>';
+        cur = indents[i];
+      }
+      box.innerHTML = out + rdEsc(src.slice(cur, z));
+    }
     const pages = [];
     let s = 0;
     const cap = n > RD_BIG_TEXT ? 3000 : n;
@@ -616,7 +1478,7 @@
       let best = lo;
       while (lo <= hi) {
         const mid = (lo + hi) >> 1;
-        box.textContent = src.slice(s, mid);
+        measure(s, mid);
         if (box.scrollHeight <= h + 1) { best = mid; lo = mid + 1; }
         else hi = mid - 1;
       }
@@ -671,6 +1533,7 @@
     const no = document.getElementById('rd-page-no');
     if (no) no.textContent = '第 ' + (b.pageIdx + 1) + ' / ' + b.pages.length + ' 页';
     rdUpdateBar();
+    rdMarkUpdateBtn();
     rdSaveProgress();
     rdHabitTouchPage();
     // 停一下再考虑他是否在这一页留纸条，避免翻页瞬间闪出新角标
@@ -684,34 +1547,54 @@
     const book = rdFindBook(b.id, list);
     const fill = document.getElementById('rd-bar-fill');
     if (!fill || !book) return;
+    // 刚翻开书时先让「他回你一句话」显示三秒，不被正常状态文案立刻盖掉
+    const tipOn = Date.now() < rdReplyTipUntil;
     const p = b.pages[b.pageIdx] || { s: 0, e: 0 };
     const myPct = rdPosPct(book, b.ch, p.s);
     fill.style.width = myPct + '%';
     // 展示用的推进只算在内存里，真正落盘统一走 rdWriteProgress，避免每次翻页都写索引
     rdBuddyAdvance(book);
+    if (!rdCoopOn()) {
+      const dot = document.getElementById('rd-buddy-dot');
+      if (dot) dot.hidden = true;
+      const line = document.getElementById('rd-buddy');
+      if (line) {
+        line.textContent = '';
+        line.classList.remove('rd-buddy-same-text', 'rd-tog', 'rd-pace');
+      }
+      const lamp = document.getElementById('rd-lamp');
+      if (lamp) lamp.hidden = true;
+      return;
+    }
     const st = rdBuddyState(book);
     const bd = rdBuddyGet(book);
     const dot = document.getElementById('rd-buddy-dot');
     const line = document.getElementById('rd-buddy');
-    const same = !!(bd && (st === 'read' || st === 'wait') && bd.ch === b.ch && bd.off >= p.s && bd.off <= p.e);
+    const same = !!(bd && (st === 'read' || st === 'wait' || st === 'behind') && bd.ch === b.ch && bd.off >= p.s && bd.off <= p.e);
     if (dot) {
-      const show = st === 'read' || st === 'wait' || st === 'done';
+      const show = st !== 'none' && st !== 'skip';
       dot.hidden = !show;
       if (show) {
-        const behind = !same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s);
+        const isBehind = st === 'behind' || st === 'far' || (!same && rdFlatPos(book, bd.ch, bd.off) < rdFlatPos(book, b.ch, p.s));
         dot.style.left = same ? 'calc(' + myPct + '% + 6px)' : rdPosPct(book, bd.ch, bd.off) + '%';
-        dot.classList.toggle('rd-buddy-ahead', !same && !behind);
-        dot.classList.toggle('rd-buddy-behind', behind);
+        dot.classList.toggle('rd-buddy-ahead', !same && !isBehind);
+        dot.classList.toggle('rd-buddy-behind', !same && isBehind);
+        dot.classList.toggle('rd-buddy-far', !same && st === 'far');
         dot.classList.toggle('rd-buddy-same', same);
       }
     }
     if (line) {
-      const tog = rdTogetherOn(book);
-      const paceNote = tog ? '' : rdPaceNote(book, b);
-      line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
-      line.classList.toggle('rd-buddy-same-text', same);
-      line.classList.toggle('rd-tog', tog);
-      line.classList.toggle('rd-pace', !!paceNote);
+      if (tipOn) {
+        line.textContent = '他回你一句话';
+        line.classList.remove('rd-buddy-same-text', 'rd-tog', 'rd-pace');
+      } else {
+        const tog = rdTogetherOn(book);
+        const paceNote = tog ? '' : rdPaceNote(book, b);
+        line.textContent = tog ? '此刻 · 同读' : (paceNote || rdBuddyLine(book, st));
+        line.classList.toggle('rd-buddy-same-text', same);
+        line.classList.toggle('rd-tog', tog);
+        line.classList.toggle('rd-pace', !!paceNote);
+      }
     }
     rdSyncLamp(book, st);
     rdMaybeBookmarkReturn(book, b, bd, st);
@@ -731,6 +1614,7 @@
     rdBookmarkWaitPage = '';
   }
   function rdBookmarkTake(book) {
+    if (!rdBookmarkOn()) return false;
     try {
       const list = readIndex();
       const fb = rdFindBook(book.id, list);
@@ -745,9 +1629,13 @@
   }
   function rdBmScheduleWait() {
     rdBmPauseWait();
+    if (!rdCoopOn()) { rdBookmarkWaitPage = ''; return; }
+    if (!rdBookmarkOn()) { rdBookmarkWaitPage = ''; return; }
     if (!rdBookmarkWaitPage) return;
     rdBookmarkWaitTimer = setTimeout(function () {
       rdBookmarkWaitTimer = 0;
+      if (!rdCoopOn()) return;
+      if (!rdBookmarkOn()) return;
       const b = rdBook;
       if (!b) return;
       if (b.ch + ':' + b.pageIdx !== rdBookmarkWaitPage) return;
@@ -764,7 +1652,7 @@
     }, RD_BOOKMARK_WAIT_MS);
   }
   function rdMaybeBookmarkReturn(book, b, bd, st) {
-    if (rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
+    if (!rdCoopOn() || !rdBookmarkOn() || rdBookmarkPlayed || !b || !bd || st !== 'wait') return;
     if (!(bd.ch > b.ch)) return;
     const dot = document.getElementById('rd-buddy-dot');
     if (!dot || dot.hidden) return;
@@ -835,6 +1723,7 @@
   function rdHabitAdd(side, sec, pages, hour, at) {
     const secs = Math.round(Number(sec) || 0);
     if (secs <= 0) return;
+    if (side === 'him' && !rdHabitSyncOn()) return;
     const h = rdHabitLoad();
     const when = Number(at) || Date.now();
     const day = rdTodayKey(when);
@@ -878,8 +1767,10 @@
     if (!book) return;
     const bd = rdBuddyGet(book);
     if (!bd || !bd.started || bd.mode !== 'follow') return;
-    if (rdBuddyState(book) !== 'read') return;
-    rdBuddyAdvance(book);
+    if (!rdCoopOn()) return;
+    const st = rdBuddyState(book);
+    if (st !== 'read' && st !== 'behind' && st !== 'far') return;
+    rdBuddyAdvance(book, sec);
     rdHabitAdd('him', sec, s.pages, new Date(s.start).getHours(), now);
   }
   // 最近 N 天里他最常出现的整点（至少 3 次才算习惯）；没形成习惯就返回 null
@@ -927,6 +1818,7 @@
   // 小卡里那行自然观察：优先今天的异常，其次他自己的固定时段，最后是我的
   function rdHabitObs(book) {
     if (!book) return '';
+    if (!rdHabitSyncOn()) return '';
     const st = rdBuddyState(book);
     if (st === 'none' || st === 'skip') return '';
     const h = rdHabitLoad();
@@ -956,6 +1848,8 @@
   function rdSyncLamp(book, st) {
     const lamp = document.getElementById('rd-lamp');
     if (!lamp) return;
+    if (!rdCoopOn()) { lamp.hidden = true; return; }
+    if (!rdLampOn()) { lamp.hidden = true; return; }
     const now = new Date();
     const hr = now.getHours();
     const night = hr >= 22 || hr < 7;
@@ -968,7 +1862,7 @@
   }
   // 23:30 后还开着书：每本书每夜只留一次灯
   function rdHabitLateNote(book) {
-    if (!book) return;
+    if (!rdLampOn() || !book) return;
     const day = rdTodayKey();
     if (book.lateNoteDay === day) return;
     book.lateNoteDay = day;
@@ -994,7 +1888,7 @@
 
   function rdTogetherOn(book) {
     const s = rdHabitSession;
-    if (!s || !book) return false;
+    if (!rdCoopOn() || !s || !book) return false;
     if (Date.now() - s.start < RD_TOG_MIN_MS) return false;
     return rdBuddyState(book) === 'read';
   }
@@ -1003,6 +1897,7 @@
   }
   // 每累计三次同读，书脊多一道细纹；封顶五道，不让书脊画花
   function rdTogSpine(book) {
+    if (!rdCoopOn()) return 0;
     return Math.min(RD_TOG_SPINE_MAX, Math.floor(rdTogCount(book) / RD_TOG_SPINE_STEP));
   }
   // 一次阅读会话只计一次：按翻页数累加的话，读得快的人一晚上就能把书脊长满
@@ -1015,6 +1910,7 @@
   // 停在某一页读够十分钟时页脚要自己亮起来，不能只在翻页那一刻才算
   function rdTogWatchStart() {
     rdTogWatchStop();
+    if (!rdCoopOn()) return;
     rdTogTimer = setInterval(function () {
       if (!rdBook) { rdTogWatchStop(); return; }
       rdUpdateBar();
@@ -1026,7 +1922,7 @@
   // 同读满十五分钟再往下翻章：他在刚读完那一章的末尾留一句。
   // 这句说的就是「刚翻过去的那一章」，所以锚在旧章末尾，往回翻才看得到。
   function rdTogChapterNote(b) {
-    if (!b || rdTogNoteLogged) return;
+    if (!rdCoopOn() || !b || rdTogNoteLogged) return;
     const s = rdHabitSession;
     if (!s || Date.now() - s.start < RD_TOG_CHAP_MS) return;
     if (rdNightGuard()) return;
@@ -1142,7 +2038,7 @@
   }
   // 只在章末那一页给感想；同读优先，这里只管翻页节奏
   function rdPaceNote(book, b) {
-    if (!book || !b || !b.pages.length) return '';
+    if (!rdCoopOn() || !book || !b || !b.pages.length) return '';
     if (b.pageIdx !== b.pages.length - 1) return '';
     const pace = book.pace;
     if (!pace || pace.ch !== b.ch) return '';
@@ -1160,6 +2056,7 @@
   let rdCrossKey = '';
 
   async function rdCrossOldAnnos(book) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !book || !b.pages.length) return;
     if (rdNightGuard()) return;
@@ -1210,6 +2107,7 @@
   }
   // 点开旧句：他有概率接一句，同一条只回应一次
   async function rdMissReply(id) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !id) return;
     const list = readIndex();
@@ -1351,11 +2249,46 @@
     if (typeof bd.carry !== 'number') bd.carry = 0;
     return bd;
   }
+  // 他读得慢 / 读得快的概率（0-100），设置页可调；默认 30 / 10
+  function rdChanceGet(key, def) {
+    let v = def;
+    try {
+      const raw = store.get(key);
+      if (raw != null && raw !== '') {
+        const n = Number(raw);
+        if (!isNaN(n)) v = n;
+      }
+    } catch (e) {}
+    return Math.max(0, Math.min(100, v));
+  }
+  function rdSlowChance() { return rdChanceGet(RD_SLOW_CHANCE_KEY, 30); }
+  function rdFastChance() { return rdChanceGet(RD_FAST_CHANCE_KEY, 10); }
+  // 他今天的阅读速度：正常 / 慢半拍 / 快一点，按书 + 日期散列，同一天内稳定。
+  // 两档概率都由设置页控制；慢占 [0, slow)，快占 [slow, slow+fast)，其余正常。
+  function rdBuddySpeedToday(book) {
+    const seed = String((book && book.id) || '') + '|speed|' + rdTodayKey(Date.now());
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    const n = Math.abs(h) % 100;
+    const slowPct = rdSlowChance();
+    if (n < slowPct) return 0.55;
+    if (n < slowPct + rdFastChance()) return 1.35;
+    return 1;
+  }
+  // 他落后时的停手间隔：30 秒到 3 分钟，按书 + 位置散列，同一天内稳定
+  function rdChasePause(book, his) {
+    const seed = String((book && book.id) || '') + '|' + Math.floor((Number(his) || 0) / RD_CHARS_PER_MIN);
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    return 30000 + (Math.abs(h) % 150000);
+  }
   // 只推进他和书的状态；调用方负责 saveIndex
-  function rdBuddyAdvance(book) {
+  function rdBuddyAdvance(book, sec) {
     const bd = rdBuddyGet(book);
     if (!bd) return null;
     const now = Date.now();
+    // 共读关闭时冻结他的位置，只把时间戳拨到现在，重新打开不补算关闭期间的阅读
+    if (!rdCoopOn()) { bd.updatedAt = now; return bd; }
     // 今天不读：跨天自动恢复原模式，当天只记更新时间
     if (bd.mode === 'skip') {
       if (bd.skipDay === rdTodayKey(now)) { bd.updatedAt = now; return bd; }
@@ -1370,6 +2303,7 @@
     const prog = book.progress || {};
     const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
     let his = rdFlatPos(book, bd.ch, bd.off);
+    const speed = rdBuddySpeedToday(book);
     if (bd.mode === 'solo') {
       // 按离开时长推进，单次最多补 30 分钟，避免隔夜一口气读完整本
       const prevAt = bd.updatedAt || now;
@@ -1377,7 +2311,7 @@
       const ms = (bd.carry || 0) + dt;
       const units = Math.floor(ms / 60000);
       bd.carry = ms - units * 60000;
-      const nextHis = Math.min(total, his + units * RD_CHARS_PER_MIN);
+      const nextHis = Math.min(total, his + Math.round(units * RD_CHARS_PER_MIN * speed));
       // 他独立读掉的这一段也记进习惯（只记时长与估算页数，不记内容）
       if (units > 0) {
         const words = Math.max(0, nextHis - his);
@@ -1387,16 +2321,55 @@
       his = nextHis;
       bd.waiting = false;
     } else {
-      if (his < mine) his = mine; // 跟随：追上来，但不往回退
+      // 跟随：差不到一页直接贴合（同页共读）；落后更多就按阅读速度追，
+      // 而且追一阵停一阵——读一会儿歇口气，比匀速移动更像真的有人在后面
+      const gap = mine - his;
+      if (gap > 0) {
+        if (gap <= RD_BUDDY_STICK) {
+          // 慢的日子他不贴上来，停在我后面一小段距离；正常日子直接同页贴合
+          his = speed < 1 ? Math.max(his, mine - Math.round(RD_BUDDY_SLOW_GAP)) : mine;
+        } else {
+          const lastAt = Number(bd.chaseAt) || 0;
+          const pauseMs = Number(bd.chasePauseMs) || 0;
+          if (now - lastAt >= pauseMs) {
+            // 单次最多按两分钟的阅读量算，避免一次会话结束就一口气追平
+            const dt = Math.max(1, Math.min(Number(sec) || 60, 120));
+            his = Math.min(mine, his + Math.max(1, Math.round(dt * RD_CHARS_PER_MIN * speed / 60)));
+            bd.chaseAt = now;
+            bd.chasePauseMs = rdChasePause(book, his);
+          }
+        }
+      }
       bd.waiting = his > mine;    // 超到我前面就停下来等
     }
     const pos = rdPosFromFlat(book, Math.min(his, total));
     bd.ch = pos.ch;
     bd.off = pos.off;
+    // 落后了多久：用来在落后太久之后把文案降噪，不让他一直像在欠着什么
+    if (mine - his >= RD_BUDDY_STICK) {
+      if (!bd.behindSince) bd.behindSince = now;
+      // 他在后面时偶尔抬头看一眼我读到哪了：每 4 分钟最多一次，持续 90 秒
+      const lastGlance = Number(bd.glanceAt) || 0;
+      if (now - lastGlance >= 4 * 60 * 1000 && Math.random() < 0.4) {
+        bd.glanceUntil = now + 90000;
+        bd.glanceAt = now;
+        // 立刻重绘一次页脚，不等到下一次翻页或轮询
+        setTimeout(function () { try { rdUpdateBar(); } catch (e) {} }, 0);
+      }
+    } else {
+      bd.behindSince = 0;
+      bd.glanceUntil = 0;
+    }
     bd.updatedAt = now;
     book.status = his >= total ? 'done' : 'co';
     return bd;
   }
+  // 他落后超过这个字数才算「在后面」；不到就是同页共读
+  const RD_BUDDY_STICK = 480;
+  // 他读得慢的日子，跟在我后面大约这么多字，不贴上来
+  const RD_BUDDY_SLOW_GAP = 240;
+  // 落后超过这么久，文案换成不施压的说法
+  const RD_BUDDY_QUIET_MS = 10 * 60 * 1000;
   function rdBuddyState(book) {
     const bd = rdBuddyGet(book);
     if (!bd) return 'none';
@@ -1406,24 +2379,62 @@
     const his = rdFlatPos(book, bd.ch, bd.off);
     if (total && his >= total) return 'done';
     const prog = book.progress || {};
-    const mine = rdFlatPos(book, Number(prog.ch) || 0, Number(prog.off) || 0);
+    const myCh = Number(prog.ch) || 0;
+    const mine = rdFlatPos(book, myCh, Number(prog.off) || 0);
     if (his > mine) return 'wait';
+    // 他落后：跨章，或同章里差出一页以上才算「在后面」，差几个字仍算同页共读
+    if (his < mine) {
+      // 落后两章以上是另一档：「在很后面」，文案不催，只是如实说
+      if (myCh - bd.ch >= 2) return 'far';
+      if (bd.ch < myCh) return 'behind';
+      if (mine - his >= RD_BUDDY_STICK) return 'behind';
+    }
     return 'read';
   }
   const RD_BUDDY_STATE_TEXT = {
-    none: '还没开始', read: '共读中', wait: '停在这等你', done: '读完了', skip: '今天不读'
+    none: '还没开始', read: '共读中', wait: '停在这等你', behind: '在你后面',
+    far: '在很后面', done: '读完了', skip: '今天不读'
   };
   // 文案池按状态分组；同一天内固定取同一条，跨天自然轮换
   const RD_BUDDY_LINES = {
     none: ['还没翻开这本书。', '他把书放在那儿，等你一起。', '书还合着，他也没动。'],
     read: ['他在你旁边一页一页看。', '他刚翻过一页。', '他跟着你的速度往下读。'],
     wait: ['他停在前面等你。', '他先读到前面去了，正等着你。', '他在前面那页等你跟上来。'],
+    behind: ['他在你后面慢慢跟着。', '他落后了几页，正一页页追。', '他在后面那几页，没催你。'],
+    far: ['他还在很后面，慢慢读着。', '他落后好几章了，没追上来。', '他在后面很远的地方，不着急。'],
     done: ['他先读完了，在最后一页等你。', '他合上书，等你读完。', '他已经读到最后一页了。'],
     skip: ['他今天不读。', '他说今天先歇着。', '今天不翻书，明天再继续。']
   };
+  // 他今天读得慢时的替换句（只在「共读中」用它；前面等我、在后面的状态照旧）
+  const RD_BUDDY_SLOW_LINES = [
+    '他今天读得慢，还在你后面跟着。',
+    '他今天翻得慢，一页要停一会儿。',
+    '他今天读得有点慢，你别等太久。'
+  ];
+  // 落后太久时换成不施压的说法：他在后面是他自己的节奏，不是我欠的
+  const RD_BUDDY_QUIET_LINES = [
+    '他还在后面，你先读。',
+    '他在后面慢慢赶，不用等他。',
+    '他还在后面，读到哪算哪。'
+  ];
+  // 他在后面时偶尔抬头看我读到哪了：短促的一次，不是状态
+  const RD_BUDDY_GLANCE_LINES = [
+    '他停了一下，像在看你读到哪了。',
+    '他抬头看了一眼你的进度。',
+    '他往后翻了翻，在找你读到哪。'
+  ];
   function rdBuddyLine(book, state) {
-    const pool = RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read;
-    const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now());
+    const bd = rdBuddyGet(book);
+    const glancing = bd && bd.glanceUntil && Date.now() < Number(bd.glanceUntil) &&
+      (state === 'behind' || state === 'far');
+    const stuck = (state === 'behind' || state === 'far') && bd && bd.behindSince &&
+      (Date.now() - Number(bd.behindSince) >= RD_BUDDY_QUIET_MS);
+    const slow = state === 'read' && rdBuddySpeedToday(book) < 1;
+    const pool = glancing ? RD_BUDDY_GLANCE_LINES
+      : (stuck ? RD_BUDDY_QUIET_LINES
+      : (slow ? RD_BUDDY_SLOW_LINES : (RD_BUDDY_LINES[state] || RD_BUDDY_LINES.read)));
+    const seed = String((book && book.id) || '') + '|' + state + '|' + rdTodayKey(Date.now()) +
+      (glancing ? '|' + (bd.glanceAt || 0) : '');
     let h = 0;
     for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
     return pool[Math.abs(h) % pool.length];
@@ -1432,8 +2443,9 @@
   // 封存纸条（sealed）一律先挡住，等 rdUnlockSealed 把我的进度越过后再放行。
   function rdBuddyAnnoVisible(a, pageStart, pageEnd) {
     if (!a) return false;
-    if (a.sealed) return false;
     if (a.by === 'me') return true;
+    if (!rdCoopOn()) return false;
+    if (a.sealed) return false;
     return a.e > pageStart && a.e <= pageEnd;
   }
   // 批注归属哪一句：取与批注区间重叠最多的一句；重叠不到批注长度的一半，视为跨句失配。
@@ -1473,7 +2485,9 @@
     const out = [];
     const seen = new Set();
     const sents = (b && b.sents) || [];
-    const groups = rdAnnoGroups(sents, (b && b.anno) || []);
+    const all = (b && b.anno) || [];
+    const annos = rdCoopOn() ? all : all.filter(function (a) { return a && a.by === 'me'; });
+    const groups = rdAnnoGroups(sents, annos);
     Object.keys(groups).forEach(function (k) {
       const g = groups[k];
       const sn = sents[g.idx];
@@ -1484,7 +2498,7 @@
         out.push(a);
       });
     });
-    ((b && b.anno) || []).forEach(function (a) {
+    annos.forEach(function (a) {
       if (!a || a.e !== pos || seen.has(a)) return;
       seen.add(a);
       out.push(a);
@@ -1496,6 +2510,7 @@
   // 总开关跟随字卡库「共读批注」分类：整组停用、逐张关光、二级密码锁或概率 0% 时，
   // 淡痕与双圈一起关闭，不另设入口。
   function rdTraceEnabled() {
+    if (!rdCoopOn()) return false;
     if (rdDcfRatio() <= 0) return false;
     const pool = rdLibPool('anno');
     return pool === null ? true : pool.length > 0;
@@ -1525,6 +2540,7 @@
     return '第 ' + (rdPageForOffset(pages, bd.off) + 1) + ' 页';
   }
   async function rdOpenBuddyCard() {
+    if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -1581,6 +2597,7 @@
     if (card) card.hidden = false;
   }
   function rdBuddySetMode(mode) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -1606,6 +2623,7 @@
     }
   }
   function rdJumpToBuddy() {
+    if (!rdCoopOn()) { rdToast('共读已关闭'); return; }
     const b = rdBook;
     if (!b) return;
     const list = readIndex();
@@ -1637,11 +2655,22 @@
   //      独立推进时他读得比我快，纸条会先落在还没读到的章节里，由 rdBuddyAnnoVisible 挡住，
   //      等我翻到那一页才浮现。
   //   2. 回应不是即时的。我写下的批注进 book.replyQueue，下次打开且他的位置越过那句时才掷一次骰子，
-  //      没中就一直安静留着；他未开始、今天不读、停在这等你时都不回应。
+  //      没中就一直安静留着；只有他未开始、今天不读时才完全不回应。
   const RD_HIS_PER_CH = 3;      // 每章最多 3 条
   const RD_HIS_GAP = 8;         // 同章两条之间至少隔 8 句
   const RD_HIS_CHANCE = 0.45;   // 翻到一页时他留下新批注的概率
-  const RD_REPLY_CHANCE = 0.62; // 越过那句之后真正回应的概率（允许一部分永远安静）
+  const RD_REPLY_CHANCE_DEF = 62; // 「他回应批注」的默认概率（%），设置页可调
+  function rdReplyChancePct() {
+    let v = RD_REPLY_CHANCE_DEF;
+    try {
+      const raw = store.get('reading-reply-chance');
+      if (raw != null && raw !== '') {
+        const n = Number(raw);
+        if (!isNaN(n)) v = n;
+      }
+    } catch (e) {}
+    return Math.max(0, Math.min(100, v));
+  }
   const RD_REPLY_MAX = 2;       // 每次打开最多回应 2 条
   // 封存一句：他先读到、折起来，等我读到才展开。只在他独立推进时生成。
   const RD_SEAL_PER_BOOK = 3;   // 每本同时最多 3 条
@@ -1807,9 +2836,11 @@
   // 翻到一页后静一下再决定要不要留纸条：不打断阅读，也不在每页都必然出现
   function rdScheduleHisAnno() {
     clearTimeout(rdHisTimer);
+    if (!rdCoopOn()) return;
     rdHisTimer = setTimeout(rdMaybeHisAnno, 850);
   }
   async function rdMaybeHisAnno(force) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b || !b.pages.length) return;
     if (rdNightGuard()) return;
@@ -1979,7 +3010,7 @@
     return null;
   }
   async function rdMaybeSeal(book) {
-    if (rdSealBusy || rdUnlockBusy || !book) return;
+    if (!rdCoopOn() || rdSealBusy || rdUnlockBusy || !book) return;
     if (rdNightGuard()) return;
     const bd = rdBuddyGet(book);
     if (!bd || !bd.started || bd.mode !== 'solo') return;
@@ -2040,7 +3071,7 @@
     } catch (e) {}
   }
   async function rdUnlockSealed(book) {
-    if (rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
+    if (!rdCoopOn() || rdUnlockBusy || rdSealBusy || !book || !Array.isArray(book.sealed) || !book.sealed.length) return;
     const myCh = Number(book.progress && book.progress.ch) || 0;
     const myOff = Number(book.progress && book.progress.off) || 0;
     const pending = book.sealed.filter(function (s) {
@@ -2091,6 +3122,7 @@
 
   // 下次打开这本书时才处理待回应：他的位置越过那句 + 状态是「共读中」才掷骰子
   async function rdBuddyProcessReplies(force) {
+    if (!rdCoopOn()) return;
     const b = rdBook;
     if (!b) return;
     if (rdNightGuard()) return;
@@ -2100,7 +3132,11 @@
     rdBuddyAdvance(book);
     const bd = rdBuddyGet(book);
     if (!bd.started) return;
-    if (rdBuddyState(book) !== 'read') return; // 未开始 / 停在这等你 / 今天不读 / 读完了 都不回应
+    // 不再要求「必须同页共读」：他领先等我、落在后面、甚至已经读完，
+    // 只要进度越过了那句，看到我留下的批注都可能想回一句。
+    // 今天不读、还没开始才真的不回应；位置闸门在下面的 hisFlat 判断里。
+    const stNow = rdBuddyState(book);
+    if (stNow === 'none' || stNow === 'skip') return;
     const queue = Array.isArray(book.replyQueue) ? book.replyQueue.slice() : [];
     if (!queue.length) return;
     queue.sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
@@ -2125,7 +3161,7 @@
       if (!mine) continue; // 我那条已经删了，队列作废
       if (arr.some(function (x) { return x && x.replyTo === q.id; })) continue; // 已经回过
       // 每句只掷一次：没中就一直安静留着，不再整轮重试
-      if (!force && Math.random() > RD_REPLY_CHANCE * rdDcfRatio()) continue;
+      if (!force && Math.random() > (rdReplyChancePct() / 100) * rdDcfRatio()) continue;
       const repTxt = rdHisReplyText(book);
       if (!repTxt) continue; // 回应字卡被逐张关光/整组停用/锁定＝这一句就安静留着
       const item = {
@@ -2156,6 +3192,8 @@
       fb.replyQueue = rest;
       if (added) {
         fb.annoCount = (Number(fb.annoCount) || 0) + added;
+        // 他刚回应过我：书架上的小点靠这个字段亮，等我打开这本书时清掉
+        fb.replyNewAt = Date.now();
         const used = Array.isArray(fb.buddyTexts) ? fb.buddyTexts : [];
         for (let i = 0; i < addedTexts.length; i++) used.push(addedTexts[i]);
         fb.buddyTexts = used.slice(-200);
@@ -2187,6 +3225,34 @@
     return id;
   }
 
+  // 段首缩进：只在行首、非空行、非章标题行插一个两字宽的占位 span。
+  // 用 span 而不是往正文里塞空格，字符偏移不被改变，批注/书签/进度都不受影响。
+  // 分页测量插的是同一个 span（见 paginate），两边排版逐像素一致。
+  function rdFindParaStarts(text) {
+    const src = String(text == null ? '' : text);
+    const set = new Set();
+    let p = 0, lineNo = 0;
+    while (p < src.length) {
+      let e = src.indexOf('\n', p);
+      if (e < 0) e = src.length;
+      const raw = src.slice(p, e).replace(/\r$/, '');
+      const t = raw.trim();
+      // 空行不缩进；章内第一行是标题也不缩进；行首本来就有空格的沿用作者的缩进
+      if (t && lineNo > 0 && raw === t && !RD_CH_TITLE_RE.test(t)) set.add(p);
+      lineNo++;
+      p = e + 1;
+    }
+    return set;
+  }
+  let rdIndentCache = { key: '', set: null };
+  function rdParaStarts(b) {
+    const text = b && b.text ? String(b.text) : '';
+    const key = (b && b.id) + '|' + (b && b.ch) + '|' + text.length;
+    if (rdIndentCache.key === key) return rdIndentCache.set;
+    rdIndentCache = { key: key, set: rdFindParaStarts(text) };
+    return rdIndentCache.set;
+  }
+
   // 画整页正文：句尾角标 + 选中的高亮都在这一层完成。
   // 角标本身是空 span，文字节点索引会跳过它，保证「点到哪个字」在有无角标时偏移一致。
   function rdPaintPage() {
@@ -2206,6 +3272,7 @@
       if (book) hisOff = rdBuddyReadOff(book, b.ch, b.text.length);
     }
     const sents = b.sents || [];
+    const indents = rdParaStarts(b);
     const traces = {};
     if (hisOff > start) {
       const from = Math.max(0, rdSentIndexAt(sents, start) + 1);
@@ -2218,7 +3285,9 @@
     }
     // 同一句里两人都留过批注：合并成一个句尾双圈，双圈优先、不再显示数字。
     // 他若还在未读区间，这个合并不成立，先按单圈显示，等我读到再补。
-    const groups = rdAnnoGroups(sents, b.anno || []);
+    const allAnnos = b.anno || [];
+    const annos = rdCoopOn() ? allAnnos : allAnnos.filter(function (a) { return a && a.by === 'me'; });
+    const groups = rdAnnoGroups(sents, annos);
     const consumed = new Set();
     const merged = {};
     Object.keys(groups).forEach(function (k) {
@@ -2230,7 +3299,7 @@
       g.list.forEach(function (a) { consumed.add(a); });
     });
     const marks = {};
-    (b.anno || []).forEach(function (a) {
+    annos.forEach(function (a) {
       if (consumed.has(a)) return;
       // 他的批注走「我读到才浮现」的闸门；我的批注照常显示
       if (!rdBuddyAnnoVisible(a, start, end)) return;
@@ -2250,15 +3319,20 @@
     const cutMap = {};
     Object.keys(marks).forEach(function (k) { cutMap[k] = 1; });
     Object.keys(traces).forEach(function (k) { cutMap[k] = 1; });
+    // 段首也当切点：一页通常会一次性输出整块文本，不切段首的话缩进插不进去
+    indents.forEach(function (pos) {
+      if (pos > start && pos < end) cutMap[pos] = 1;
+    });
     const cuts = Object.keys(cutMap).map(Number).sort(function (x, y) { return x - y; });
     const sel = rdSel && rdSel.e > start && rdSel.s < end
       ? { s: Math.max(start, rdSel.s), e: Math.min(end, rdSel.e) } : null;
     function emit(a, z) {
       if (z <= a) return '';
-      if (!sel || z <= sel.s || a >= sel.e) return rdEsc(b.text.slice(a, z));
+      const ind = indents.has(a) ? '<span class="rd-ind"></span>' : '';
+      if (!sel || z <= sel.s || a >= sel.e) return ind + rdEsc(b.text.slice(a, z));
       const s1 = Math.max(a, sel.s);
       const e1 = Math.min(z, sel.e);
-      return rdEsc(b.text.slice(a, s1)) +
+      return ind + rdEsc(b.text.slice(a, s1)) +
         '<span class="rd-sel">' + rdEsc(b.text.slice(s1, e1)) + '</span>' +
         rdEsc(b.text.slice(e1, z));
     }
@@ -2571,20 +3645,27 @@
     }
     let html = sameFirst ? '<div class="rd-pop-same">你们停在了同一句</div>' : '';
     const nowTs = Date.now();
+    // 哪些批注已经有回复：有回复的那条不再给「回应」入口，避免一句话被反复接
+    const repliedIds = {};
+    for (let i = 0; i < items.length; i++) {
+      if (items[i] && items[i].replyTo) repliedIds[items[i].replyTo] = 1;
+    }
     html += show.map(function (a) {
       const mine = a.by === 'me';
       // 错过七天：旧句被划掉，正文换成他现在写的那句
       const old = !mine && a.crossedAt && a.oldText ? a.oldText : '';
       const oldDays = old ? Math.max(RD_MISS_DAYS, Math.floor((nowTs - (a.oldAt || a.at || nowTs)) / 86400000)) : 0;
+      // 他的原始批注、且还没被我回过 → 给一个「回应」
+      const canReply = !mine && !a.replyTo && !repliedIds[a.id];
       return '<div class="rd-pop-item ' + (mine ? 'rd-pop-mine' : 'rd-pop-his') +
         (a.replyTo ? ' rd-pop-reply' : '') + '"' +
         ' data-id="' + rdEsc(a.id || '') + '"' + (mine ? ' data-mine="1"' : '') + '>' +
-        '<div class="rd-pop-who">' + (mine ? '我' : '他') + '</div>' +
         (old
           ? '<div class="rd-pop-cross">' + oldDays + ' 天前写下这句，后来划掉了</div>' +
             '<div class="rd-pop-old" data-old="' + rdEsc(a.id || '') + '">' + rdEsc(old) + '</div>'
           : '') +
-        '<div class="rd-pop-text">' + rdEsc(a.text || '') + '</div>' +
+        '<div class="rd-pop-text"><span class="rd-pop-who">' + (mine ? '我' : '他') + '</span>' + rdEsc(a.text || '') + '</div>' +
+        (canReply ? '<button class="rd-pop-reply-btn" data-reply="' + rdEsc(a.id || '') + '" type="button">回应这句</button>' : '') +
         (a.unlockedAt && !a.replyTo ? '<div class="rd-pop-unsealed">你终于读到这了</div>' : '') +
         '</div>';
     }).join('');
@@ -2594,6 +3675,51 @@
     }
     list.innerHTML = html;
     pop.hidden = false;
+  }
+
+  // ===== 回应他的批注：生成一条带 replyTo 的我的批注，并进待回应队列 =====
+  // 他最多再回一轮（他的回应不入队），所以不会无限往返
+  function rdReplyToHis(id) {
+    const b = rdBook;
+    if (!b || !id) return;
+    const arr0 = (b.anno || []).slice();
+    const src = arr0.filter(function (a) { return a && a.id === id; })[0];
+    if (!src || src.by === 'me') return;
+    if (arr0.some(function (a) { return a && a.replyTo === id; })) { rdToast('已经回应过这句了'); return; }
+    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+    window.openModal('回应他', '', async function (v) {
+      const t = String(v == null ? '' : v).trim();
+      if (!t) return;
+      const item = {
+        id: 'an_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        by: 'me',
+        s: src.s,
+        e: src.e,
+        quote: src.quote,
+        text: t.slice(0, 200),
+        at: Date.now(),
+        rev: 1,
+        deviceId: rdDeviceId(),
+        replyTo: id
+      };
+      const next = (b.anno || []).slice();
+      next.push(item);
+      try { await putAnnos(b.id, b.ch, next); }
+      catch (e) { rdToast((e && e.message) || '回应没写上：磁盘写入没有完成，请重试'); return; }
+      b.anno = next;
+      const fresh = readIndex();
+      const freshBook = rdFindBook(b.id, fresh);
+      if (freshBook) {
+        freshBook.annoCount = (Number(freshBook.annoCount) || 0) + 1;
+        // 我的回应也进队列：他读到这句时可能再回一句
+        if (!Array.isArray(freshBook.replyQueue)) freshBook.replyQueue = [];
+        freshBook.replyQueue.push({ id: item.id, ch: b.ch, s: item.s, e: item.e, quote: item.quote, at: item.at });
+        if (freshBook.replyQueue.length > 200) freshBook.replyQueue = freshBook.replyQueue.slice(-200);
+        saveIndex(fresh);
+      }
+      rdOpenPop(rdPopPos, true);
+      rdToast('已回应');
+    }, { textarea: true, textareaRows: 3, textareaPlaceholder: '说一句…' });
   }
 
   // ===== 自己的批注：长按修改 / 删除（他的批注没有操作入口） =====
@@ -2695,7 +3821,7 @@
     }).join('');
   }
   function rdOpenLost() {
-    closeToc();
+    closeToc(true);
     rdRenderLost();
     const el = document.getElementById('rd-lost');
     if (el) el.hidden = false;
@@ -2732,16 +3858,155 @@
     setTimeout(function () { body.classList.remove(cls); body._rdBounce = 0; }, 200);
   }
 
+  // 翻页动画：paper＝整页绕最左缘翻出去（末端再卷一点，不是硬板），slide＝单层轻滑。
+  // 跨章不播动画：换章要等异步取正文，盖着一张纸干等反而更假。
+  let rdTurnBusyUntil = 0;
+  const RD_CURL_SEGS = 20;
+  const RD_CURL_TURN_DEG = 142; // 整页绕最左缘翻过去的总角度
+  const RD_CURL_CURL_DEG = 14;  // 末端额外卷一点，避免整页像一块硬板
+  function rdCurlTurn(dir, body, reader, mutate) {
+    const br = body.getBoundingClientRect();
+    const rr = reader.getBoundingClientRect();
+    const W = Math.max(1, br.width);
+    const H = Math.max(1, br.height);
+    const N = RD_CURL_SEGS;
+    const sw = W / N;
+    const perDeg = RD_CURL_CURL_DEG / N;
+    const isPrev = dir < 0;
+    // 上一页先换底层，再把新页做成卷起来的纸；下一页反过来
+    if (isPrev) mutate();
+    const html = body.innerHTML;
+    const fs = body.style.fontSize;
+    const lh = body.style.lineHeight;
+    const left = (br.left - rr.left) + 'px';
+    const top = (br.top - rr.top) + 'px';
+    const root = document.createElement('div');
+    root.className = 'rd-curl';
+    if (isPrev) root.classList.add('is-prev');
+    root.style.left = left;
+    root.style.top = top;
+    root.style.width = W + 'px';
+    root.style.height = H + 'px';
+    // 轴心是最左缘（书脊）：整页绕这一条边转出去，不是每段各自从中间折
+    root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? -RD_CURL_TURN_DEG : 0) + 'deg)';
+    root.style.transition = 'none';
+    const segs = [];
+    let parent = root;
+    for (let i = 0; i < N; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'rd-curl-seg';
+      seg.style.left = (i === 0 ? 0 : sw) + 'px';
+      seg.style.width = sw + 'px';
+      seg.style.height = H + 'px';
+      // 每段只叠一点点角度，累积成末端的一点弧度；主旋转在 root 上
+      seg.style.transform = 'rotateY(' + (isPrev ? -perDeg : 0) + 'deg)';
+      seg.style.transition = 'none';
+      const slice = document.createElement('div');
+      slice.className = 'rd-curl-slice';
+      // 越靠掀起的右端越暗，模拟纸背背光
+      slice.style.setProperty('--shade', (0.01 + 0.13 * (i / Math.max(1, N - 1))).toFixed(3));
+      const page = document.createElement('div');
+      page.className = 'rd-body rd-curl-page';
+      page.style.left = (-i * sw) + 'px';
+      page.style.width = W + 'px';
+      page.style.height = H + 'px';
+      if (fs) page.style.fontSize = fs;
+      if (lh) page.style.lineHeight = lh;
+      page.innerHTML = html;
+      slice.appendChild(page);
+      seg.appendChild(slice);
+      parent.appendChild(seg);
+      parent = seg;
+      segs.push(seg);
+    }
+    // 纸页底下的投影
+    const cast = document.createElement('div');
+    cast.className = 'rd-turn-cast';
+    cast.style.left = left;
+    cast.style.top = top;
+    cast.style.width = W + 'px';
+    cast.style.height = H + 'px';
+    cast.style.boxSizing = 'border-box';
+    cast.style.zIndex = '4';
+    if (isPrev) cast.classList.add('is-prev');
+    reader.appendChild(cast);
+    reader.appendChild(root);
+    if (!isPrev) mutate();
+    // 先把「未翻」的初始状态算进布局，否则和后面的目标角度会被合成同一帧，过渡不触发
+    void root.getBoundingClientRect();
+    for (let i = 0; i < N; i++) {
+      const seg = segs[i];
+      const delay = (N - 1 - i) * 6;
+      seg.style.transition = 'transform 760ms cubic-bezier(.32,.06,.22,1) ' + delay + 'ms';
+      seg.style.transform = 'rotateY(' + (isPrev ? 0 : -perDeg) + 'deg)';
+    }
+    root.style.transition = 'transform 880ms cubic-bezier(.32,.06,.22,1)';
+    root.style.transform = 'perspective(1200px) rotateY(' + (isPrev ? 0 : -RD_CURL_TURN_DEG) + 'deg)';
+    const dur = 880 + (N - 1) * 6 + 80;
+    rdTurnBusyUntil = Date.now() + 1000;
+    setTimeout(function () {
+      [root, cast].forEach(function (el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    }, dur);
+  }
+  function rdAnimateTurn(dir, mutate) {
+    const body = document.getElementById('rd-body');
+    const reader = document.getElementById('rd-reader');
+    const mode = rdTurnMode();
+    const now = Date.now();
+    if (!body || !reader || mode === 'off' || now < rdTurnBusyUntil) { mutate(); return; }
+    if (mode === 'paper') { rdCurlTurn(dir, body, reader, mutate); return; }
+    // 轻滑：单层滑出 / 滑入
+    const dur = 200;
+    rdTurnBusyUntil = now + dur - 60;
+    const br = body.getBoundingClientRect();
+    const rr = reader.getBoundingClientRect();
+    const sheet = document.createElement('div');
+    sheet.className = 'rd-body rd-turn-sheet';
+    sheet.style.cssText = body.style.cssText;
+    sheet.style.position = 'absolute';
+    sheet.style.boxSizing = 'border-box';
+    sheet.style.left = (br.left - rr.left) + 'px';
+    sheet.style.top = (br.top - rr.top) + 'px';
+    sheet.style.width = br.width + 'px';
+    sheet.style.height = br.height + 'px';
+    sheet.style.zIndex = '5';
+    sheet.style.pointerEvents = 'none';
+    if (dir > 0) {
+      sheet.innerHTML = body.innerHTML;
+      reader.appendChild(sheet);
+      mutate();
+      sheet.classList.add('rd-turn-next-' + mode);
+    } else {
+      mutate();
+      sheet.innerHTML = body.innerHTML;
+      reader.appendChild(sheet);
+      sheet.classList.add('rd-turn-prev-' + mode);
+    }
+    function done() {
+      if (sheet.parentNode) sheet.parentNode.removeChild(sheet);
+    }
+    sheet.addEventListener('animationend', done);
+    setTimeout(done, dur + 80);
+  }
+
   function rdTurn(dir) {
     const b = rdBook;
     if (!b) return;
     if (dir > 0) {
-      if (b.pageIdx < b.pages.length - 1) { b.pageIdx++; rdRenderPage(); return; }
+      if (b.pageIdx < b.pages.length - 1) {
+        rdAnimateTurn(1, function () { b.pageIdx++; rdRenderPage(); });
+        return;
+      }
       // 先把旧章末尾那句留下来，再翻到下一章（b.ch / b.sents 都是旧章的）
       if (b.ch < b.toc.length - 1) { rdTogChapterNote(b); b.ch++; rdEnsureChapter('first'); return; }
       rdBounce(1);
     } else {
-      if (b.pageIdx > 0) { b.pageIdx--; rdRenderPage(); return; }
+      if (b.pageIdx > 0) {
+        rdAnimateTurn(-1, function () { b.pageIdx--; rdRenderPage(); });
+        return;
+      }
       if (b.ch > 0) { b.ch--; rdEnsureChapter('last'); return; }
       rdBounce(-1);
     }
@@ -2839,6 +4104,112 @@
     body.style.fontSize = (p && p.fs ? p.fs : 17) + 'px';
     body.style.lineHeight = String((p && p.lh) || 1.8);
   }
+  // ===== 阅读背景：auto 跟随全局主题，eye / night 只在阅读器内覆盖 =====
+  const RD_BG_LABEL = { auto: '跟随主题', eye: '护眼', night: '夜间' };
+  function rdReadBg() {
+    try {
+      const v = store.get(RD_BG_KEY);
+      return (v === 'eye' || v === 'night') ? v : 'auto';
+    } catch (e) { return 'auto'; }
+  }
+  function rdApplyBg() {
+    const mode = rdReadBg();
+    const reader = document.getElementById('rd-reader');
+    if (reader) reader.setAttribute('data-rd-bg', mode);
+    const prev = document.getElementById('rd-set-preview');
+    if (prev) prev.setAttribute('data-rd-bg', mode);
+    const drawer = document.getElementById('rd-live-drawer');
+    if (drawer) drawer.setAttribute('data-rd-bg', mode);
+    rdApplyChrome();
+  }
+  // 翻页动画：只存模式名，阅读器翻页时现取
+  function rdSetTurn(mode) {
+    if (mode !== 'paper' && mode !== 'slide' && mode !== 'off') return;
+    try { store.set(RD_TURN_KEY, mode); }
+    catch (e) { rdToast('翻页动画没保存上'); }
+    rdRenderTurnActive();
+  }
+  function rdRenderTurnActive() {
+    const mode = rdTurnMode();
+    document.querySelectorAll('[data-rd-turn]').forEach(function (btn) {
+      btn.classList.toggle('on', btn.getAttribute('data-rd-turn') === mode);
+    });
+    const val = document.getElementById('rd-set-turn-val');
+    if (val) val.textContent = RD_TURN_LABEL[mode];
+  }
+  function rdApplyChrome() {
+    const phone = document.querySelector('.phone');
+    if (!phone) return;
+    const reader = document.getElementById('rd-reader');
+    const mode = rdReadBg();
+    const on = reader && !reader.hidden && (mode === 'eye' || mode === 'night');
+    phone.classList.toggle('rd-chrome-eye', !!on && mode === 'eye');
+    phone.classList.toggle('rd-chrome-night', !!on && mode === 'night');
+  }
+  function rdSetBg(mode) {
+    if (mode !== 'eye' && mode !== 'night') mode = 'auto';
+    try { store.set(RD_BG_KEY, mode); }
+    catch (e) {}
+    rdRenderPrefsActive();
+  }
+  function rdCoopOn() {
+    try { return store.get(RD_COOP_KEY) !== 'off'; }
+    catch (e) { return true; }
+  }
+  function rdSetCoop(on) {
+    try { store.set(RD_COOP_KEY, on ? 'on' : 'off'); }
+    catch (e) {}
+    if (on) {
+      // 重新打开从当下继续：把所有书的更新时间拨到现在，关闭期间不补算他的阅读
+      const list = readIndex();
+      const now = Date.now();
+      for (let i = 0; i < list.length; i++) {
+        const bd = rdBuddyGet(list[i]);
+        if (bd) bd.updatedAt = now;
+      }
+      saveIndex(list);
+    } else {
+      rdTogWatchStop();
+      rdBmClearWait();
+      rdCloseBuddyCard();
+      rdClosePop();
+    }
+    rdRenderPrefsActive();
+    if (rdBook) {
+      const reader = document.getElementById('rd-reader');
+      if (reader && !reader.hidden) {
+        rdRenderPage();
+        rdUpdateBar();
+      }
+    }
+    rdRenderShelf();
+    if (on) rdTogWatchStart();
+    rdToast(on ? '共读已打开' : '共读已关闭');
+  }
+  function rdFlagOn(key) {
+    try { return store.get(key) !== 'off'; }
+    catch (e) { return true; }
+  }
+  function rdLampOn() { return rdFlagOn(RD_LAMP_KEY); }
+  function rdBookmarkOn() { return rdFlagOn(RD_BOOKMARK_KEY); }
+  function rdHabitSyncOn() { return rdFlagOn(RD_HABIT_SYNC_KEY); }
+  function rdSetLamp(on) {
+    try { store.set(RD_LAMP_KEY, on ? 'on' : 'off'); } catch (e) {}
+    rdRenderPrefsActive();
+    if (rdBook) {
+      const reader = document.getElementById('rd-reader');
+      if (reader && !reader.hidden) rdUpdateBar();
+    }
+  }
+  function rdSetBookmark(on) {
+    try { store.set(RD_BOOKMARK_KEY, on ? 'on' : 'off'); } catch (e) {}
+    if (!on) rdBmClearWait();
+    rdRenderPrefsActive();
+  }
+  function rdSetHabitSync(on) {
+    try { store.set(RD_HABIT_SYNC_KEY, on ? 'on' : 'off'); } catch (e) {}
+    rdRenderPrefsActive();
+  }
   function rdSetPrefs(patch) {
     const p = rdReadPrefs();
     if (patch && patch.fs) p.fs = patch.fs;
@@ -2847,7 +4218,11 @@
     catch (e) { rdToast('字号设置没保存上'); }
     rdApplyPrefs(p);
     const b = rdBook;
-    if (b && b.text) {
+    const reader = document.getElementById('rd-reader');
+    const body = document.getElementById('rd-body');
+    // 设置页从书架进入时阅读页是 hidden 的，此时 clientHeight 为 0。
+    // 只改字号不重排，等下次翻开书时由 rdOpenBook 按可见尺寸重新分页，避免写坏页缓存与进度。
+    if (b && b.text && reader && !reader.hidden && body && body.clientHeight > 0) {
       const off = b.pages[b.pageIdx] ? b.pages[b.pageIdx].s : 0;
       // 换字号/行距会重新分页，页码跟着变——这次重绘不算翻页，
       // 否则停留时长会被当成「翻走了一页」而误记一次翻页节奏
@@ -2859,77 +4234,511 @@
     }
     rdRenderPrefsActive();
   }
+  // ===== 主按钮颜色：四档预设，写到书架页与设置页根节点的 CSS 变量 =====
+  const RD_PRIMARY_DEFAULT = 'ink';
+  const RD_PRIMARY_PRESETS = {
+    ink: { name: '墨黑', v: '#111111', ink: '#ffffff' },
+    pink: { name: '阅读粉', v: '#d97a8c', ink: '#ffffff' },
+    blue: { name: '雾蓝', v: '#7893ad', ink: '#ffffff' },
+    brown: { name: '暖棕', v: '#8b6a4b', ink: '#ffffff' }
+  };
+  function rdReadPrimary() {
+    try {
+      const v = String(store.get(RD_PRIMARY_KEY) || '');
+      return RD_PRIMARY_PRESETS[v] ? v : RD_PRIMARY_DEFAULT;
+    } catch (e) { return RD_PRIMARY_DEFAULT; }
+  }
+  function rdApplyPrimary() {
+    const key = rdReadPrimary();
+    const preset = RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT];
+    // 设置页是 .phone 的兄弟页面，不在 #page-reading 里，两个根节点都要写
+    ['page-reading', 'page-reading-settings'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.setProperty('--rd-primary', preset.v);
+      el.style.setProperty('--rd-primary-ink', preset.ink);
+    });
+    rdRenderPrimaryActive();
+  }
+  function rdRenderPrimaryActive() {
+    const key = rdReadPrimary();
+    document.querySelectorAll('[data-rd-primary]').forEach(function (btn) {
+      const on = btn.getAttribute('data-rd-primary') === key;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const val = document.getElementById('rd-set-primary-val');
+    if (val) val.textContent = (RD_PRIMARY_PRESETS[key] || RD_PRIMARY_PRESETS[RD_PRIMARY_DEFAULT]).name;
+  }
+  function rdSetPrimary(key) {
+    if (!RD_PRIMARY_PRESETS[key]) return;
+    try { store.set(RD_PRIMARY_KEY, key); }
+    catch (e) { rdToast('主按钮颜色没保存上'); }
+    rdApplyPrimary();
+  }
   function rdRenderPrefsActive() {
     const p = rdReadPrefs();
-    const box = document.getElementById('rd-prefs');
-    if (!box) return;
-    box.querySelectorAll('[data-fs]').forEach(function (btn) {
-      btn.classList.toggle('on', Number(btn.getAttribute('data-fs')) === p.fs);
+    const fsPct = Math.max(0, Math.min(100, (p.fs - 12) / 18 * 100)) + '%';
+    const lhPct = Math.max(0, Math.min(100, (p.lh - 1.4) / 0.8 * 100)) + '%';
+    const fsRange = document.getElementById('rd-set-fs-range');
+    if (fsRange) {
+      fsRange.value = String(p.fs);
+      fsRange.style.setProperty('--rd-pct', fsPct);
+    }
+    const lhRange = document.getElementById('rd-set-lh-range');
+    if (lhRange) {
+      lhRange.value = String(p.lh);
+      lhRange.style.setProperty('--rd-pct', lhPct);
+    }
+    const prev = document.getElementById('rd-set-preview-text');
+    if (prev) {
+      prev.style.fontSize = p.fs + 'px';
+      prev.style.lineHeight = String(p.lh);
+    }
+    const fsVal = document.getElementById('rd-set-fs-val');
+    if (fsVal) fsVal.textContent = p.fs + 'px';
+    const lhVal = document.getElementById('rd-set-lh-val');
+    if (lhVal) lhVal.textContent = p.lh.toFixed(1);
+    // 他回应批注的概率
+    const replyRange = document.getElementById('rd-set-reply-range');
+    const replyPct = rdReplyChancePct();
+    if (replyRange) {
+      replyRange.value = String(replyPct);
+      replyRange.style.setProperty('--rd-pct', replyPct + '%');
+    }
+    const replyVal = document.getElementById('rd-set-reply-val');
+    if (replyVal) replyVal.textContent = replyPct + '%';
+    // 他读得慢 / 快的频率
+    const slowRange = document.getElementById('rd-set-slow-range');
+    const slowPct = rdSlowChance();
+    if (slowRange) {
+      slowRange.value = String(slowPct);
+      slowRange.style.setProperty('--rd-pct', slowPct + '%');
+    }
+    const slowVal = document.getElementById('rd-set-slow-val');
+    if (slowVal) slowVal.textContent = slowPct + '%';
+    const fastRange = document.getElementById('rd-set-fast-range');
+    const fastPct = rdFastChance();
+    if (fastRange) {
+      fastRange.value = String(fastPct);
+      fastRange.style.setProperty('--rd-pct', fastPct + '%');
+    }
+    const fastVal = document.getElementById('rd-set-fast-val');
+    if (fastVal) fastVal.textContent = fastPct + '%';
+    const bg = rdReadBg();
+    document.querySelectorAll('[data-rd-bgopt]').forEach(function (btn) {
+      btn.classList.toggle('on', btn.getAttribute('data-rd-bgopt') === bg);
     });
-    box.querySelectorAll('[data-lh]').forEach(function (btn) {
-      btn.classList.toggle('on', Number(btn.getAttribute('data-lh')) === p.lh);
-    });
+    const bgVal = document.getElementById('rd-set-bg-val');
+    if (bgVal) bgVal.textContent = RD_BG_LABEL[bg] || RD_BG_LABEL.auto;
+    const coopToggle = document.getElementById('rd-coop-toggle');
+    if (coopToggle) coopToggle.checked = rdCoopOn();
+    const subOn = rdCoopOn();
+    function syncSub(id, on) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.checked = on;
+      el.disabled = !subOn;
+      const row = el.closest('.rd-set-sub');
+      if (row) row.classList.toggle('is-off', !subOn);
+    }
+    syncSub('rd-lamp-toggle', rdLampOn());
+    syncSub('rd-bookmark-toggle', rdBookmarkOn());
+    syncSub('rd-habit-sync-toggle', rdHabitSyncOn());
+    syncSub('rd-reply-tip-toggle', rdReplyTipOn());
+    rdRenderTurnActive();
+    rdApplyBg();
   }
 
-  // ===== 目录 =====
-  function rdRenderToc() {
+  // ===== 目录（右侧抽屉） =====
+  // 批注气泡按可视行懒加载：不为了一本书的目录把每章批注都读一遍。
+  let rdTocBadgeBook = '';
+  let rdTocBadgeCache = {};
+  let rdTocBadgePending = {};
+  let rdTocBadgeObs = null;
+  let rdTocCloseTimer = 0;
+  const RD_MARK_MAX = 100;
+
+  function rdTocPaintProgress(book) {
+    const b = rdBook;
+    if (!b) return;
+    const p = (b.pages && b.pages[b.pageIdx]) || { s: 0, e: 0 };
+    const title = (b.toc[b.ch] && b.toc[b.ch].t) || ('第 ' + (b.ch + 1) + ' 章');
+    const pct = book ? Math.round(rdPosPct(book, b.ch, p.s)) : 0;
+    const cur = document.getElementById('rd-toc-cur');
+    if (cur) cur.textContent = title;
+    const pos = document.getElementById('rd-toc-pos');
+    if (pos) pos.textContent = '第 ' + (b.ch + 1) + ' / ' + b.toc.length + ' 章';
+    const pctEl = document.getElementById('rd-toc-pct');
+    if (pctEl) pctEl.textContent = pct + '%';
+    const bar = document.getElementById('rd-toc-bar-fill');
+    if (bar) bar.style.width = pct + '%';
+  }
+  // 他在哪一章：共读关闭、没起步、今天不读时不显示
+  function rdTocHisCh(book) {
+    if (!rdCoopOn() || !book || !book.buddy || !rdBook) return -1;
+    const bd = book.buddy;
+    if (!bd.started) return -1;
+    if (bd.mode === 'skip' && bd.skipDay === rdTodayKey(Date.now())) return -1;
+    const n = Number(bd.ch);
+    if (!(n >= 0) || n >= rdBook.toc.length) return -1;
+    return n;
+  }
+  function rdTocBadgePaint(ch, n) {
+    const row = document.querySelector('#rd-toc-list .rd-toc-row[data-ch="' + ch + '"]');
+    if (!row) return;
+    const el = row.querySelector('.rd-toc-badge');
+    if (!el) return;
+    if (n > 0) { el.textContent = n > 99 ? '99+' : String(n); el.hidden = false; }
+    else { el.textContent = ''; el.hidden = true; }
+  }
+  function rdTocBadgeFetch(ch) {
+    const b = rdBook;
+    if (!b) return;
+    if (rdTocBadgeCache[ch] !== undefined || rdTocBadgePending[ch]) return;
+    rdTocBadgePending[ch] = true;
+    getAnnos(b.id, ch).then(function (arr) {
+      rdTocBadgePending[ch] = false;
+      if (!rdBook || rdBook.id !== b.id) return;
+      const list = Array.isArray(arr) ? arr : [];
+      let me = 0;
+      for (let i = 0; i < list.length; i++) if (list[i] && list[i].by === 'me') me++;
+      const rec = { me: me, all: list.length };
+      rdTocBadgeCache[ch] = rec;
+      rdTocBadgePaint(ch, rdCoopOn() ? rec.all : rec.me);
+    }).catch(function () { rdTocBadgePending[ch] = false; });
+  }
+  function rdTocBadgesBind() {
+    const list = document.getElementById('rd-toc-list');
+    if (!list) return;
+    if (rdTocBadgeObs) { rdTocBadgeObs.disconnect(); rdTocBadgeObs = null; }
+    const rows = list.querySelectorAll('.rd-toc-row[data-ch]');
+    for (let i = 0; i < rows.length; i++) {
+      const ch = parseInt(rows[i].getAttribute('data-ch'), 10);
+      const rec = rdTocBadgeCache[ch];
+      if (rec) rdTocBadgePaint(ch, rdCoopOn() ? rec.all : rec.me);
+    }
+    if (!window.IntersectionObserver) return;
+    rdTocBadgeObs = new IntersectionObserver(function (entries) {
+      for (let i = 0; i < entries.length; i++) {
+        if (!entries[i].isIntersecting) continue;
+        const row = entries[i].target;
+        rdTocBadgeObs.unobserve(row);
+        const ch = parseInt(row.getAttribute('data-ch'), 10);
+        if (!isNaN(ch)) rdTocBadgeFetch(ch);
+      }
+    }, { root: list, rootMargin: '120px 0px' });
+    for (let i = 0; i < rows.length; i++) {
+      const ch = parseInt(rows[i].getAttribute('data-ch'), 10);
+      if (isNaN(ch) || rdTocBadgeCache[ch] !== undefined) continue;
+      rdTocBadgeObs.observe(rows[i]);
+    }
+  }
+  function rdTocBadgeDirty(id, ch) {
+    if (!rdBook || rdBook.id !== id) return;
+    delete rdTocBadgeCache[ch];
+    delete rdTocBadgePending[ch];
+    const toc = document.getElementById('rd-toc');
+    if (toc && !toc.hidden) rdTocBadgeFetch(ch);
+  }
+  function rdRenderToc(scrollCur) {
     const list = document.getElementById('rd-toc-list');
     if (!list) return;
     const b = rdBook;
+    const book = b ? rdFindBook(b.id, readIndex()) : null;
+    rdTocPaintProgress(book);
     let html = '';
     if (b) {
+      const q = String((document.getElementById('rd-toc-search') || {}).value || '').trim().toLowerCase();
+      const hisCh = rdTocHisCh(book);
+      let shown = 0;
       for (let i = 0; i < b.toc.length; i++) {
         const t = b.toc[i] || {};
-        html += '<button class="rd-toc-row' + (i === b.ch ? ' on' : '') + '" data-ch="' + i + '" type="button">' +
+        const title = t.t || ('第 ' + (i + 1) + ' 章');
+        if (q && title.toLowerCase().indexOf(q) < 0 && String(i + 1).indexOf(q) < 0) continue;
+        shown++;
+        html += '<button class="rd-toc-row' + (i === b.ch ? ' on' : '') + (i < b.ch ? ' is-read' : '') + '" data-ch="' + i + '" type="button">' +
           '<span class="rd-toc-n">' + (i + 1) + '</span>' +
-          '<span class="rd-toc-t">' + rdEsc(t.t || ('第 ' + (i + 1) + ' 章')) + '</span></button>';
+          '<span class="rd-toc-t">' + rdEsc(title) + '</span>' +
+          '<span class="rd-toc-flags">' +
+            (i === hisCh ? '<span class="rd-toc-him" title="他在这一章">他</span>' : '') +
+            '<span class="rd-toc-badge" data-badge="' + i + '" hidden></span>' +
+          '</span></button>';
       }
-      const book = rdFindBook(b.id, readIndex());
-      const lost = book && Array.isArray(book.lostAnnos) ? book.lostAnnos.length : 0;
-      if (lost) {
-        html += '<button class="rd-toc-row rd-toc-lost" data-lost="1" type="button">未定位批注（' + lost + '）</button>';
+      if (!shown) html += '<div class="rd-toc-none">没有匹配的章节</div>';
+      if (!q) {
+        const lost = book && Array.isArray(book.lostAnnos) ? book.lostAnnos.length : 0;
+        if (lost) {
+          html += '<button class="rd-toc-row rd-toc-lost" data-lost="1" type="button">未定位批注（' + lost + '）</button>';
+        }
       }
     }
     list.innerHTML = html;
+    if (scrollCur) {
+      const cur = list.querySelector('.rd-toc-row.on');
+      if (cur && cur.scrollIntoView) { try { cur.scrollIntoView({ block: 'center' }); } catch (e) {} }
+    }
+    rdTocBadgesBind();
+    rdTocUpdateNow();
+  }
+  function rdTocUpdateNow() {
+    const list = document.getElementById('rd-toc-list');
+    const btn = document.getElementById('rd-toc-now');
+    if (!list || !btn) return;
+    const search = document.getElementById('rd-toc-search');
+    if (search && String(search.value || '').trim()) { btn.hidden = true; return; }
     const cur = list.querySelector('.rd-toc-row.on');
-    if (cur && cur.scrollIntoView) { try { cur.scrollIntoView({ block: 'center' }); } catch (e) {} }
+    if (!cur) { btn.hidden = true; return; }
+    const lr = list.getBoundingClientRect();
+    const cr = cur.getBoundingClientRect();
+    btn.hidden = !(cr.bottom < lr.top + 6 || cr.top > lr.bottom - 6);
+  }
+  function rdTocShowTab(name) {
+    const tabs = document.querySelectorAll('#rd-toc-tabs .rd-toc-tab');
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('on', tabs[i].getAttribute('data-rtab') === name);
+    }
+    const pt = document.getElementById('rd-toc-pane-toc');
+    const pm = document.getElementById('rd-toc-pane-marks');
+    if (pt) pt.hidden = name !== 'toc';
+    if (pm) pm.hidden = name !== 'marks';
+    const search = document.getElementById('rd-toc-search');
+    if (search) search.hidden = name !== 'toc';
+    if (name === 'marks') rdMarkRenderList();
   }
   function openToc() {
     const toc = document.getElementById('rd-toc');
-    if (!toc) return;
+    const mask = document.getElementById('rd-toc-mask');
+    if (!toc || !mask || !rdBook) return;
     rdCloseBuddyCard();
-    rdRenderToc();
+    if (rdTocCloseTimer) { clearTimeout(rdTocCloseTimer); rdTocCloseTimer = 0; }
+    if (rdTocBadgeBook !== rdBook.id) {
+      rdTocBadgeBook = rdBook.id;
+      rdTocBadgeCache = {};
+      rdTocBadgePending = {};
+    }
+    toc.classList.remove('rd-toc-out');
+    mask.classList.remove('rd-toc-out');
     toc.hidden = false;
-    const prefs = document.getElementById('rd-prefs');
-    if (prefs) prefs.hidden = true;
+    mask.hidden = false;
+    // 列表可能在页面首次构建前不存在：滚动监听在这里补绑一次
+    const listEl = document.getElementById('rd-toc-list');
+    if (listEl && !listEl.__rdScrollBound) {
+      listEl.__rdScrollBound = true;
+      listEl.addEventListener('scroll', rdTocUpdateNow, { passive: true });
+    }
+    const search = document.getElementById('rd-toc-search');
+    if (search) search.value = '';
+    rdTocShowTab('toc');
+    rdRenderToc(true);
+    rdMarkRenderList();
   }
-  function closeToc() {
+  function closeToc(instant) {
     const toc = document.getElementById('rd-toc');
-    if (toc) toc.hidden = true;
+    const mask = document.getElementById('rd-toc-mask');
+    if (!toc || toc.hidden) return;
+    if (instant) {
+      if (rdTocCloseTimer) { clearTimeout(rdTocCloseTimer); rdTocCloseTimer = 0; }
+      toc.hidden = true;
+      toc.classList.remove('rd-toc-out');
+      if (mask) { mask.hidden = true; mask.classList.remove('rd-toc-out'); }
+      return;
+    }
+    toc.classList.add('rd-toc-out');
+    if (mask) mask.classList.add('rd-toc-out');
+    if (rdTocCloseTimer) clearTimeout(rdTocCloseTimer);
+    rdTocCloseTimer = setTimeout(function () {
+      rdTocCloseTimer = 0;
+      toc.hidden = true;
+      toc.classList.remove('rd-toc-out');
+      if (mask) { mask.hidden = true; mask.classList.remove('rd-toc-out'); }
+    }, 170);
   }
   function rdJumpChapter(i) {
     const b = rdBook;
     if (!b) return;
     const n = parseInt(i, 10);
     if (!(n >= 0 && n < b.toc.length)) return;
-    closeToc();
+    closeToc(true);
     b.ch = n;
     b.off = 0;
     rdEnsureChapter('first');
   }
 
+  // ===== 书签（我的，不是共读里的折角书签） =====
+  function rdMarkSnippet(b, p) {
+    const text = String((b && b.text) || '');
+    let q = text.slice(p.s, Math.min(p.e, p.s + 36)).replace(/\s+/g, ' ').trim();
+    const title = (b && b.toc && b.toc[b.ch] && b.toc[b.ch].t) || '';
+    // 第一页开头就是章节标题，书签里再抄一遍会和上面的章名重复
+    if (title && q.indexOf(title) === 0) q = q.slice(title.length).trim();
+    if (q) return q;
+    return title || '这一页';
+  }
+  function rdMarkSorted(book) {
+    const marks = book && Array.isArray(book.marks) ? book.marks.slice() : [];
+    marks.sort(function (a, c) {
+      return (Number(a.ch) || 0) - (Number(c.ch) || 0) || (Number(a.off) || 0) - (Number(c.off) || 0);
+    });
+    return marks;
+  }
+  function rdMarkTime(ts) {
+    const d = new Date(Number(ts) || 0);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) {
+      return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+    return (d.getMonth() + 1) + '/' + d.getDate();
+  }
+  function rdMarkCurPageHit(book, b) {
+    const p = b && b.pages && b.pages[b.pageIdx];
+    if (!book || !p) return -1;
+    const marks = Array.isArray(book.marks) ? book.marks : [];
+    const end = String((b && b.text) || '').length;
+    for (let i = 0; i < marks.length; i++) {
+      const m = marks[i];
+      if (!m || Number(m.ch) !== b.ch) continue;
+      const off = Number(m.off) || 0;
+      if (off >= p.s && (off < p.e || (p.e >= end && off <= p.e))) return i;
+    }
+    return -1;
+  }
+  function rdMarkUpdateBtn() {
+    const btn = document.getElementById('rd-mark-btn');
+    if (!btn) return;
+    const b = rdBook;
+    let on = false;
+    if (b) {
+      const book = rdFindBook(b.id, readIndex());
+      on = rdMarkCurPageHit(book, b) >= 0;
+    }
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.title = on ? '取消这个书签' : '书签当前页';
+  }
+  function rdMarkToggle() {
+    const b = rdBook;
+    if (!b) return;
+    const list = readIndex();
+    const book = rdFindBook(b.id, list);
+    const p = b.pages[b.pageIdx];
+    if (!book || !p) return;
+    const hit = rdMarkCurPageHit(book, b);
+    const marks = Array.isArray(book.marks) ? book.marks.slice() : [];
+    if (hit >= 0) {
+      marks.splice(hit, 1);
+      book.marks = marks;
+      if (saveIndex(list)) rdToast('已取消这个书签');
+    } else {
+      if (marks.length >= RD_MARK_MAX) { rdToast('一本书最多 ' + RD_MARK_MAX + ' 个书签'); return; }
+      marks.push({ ch: b.ch, off: p.s, q: rdMarkSnippet(b, p), at: Date.now() });
+      marks.sort(function (a, c) {
+        return (Number(a.ch) || 0) - (Number(c.ch) || 0) || (Number(a.off) || 0) - (Number(c.off) || 0);
+      });
+      book.marks = marks;
+      if (saveIndex(list)) rdToast('已加书签，在目录的「书签」里');
+    }
+    rdMarkUpdateBtn();
+    const toc = document.getElementById('rd-toc');
+    if (toc && !toc.hidden) rdMarkRenderList();
+  }
+  function rdMarkRenderList() {
+    const listEl = document.getElementById('rd-mark-list');
+    if (!listEl) return;
+    const b = rdBook;
+    const book = b ? rdFindBook(b.id, readIndex()) : null;
+    const marks = rdMarkSorted(book);
+    const tabN = document.getElementById('rd-mark-tab-n');
+    if (tabN) { tabN.textContent = marks.length ? String(marks.length) : ''; tabN.hidden = !marks.length; }
+    if (!b || !marks.length) {
+      listEl.innerHTML = '<div class="rd-mark-empty">还没有书签<br>阅读时点右上角的书签图标，收下当前这页</div>';
+      return;
+    }
+    let html = '';
+    for (let i = 0; i < marks.length; i++) {
+      const m = marks[i];
+      const ch = Math.max(0, Math.min(Number(m.ch) || 0, b.toc.length - 1));
+      const t = (b.toc[ch] && b.toc[ch].t) || ('第 ' + (ch + 1) + ' 章');
+      const pct = Math.round(rdPosPct(book, ch, Number(m.off) || 0));
+      html += '<div class="rd-mark-row">' +
+        '<button class="rd-mark-main" data-mark="' + i + '" type="button">' +
+          '<span class="rd-mark-ch">' + rdEsc(t) + '</span>' +
+          '<span class="rd-mark-q">' + rdEsc(m.q || '这一页') + '</span>' +
+          '<span class="rd-mark-meta">' + pct + '% · ' + rdMarkTime(m.at) + '</span>' +
+        '</button>' +
+        '<button class="rd-mark-del" data-mark-del="' + i + '" type="button" aria-label="删除书签">✕</button>' +
+      '</div>';
+    }
+    listEl.innerHTML = html;
+  }
+  function rdMarkJump(i) {
+    const b = rdBook;
+    if (!b) return;
+    const marks = rdMarkSorted(rdFindBook(b.id, readIndex()));
+    const m = marks[parseInt(i, 10)];
+    if (!m) return;
+    closeToc(true);
+    b.ch = Math.max(0, Math.min(Number(m.ch) || 0, b.toc.length - 1));
+    b.off = Math.max(0, Number(m.off) || 0);
+    rdEnsureChapter('offset');
+  }
+  function rdMarkDelete(i) {
+    const b = rdBook;
+    if (!b) return;
+    const m = rdMarkSorted(rdFindBook(b.id, readIndex()))[parseInt(i, 10)];
+    if (!m) return;
+    const doDel = function () {
+      const fresh = readIndex();
+      const fb = rdFindBook(b.id, fresh);
+      if (!fb || !Array.isArray(fb.marks)) return;
+      let removed = false;
+      fb.marks = fb.marks.filter(function (x) {
+        if (!removed && Number(x.ch) === Number(m.ch) && Number(x.off) === Number(m.off) && Number(x.at) === Number(m.at)) {
+          removed = true;
+          return false;
+        }
+        return true;
+      });
+      if (saveIndex(fresh)) { rdToast('已删除书签'); rdMarkRenderList(); rdMarkUpdateBtn(); }
+    };
+    if (!window.openModal) { doDel(); return; }
+    window.openModal('删除这个书签', '', doDel, { noInput: true, staticText: '「' + (m.q || '这一页') + '」', warn: true });
+  }
+
   // ===== 书架渲染 =====
-  const RD_COLORS = ['#f4b6c2', '#c9d8f0', '#cfe8d5', '#f3e0b5', '#e2cdf0', '#f5cdb8', '#c8e4e8', '#ddd7f0'];
+  // 封面暖色板（取自设计稿）：每对「浅底 / 深块」，书脊用深块纯色，网格封面用浅→深渐变
+  // 顺序按色相拉开（粉灰→灰绿→驼→灰驼→米→灰紫），保证同一排书脊相邻不同色
+  const RD_COVER_PAIRS = [
+    ['#e9d9d2', '#c9aca4'],
+    ['#dee5e0', '#adbbb2'],
+    ['#e7e0cd', '#c4b795'],
+    ['#e4ded2', '#bcb19a'],
+    ['#efe5d6', '#d8c9b0'],
+    ['#e6dfe8', '#b6aabd']
+  ];
+  // 默认分组首册：深底浅字，和设计稿第一张卡的第一根书脊一致
+  const RD_COVER_DEEP_BG = '#2f2920';
+  const RD_COVER_DEEP_INK = '#f3ecdd';
   function rdEsc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function rdCoverColor(title) {
-    const s = String(title || '');
-    let n = 0;
-    for (let i = 0; i < s.length; i++) n += s.charCodeAt(i);
-    return RD_COLORS[n % RD_COLORS.length];
+  // 按位置取色（不走书名哈希）：同一排书脊必然相邻不同色，首卡与设计稿一致
+  function rdCoverAt(idx) {
+    const n = RD_COVER_PAIRS.length;
+    return RD_COVER_PAIRS[((idx % n) + n) % n];
+  }
+  // 书脊纯色（深块）
+  function rdCoverColor(idx) {
+    return rdCoverAt(idx)[1];
+  }
+  // 网格封面：浅→深 150deg 渐变，同设计稿
+  function rdCoverGrad(idx) {
+    const p = rdCoverAt(idx);
+    return 'linear-gradient(150deg,' + p[0] + ',' + p[1] + ')';
   }
   // 全书进度：优先用索引里的 chWords（章字数表）精确算；缺表时退回按章数估。
   function rdProgressPct(book) {
@@ -2951,9 +4760,17 @@
   function rdBadgeText(b) {
     if (!b) return '';
     if (b.missing) return '待重新导入';
+    if (!rdCoopOn()) return '';
     const st = rdBuddyState(b);
+    // 落后太久就别在书架上一直提醒了，退回普通「共读中」
+    const bd = rdBuddyGet(b);
+    const stuck = (st === 'behind' || st === 'far') && bd && bd.behindSince &&
+      (Date.now() - Number(bd.behindSince) >= RD_BUDDY_QUIET_MS);
+    if (stuck) return '共读中';
     if (st === 'done') return '他读完了';
     if (st === 'wait') return '等你';
+    if (st === 'behind') return '在你后面';
+    if (st === 'far') return '还没追上来';
     if (st === 'skip') return '今天不读';
     if (st === 'none') return '未开始';
     return '共读中';
@@ -2961,73 +4778,572 @@
   function rdRenderShelf() {
     const grid = document.getElementById('rd-grid');
     const empty = document.getElementById('rd-empty');
+    const hero = document.getElementById('rd-hero');
+    const stat = document.getElementById('rd-stat');
+    const groupsBlock = document.getElementById('rd-groups-block');
+    const ggrid = document.getElementById('rd-ggrid');
     if (!grid) return;
-    // 顶栏收放跟着导入面板的开关走：从阅读器返回、重开本页时也靠这里同步回来
+    // 顶栏收放跟着导入面板的开关走
     const shelfEl = document.getElementById('rd-shelf');
     const impPanel = document.getElementById('rd-import-panel');
     if (shelfEl) shelfEl.classList.toggle('rd-importing', !!(impPanel && !impPanel.hidden));
     const list = readIndex().slice();
     list.sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
-    let html = '';
-    for (let i = 0; i < list.length; i++) {
-      const b = list[i];
-      if (!b || !b.id) continue;
-      const title = b.title || '未命名';
-      // 累计同读每满三次，书脊上多一道细纹
-      const spine = rdTogSpine(b);
-      let ribs = '';
-      for (let k = 0; k < spine; k++) ribs += '<i></i>';
-      html += '<div class="rd-book" data-id="' + rdEsc(b.id) + '">' +
-        '<div class="rd-cover" style="background:' + rdCoverColor(title) + '">' + rdEsc(title.slice(0, 1) || '书') +
-          (ribs ? '<span class="rd-spine">' + ribs + '</span>' : '') + '</div>' +
-        '<div class="rd-line"><i style="width:' + rdProgressPct(b) + '%"></i></div>' +
-        '<div class="rd-book-title">' + rdEsc(title) + '</div>' +
-        '<span class="rd-badge">' + rdEsc(rdBadgeText(b)) + '</span>' +
-      '</div>';
+
+    // ========== 空书架 ==========
+    if (list.length === 0) {
+      if (hero) hero.hidden = true;
+      if (stat) stat.hidden = true;
+      if (groupsBlock) groupsBlock.hidden = true;
+      grid.innerHTML = '';
+      if (empty) empty.hidden = false;
+      const ledger = document.getElementById('rd-ledger');
+      if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+      const usage = document.getElementById('rd-usage');
+      if (usage) { usage.hidden = true; usage.textContent = ''; }
+      const detailEl = document.getElementById('rd-detail');
+      if (detailEl) detailEl.hidden = true;
+      rdViewGroupId = null;
+      return;
     }
-    grid.innerHTML = html;
-    if (empty) empty.hidden = list.length > 0;
-    // 共读手账：只给章序号，不给内容；七天没读到改口「他还在等」，十四天收回
+    if (empty) empty.hidden = true;
+
+    // ========== 分组详情页 ==========
+    const detail = document.getElementById('rd-detail');
+    if (rdViewGroupId !== null && detail) {
+      hero && (hero.hidden = true);
+      stat && (stat.hidden = true);
+      groupsBlock && (groupsBlock.hidden = true);
+      grid && (grid.innerHTML = '');
+      const ledger = document.getElementById('rd-ledger');
+      if (ledger) { ledger.innerHTML = ''; ledger.hidden = true; }
+      const allBooks = list.slice();
+      const inGroup = rdViewGroupId === RD_DEFAULT_GROUP_ID
+        ? allBooks
+        : allBooks.filter(function (b) { return b && b.gid === rdViewGroupId; });
+      // 胶囊筛选
+      let filtered = inGroup;
+      if (rdViewGroupPill === 'reading') {
+        filtered = inGroup.filter(function (b) { return b && rdProgressPct(b) > 0 && rdProgressPct(b) < 100; });
+      } else if (rdViewGroupPill === 'done') {
+        filtered = inGroup.filter(function (b) { return b && rdProgressPct(b) >= 100; });
+      }
+      // 置顶的书固定排在最前，其余按最近阅读
+      filtered.sort(function (a, b) {
+        const pa = (a && a.pinned) ? 1 : 0, pb = (b && b.pinned) ? 1 : 0;
+        if (pa !== pb) return pb - pa;
+        return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0);
+      });
+      // 组名
+      let gname = '全部书籍';
+      if (rdViewGroupId !== RD_DEFAULT_GROUP_ID) {
+        const groups = rdGroupLoad();
+        for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i].id === rdViewGroupId) { gname = groups[i].name || '未命名'; break; }
+      }
+      const ddT = document.getElementById('rd-dd-t');
+      if (ddT) ddT.innerHTML = rdEsc(gname) + ' <span>· ' + filtered.length + ' 本</span>';
+      // 胶囊 active
+      const pills = document.querySelectorAll('#rd-dd-pills .rd-dd-pill');
+      for (let i = 0; i < pills.length; i++) {
+        pills[i].classList.toggle('on', pills[i].getAttribute('data-pill') === rdViewGroupPill);
+      }
+      if (filtered.length === 0) {
+        detail.hidden = false;
+        // 只清内容、不删结构：切回「全部」时还能重新填回来
+        const ftag0 = document.getElementById('rd-dd-ftag');
+        if (ftag0) { ftag0.textContent = ''; ftag0.hidden = true; }
+        const ft0 = document.getElementById('rd-dd-ft'); if (ft0) ft0.textContent = '';
+        const fm0 = document.getElementById('rd-dd-fm'); if (fm0) fm0.textContent = '';
+        const fcov0 = document.querySelector('.rd-dd-fcov'); if (fcov0) fcov0.removeAttribute('data-id');
+        const flist0 = document.getElementById('rd-dd-flist'); if (flist0) flist0.innerHTML = '';
+        const ddGrid0 = document.getElementById('rd-dd-grid');
+        if (ddGrid0) ddGrid0.innerHTML = '<div class="rd-dd-none">这里还没有书</div>';
+        const gridw0 = document.getElementById('rd-dd-gridwrap'); if (gridw0) gridw0.hidden = false;
+        const usage = document.getElementById('rd-usage'); if (usage) usage.hidden = true;
+        return;
+      }
+      // 特色大卡
+      const feat = document.getElementById('rd-dd-feat');
+      if (feat) {
+        const fc = filtered[0];
+        const tagHtml = fc && rdCoopOn() && fc.buddy && fc.buddy.started
+          ? '<span class="rd-dd-ftag">共读中</span>'
+          : '';
+        const ftag = document.getElementById('rd-dd-ftag'); if (ftag) { ftag.textContent = tagHtml ? '共读中' : ''; ftag.hidden = !tagHtml; }
+        const ft = document.getElementById('rd-dd-ft'); if (ft) ft.textContent = fc ? (fc.title || '未命名') : '';
+        const fm = document.getElementById('rd-dd-fm');
+        if (fm) {
+          const pct = fc ? rdProgressPct(fc) : 0;
+          fm.textContent = pct >= 100 ? '最近阅读 · 读完' : ('最近阅读 · ' + pct + '%');
+        }
+        // 封面点击：打开第一本书（走事件委托，长按弹菜单时不会再误触）
+        const fcov = feat.querySelector('.rd-dd-fcov');
+        if (fcov) {
+          if (fc) fcov.setAttribute('data-id', fc.id); else fcov.removeAttribute('data-id');
+          fcov.classList.toggle('rd-fcov-pin', !!(fc && fc.pinned));
+          // 他新回了批注：封面右上角加一个小点（用真实元素，伪元素已被高光占用）
+          const needDot = rdReplyTipOn() && fc && fc.replyNewAt && fc.replyNewAt > (fc.annoSeenAt || 0);
+          let dot = fcov.querySelector('.rd-dd-new');
+          if (needDot) {
+            if (!dot) {
+              dot = document.createElement('i');
+              dot.className = 'rd-dd-new';
+              dot.setAttribute('aria-label', '有新回应');
+              fcov.appendChild(dot);
+            }
+          } else if (dot) {
+            dot.parentNode.removeChild(dot);
+          }
+        }
+        // 右侧列表
+        const flist = document.getElementById('rd-dd-flist');
+        let flhtml = '';
+        for (let i = 1; i < Math.min(3, filtered.length); i++) {
+          const b = filtered[i];
+          const pct = rdProgressPct(b);
+          const pctText = pct >= 100 ? '读完' : (pct + '%');
+          flhtml += '<div class="rd-dd-frow" data-id="' + rdEsc(b.id) + '">' +
+            '<span class="rd-dd-fn">' + (i + 1 < 10 ? '0' + (i + 1) : (i + 1)) + '</span>' +
+            '<div class="rd-dd-fi"><div class="rd-dd-fit">' + rdEsc(b.title || '未命名') + '</div>' +
+            '<div class="rd-dd-fim">' + pctText + '</div></div><span class="rd-dd-fch">›</span></div>';
+        }
+        if (flist) flist.innerHTML = flhtml;
+      }
+      // 错落书架网格
+      const ddGrid = document.getElementById('rd-dd-grid');
+      // 书不足 4 本时网格区没有内容，收起 272px 的留白
+      const ddGridWrap = document.getElementById('rd-dd-gridwrap');
+      if (ddGridWrap) ddGridWrap.hidden = filtered.length <= 3;
+      if (ddGrid) {
+        let ghtml = '';
+        for (let i = 3; i < filtered.length; i++) {
+          const b = filtered[i];
+          const pct = rdProgressPct(b);
+          const pctText = pct >= 100 ? '读完' : (pct + '%');
+          const tc = rdCoverGrad(i);
+          const newRep = rdReplyTipOn() && b.replyNewAt && b.replyNewAt > (b.annoSeenAt || 0);
+          ghtml += '<div class="rd-dd-gi" data-id="' + rdEsc(b.id) + '">' +
+            '<div class="rd-dd-gc" style="background:' + tc + '">' + rdEsc((b.title || '书').slice(0, 1)) +
+              (b.pinned ? '<i class="rd-dd-pin" aria-label="已置顶"></i>' : '') +
+              (newRep ? '<i class="rd-dd-new" aria-label="有新回应"></i>' : '') + '</div>' +
+            '<div class="rd-dd-gt">' + rdEsc(b.title || '未命名') + '</div>' +
+            '<div class="rd-dd-gm">' + pctText + '</div></div>';
+        }
+        ddGrid.innerHTML = ghtml;
+      }
+      // 渐隐只在「还有更多」时出现；滚到底淡出，最后一排完整可见
+      const ddScroll = document.querySelector('.rd-dd-gridscroll');
+      const ddFade = document.querySelector('.rd-dd-fade');
+      if (ddScroll && ddFade) {
+        const syncFade = function () {
+          const atBottom = ddScroll.scrollTop + ddScroll.clientHeight >= ddScroll.scrollHeight - 2;
+          const noMore = ddScroll.scrollHeight <= ddScroll.clientHeight + 2;
+          ddFade.style.opacity = (atBottom || noMore) ? '0' : '1';
+        };
+        if (!ddScroll.__rdFadeBound) {
+          ddScroll.__rdFadeBound = true;
+          ddScroll.addEventListener('scroll', syncFade, { passive: true });
+        }
+        syncFade();
+      }
+      detail.hidden = false;
+      // 用量
+      const usage = document.getElementById('rd-usage');
+      if (usage) {
+        let bytes = 0;
+        for (let i = 0; i < allBooks.length; i++) bytes += ((allBooks[i] && allBooks[i].size) || 0);
+        usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + allBooks.length + ' 本';
+        usage.hidden = false;
+        usage.classList.add('rd-dd-foot');
+      }
+      return;
+    }
+
+    // ========== Hero 深色封面卡 ==========
+    const heroBook = list[0];
+    if (heroBook && hero) {
+      hero.hidden = false;
+      const d = new Date();
+      const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      const pct = rdProgressPct(heroBook);
+      const hDate = document.getElementById('rd-hero-date');
+      if (hDate) hDate.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · ' + wd[d.getDay()];
+      const hPct = document.getElementById('rd-hero-pct');
+      if (hPct) hPct.textContent = '上次读到 ' + pct + '%';
+      const hTitle = document.getElementById('rd-hero-title');
+      if (hTitle) hTitle.textContent = '《' + (heroBook.title || '未命名') + '》';
+      const hTxt = document.getElementById('rd-hero-txt');
+      if (hTxt) hTxt.hidden = false;
+      const hCoop = document.getElementById('rd-hero-coop');
+      if (hCoop) {
+        const on = rdCoopOn() && heroBook.buddy && heroBook.buddy.started;
+        hCoop.textContent = on ? rdBadgeText(heroBook) : '';
+        hCoop.hidden = !on;
+      }
+      const hBar = document.getElementById('rd-hero-bar-fill');
+      if (hBar) hBar.style.width = pct + '%';
+      const hGo = document.getElementById('rd-hero-go');
+      if (hGo) hGo.setAttribute('data-id', heroBook.id);
+    } else if (hero) hero.hidden = true;
+
+    // ========== 阅读记录（去卡片化，无叙事句） ==========
+    if (stat) {
+      const hab = rdHabitLoad();
+      const todayKey = rdTodayKey();
+      const me = (hab && hab.me) || {};
+      const today = me[todayKey] || { sec: 0, pages: 0 };
+      const todayMin = Math.round((today.sec || 0) / 60);
+      const pageCount = today.pages || 0;
+      let weekSec = 0;
+      const sortedDays = Object.keys(me).sort(function (a, b) { return rdDayTs(b) - rdDayTs(a); });
+      for (let i = 0; i < Math.min(7, sortedDays.length); i++) {
+        const d = me[sortedDays[i]];
+        if (d && d.sec) weekSec += d.sec;
+      }
+      const weekHrs = Math.round((weekSec / 3600) * 10) / 10;
+      let doneN = 0;
+      for (let i = 0; i < list.length; i++) if (list[i] && rdProgressPct(list[i]) >= 100) doneN++;
+      stat.hidden = false;
+      const stH = document.getElementById('rd-stat-h');
+      if (stH) stH.textContent = '今天读了 ' + todayMin + ' 分钟';
+      const stP = document.getElementById('rd-stat-pages');
+      if (stP) stP.textContent = pageCount;
+      const stW = document.getElementById('rd-stat-week');
+      if (stW) stW.textContent = weekHrs;
+      const stD = document.getElementById('rd-stat-done');
+      if (stD) stD.textContent = doneN;
+    }
+
+    // ========== 共读手账（原样保留） ==========
     const ledger = document.getElementById('rd-ledger');
     if (ledger) {
-      const now = Date.now();
-      const DAY = 86400000;
-      let led = '';
-      let dirty = false;
-      const drops = [];
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        if (!b || !Array.isArray(b.sealed) || !b.sealed.length) continue;
-        const keep = [];
-        for (let j = 0; j < b.sealed.length; j++) {
-          const s = b.sealed[j];
-          if (!s || !s.at) continue;
-          const age = now - s.at;
-          if (age >= RD_SEAL_DROP_DAYS * DAY) { drops.push({ id: b.id, s: s }); dirty = true; continue; }
-          keep.push(s);
-          const chNo = (Number(s.ch) || 0) + 1;
-          const days = Math.floor(age / DAY);
-          const sameDay = rdTodayKey(s.at) === rdTodayKey();
-          const line = days >= RD_SEAL_WAIT_DAYS
-            ? '他还在等'
-            : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
-          led += '<div class="rd-ledger-row"><span class="t">《' + rdEsc(b.title || '未命名') + '》' + rdEsc(line) +
-            '</span><span class="a">第 ' + chNo + ' 章</span></div>';
+      if (!rdCoopOn()) {
+        ledger.innerHTML = '';
+        ledger.hidden = true;
+      } else {
+        const now = Date.now();
+        const DAY = 86400000;
+        let led = '';
+        let dirty = false;
+        const drops = [];
+        for (let i = 0; i < list.length; i++) {
+          const b = list[i];
+          if (!b || !Array.isArray(b.sealed) || !b.sealed.length) continue;
+          const keep = [];
+          for (let j = 0; j < b.sealed.length; j++) {
+            const s = b.sealed[j];
+            if (!s || !s.at) continue;
+            const age = now - s.at;
+            if (age >= RD_SEAL_DROP_DAYS * DAY) { drops.push({ id: b.id, s: s }); dirty = true; continue; }
+            keep.push(s);
+            const chNo = (Number(s.ch) || 0) + 1;
+            const days = Math.floor(age / DAY);
+            const sameDay = rdTodayKey(s.at) === rdTodayKey();
+            const line = days >= RD_SEAL_WAIT_DAYS
+              ? '他还在等'
+              : (sameDay ? '他今天折了一句' : '他 ' + Math.max(1, days) + ' 天前折了一句');
+            led += '<div class="rd-ledger-row"><div class="rd-lmain"><span class="rd-lbook">《' + rdEsc(b.title || '未命名') + '》</span><span class="rd-lnote">' + rdEsc(line) + '</span></div><span class="rd-lch">第 ' + chNo + ' 章</span></div>';
+          }
+          if (keep.length !== b.sealed.length) b.sealed = keep;
         }
-        if (keep.length !== b.sealed.length) b.sealed = keep;
+        if (dirty) saveIndex(list);
+        for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
+        ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
+        ledger.hidden = !led;
       }
-      if (dirty) saveIndex(list);
-      for (let i = 0; i < drops.length; i++) rdDropSealedAnno(drops[i].id, drops[i].s).catch(function () {});
-      ledger.innerHTML = led ? '<div class="rd-ledger-t">共读手账</div>' + led : '';
-      ledger.hidden = !led;
     }
+
+    // ========== 分组错落网格 ==========
+    if (groupsBlock && ggrid) {
+      const groups = rdGroupLoad();
+      let ghtml = rdGroupCardHtml({ id: RD_DEFAULT_GROUP_ID, name: '全部书籍' }, list);
+      groups.sort(function (a, b) { return ((a && a.createdAt) || 0) - ((b && b.createdAt) || 0); });
+      for (let i = 0; i < groups.length; i++) {
+        const g = groups[i];
+        if (!g || !g.id) continue;
+        const glist = list.filter(function (b) { return b && b.gid === g.id; });
+        ghtml += rdGroupCardHtml(g, glist);
+      }
+      ggrid.innerHTML = ghtml;
+      groupsBlock.hidden = false;
+    }
+
+    // ========== 用量 ==========
     const usage = document.getElementById('rd-usage');
     if (usage) {
       let bytes = 0;
       for (let i = 0; i < list.length; i++) bytes += ((list[i] && list[i].size) || 0);
       usage.textContent = '已用 ' + (bytes / 1024 / 1024).toFixed(1) + ' MB · ' + list.length + ' 本';
+      usage.hidden = false;
+      usage.classList.remove('rd-dd-foot');
+    }
+
+    // 首页模式下 rd-grid 留空（两列错落书卡在第二批组内页填充）
+    grid.innerHTML = '';
+    const detailEl2 = document.getElementById('rd-detail');
+    if (detailEl2) detailEl2.hidden = true;
+  }
+  function rdGroupCardHtml(group, books) {
+    const name = (group && group.name) || '未命名';
+    const isDefault = !!(group && group.id === RD_DEFAULT_GROUP_ID);
+    // 组内有没有书带着他新回的批注（小点只表示「有点东西」，不计数）
+    let hasNew = false;
+    if (rdReplyTipOn()) {
+      for (let i = 0; i < books.length; i++) {
+        const bk = books[i];
+        if (bk && bk.replyNewAt && bk.replyNewAt > (bk.annoSeenAt || 0)) { hasNew = true; break; }
+      }
+    }
+    const sorted = books.slice().sort(function (a, b) { return ((b && b.lastOpenAt) || 0) - ((a && a.lastOpenAt) || 0); });
+    const recent = sorted[0];
+    // 该卡的起始色位：默认分组固定 0（第一根是深色主书），其余按组名散列，保证卡内相邻不同色
+    let start = 0;
+    if (!isDefault) {
+      const gn = String(name);
+      for (let k = 0; k < gn.length; k++) start += gn.charCodeAt(k);
+      start = start % RD_COVER_PAIRS.length;
+    }
+    let stack = '';
+    const showN = Math.min(3, sorted.length);
+    for (let i = 0; i < showN; i++) {
+      const t = sorted[i].title || '未命名';
+      const deep = isDefault && i === 0;
+      // 默认分组第一根是深色主书，其余按位置顺色板；其他分组从组名色位起顺延
+      const bg = deep ? RD_COVER_DEEP_BG : rdCoverColor(isDefault ? i - 1 : start + i);
+      stack += '<span class="rd-gsb" style="background:' + bg +
+        (deep ? ';color:' + RD_COVER_DEEP_INK : '') + '">' + rdEsc(t.slice(0, 1) || '书') + '</span>';
+    }
+    let subtitle;
+    if (!recent) {
+      subtitle = '还没有书，长按书卡移进来';
+    } else {
+      const rt = rdEsc(recent.title || '未命名');
+      const pct = rdProgressPct(recent);
+      subtitle = pct >= 100 ? '最近读完《' + rt + '》'
+        : (pct > 0 ? '最近在读《' + rt + '》' : '《' + rt + '》还没翻开');
+      if (isDefault) subtitle = '默认分组 · ' + subtitle;
+    }
+    return '<div class="rd-gk" data-gid="' + rdEsc(group.id) + '">' +
+      '<span class="rd-gn">' + books.length + ' 本</span>' +
+      (hasNew ? '<i class="rd-gnewdot" aria-label="有新回应"></i>' : '') +
+      '<div class="rd-gstack">' + stack + '</div>' +
+      '<div class="rd-gt">' + rdEsc(name) + '</div>' +
+      '<div class="rd-gs">' + subtitle + '</div>' +
+    '</div>';
+  }
+  function rdCreateGroup() {
+    window.openModal('新建分组', '', function (v) {
+      if (!v) return;
+      const name = String(v).trim();
+      if (!name) { rdToast('分组名不能为空'); return; }
+      if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+      const groups = rdGroupLoad();
+      for (let i = 0; i < groups.length; i++) {
+        if (groups[i] && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+      }
+      groups.push({ id: rdGroupId(), name: name, createdAt: Date.now() });
+      if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+      rdRenderShelf();
+      rdToast('已创建「' + name + '」');
+    });
+  }
+
+  // ===== 分组管理：长按分组卡（改名/删除）、长按组内书卡（移进/移出） =====
+  function rdCloseGroupMenu() {
+    const ids = ['rd-group-menu', 'rd-book-group-menu'];
+    for (let i = 0; i < ids.length; i++) {
+      const m = document.getElementById(ids[i]);
+      if (m && m.parentNode) m.parentNode.removeChild(m);
     }
   }
+  function rdGroupFind(groups, gid) {
+    for (let i = 0; i < groups.length; i++) if (groups[i] && groups[i].id === gid) return groups[i];
+    return null;
+  }
+  function rdOpenGroupMenu(gid) {
+    if (!page) return;
+    if (gid === RD_DEFAULT_GROUP_ID) { rdToast('「全部书籍」是默认分组，不能改名或删除'); return; }
+    const g = rdGroupFind(rdGroupLoad(), gid);
+    if (!g) return;
+    rdCloseBookMenu(); rdCloseGroupMenu();
+    const m = document.createElement('div');
+    m.id = 'rd-group-menu';
+    m.className = 'rd-menu';
+    m.setAttribute('data-gid', gid);
+    m.innerHTML =
+      '<div class="rd-menu-title">' + rdEsc(g.name || '未命名') + '</div>' +
+      '<button class="rd-menu-item" data-gact="rename" type="button">重命名分组</button>' +
+      '<button class="rd-menu-item rd-menu-danger" data-gact="delete" type="button">删除分组</button>' +
+      '<button class="rd-menu-item" data-gact="cancel" type="button">取消</button>';
+    page.appendChild(m);
+  }
+  function rdRenameGroup(gid) {
+    const groups = rdGroupLoad();
+    const g = rdGroupFind(groups, gid);
+    if (!g) return;
+    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+    window.openModal('重命名分组', g.name || '', function (v) {
+      const name = String(v == null ? '' : v).trim();
+      if (!name) { rdToast('分组名不能为空'); return; }
+      if (name.length > 20) { rdToast('分组名限 20 字以内'); return; }
+      for (let i = 0; i < groups.length; i++) {
+        if (groups[i] && groups[i].id !== gid && groups[i].name === name) { rdToast('已经有同名分组了'); return; }
+      }
+      g.name = name;
+      if (!rdGroupSave(groups)) { rdToast('保存失败，再试一次？'); return; }
+      rdRenderShelf();
+      rdToast('分组名已改');
+    });
+  }
+  function rdDeleteGroup(gid) {
+    const groups = rdGroupLoad();
+    const g = rdGroupFind(groups, gid);
+    if (!g) return;
+    if (!window.openModal) { rdToast('弹窗组件不可用'); return; }
+    const list0 = readIndex();
+    let n = 0;
+    for (let i = 0; i < list0.length; i++) if (list0[i] && list0[i].gid === gid) n++;
+    window.openModal('删除分组', '', function () {
+      const rest = groups.filter(function (x) { return x && x.id !== gid; });
+      if (!rdGroupSave(rest)) { rdToast('保存失败，再试一次？'); return; }
+      if (n > 0) {
+        const list = readIndex();
+        let changed = false;
+        for (let i = 0; i < list.length; i++) {
+          if (list[i] && list[i].gid === gid) { list[i].gid = RD_DEFAULT_GROUP_ID; changed = true; }
+        }
+        if (changed) saveIndex(list);
+      }
+      if (rdViewGroupId === gid) { rdViewGroupId = null; rdViewGroupPill = 'all'; }
+      rdRenderShelf();
+      rdToast(n > 0 ? '已删除分组，' + n + ' 本书回到全部书籍' : '已删除分组');
+    }, { noInput: true, staticText: '「' + (g.name || '') + '」' + (n > 0 ? ' · ' + n + ' 本书会回到全部书籍' : ''), warn: true });
+  }
+  function rdOpenBookGroupMenu(bookId) {
+    if (!page) return;
+    const book = rdFindBook(bookId, readIndex());
+    if (!book) return;
+    rdCloseBookMenu(); rdCloseGroupMenu();
+    const groups = rdGroupLoad();
+    const cur = book.gid || RD_DEFAULT_GROUP_ID;
+    let html = '<div class="rd-menu-title">' + rdEsc(book.title || '未命名') + '</div>';
+    // 首页书卡网格已留空，改书名和删书的入口收在这里
+    html += '<button class="rd-menu-item" data-gact="rename" type="button">修改书名</button>';
+    html += '<button class="rd-menu-item" data-gact="' + (book.pinned ? 'unpin' : 'pin') + '" type="button">' +
+      (book.pinned ? '取消置顶' : '置顶这本书') + '</button>';
+    if (cur !== RD_DEFAULT_GROUP_ID) {
+      html += '<button class="rd-menu-item" data-gact="move" data-to="' + RD_DEFAULT_GROUP_ID + '" type="button">移出分组</button>';
+    }
+    let others = 0;
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      if (!g || !g.id || g.id === cur) continue;
+      others++;
+      html += '<button class="rd-menu-item" data-gact="move" data-to="' + rdEsc(g.id) + '" type="button">移进「' + rdEsc(g.name || '未命名') + '」</button>';
+    }
+    if (cur === RD_DEFAULT_GROUP_ID && others === 0) {
+      html += '<div class="rd-menu-hint">还没有分组，回首页点「＋ 新建分组」</div>';
+    }
+    html += '<button class="rd-menu-item rd-menu-danger" data-gact="delete" type="button">删除这本书</button>';
+    html += '<button class="rd-menu-item" data-gact="cancel" type="button">取消</button>';
+    const m = document.createElement('div');
+    m.id = 'rd-book-group-menu';
+    m.className = 'rd-menu';
+    m.setAttribute('data-id', bookId);
+    m.innerHTML = html;
+    page.appendChild(m);
+  }
+  function rdMoveBookToGroup(bookId, toGid) {
+    const list = readIndex();
+    const book = rdFindBook(bookId, list);
+    if (!book) return;
+    book.gid = toGid || RD_DEFAULT_GROUP_ID;
+    if (!saveIndex(list)) return;
+    rdRenderShelf();
+    rdToast(toGid === RD_DEFAULT_GROUP_ID ? '已移出分组' : '已移进分组');
+  }
+  // 置顶：只影响分组详情页的排序，不动首页 hero（hero 始终是最近在读那本）
+  function rdTogglePin(bookId) {
+    const list = readIndex();
+    const book = rdFindBook(bookId, list);
+    if (!book) return;
+    book.pinned = !book.pinned;
+    if (!saveIndex(list)) return;
+    rdRenderShelf();
+    rdToast(book.pinned ? '已置顶' : '已取消置顶');
+  }
+
+  // ===== 分组排序：点「排序」进拖动模式，松手落位并保存 =====
+  let rdGroupSorting = false;
+  let rdDragCard = null, rdDragX = 0, rdDragY = 0, rdDragMoved = false;
+  function rdSetGroupSorting(on) {
+    rdGroupSorting = !!on;
+    const shelf = document.getElementById('rd-shelf');
+    if (shelf) shelf.classList.toggle('rd-sorting', rdGroupSorting);
+    const btn = document.getElementById('rd-gsort');
+    if (btn) btn.textContent = rdGroupSorting ? '完成' : '排序';
+    const newBtn = document.getElementById('rd-gnew');
+    if (newBtn) newBtn.hidden = rdGroupSorting;
+  }
+  function rdSaveGroupOrder() {
+    const grid = document.getElementById('rd-ggrid');
+    if (!grid) return;
+    const cards = grid.querySelectorAll('.rd-gk[data-gid]');
+    const groups = rdGroupLoad();
+    const out = [];
+    for (let i = 0; i < cards.length; i++) {
+      const gid = cards[i].getAttribute('data-gid');
+      if (!gid || gid === RD_DEFAULT_GROUP_ID) continue;
+      const g = rdGroupFind(groups, gid);
+      if (g && out.indexOf(g) < 0) out.push(g);
+    }
+    for (let i = 0; i < groups.length; i++) if (out.indexOf(groups[i]) < 0) out.push(groups[i]);
+    if (!rdGroupSave(out)) { rdToast('保存失败，再试一次？'); return; }
+    rdToast('分组顺序已保存');
+  }
+  document.addEventListener('pointerdown', function (e) {
+    if (!rdGroupSorting) return;
+    const el = e.target;
+    if (!el || !el.closest) return;
+    const card = el.closest('#rd-ggrid .rd-gk[data-gid]');
+    if (!card) return;
+    if (card.getAttribute('data-gid') === RD_DEFAULT_GROUP_ID) { rdToast('「全部书籍」位置固定'); return; }
+    e.preventDefault();
+    rdDragCard = card;
+    rdDragX = e.clientX; rdDragY = e.clientY; rdDragMoved = false;
+    card.classList.add('rd-gk-drag');
+    try { card.setPointerCapture(e.pointerId); } catch (err) {}
+  }, true);
+  document.addEventListener('pointermove', function (e) {
+    if (!rdDragCard) return;
+    if (!rdDragMoved && (Math.abs(e.clientX - rdDragX) > 6 || Math.abs(e.clientY - rdDragY) > 6)) rdDragMoved = true;
+    if (!rdDragMoved) return;
+    e.preventDefault();
+    const grid = document.getElementById('rd-ggrid');
+    if (!grid) return;
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const target = under && under.closest && under.closest('#rd-ggrid .rd-gk[data-gid]');
+    if (!target || target === rdDragCard) return;
+    if (target.getAttribute('data-gid') === RD_DEFAULT_GROUP_ID) return;
+    const kids = Array.prototype.slice.call(grid.children);
+    const from = kids.indexOf(rdDragCard), to = kids.indexOf(target);
+    if (from < 0 || to < 0) return;
+    // 越过目标卡就把自己插到它前面/后面，实时让位
+    if (from < to) grid.insertBefore(rdDragCard, target.nextSibling);
+    else grid.insertBefore(rdDragCard, target);
+  }, true);
+  document.addEventListener('pointerup', function (e) {
+    if (!rdDragCard) return;
+    const card = rdDragCard;
+    rdDragCard = null;
+    card.classList.remove('rd-gk-drag');
+    if (rdDragMoved) rdSaveGroupOrder();
+  }, true);
+  document.addEventListener('pointercancel', function () {
+    if (!rdDragCard) return;
+    rdDragCard.classList.remove('rd-gk-drag');
+    rdDragCard = null;
+  }, true);
 
   // ===== 书目长按：改名 / 删除 =====
   function rdFindBook(id, list) {
@@ -3106,6 +5422,12 @@
     info.hidden = false;
     info.textContent = txt;
   }
+  // 粘贴字数写在「粘贴正文」标签上：原先借用文件信息卡，会飘到文件区上方，读起来像文件信息
+  function rdSetPasteCount(n) {
+    const el = document.getElementById('rd-paste-label');
+    if (!el) return;
+    el.textContent = n > 0 ? '粘贴正文 · ' + n + ' 字' : '粘贴正文';
+  }
   function rdOpenImport() {
     if (!page) return;
     rdImp.buf = null; rdImp.name = ''; rdImp.text = ''; rdImp.source = ''; rdImp.chapters = null; rdImp.bad = 0;
@@ -3119,6 +5441,7 @@
     if (paste) paste.value = '';
     if (nameEl) nameEl.value = '';
     rdSetFileInfo('');
+    rdSetPasteCount(0);
     const gbk = document.getElementById('rd-gbk-row');
     if (gbk) gbk.hidden = true;
     if (main) main.hidden = false;
@@ -3148,8 +5471,10 @@
     if (gbk) gbk.hidden = !(rdImp.source === 'file' && d.bad > RD_BAD_RATIO);
     if (rdImp.source === 'file') {
       rdSetFileInfo(rdImp.name + ' · ' + rdImp.text.length + ' 字' + (d.bad > RD_BAD_RATIO ? '（疑似非 UTF-8）' : ''));
+      rdSetPasteCount(0);
     } else {
-      rdSetFileInfo(rdImp.text.trim() ? '粘贴内容 · ' + rdImp.text.length + ' 字' : '');
+      rdSetFileInfo('');
+      rdSetPasteCount(rdImp.text.trim() ? rdImp.text.length : 0);
     }
   }
   function rdStartImport() {
@@ -3181,16 +5506,23 @@
     const list = document.getElementById('rd-confirm-list');
     if (!list) return;
     const chs = rdImp.chapters || [];
+    const sum = document.getElementById('rd-confirm-sum-t');
+    if (sum) sum.textContent = '共 ' + chs.length + ' 章 · ' + String(rdImp.text || '').length + ' 字';
     let html = '';
     for (let i = 0; i < chs.length; i++) {
       const c = chs[i];
+      const idx = i + 1 < 10 ? '0' + (i + 1) : String(i + 1);
       html += '<div class="rd-cf-row" data-i="' + i + '">' +
-        '<button class="rd-cf-title" data-act="rename" type="button">' + rdEsc(c.t || ('第 ' + (i + 1) + ' 节')) + '</button>' +
-        '<div class="rd-cf-n">' + (c.e - c.s) + ' 字</div>' +
+        '<div class="rd-cf-top">' +
+          '<span class="rd-cf-idx">' + idx + '</span>' +
+          '<button class="rd-cf-title" data-act="rename" type="button">' + rdEsc(c.t || ('第 ' + (i + 1) + ' 节')) + '</button>' +
+          '<span class="rd-cf-n">' + (c.e - c.s) + ' 字</span>' +
+        '</div>' +
         '<div class="rd-cf-ops">' +
-          (i < chs.length - 1 ? '<button class="rd-btn rd-btn-mini" data-act="merge" type="button">与下一章合并</button>' : '') +
-          '<button class="rd-btn rd-btn-mini" data-act="split" type="button">在此拆分</button>' +
-        '</div></div>';
+          (i < chs.length - 1 ? '<button class="rd-btn rd-btn-mini rd-btn-text" data-act="merge" type="button">合并到下一章</button>' : '') +
+          '<button class="rd-btn rd-btn-mini rd-btn-text" data-act="split" type="button">在此拆分</button>' +
+        '</div>' +
+      '</div>';
     }
     list.innerHTML = html;
   }
@@ -3311,16 +5643,23 @@
   document.addEventListener('pointerdown', function (e) {
     const el = e.target;
     if (!el || !el.closest) return;
+    if (el.closest('.rd-gnew')) return;
     const card = el.closest('#rd-grid .rd-book');
-    if (!card) return;
+    const gk = card ? null : (!rdGroupSorting && el.closest('.rd-gk[data-gid]'));
+    const bgCard = (card || gk) ? null
+      : (el.closest('.rd-dd-gi[data-id]') || el.closest('.rd-dd-frow[data-id]') || el.closest('.rd-dd-fcov[data-id]'));
+    if (!card && !gk && !bgCard) return;
     rdCancelPress();
     rdPressX = e.clientX; rdPressY = e.clientY;
-    const id = card.getAttribute('data-id');
+    const id = card ? card.getAttribute('data-id') : (bgCard ? bgCard.getAttribute('data-id') : '');
+    const gid = gk ? gk.getAttribute('data-gid') : '';
     rdPressTimer = setTimeout(function () {
       rdPressTimer = 0;
       rdPressAt = Date.now();
       try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
-      rdOpenBookMenu(id);
+      if (card) rdOpenBookMenu(id);
+      else if (gk) rdOpenGroupMenu(gid);
+      else rdOpenBookGroupMenu(id);
     }, 450);
   }, true);
   document.addEventListener('pointermove', function (e) {
@@ -3333,7 +5672,8 @@
   document.addEventListener('contextmenu', function (e) {
     const el = e.target;
     if (el && el.closest && (el.closest('#rd-grid .rd-book') || el.closest('#rd-body') ||
-      el.closest('#rd-pop-list .rd-pop-item'))) e.preventDefault();
+      el.closest('#rd-pop-list .rd-pop-item') || el.closest('.rd-gk[data-gid]') ||
+      el.closest('.rd-dd-gi[data-id]') || el.closest('.rd-dd-frow[data-id]') || el.closest('.rd-dd-fcov[data-id]'))) e.preventDefault();
   }, true);
 
   // 长按自己的批注（浮层里）→ 修改 / 删除；他的批注不给入口
@@ -3375,10 +5715,40 @@
       else if (act === 'delete') rdDeleteBook(mid);
       return;
     }
+    const gMenuItem = el.closest('#rd-group-menu [data-gact]');
+    if (gMenuItem) {
+      e.preventDefault();
+      const menu = document.getElementById('rd-group-menu');
+      const gid = menu ? menu.getAttribute('data-gid') : '';
+      const act = gMenuItem.getAttribute('data-gact');
+      rdCloseGroupMenu();
+      if (act === 'rename') rdRenameGroup(gid);
+      else if (act === 'delete') rdDeleteGroup(gid);
+      return;
+    }
+    const bgMenuItem = el.closest('#rd-book-group-menu [data-gact]');
+    if (bgMenuItem) {
+      e.preventDefault();
+      const menu = document.getElementById('rd-book-group-menu');
+      const bid = menu ? menu.getAttribute('data-id') : '';
+      const act = bgMenuItem.getAttribute('data-gact');
+      rdCloseGroupMenu();
+      if (act === 'move') rdMoveBookToGroup(bid, bgMenuItem.getAttribute('data-to'));
+      else if (act === 'rename') rdRenameBook(bid);
+      else if (act === 'delete') rdDeleteBook(bid);
+      else if (act === 'pin' || act === 'unpin') rdTogglePin(bid);
+      return;
+    }
     // 菜单开着时点空白处只关菜单，不再顺手打开下面那张书卡
     if (document.getElementById('rd-book-menu') && !el.closest('#rd-book-menu')) {
       e.preventDefault();
       rdCloseBookMenu();
+      return;
+    }
+    if ((document.getElementById('rd-group-menu') || document.getElementById('rd-book-group-menu')) &&
+      !el.closest('#rd-group-menu') && !el.closest('#rd-book-group-menu')) {
+      e.preventDefault();
+      rdCloseGroupMenu();
       return;
     }
     // 自己批注的长按菜单
@@ -3399,6 +5769,9 @@
     // 浮层里那条被划掉的旧句：点一下他有概率接一句
     const oldEl = el.closest('#rd-pop-list .rd-pop-old');
     if (oldEl) { e.preventDefault(); rdMissReply(oldEl.getAttribute('data-old')); return; }
+    // 回应他留在某一句上的批注
+    const repBtn = el.closest('#rd-pop-list .rd-pop-reply-btn');
+    if (repBtn) { e.preventDefault(); rdReplyToHis(repBtn.getAttribute('data-reply')); return; }
     // 浮层里「还有 N 条」展开
     if (el.closest('#rd-pop-more')) { e.preventDefault(); rdOpenPop(rdPopPos, true); return; }
     // 选句浮条
@@ -3436,16 +5809,78 @@
       rdOpen();
       return;
     }
-    // 聊天「更多 → 互动」里的入口：先收起面板再开页，和桌面图标走同一条路径
-    if (el.closest('#more-reading')) {
+    if (el.closest('#rd-hero-go')) {
       e.preventDefault();
-      const mp = document.getElementById('chat-more-panel');
-      if (mp) mp.hidden = true;
-      rdOpen();
+      const btn = document.getElementById('rd-hero-go');
+      if (btn && btn.getAttribute('data-id')) rdOpenBook(btn.getAttribute('data-id'));
       return;
     }
-    if (el.closest('#rd-shelf-back')) { rdClose(); return; }
-    if (el.closest('#rd-reader-back')) { rdShowShelf(); return; }
+    if (el.closest('#rd-gnew')) { e.preventDefault(); rdCreateGroup(); return; }
+    if (el.closest('#rd-gsort')) {
+      e.preventDefault();
+      rdSetGroupSorting(!rdGroupSorting);
+      return;
+    }
+    const gk = el.closest('.rd-gk[data-gid]');
+    if (gk) {
+      e.preventDefault();
+      if (rdGroupSorting) return;
+      if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+      const gid = gk.getAttribute('data-gid');
+      rdViewGroupId = gid;
+      rdViewGroupPill = 'all';
+      rdRenderShelf();
+      return;
+    }
+    const ddPill = el.closest('.rd-dd-pill');
+    if (ddPill) {
+      e.preventDefault();
+      rdViewGroupPill = ddPill.getAttribute('data-pill') || 'all';
+      rdRenderShelf();
+      return;
+    }
+    const ddFcov = el.closest('.rd-dd-fcov[data-id]');
+    if (ddFcov) {
+      e.preventDefault();
+      if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+      rdOpenBook(ddFcov.getAttribute('data-id'));
+      return;
+    }
+    const ddFrow = el.closest('.rd-dd-frow[data-id]');
+    if (ddFrow) {
+      e.preventDefault();
+      if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+      rdOpenBook(ddFrow.getAttribute('data-id'));
+      return;
+    }
+    const ddGi = el.closest('.rd-dd-gi[data-id]');
+    if (ddGi) {
+      e.preventDefault();
+      if (Date.now() - rdPressAt < 700) { rdPressAt = 0; return; }
+      rdOpenBook(ddGi.getAttribute('data-id'));
+      return;
+    }
+    if (el.closest('#rd-shelf-back')) {
+      // #1616：先消化本页最上面一层（导入/边看边调/菜单/分组），没有才退桌面
+      if (rdBackOne()) return;
+      rdClose(); return;
+    }
+    if (el.closest('#rd-shelf-settings')) { e.preventDefault(); rdOpenSettings(); return; }
+    if (el.closest('#rd-settings-back')) { e.preventDefault(); rdCloseSettings(); return; }
+    if (el.closest('#rd-live-adjust')) { e.preventDefault(); rdOpenLiveDrawer(); return; }
+    if (el.closest('#rd-live-close')) { e.preventDefault(); rdCloseLiveDrawer(); return; }
+    if (el.closest('#rd-live-fold')) { e.preventDefault(); rdToggleLiveFold(); return; }
+    const bgOpt = el.closest('[data-rd-bgopt]');
+    if (bgOpt) { e.preventDefault(); rdSetBg(bgOpt.getAttribute('data-rd-bgopt')); return; }
+    const primaryOpt = el.closest('[data-rd-primary]');
+    if (primaryOpt) { e.preventDefault(); rdSetPrimary(primaryOpt.getAttribute('data-rd-primary')); return; }
+    const turnOpt = el.closest('[data-rd-turn]');
+    if (turnOpt) { e.preventDefault(); rdSetTurn(turnOpt.getAttribute('data-rd-turn')); return; }
+    if (el.closest('#rd-reader-back')) {
+      // #1616：阅读器左上角返回也逐层消化（目录/他在哪/批注层 → 阅读器 → 书架）
+      if (rdBackOne()) return;
+      rdShowShelf(); return;
+    }
     if (el.closest('#rd-retry')) { e.preventDefault(); rdEnsureChapter('first'); return; }
     // 底部「他在哪」：整行都是热区
     if (el.closest('#rd-foot-row')) { e.preventDefault(); rdOpenBuddyCard(); return; }
@@ -3453,20 +5888,26 @@
     const bMode = el.closest('#rd-buddy-modes [data-bmode]');
     if (bMode) { e.preventDefault(); rdBuddySetMode(bMode.getAttribute('data-bmode')); return; }
     if (el.closest('#rd-buddy-jump')) { e.preventDefault(); rdJumpToBuddy(); return; }
-    if (el.closest('#rd-font-btn')) {
-      e.preventDefault();
-      rdCloseBuddyCard();
-      const prefs = document.getElementById('rd-prefs');
-      if (prefs) { prefs.hidden = !prefs.hidden; rdRenderPrefsActive(); }
-      closeToc();
-      return;
-    }
-    const fsBtn = el.closest('#rd-prefs [data-fs]');
-    if (fsBtn) { e.preventDefault(); rdSetPrefs({ fs: Number(fsBtn.getAttribute('data-fs')) }); return; }
-    const lhBtn = el.closest('#rd-prefs [data-lh]');
-    if (lhBtn) { e.preventDefault(); rdSetPrefs({ lh: Number(lhBtn.getAttribute('data-lh')) }); return; }
+    if (el.closest('#rd-mark-btn')) { e.preventDefault(); rdMarkToggle(); return; }
     if (el.closest('#rd-toc-btn')) { e.preventDefault(); openToc(); return; }
     if (el.closest('#rd-toc-close')) { e.preventDefault(); closeToc(); return; }
+    if (el.closest('#rd-toc-mask')) { e.preventDefault(); closeToc(); return; }
+    const rtab = el.closest('#rd-toc-tabs .rd-toc-tab');
+    if (rtab) { e.preventDefault(); rdTocShowTab(rtab.getAttribute('data-rtab')); return; }
+    if (el.closest('#rd-toc-now')) {
+      e.preventDefault();
+      const curRow = document.querySelector('#rd-toc-list .rd-toc-row.on');
+      if (curRow && curRow.scrollIntoView) {
+        try { curRow.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        catch (err) { try { curRow.scrollIntoView({ block: 'center' }); } catch (err2) {} }
+      }
+      rdTocUpdateNow();
+      return;
+    }
+    const markDel = el.closest('[data-mark-del]');
+    if (markDel) { e.preventDefault(); rdMarkDelete(markDel.getAttribute('data-mark-del')); return; }
+    const markMain = el.closest('[data-mark]');
+    if (markMain) { e.preventDefault(); rdMarkJump(markMain.getAttribute('data-mark')); return; }
     const tocRow = el.closest('#rd-toc-list [data-ch]');
     if (tocRow) { e.preventDefault(); rdJumpChapter(tocRow.getAttribute('data-ch')); return; }
     if (el.closest('#rd-toc-list [data-lost]')) { e.preventDefault(); rdOpenLost(); return; }
@@ -3518,6 +5959,9 @@
     rdImp.name = file.name || '未命名.txt';
     rdImp.source = 'file';
     rdImp.chapters = null;
+    // 选了文件就把粘贴框清空：两份内容同时在场时只会用文件，留着旧粘贴内容会让人以为两个都会导入
+    const pasteEl = document.getElementById('rd-paste');
+    if (pasteEl) pasteEl.value = '';
     rdUseDecoded(rdDecode(buf, 'utf-8'));
   });
 
@@ -3532,15 +5976,20 @@
     rdImp.chapters = null;
     const gbk = document.getElementById('rd-gbk-row');
     if (gbk) gbk.hidden = true;
-    rdSetFileInfo(rdImp.text.trim() ? '粘贴内容 · ' + rdImp.text.length + ' 字' : '');
+    rdSetFileInfo('');
+    rdSetPasteCount(rdImp.text.trim() ? rdImp.text.length : 0);
   });
 
   // 字卡搜索
   document.addEventListener('input', function (e) {
     const el = e.target;
     if (el && el.id === 'rd-anno-search') rdRenderCards(el.value || '');
+    if (el && el.id === 'rd-toc-search') rdRenderToc(false);
   });
 
+  // 2026-10-28：正式开页出口——聊天里的读书邀请（他主动发起）同意后要直接打开书架。
+  // 与桌面图标同一条 rdOpen（隐藏其它页、渲染书架、收 tabbar），不是另一套开页。
+  window.readingOpen = rdOpen;
   window.__readingProbe = {
     version: 2,
     readIndex: readIndex,

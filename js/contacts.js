@@ -5,6 +5,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'fish-log', 'fish-log-global-migrated',
 'age-confirmed', 'storage-guide-shown',
 'incoming-requests', 'desk-checkin-en', 'desk-call-en', 'desk-freq-mode', 'call-hold',
+'desk-grid-v2-enabled',
 'night-mode-en',
 'group-chat-msgs',
 'bg-keepalive', 'bg-notify', 'bg-notify-nodedup',
@@ -15,6 +16,7 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'period-records', 'period-cfg', 'period-daily', 'period-notify', 'period-migrated',
 'cc-groups-public', 'cc-groups-public-off', 'cc-scope-migrated', 'cc-media-names-public',
 'cc-scope-notice-done',
+'default-card-edits', 'default-card-overrides',
 'my-emoji-groups', 'mye-global-migrated',
 'emoji-recent',
 'emoji-recent-kaomoji', 'emoji-recent-emoji',
@@ -53,6 +55,10 @@ const EXCLUDE = ['contacts', 'active-contact', 'feed-posts', 'migrated-v1', 'js-
 'flash-check-last',
 'ver-retry',
 'fhub-freq', 'fhub-seen',
+'chat-head-layout', 'chat-head-meta', 'ta-status-weighted',
+'call-beauty', 'call-beauty-whiteness',
+'call-beauty-native',
+'ta-survey-templates',
 'age-confirmed'];
 function isExcluded(k) {
 const r = k.slice(G.length + 1);
@@ -64,6 +70,7 @@ if (r.indexOf('music-file:') === 0) return true;
 if (r.indexOf('font-blob-') === 0) return true;
 if (r.indexOf('narc-') === 0) return true;
 if (r.indexOf('myarc') === 0) return true;
+if (r.indexOf('cs-card-global-') === 0) return true;
 if (r.indexOf('screen-adj-') === 0) return true;
 const m = r.match(/^([^:]+):/);
 if (m) {
@@ -361,6 +368,13 @@ try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } c
 try { def.remove(k); } catch (e) {}
 }
 });
+['default-card-edits', 'default-card-overrides'].forEach(function (k) {
+const v = def.get(k);
+if (v !== null && v !== undefined && v !== '') {
+try { if (root.get(k) === null || root.get(k) === undefined) root.set(k, v); } catch (e) {}
+try { def.remove(k); } catch (e) {}
+}
+});
 try {
 const stale = [];
 for (let i = 0; i < localStorage.length; i++) {
@@ -636,7 +650,7 @@ staticText: '小字说明：设置后，桌面浮字、聊天、朋友圈、信�
 pills: [
 { label: '他（男生）', value: 'he' },
 { label: '她（女生）', value: 'she' },
-{ label: '不设置（默认 他）', value: '' }
+{ label: '不设置（默认他）', value: '' }
 ]
 });
 }
@@ -754,7 +768,7 @@ function showCjianHint() {
 removeCjianHint();
 const page = document.getElementById('page-cjian');
 if (!page) return;
-const hint = el('div', '', '点每位梦角的【去找他】直接进入 他 的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看 他 此刻在哪、在做什么。');
+const hint = el('div', '', '点每位梦角的【去找他】直接进入他的桌面；点左上角返回，则选择本次进入哪个桌面。若某位梦角没有状态显示，点下方【感知此间】看看他此刻在哪、在做什么。');
 hint.id = 'entry-cjian-hint';
 hint.style.cssText = 'margin:8px 12px 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.6;color:var(--muted,#666);background:rgba(127,106,216,.08);border:1px solid rgba(127,106,216,.2)';
 const head = page.querySelector('.chat-head');

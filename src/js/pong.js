@@ -530,7 +530,7 @@
         }
       }
     } catch (e) {}
-    const title = draw ? '平局' : (playerWin ? '🏆 你赢了' : fit('他 赢了'));
+    const title = draw ? '平局' : (playerWin ? '🏆 你赢了' : fit('他赢了'));
     const body =
       '<div class="pong-end-score">' + fit('他') + ' ' + s.opponentScore + ' : ' + s.playerScore + ' 你</div>' +
       '<div class="pong-end-stat">总回合 ' + s.totalRounds + ' · 用时 ' + fmt(sec) + '</div>' +

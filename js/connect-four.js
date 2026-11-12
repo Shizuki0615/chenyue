@@ -27,21 +27,21 @@ const COLS = 7, ROWS = 6;
 const THINK_MIN = 550, THINK_VAR = 600;
 const DIFFS = {
 casual: {
-label: '休闲', tip: '他 让着你，轻松玩',
+label: '休闲', tip: '他让着你，轻松玩',
 w: { normal: 0.35, serious: 0.05, sandbag: 0.35, blunder: 0.25 },
 take: { serious: 0.7, normal: 0.4, sandbag: 0.2, blunder: 0.25 },
 block: { serious: 0.6, normal: 0.4, sandbag: 0.15, blunder: 0.12 },
 floor: 4
 },
 daily: {
-label: '日常', tip: '他 像普通人，时好时坏',
+label: '日常', tip: '他像普通人，时好时坏',
 w: { normal: 0.5, serious: 0.2, sandbag: 0.15, blunder: 0.15 },
 take: { serious: 0.95, normal: 0.6, sandbag: 0.25, blunder: 0.3 },
 block: { serious: 0.9, normal: 0.62, sandbag: 0.22, blunder: 0.18 },
 floor: 3
 },
 serious: {
-label: '认真', tip: '他 想赢，有挑战',
+label: '认真', tip: '他想赢，有挑战',
 w: { normal: 0.35, serious: 0.55, sandbag: 0.05, blunder: 0.05 },
 take: { serious: 0.98, normal: 0.8, sandbag: 0.4, blunder: 0.5 },
 block: { serious: 0.96, normal: 0.82, sandbag: 0.4, blunder: 0.45 },
