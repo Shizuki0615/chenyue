@@ -7380,6 +7380,7 @@ const FIX_SENTINELS = [
   { name: '#1657f 试听流时长兜底判定（删＝45/60 秒等不带 freeTrialInfo 的试听又被当正常歌播）', file: 'js/music-player.js', needle: 'const previewDur = !!(m && dur > 0 && fullDur >= 120 && dur <= 90 && dur < fullDur * 0.6);' },
   { name: '#1657g 进度条不被试听短时长覆盖（删＝界面把 200 秒的歌显示成 45 秒）', file: 'js/music-player.js', needle: 'fmtDur(previewDur ? fullDur : dur)' },
   { name: '#1657h 后端明确无完整版权时不再回落 meting 试听（删＝又播 30~60 秒）', file: 'js/music-player.js', needle: 'restricted: !err' },
+  { name: '#1657i 诊断单显示网易风控 -460 的原始 code/消息（删＝后端 IP 被风控又被误报成会员问题）', file: 'js/music-player.js', needle: "code === -460 ? '(网易风控：后端出口 IP 被限制，需新版后端包或配 NCM_REAL_IP)'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

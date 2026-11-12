@@ -1275,7 +1275,11 @@ br = d.br || 0;
 size = d.size || 0;
 }
 if (!url) {
-reason = '后端 code=' + code + (code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : ''));
+const msg = (j && (j.message || j.msg)) ? String(j.message || j.msg) : '';
+reason = '后端 code=' + code +
+(code === -460 ? '(网易风控：后端出口 IP 被限制，需新版后端包或配 NCM_REAL_IP)' :
+code === 404 ? '(VIP/地区限制)' : code === 200 ? '(公开直链无权限)' : (code === -462 ? '(需验证)' : '')) +
+(msg ? '：' + msg : '');
 console.log('[VIP-Diag] 后端未给直链(' + lv + '):', reason);
 } else if (trial) {
 sawTrial = true;
@@ -1731,7 +1735,9 @@ if (free.err) out.push('❌ 请求失败: ' + free.err);
 else {
 const d = free.j?.data?.[0] || {};
 const _tr = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
-out.push('code=' + (d.code ?? '?') + ' url=' + (d.url ? (_tr ? '⚠️ 只是试听片段' : '✅ 有完整直链 (' + (d.size || 0) + ' 字节)') : '❌ 无'));
+out.push('code=' + (d.code ?? free.j?.code ?? '?') + ' url=' + (d.url ? (_tr ? '⚠️ 只是试听片段' : '✅ 有完整直链 (' + (d.size || 0) + ' 字节)') : '❌ 无'));
+if (free.j?.message || free.j?.msg) out.push('后端消息: ' + (free.j.message || free.j.msg));
+if (free.j?.code === -460) out.push('→ 网易风控 -460：云函数出口 IP 被限制。换用新版后端包（已内置 realIP）即可');
 }
 out.push('');
 out.push('=== /song/url/v1 VIP 歌 (ID=' + TEST_VIP_ID + ') ===');
@@ -1746,10 +1752,13 @@ out.push('→ 你播 VIP 歌应该没问题了，刷新页面再试');
 out.push('⚠️ 只拿到 30 秒试听片段（freeTrialInfo 非空）code=' + (d.code ?? '?') + ' fee=' + (d.fee ?? '?') + ' br=' + (d.br || 0));
 out.push('→ 试听片段的三个常见原因：① cookie 失效（重新扫码）② 该曲是数字专辑，会员也只能试听 ③ 会员档位不覆盖当前音质（播放会自动降级重试）');
 } else {
-out.push('❌ 后端没给直链 code=' + d.code);
-if (d.code === 404) out.push('→ VIP 受限！可能 cookie 过期 / 你账号对这首歌没权限 / 后端 NeteaseCloudMusicApi 版本太旧');
-else if (d.code === 200) out.push('→ code=200 但 url 空，这首歌可能是地区限制或下架');
-else out.push('→ 后端返回异常 code=' + d.code);
+const _code = d.code ?? vip.j?.code ?? '?';
+out.push('❌ 后端没给直链 code=' + _code);
+if (vip.j?.message || vip.j?.msg) out.push('后端消息: ' + (vip.j.message || vip.j.msg));
+if (_code === -460) out.push('→ 网易风控 -460：云函数出口 IP 被限制（不是会员问题）。换用新版后端包（已内置 realIP）即可');
+else if (_code === 404) out.push('→ VIP 受限！可能 cookie 过期 / 你账号对这首歌没权限 / 后端 NeteaseCloudMusicApi 版本太旧');
+else if (_code === 200) out.push('→ code=200 但 url 空，这首歌可能是地区限制或下架');
+else out.push('→ 后端返回异常 code=' + _code);
 }
 }
 if (!vipStd.err) {
