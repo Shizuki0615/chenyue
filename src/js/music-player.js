@@ -674,24 +674,56 @@
   }
 
   // ================= 他主动从正在听的歌里挑几句发来 =================
-  // 口径（2026-10-27 用户确认）：按概率触发；每次随机挑连续 2~3 句；避开制作信息行；
+  // 口径（2026-10-27 用户确认）：按概率触发；每次随机挑连续 1~4 句；避开制作信息行；
   // 以左气泡歌词卡发进聊天，正常提醒；手动「发给 TA / 朋友圈」继续保留。
-  const TA_LYRIC_CREDIT_RE = /^\s*(作词|作曲|编曲|制作人?|出品人?|监制|混音|录音|母带|和声|吉他|贝斯|鼓|键盘|弦乐|词|曲|演唱|原唱|翻唱|OP|SP)\s*[:：]/i;
+  // #1658（用户实报「愿与愁」把编曲/吉他/弦乐名单当成歌词发来）：LRC 的制作信息经常中英混排、
+  // 还会被折行——实测原文是「编曲 MUSIC」/「ARRANGEMENT: 林俊杰 JJ LIN」/「/ 吴庆隆 Goh Kheng Long」/
+  // 「吉他 GUITAR: 黄冠龙 ALEX.D」/「弦乐 STRINGS: 李琪弦乐团」/「和声编写 BACKGROUND」/
+  // 「VOCAL ARRANGEMENT: Billy」/「Koh / 林俊杰 JJ LIN」。
+  // 旧规则只认「中文角色 + 冒号」，这一整块都漏过去；新规则认中英角色、无冒号折行、续行与版权声明。
+  const TA_LYRIC_CREDIT_RE = /^\s*(作词|作曲|编曲|制作人?|出品人?|监制|混音|录音|母带|和声|合声|吉他|贝斯|鼓|键盘|弦乐|词|曲|演唱|原唱|翻唱|人声|配唱|制作统筹|制作助理|企划|发行|录音师|混音师|母带师|OP|SP)\s*[:：]/i;
+  const TA_LYRIC_CN_ROLE_RE = /(作词|作曲|编曲|制作人|出品人|监制|混音|录音|母带|和声编写|和声|合声|吉他|贝斯|鼓|键盘|弦乐|演唱|原唱|翻唱|人声|配唱|制作统筹|制作助理|企划|发行|录音师|混音师|母带师|词曲)/;
+  const TA_LYRIC_EN_ROLE_RE = /\b(lyrics?|lyricist|composers?|composed by|arrangements?|arranger|producers?|produced by|executive producer|mixing|mix(?:ed)? by|recording|recorded by|mastering|mastered by|guitars?|bass|drums?|keyboards?|pianos?|strings?|vocals?|chorus|harmony|background vocals?|vocal arrangement|a&r)\b/i;
+  function taLyricIsCredit(t) {
+    const s = String(t == null ? '' : t).trim();
+    if (!s) return true;
+    if (/^[/／]/.test(s)) return true; // 折行后的续行（「/ 吴庆隆 Goh Kheng Long」）
+    if (TA_LYRIC_CREDIT_RE.test(s)) return true;
+    // 「中文角色 + 空白 + 英文标签」——没有冒号的折行形态（「编曲 MUSIC」「和声编写 BACKGROUND」）
+    if (TA_LYRIC_CN_ROLE_RE.test(s) && /^[\u4e00-\u9fff]{2,6}[\s\u3000]+[A-Za-z]/.test(s)) return true;
+    // 英文角色标签（可带前缀，如 BACKGROUND VOCAL ARRANGEMENT:）
+    if (TA_LYRIC_EN_ROLE_RE.test(s) && /[:：]/.test(s)) return true;
+    if (/^\s*(OP|SP)\s*[:：]/i.test(s)) return true;
+    if (/未经许可|不得翻唱|版权|制作发行|录音制作者|©|℗/.test(s)) return true;
+    return false;
+  }
   let taLyricSession = { trackId: null, scheduled: false, fired: false, timer: null, retry: 0 };
   function taLyricBegin(id) {
     if (taLyricSession.timer) { try { clearTimeout(taLyricSession.timer); } catch (e) {} }
     taLyricSession = { trackId: id || null, scheduled: false, fired: false, timer: null, retry: 0 };
   }
   function taLyricPickLines() {
+    const src = (lyricState.lines || []).map(function (x) { return String(x.text || '').trim(); });
+    // #1658：顶部的制作信息是连续一块——整块跳过，连被折行的**纯人名续行**
+    //（「Koh / 林俊杰 JJ LIN」这种不含角色关键字的行）也一起跳过；
+    // 整首都是制作名单时 pool 为空＝这张卡干脆不发，绝不把名单当歌词。
+    let from = 0, inTop = false;
+    while (from < src.length) {
+      const t = src[from];
+      if (!t) { from++; continue; }
+      const credit = taLyricIsCredit(t);
+      const cont = inTop && /[/／]/.test(t) && !/[，。！？；]/.test(t);
+      if (credit || cont) { inTop = true; from++; continue; }
+      break;
+    }
     const pool = [];
-    (lyricState.lines || []).forEach(function (x) {
-      const t = String(x.text || '').trim();
-      if (!t) return;
-      if (TA_LYRIC_CREDIT_RE.test(t)) return;
-      if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) return; // 纯标点/符号行不发
-      if (/未经许可|不得翻唱|版权|制作发行|录音制作者/.test(t)) return;
+    for (let i = from; i < src.length; i++) {
+      const t = src[i];
+      if (!t) continue;
+      if (taLyricIsCredit(t)) continue;
+      if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) continue; // 纯标点/符号行不发
       pool.push(t);
-    });
+    }
     if (pool.length < 1) return '';
     // 2026-10-30：句数范围改由音乐设置「每次挑几句」控制（默认 1~4）；
     // 配置越界/脏值时按 1~4 夹紧，最少大于最多时以最少为准。

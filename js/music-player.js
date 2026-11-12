@@ -621,22 +621,44 @@ if (!id) { toast('发布失败，请重试'); return; }
 toast('已发到朋友圈');
 clearLyricSelection();
 }
-const TA_LYRIC_CREDIT_RE = /^\s*(作词|作曲|编曲|制作人?|出品人?|监制|混音|录音|母带|和声|吉他|贝斯|鼓|键盘|弦乐|词|曲|演唱|原唱|翻唱|OP|SP)\s*[:：]/i;
+const TA_LYRIC_CREDIT_RE = /^\s*(作词|作曲|编曲|制作人?|出品人?|监制|混音|录音|母带|和声|合声|吉他|贝斯|鼓|键盘|弦乐|词|曲|演唱|原唱|翻唱|人声|配唱|制作统筹|制作助理|企划|发行|录音师|混音师|母带师|OP|SP)\s*[:：]/i;
+const TA_LYRIC_CN_ROLE_RE = /(作词|作曲|编曲|制作人|出品人|监制|混音|录音|母带|和声编写|和声|合声|吉他|贝斯|鼓|键盘|弦乐|演唱|原唱|翻唱|人声|配唱|制作统筹|制作助理|企划|发行|录音师|混音师|母带师|词曲)/;
+const TA_LYRIC_EN_ROLE_RE = /\b(lyrics?|lyricist|composers?|composed by|arrangements?|arranger|producers?|produced by|executive producer|mixing|mix(?:ed)? by|recording|recorded by|mastering|mastered by|guitars?|bass|drums?|keyboards?|pianos?|strings?|vocals?|chorus|harmony|background vocals?|vocal arrangement|a&r)\b/i;
+function taLyricIsCredit(t) {
+const s = String(t == null ? '' : t).trim();
+if (!s) return true;
+if (/^[/／]/.test(s)) return true; // 折行后的续行（「/ 吴庆隆 Goh Kheng Long」）
+if (TA_LYRIC_CREDIT_RE.test(s)) return true;
+if (TA_LYRIC_CN_ROLE_RE.test(s) && /^[\u4e00-\u9fff]{2,6}[\s\u3000]+[A-Za-z]/.test(s)) return true;
+if (TA_LYRIC_EN_ROLE_RE.test(s) && /[:：]/.test(s)) return true;
+if (/^\s*(OP|SP)\s*[:：]/i.test(s)) return true;
+if (/未经许可|不得翻唱|版权|制作发行|录音制作者|©|℗/.test(s)) return true;
+return false;
+}
 let taLyricSession = { trackId: null, scheduled: false, fired: false, timer: null, retry: 0 };
 function taLyricBegin(id) {
 if (taLyricSession.timer) { try { clearTimeout(taLyricSession.timer); } catch (e) {} }
 taLyricSession = { trackId: id || null, scheduled: false, fired: false, timer: null, retry: 0 };
 }
 function taLyricPickLines() {
+const src = (lyricState.lines || []).map(function (x) { return String(x.text || '').trim(); });
+let from = 0, inTop = false;
+while (from < src.length) {
+const t = src[from];
+if (!t) { from++; continue; }
+const credit = taLyricIsCredit(t);
+const cont = inTop && /[/／]/.test(t) && !/[，。！？；]/.test(t);
+if (credit || cont) { inTop = true; from++; continue; }
+break;
+}
 const pool = [];
-(lyricState.lines || []).forEach(function (x) {
-const t = String(x.text || '').trim();
-if (!t) return;
-if (TA_LYRIC_CREDIT_RE.test(t)) return;
-if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) return; // 纯标点/符号行不发
-if (/未经许可|不得翻唱|版权|制作发行|录音制作者/.test(t)) return;
+for (let i = from; i < src.length; i++) {
+const t = src[i];
+if (!t) continue;
+if (taLyricIsCredit(t)) continue;
+if (!/[\u4e00-\u9fffA-Za-z0-9]/.test(t)) continue; // 纯标点/符号行不发
 pool.push(t);
-});
+}
 if (pool.length < 1) return '';
 const minN = Math.max(1, Math.min(4, Number(settings.taLyricMin) || 1));
 const maxN = Math.max(minN, Math.min(4, Number(settings.taLyricMax) || 4));

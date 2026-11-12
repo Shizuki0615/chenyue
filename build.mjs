@@ -7381,6 +7381,10 @@ const FIX_SENTINELS = [
   { name: '#1657g 进度条不被试听短时长覆盖（删＝界面把 200 秒的歌显示成 45 秒）', file: 'js/music-player.js', needle: 'fmtDur(previewDur ? fullDur : dur)' },
   { name: '#1657h 后端明确无完整版权时不再回落 meting 试听（删＝又播 30~60 秒）', file: 'js/music-player.js', needle: 'restricted: !err' },
   { name: '#1657i 诊断单显示网易风控 -460 的原始 code/消息（删＝后端 IP 被风控又被误报成会员问题）', file: 'js/music-player.js', needle: "code === -460 ? '(网易风控：后端出口 IP 被限制，需新版后端包或配 NCM_REAL_IP)'" },
+  // ==== 2026-11-12 #1658 歌词卡不再把制作名单当歌词 ====
+  { name: '#1658a 制作信息行识别（中英混排/无冒号折行；删＝编曲 MUSIC / ARRANGEMENT: 又被当成歌词）', file: 'js/music-player.js', needle: 'function taLyricIsCredit(t) {' },
+  { name: '#1658b 英文角色标签识别（删＝GUITAR/STRINGS/BACKGROUND VOCAL 整块漏过）', file: 'js/music-player.js', needle: 'const TA_LYRIC_EN_ROLE_RE' },
+  { name: '#1658c 顶部制作信息块整块跳过（删＝折行的纯人名续行「Koh / 林俊杰 JJ LIN」仍会被发出去）', file: 'js/music-player.js', needle: 'const cont = inTop && /[/／]/.test(t) && !/[，。！？；]/.test(t);' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
