@@ -1534,8 +1534,10 @@
     const LEVELS = ['exhigh', 'higher', 'standard'];
     let lvIndex = 0;
     let lvTry = 0;
+    let totalTries = 0; // 本轮总请求数上限（含重试），防极端情况无限重试卡住播放
     let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
     const attempt = function () {
+      totalTries++;
       const lv = LEVELS[lvIndex];
       neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
         let url = '', code = 0, reason = '', trial = false, fee = null, br = 0, size = 0;
@@ -1576,21 +1578,21 @@
           });
           return;
         }
-        // #1659：网易 -460 是**随机**的——实测同一后端连发 4 次是「过 / -460 / 过 / 过」
-        // （出口 IP 池里个别 IP 被风控）。同一档隔 ~500ms 重试一次通常就能过；
-        // 旧实现一撞 -460 就降档，既浪费了本来能过的这一档，三档连打还更容易被风控。
+        // #1661（用户要求「每首歌都要能播」）：-460 是随机风控，同一档最多重试 2 次
+        //（3 次机会，实测单次失败率约 1/4，3 次全挂概率已很低），再降档；总请求数封顶 9 次，
+        // 避免极端情况下无限重试把播放卡死。真正的无版权（404/试听）不在这里耗。
         const transient = !err && (code === -460 || (!url && !trial && !code));
-        if (transient && lvTry < 1) {
+        if (transient && lvTry < 2 && totalTries < 9) {
           lvTry++;
-          console.log('[VIP-Diag] 网易风控/空响应，同档重试（' + lv + '）');
-          setTimeout(attempt, 500 + Math.floor(Math.random() * 300));
+          console.log('[VIP-Diag] 网易风控/空响应，同档重试第 ' + lvTry + ' 次（' + lv + '）');
+          setTimeout(attempt, 400 + Math.floor(Math.random() * 500));
           return;
         }
         lvTry = 0;
         // 试听/没给 url：降一档音质再试（网络错误不重试，避免连打三枪）
-        if (!err && lvIndex + 1 < LEVELS.length) {
+        if (!err && lvIndex + 1 < LEVELS.length && totalTries < 9) {
           lvIndex++;
-          setTimeout(attempt, 250);
+          setTimeout(attempt, 200);
           return;
         }
         cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
@@ -2085,7 +2087,7 @@
           let tries = 0;
           const go = () => {
             runTest(path).then((r) => {
-              if (r && r.j && r.j.code === -460 && tries < 1) { tries++; setTimeout(go, 600); return; }
+              if (r && r.j && r.j.code === -460 && tries < 2) { tries++; setTimeout(go, 600); return; }
               res(r);
             });
           };
@@ -4429,10 +4431,12 @@
     if (Date.now() - trialToastAt > 4000) {
       trialToastAt = Date.now();
       let why = '';
-      if (res && res.fee === 4) why = '（数字专辑需单独购买）';
+      if (res && res.code === -460) why = '（网易风控，已自动重试多次；稍后再点播放试试）';
+      else if (res && res.fee === 4) why = '（数字专辑需单独购买）';
       else if (!neaCookie()) why = '（登录已失效，请重新扫码）';
       else why = '（会员未生效或该曲受限，可到「网易云账号 → 诊断 VIP 播放」看详情）';
-      const head = (res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段';
+      const head = (res && res.code === -460) ? '网易风控暂时取不到直链'
+        : ((res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段');
       try { toast('《' + ((m && m.name) || '这首歌') + '》' + head + '，已跳过' + why); } catch (e) {}
     }
     if (trialSkipStreak >= 6) {

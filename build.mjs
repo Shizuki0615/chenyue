@@ -7390,6 +7390,8 @@ const FIX_SENTINELS = [
   { name: '#1659b 诊断单串行+遇 -460 重试（删＝4 个并发请求一起撞风控，结果误报）', file: 'js/music-player.js', needle: 'const runUrlTest = (path) => new Promise(res => {' },
   // ==== 2026-11-13 #1660 漫游时单曲循环生效 ====
   { name: '#1660 自然播完先判单曲循环（删＝漫游的 FM 队列抢先切下一首，单曲循环永远轮不上）', file: 'js/music-player.js', needle: "if (mode === 'single' && currentId) { playTrack(currentId); return; }" },
+  // ==== 2026-11-13 #1661 每首歌尽量都能播：-460 同档重试 2 次 ====
+  { name: '#1661 -460 同档最多重试 2 次且总请求封顶（删＝一次随机风控仍可能把可播的歌跳过）', file: 'js/music-player.js', needle: 'if (transient && lvTry < 2 && totalTries < 9) {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
