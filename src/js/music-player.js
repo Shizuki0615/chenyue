@@ -1499,6 +1499,8 @@
     keyUser: 'netease-user',
     // v3.33.x：保留会员/付费歌曲开关（见 neaKeepVip 注释）
     keyKeepVip: 'netease-keep-vip',
+    // #1662：上报给后端的「我的公网 IP」（realIP/X-Real-IP），缓存 12 小时
+    keyRealIp: 'netease-real-ip',
   };
   function neaBase() { return (NEA.gStore ? NEA.gStore.get(NEA.keyBase) : '') || ''; }
   function neaSetBase(v) { if (NEA.gStore) NEA.gStore.set(NEA.keyBase, v); }
@@ -1518,6 +1520,42 @@
   function neaSetKeepVip(on) { if (NEA.gStore) NEA.gStore.set(NEA.keyKeepVip, on ? '1' : '0'); }
   // 是否已配置后端且已登录（后端取直链、后端探测都得同时满足）
   function neaReady() { return !!(neaBase() && neaCookie()); }
+  // #1662（用户问「有没有伪装好 Referer/User-Agent」）：请求头本身库已带真实 UA + Referer，
+  // 真正让网易判风险的是**出口 IP**。新版后端加了 /client-ip，把「用户自己的公网 IP」回传给 App，
+  // App 再作为 realIP（X-Real-IP）带上——网易对真实用户 IP 比机房 IP 宽松得多。
+  // 老后端没有 /client-ip 时静默失败，继续用后端默认 realIP，不影响播放。
+  function neaRealIp() {
+    if (!NEA.gStore) return '';
+    try {
+      const o = JSON.parse(NEA.gStore.get(NEA.keyRealIp) || 'null');
+      if (o && typeof o.ip === 'string' && o.ip && Date.now() - (Number(o.ts) || 0) < 12 * 3600 * 1000) return o.ip;
+    } catch (e) {}
+    return '';
+  }
+  let neaRealIpBusy = false;
+  function neaEnsureRealIp() {
+    if (!neaBase() || neaRealIp() || neaRealIpBusy) return;
+    neaRealIpBusy = true;
+    let done = false;
+    const finish = (ip) => {
+      if (done) return;
+      done = true; neaRealIpBusy = false;
+      if (ip && NEA.gStore) { try { NEA.gStore.set(NEA.keyRealIp, JSON.stringify({ ip: ip, ts: Date.now() })); } catch (e) {} }
+    };
+    let ctrl = null;
+    try { ctrl = new AbortController(); } catch (e) {}
+    const timer = setTimeout(() => { try { ctrl && ctrl.abort(); } catch (e) {} finish(''); }, 5000);
+    // 带随机参数绕开后端 2 分钟 apicache（否则第一个人的 IP 会被缓存给所有人）
+    const url = neaBase() + '/client-ip?t=' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(r => r.json())
+      .then(j => {
+        clearTimeout(timer);
+        const ip = j && typeof j.ip === 'string' ? j.ip.trim().replace(/^::ffff:/, '') : '';
+        finish(/^(\d{1,3}\.){3}\d{1,3}$/.test(ip) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4}){2,7}$/i.test(ip) ? ip : '');
+      })
+      .catch(() => { clearTimeout(timer); finish(''); });
+  }
   // 经用户自己的后端取播放直链：NeteaseCloudMusicApi 的 /song/url/v1 带 cookie，
   // 会员歌返回可播 url；取不到（未登录/该曲真失效/后端不通）一律回调 null，由调用方回落旧链路
   // FIX 2026-10-21：返回完整诊断对象 {url, code, reason} 供调用方给用户真实错误提示
@@ -1627,7 +1665,9 @@
     const lim = Number(timeoutMs) > 0 ? Number(timeoutMs) : 15000;
     const sep = path.indexOf('?') >= 0 ? '&' : '?';
     const cookie = encodeURIComponent(neaCookie());
-    const url = base + path + sep + 'cookie=' + cookie;
+    const rip = neaRealIp();
+    const url = base + path + sep + 'cookie=' + cookie + (rip ? '&realIP=' + encodeURIComponent(rip) : '');
+    neaEnsureRealIp(); // 首次没有就后台拉一次，后续请求自动带上
     // 套壳(5+)环境优先走原生请求：原生 XHR 不受浏览器跨域限制，也不受 https 页面请求
     // http 后端（混合内容）的限制——自建后端常是 http://IP:端口，用普通 fetch 必被拦。
     // 拿不到 plus.net 时（纯浏览器/PWA）继续走下面的 fetch。
@@ -1962,6 +2002,7 @@
       // 每次渲染实时读取：保存地址 / 登录成功后面板必须立刻反映最新状态
       //（原来是打开面板时只读一次的常量，保存后仍判「未配置」、登录后仍判「未登录」）
       const base = neaBase();
+      neaEnsureRealIp(); // #1662：顺手把「我的公网 IP」拉回来（下次请求起作为 realIP 带上）
       const user = neaUser();
       let body = '';
       // 顶部：后端地址（始终可改）
@@ -2068,6 +2109,7 @@
         out.push('=== 基础状态 ===');
         out.push('后端地址: ' + (_base || '❌ 未配置'));
         out.push('Cookie 长度: ' + (_ck ? _ck.length + ' 字' : '❌ 未登录 (cookie 为空)'));
+        out.push('上报 realIP: ' + (neaRealIp() || '未获取（需新版后端 /client-ip，稍后自动重试）'));
         out.push('neaReady (后端+cookie): ' + (neaReady() ? '✅ 是' : '❌ 否'));
         out.push('保留会员歌曲开关: ' + (neaKeepVip() ? '开' : '关'));
         out.push('');

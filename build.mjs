@@ -7392,6 +7392,10 @@ const FIX_SENTINELS = [
   { name: '#1660 自然播完先判单曲循环（删＝漫游的 FM 队列抢先切下一首，单曲循环永远轮不上）', file: 'js/music-player.js', needle: "if (mode === 'single' && currentId) { playTrack(currentId); return; }" },
   // ==== 2026-11-13 #1661 每首歌尽量都能播：-460 同档重试 2 次 ====
   { name: '#1661 -460 同档最多重试 2 次且总请求封顶（删＝一次随机风控仍可能把可播的歌跳过）', file: 'js/music-player.js', needle: 'if (transient && lvTry < 2 && totalTries < 9) {' },
+  // ==== 2026-11-13 #1662 上报真实 IP 绕网易风控 ====
+  { name: '#1662a 从后端取本机公网 IP 作为 realIP（删＝继续用机房默认 IP，-460 概率高）', file: 'js/music-player.js', needle: "const url = neaBase() + '/client-ip?t='" },
+  { name: '#1662b 所有后端请求自动带 realIP（删＝/client-ip 拿到了也没用上）', file: 'js/music-player.js', needle: "'&realIP=' + encodeURIComponent(rip)" },
+  { name: '#1662c 诊断单显示上报 realIP（删＝看不出 realIP 有没有生效）', file: 'js/music-player.js', needle: "'上报 realIP: '" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
