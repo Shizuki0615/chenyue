@@ -3662,7 +3662,9 @@ if (!roamActive || (firstQ && firstQ.playlistId !== 'fm')) { next(); return; }
 }
 let handled = false;
 try { handled = maybeTAAutoAction(); } catch(e) {}
-if (!handled) next();
+if (handled) return;
+if (mode === 'single' && currentId) { playTrack(currentId); return; }
+next();
 }
 function checkAutoEnd() {
 if (!audio || endedHandled || audio.paused) return;

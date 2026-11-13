@@ -4460,7 +4460,13 @@
     }
     let handled = false;
     try { handled = maybeTAAutoAction(); } catch(e) {}
-    if (!handled) next();
+    if (handled) return;
+    // #1660（用户实报「漫游的时候单曲循环功能会失效」）：漫游的 playQueue 是 FM 自动填充的，
+    // 旧逻辑一首放完就 shift 下一首，`mode === 'single'` 只在 next() 的队列之后才判到＝永远轮不上。
+    // 自然播完这一路先把「单曲循环」判掉：用户显式选的循环模式优先于漫游自动续播；
+    // 手动点【下一首】仍走 next() 的队列优先级（切歌是明确意图，不拦）。
+    if (mode === 'single' && currentId) { playTrack(currentId); return; }
+    next();
   }
   function checkAutoEnd() {
     if (!audio || endedHandled || audio.paused) return;
