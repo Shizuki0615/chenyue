@@ -1280,8 +1280,10 @@ console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
 const LEVELS = ['exhigh', 'higher', 'standard'];
 let lvIndex = 0;
 let lvTry = 0;
+let totalTries = 0; // 本轮总请求数上限（含重试），防极端情况无限重试卡住播放
 let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
 const attempt = function () {
+totalTries++;
 const lv = LEVELS[lvIndex];
 neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
 let url = '', code = 0, reason = '', trial = false, fee = null, br = 0, size = 0;
@@ -1321,16 +1323,16 @@ code: code, reason: '', level: lv, trial: false, fee: fee, br: br, size: size
 return;
 }
 const transient = !err && (code === -460 || (!url && !trial && !code));
-if (transient && lvTry < 1) {
+if (transient && lvTry < 2 && totalTries < 9) {
 lvTry++;
-console.log('[VIP-Diag] 网易风控/空响应，同档重试（' + lv + '）');
-setTimeout(attempt, 500 + Math.floor(Math.random() * 300));
+console.log('[VIP-Diag] 网易风控/空响应，同档重试第 ' + lvTry + ' 次（' + lv + '）');
+setTimeout(attempt, 400 + Math.floor(Math.random() * 500));
 return;
 }
 lvTry = 0;
-if (!err && lvIndex + 1 < LEVELS.length) {
+if (!err && lvIndex + 1 < LEVELS.length && totalTries < 9) {
 lvIndex++;
-setTimeout(attempt, 250);
+setTimeout(attempt, 200);
 return;
 }
 cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
@@ -1748,7 +1750,7 @@ const runUrlTest = (path) => new Promise(res => {
 let tries = 0;
 const go = () => {
 runTest(path).then((r) => {
-if (r && r.j && r.j.code === -460 && tries < 1) { tries++; setTimeout(go, 600); return; }
+if (r && r.j && r.j.code === -460 && tries < 2) { tries++; setTimeout(go, 600); return; }
 res(r);
 });
 };
@@ -3637,10 +3639,12 @@ try { syncPlayIcons(false); } catch (e) {}
 if (Date.now() - trialToastAt > 4000) {
 trialToastAt = Date.now();
 let why = '';
-if (res && res.fee === 4) why = '（数字专辑需单独购买）';
+if (res && res.code === -460) why = '（网易风控，已自动重试多次；稍后再点播放试试）';
+else if (res && res.fee === 4) why = '（数字专辑需单独购买）';
 else if (!neaCookie()) why = '（登录已失效，请重新扫码）';
 else why = '（会员未生效或该曲受限，可到「网易云账号 → 诊断 VIP 播放」看详情）';
-const head = (res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段';
+const head = (res && res.code === -460) ? '网易风控暂时取不到直链'
+: ((res && (res.trial || res.reason)) ? (res.trial ? '只能取到试听片段' : '这首没有完整版权') : '只能取到试听片段');
 try { toast('《' + ((m && m.name) || '这首歌') + '》' + head + '，已跳过' + why); } catch (e) {}
 }
 if (trialSkipStreak >= 6) {
