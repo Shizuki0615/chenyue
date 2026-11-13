@@ -7388,6 +7388,8 @@ const FIX_SENTINELS = [
   // ==== 2026-11-13 #1659 网易 -460 是随机风控，同档重试 ====
   { name: '#1659a -460 同档重试（删＝一次随机风控就把会员歌判成没版权/跳过）', file: 'js/music-player.js', needle: 'const transient = !err && (code === -460 || (!url && !trial && !code));' },
   { name: '#1659b 诊断单串行+遇 -460 重试（删＝4 个并发请求一起撞风控，结果误报）', file: 'js/music-player.js', needle: 'const runUrlTest = (path) => new Promise(res => {' },
+  // ==== 2026-11-13 #1660 漫游时单曲循环生效 ====
+  { name: '#1660 自然播完先判单曲循环（删＝漫游的 FM 队列抢先切下一首，单曲循环永远轮不上）', file: 'js/music-player.js', needle: "if (mode === 'single' && currentId) { playTrack(currentId); return; }" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
