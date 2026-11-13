@@ -67,3 +67,6 @@ REAL-DEVICE-CHECK.md
 
 # 会话上传目录（截图等临时文件，不入库）
 .uploads/
+
+# 临时交付的后端 zip（不入库，走 GitHub Release）
+/ncm-scf.zip
