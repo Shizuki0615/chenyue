@@ -7385,6 +7385,9 @@ const FIX_SENTINELS = [
   { name: '#1658a 制作信息行识别（中英混排/无冒号折行；删＝编曲 MUSIC / ARRANGEMENT: 又被当成歌词）', file: 'js/music-player.js', needle: 'function taLyricIsCredit(t) {' },
   { name: '#1658b 英文角色标签识别（删＝GUITAR/STRINGS/BACKGROUND VOCAL 整块漏过）', file: 'js/music-player.js', needle: 'const TA_LYRIC_EN_ROLE_RE' },
   { name: '#1658c 顶部制作信息块整块跳过（删＝折行的纯人名续行「Koh / 林俊杰 JJ LIN」仍会被发出去）', file: 'js/music-player.js', needle: 'const cont = inTop && /[/／]/.test(t) && !/[，。！？；]/.test(t);' },
+  // ==== 2026-11-13 #1659 网易 -460 是随机风控，同档重试 ====
+  { name: '#1659a -460 同档重试（删＝一次随机风控就把会员歌判成没版权/跳过）', file: 'js/music-player.js', needle: 'const transient = !err && (code === -460 || (!url && !trial && !code));' },
+  { name: '#1659b 诊断单串行+遇 -460 重试（删＝4 个并发请求一起撞风控，结果误报）', file: 'js/music-player.js', needle: 'const runUrlTest = (path) => new Promise(res => {' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
