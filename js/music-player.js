@@ -1278,10 +1278,11 @@ if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后
 const ck = neaCookie();
 console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
 const LEVELS = ['exhigh', 'higher', 'standard'];
-let li = 0;
+let lvIndex = 0;
+let lvTry = 0;
 let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
 const attempt = function () {
-const lv = LEVELS[li++];
+const lv = LEVELS[lvIndex];
 neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
 let url = '', code = 0, reason = '', trial = false, fee = null, br = 0, size = 0;
 try {
@@ -1319,7 +1320,19 @@ code: code, reason: '', level: lv, trial: false, fee: fee, br: br, size: size
 });
 return;
 }
-if (!err && li < LEVELS.length) { attempt(); return; }
+const transient = !err && (code === -460 || (!url && !trial && !code));
+if (transient && lvTry < 1) {
+lvTry++;
+console.log('[VIP-Diag] 网易风控/空响应，同档重试（' + lv + '）');
+setTimeout(attempt, 500 + Math.floor(Math.random() * 300));
+return;
+}
+lvTry = 0;
+if (!err && lvIndex + 1 < LEVELS.length) {
+lvIndex++;
+setTimeout(attempt, 250);
+return;
+}
 cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
 });
 };
@@ -1731,12 +1744,21 @@ fetch(_base + path, ctrl ? { signal: ctrl.signal } : undefined)
 .catch(e => { clearTimeout(timer); res({ err: String(e.message||e) }); });
 } catch(e) { res({ err: String(e) }); }
 });
-Promise.all([
-runTest('/login/status?cookie=' + cookieEnc),
-runTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc),
-runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc),
-runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc),
-]).then(([ls, free, vip, vipStd]) => {
+const runUrlTest = (path) => new Promise(res => {
+let tries = 0;
+const go = () => {
+runTest(path).then((r) => {
+if (r && r.j && r.j.code === -460 && tries < 1) { tries++; setTimeout(go, 600); return; }
+res(r);
+});
+};
+go();
+});
+runTest('/login/status?cookie=' + cookieEnc)
+.then((ls) => runUrlTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc).then((free) => ({ ls, free })))
+.then(({ ls, free }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc).then((vip) => ({ ls, free, vip })))
+.then(({ ls, free, vip }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc).then((vipStd) => ({ ls, free, vip, vipStd })))
+.then(({ ls, free, vip, vipStd }) => {
 out.push('=== /login/status ===');
 if (ls.err) out.push('❌ 请求失败: ' + ls.err);
 else {

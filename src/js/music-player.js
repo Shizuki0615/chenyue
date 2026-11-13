@@ -1532,10 +1532,11 @@
     const ck = neaCookie();
     console.log('[VIP-Diag] 后端取直链 id=' + id + ' cookie_len=' + ck.length);
     const LEVELS = ['exhigh', 'higher', 'standard'];
-    let li = 0;
+    let lvIndex = 0;
+    let lvTry = 0;
     let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
     const attempt = function () {
-      const lv = LEVELS[li++];
+      const lv = LEVELS[lvIndex];
       neaFetch('/song/url/v1?id=' + encodeURIComponent(String(id)) + '&level=' + lv, function (j, err) {
         let url = '', code = 0, reason = '', trial = false, fee = null, br = 0, size = 0;
         try {
@@ -1575,8 +1576,23 @@
           });
           return;
         }
+        // #1659：网易 -460 是**随机**的——实测同一后端连发 4 次是「过 / -460 / 过 / 过」
+        // （出口 IP 池里个别 IP 被风控）。同一档隔 ~500ms 重试一次通常就能过；
+        // 旧实现一撞 -460 就降档，既浪费了本来能过的这一档，三档连打还更容易被风控。
+        const transient = !err && (code === -460 || (!url && !trial && !code));
+        if (transient && lvTry < 1) {
+          lvTry++;
+          console.log('[VIP-Diag] 网易风控/空响应，同档重试（' + lv + '）');
+          setTimeout(attempt, 500 + Math.floor(Math.random() * 300));
+          return;
+        }
+        lvTry = 0;
         // 试听/没给 url：降一档音质再试（网络错误不重试，避免连打三枪）
-        if (!err && li < LEVELS.length) { attempt(); return; }
+        if (!err && lvIndex + 1 < LEVELS.length) {
+          lvIndex++;
+          setTimeout(attempt, 250);
+          return;
+        }
         cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
       });
     };
@@ -2053,7 +2069,8 @@
         out.push('neaReady (后端+cookie): ' + (neaReady() ? '✅ 是' : '❌ 否'));
         out.push('保留会员歌曲开关: ' + (neaKeepVip() ? '开' : '关'));
         out.push('');
-        // 并行打 3 个接口
+        // #1659：逐个串行打接口（并发打反而容易一起撞上 -460 风控）；
+        // 取直链遇到 -460 时等 600ms 重试一次再判定，避免把随机风控报成「没版权」。
         const runTest = (path) => new Promise(res => {
           try {
             let ctrl; try { ctrl = new AbortController(); } catch(e){}
@@ -2064,12 +2081,21 @@
               .catch(e => { clearTimeout(timer); res({ err: String(e.message||e) }); });
           } catch(e) { res({ err: String(e) }); }
         });
-        Promise.all([
-          runTest('/login/status?cookie=' + cookieEnc),
-          runTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc),
-          runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc),
-          runTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc),
-        ]).then(([ls, free, vip, vipStd]) => {
+        const runUrlTest = (path) => new Promise(res => {
+          let tries = 0;
+          const go = () => {
+            runTest(path).then((r) => {
+              if (r && r.j && r.j.code === -460 && tries < 1) { tries++; setTimeout(go, 600); return; }
+              res(r);
+            });
+          };
+          go();
+        });
+        runTest('/login/status?cookie=' + cookieEnc)
+          .then((ls) => runUrlTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc).then((free) => ({ ls, free })))
+          .then(({ ls, free }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc).then((vip) => ({ ls, free, vip })))
+          .then(({ ls, free, vip }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc).then((vipStd) => ({ ls, free, vip, vipStd })))
+          .then(({ ls, free, vip, vipStd }) => {
           // login/status
           out.push('=== /login/status ===');
           if (ls.err) out.push('❌ 请求失败: ' + ls.err);
