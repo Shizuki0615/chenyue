@@ -1260,6 +1260,7 @@ keyBase: 'netease-api-base',
 keyCookie: 'netease-cookie',
 keyUser: 'netease-user',
 keyKeepVip: 'netease-keep-vip',
+keyRealIp: 'netease-real-ip',
 };
 function neaBase() { return (NEA.gStore ? NEA.gStore.get(NEA.keyBase) : '') || ''; }
 function neaSetBase(v) { if (NEA.gStore) NEA.gStore.set(NEA.keyBase, v); }
@@ -1273,6 +1274,37 @@ function neaSetUser(v) { if (NEA.gStore) { if (v) NEA.gStore.set(NEA.keyUser, JS
 function neaKeepVip() { return !!(NEA.gStore && NEA.gStore.get(NEA.keyKeepVip) === '1'); }
 function neaSetKeepVip(on) { if (NEA.gStore) NEA.gStore.set(NEA.keyKeepVip, on ? '1' : '0'); }
 function neaReady() { return !!(neaBase() && neaCookie()); }
+function neaRealIp() {
+if (!NEA.gStore) return '';
+try {
+const o = JSON.parse(NEA.gStore.get(NEA.keyRealIp) || 'null');
+if (o && typeof o.ip === 'string' && o.ip && Date.now() - (Number(o.ts) || 0) < 12 * 3600 * 1000) return o.ip;
+} catch (e) {}
+return '';
+}
+let neaRealIpBusy = false;
+function neaEnsureRealIp() {
+if (!neaBase() || neaRealIp() || neaRealIpBusy) return;
+neaRealIpBusy = true;
+let done = false;
+const finish = (ip) => {
+if (done) return;
+done = true; neaRealIpBusy = false;
+if (ip && NEA.gStore) { try { NEA.gStore.set(NEA.keyRealIp, JSON.stringify({ ip: ip, ts: Date.now() })); } catch (e) {} }
+};
+let ctrl = null;
+try { ctrl = new AbortController(); } catch (e) {}
+const timer = setTimeout(() => { try { ctrl && ctrl.abort(); } catch (e) {} finish(''); }, 5000);
+const url = neaBase() + '/client-ip?t=' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+.then(r => r.json())
+.then(j => {
+clearTimeout(timer);
+const ip = j && typeof j.ip === 'string' ? j.ip.trim().replace(/^::ffff:/, '') : '';
+finish(/^(\d{1,3}\.){3}\d{1,3}$/.test(ip) || /^[0-9a-f]{0,4}(:[0-9a-f]{0,4}){2,7}$/i.test(ip) ? ip : '');
+})
+.catch(() => { clearTimeout(timer); finish(''); });
+}
 function neaFetchSongUrl(id, cb) {
 if (!neaReady()) { cb && cb({ url: null, code: 0, reason: '未登录或未配后端' }); return; }
 const ck = neaCookie();
@@ -1361,7 +1393,9 @@ if (!base) { cb && cb(null, '未配置后端地址'); return; }
 const lim = Number(timeoutMs) > 0 ? Number(timeoutMs) : 15000;
 const sep = path.indexOf('?') >= 0 ? '&' : '?';
 const cookie = encodeURIComponent(neaCookie());
-const url = base + path + sep + 'cookie=' + cookie;
+const rip = neaRealIp();
+const url = base + path + sep + 'cookie=' + cookie + (rip ? '&realIP=' + encodeURIComponent(rip) : '');
+neaEnsureRealIp(); // 首次没有就后台拉一次，后续请求自动带上
 const NativeXHR = (window.plus && window.plus.net && window.plus.net.XMLHttpRequest) ? window.plus.net.XMLHttpRequest : null;
 if (NativeXHR) {
 let xhr = null;
@@ -1643,6 +1677,7 @@ neaLoadedPls = null;
 let render = (state) => {
 const st = state || {};
 const base = neaBase();
+neaEnsureRealIp(); // #1662：顺手把「我的公网 IP」拉回来（下次请求起作为 realIP 带上）
 const user = neaUser();
 let body = '';
 body += '<div class="sm-form">' +
@@ -1733,6 +1768,7 @@ const out = [];
 out.push('=== 基础状态 ===');
 out.push('后端地址: ' + (_base || '❌ 未配置'));
 out.push('Cookie 长度: ' + (_ck ? _ck.length + ' 字' : '❌ 未登录 (cookie 为空)'));
+out.push('上报 realIP: ' + (neaRealIp() || '未获取（需新版后端 /client-ip，稍后自动重试）'));
 out.push('neaReady (后端+cookie): ' + (neaReady() ? '✅ 是' : '❌ 否'));
 out.push('保留会员歌曲开关: ' + (neaKeepVip() ? '开' : '关'));
 out.push('');
