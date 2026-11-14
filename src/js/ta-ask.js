@@ -4955,6 +4955,134 @@ window.openTCPanel = openTCPanel;
       toast('已删除模板「' + t.name + '」');
     }, { noInput: true, staticText: '只删这个模板；已经发到聊天里的问卷不受影响。', pills: [{ label: '删除', value: 'ok' }] });
   }
+  // ===== #1663 聊天底部半框「问卷快选」=====
+  // 用户要求（2026-11-14）：快选必须出现在「填写界面」（聊天底部半框）上，粒度是**单题自由组合**，
+  // 来源＝把已有「常用问卷模板」拆成一道一道题。旧实现只有整套模板、且只在问卷页里，
+  // 半框里根本看不到——这次直接渲染在半框输入框下面：按模板分组列出单题 chip，点一条加入、
+  // 再点取消，按点击顺序组合，点「发出问卷」走现有 surveySend（交卷时间/概率等仍用问卷页当前设置）。
+  let qselPicked = [];
+  function qselItems() {
+    const out = [];
+    tplLoad().forEach(function (t, ti) {
+      let qs = [];
+      try { qs = surveyParse(t.text) || []; } catch (e) { qs = []; }
+      qs.forEach(function (q, qi) { if (q && q.text) out.push({ key: ti + ':' + qi, tpl: t.name, q: q }); });
+    });
+    return out;
+  }
+  function qselPaint() {
+    const box = document.getElementById('chat-ask-qsel-chips');
+    if (box) {
+      const keys = qselPicked.map(function (x) { return x.key; });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-qsel]'), function (el) {
+        el.classList.toggle('sel', keys.indexOf(el.getAttribute('data-qsel')) >= 0);
+      });
+    }
+    const n = qselPicked.length;
+    const cnt = document.getElementById('chat-ask-qsel-count');
+    if (cnt) cnt.textContent = '已选 ' + n + ' 题';
+    const send = document.getElementById('chat-ask-qsel-send');
+    if (send) { send.disabled = !n; send.textContent = n ? '发出问卷（' + n + ' 题）' : '发出问卷'; }
+  }
+  let qselBound = false;
+  function qselBind() {
+    if (qselBound) return;
+    const box = document.getElementById('chat-ask-qsel-chips');
+    const send = document.getElementById('chat-ask-qsel-send');
+    const clear = document.getElementById('chat-ask-qsel-clear');
+    if (!box || !send || !clear) return;
+    qselBound = true;
+    box.addEventListener('click', function (e) {
+      const chip = e.target && e.target.closest ? e.target.closest('[data-qsel]') : null;
+      if (!chip) return;
+      const key = chip.getAttribute('data-qsel');
+      const at = qselPicked.findIndex(function (x) { return x.key === key; });
+      if (at >= 0) qselPicked.splice(at, 1);
+      else {
+        const it = qselItems().find(function (x) { return x.key === key; });
+        if (it) qselPicked.push(it);
+      }
+      qselPaint();
+    });
+    clear.addEventListener('click', function () { qselPicked = []; qselPaint(); });
+    send.addEventListener('click', qselSend);
+  }
+  function qselSerialize() {
+    return qselPicked.map(function (it) {
+      const q = it.q;
+      const head = '【' + q.text + (q.type === 'multi' ? (q.multiMax ? '（多选·最多' + q.multiMax + '）' : '（多选）') : '') + '】';
+      if (q.type === 'text') return head + '\n一';
+      return head + '\n' + (q.options || []).join('\n');
+    }).join('\n\n');
+  }
+  function qselSend() {
+    if (!qselPicked.length) return;
+    const text = qselSerialize();
+    const qs = surveyParse(text);
+    if (!qs.length) { toast('选中的题目格式不完整，换几道试试'); return; }
+    const d0 = surveyLoad();
+    if (d0.status === 'sent') { toast('问卷已发出，他正在作答；要发新的请先撤回'); return; }
+    if (d0.settings.deadline && d0.settings.deadline <= Date.now()) { toast('交卷时间已过期，请到「批量提问问卷」页重设'); return; }
+    const tEl = document.getElementById('ta-survey-text');
+    if (tEl) tEl.value = text;
+    d0.text = text; d0.qs = qs; surveySave(d0);
+    // 先收起半框，再由 surveySend 发卡、跳回聊天（它会重新读一次 textarea，内容与上面一致）
+    const closeBtn = document.getElementById('chat-ask-close');
+    if (closeBtn) { try { closeBtn.click(); } catch (e) {} }
+    qselPicked = [];
+    qselPaint();
+    surveySend();
+  }
+  window.chatQselRender = function () {
+    const box = document.getElementById('chat-ask-qsel-chips');
+    if (!box) return;
+    qselBind();
+    const items = qselItems();
+    // 模板可能在别处被改过：按 key 重新映射，删掉的题自动从已选里剔除
+    const byKey = {};
+    items.forEach(function (it) { byKey[it.key] = it; });
+    qselPicked = qselPicked.map(function (x) { return byKey[x.key]; }).filter(Boolean);
+    box.innerHTML = '';
+    if (!items.length) {
+      const e = document.createElement('div');
+      e.className = 'chat-ask-qsel-empty';
+      e.textContent = '还没有可快选的题目：先到「批量提问问卷」页把题目存成常用问卷，这里会自动拆成单题。';
+      box.appendChild(e);
+      qselPaint();
+      return;
+    }
+    const groups = [];
+    items.forEach(function (it) {
+      let g = groups.find(function (x) { return x.name === it.tpl; });
+      if (!g) { g = { name: it.tpl, items: [] }; groups.push(g); }
+      g.items.push(it);
+    });
+    groups.forEach(function (g) {
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-ask-qsel-group';
+      const h = document.createElement('div');
+      h.className = 'chat-ask-qsel-tpl';
+      h.textContent = g.name;
+      wrap.appendChild(h);
+      const row = document.createElement('div');
+      row.className = 'chat-ask-qsel-row';
+      g.items.forEach(function (it) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'tsv-chip chat-ask-qsel-chip';
+        chip.setAttribute('data-qsel', it.key);
+        chip.title = it.q.text + (it.q.options && it.q.options.length ? '（' + it.q.options.join(' / ') + '）' : '');
+        const n = document.createElement('span');
+        n.className = 'n';
+        n.textContent = it.q.text;
+        chip.appendChild(n);
+        row.appendChild(chip);
+      });
+      wrap.appendChild(row);
+      box.appendChild(wrap);
+    });
+    qselPaint();
+  };
   // v3.26.x：供「聊天页 · 问问TA 半框」的「批量设置问卷」按钮调用：打开批量问卷页（返回时回聊天页）
   window.openAskSurvey = function () {
     if (!surveyPage) { toast('批量问卷加载失败'); return; }

@@ -12775,6 +12775,12 @@ const isInvite = chatAskMode === 'invite';
 	// v3.26.x：批量设置问卷按钮只在「问问TA」模式显示（邀请TA 模式隐藏）
 	const bulkBtn = document.getElementById('chat-ask-bulk');
 	if (bulkBtn) bulkBtn.hidden = isInvite;
+	// #1663：问卷快选同样只在「问问TA」模式显示；每次进这个模式重渲染一次（模板可能刚改过）
+	const qselBox = document.getElementById('chat-ask-qsel');
+	if (qselBox) {
+		qselBox.hidden = isInvite;
+		if (!isInvite && typeof window.chatQselRender === 'function') window.chatQselRender();
+	}
 	// 2026-10-28：听歌 / 读书快捷邀请与直达说明随「邀请他」模式一起显示
 	const quickInv = document.getElementById('chat-ask-quick');
 	if (quickInv) quickInv.hidden = !isInvite;

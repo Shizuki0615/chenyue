@@ -6356,6 +6356,16 @@
           <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>「一起听歌 / 一起读书」邀请，他同意后会直接打开对应页面；自定义邀请里提到「听歌 / 读书」也算</div>
           <div class="invite-list" id="invite-list" hidden></div>
           <div class="dec-inp-wrap chat-ask-inp-wrap"><input type="text" class="chat-ask-input" id="chat-ask-input" placeholder="想邀请他做什么？" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><button type="button" class="dec-inp-clear" data-clear="chat-ask-input" aria-label="清空" title="清空">✕</button></div>
+          <!-- #1663 问卷快选：把「常用问卷模板」拆成单题列在填写界面，点一条加一条、自由组合 -->
+          <div class="chat-ask-qsel" id="chat-ask-qsel" hidden>
+            <div class="chat-ask-qsel-head">
+              <span>问卷快选</span>
+              <span class="chat-ask-qsel-count" id="chat-ask-qsel-count">已选 0 题</span>
+              <button type="button" class="chat-ask-qsel-clear" id="chat-ask-qsel-clear">清空</button>
+            </div>
+            <div class="chat-ask-qsel-chips" id="chat-ask-qsel-chips"></div>
+            <button type="button" class="chat-ask-qsel-send" id="chat-ask-qsel-send" disabled>发出问卷</button>
+          </div>
           <button type="button" class="chat-ask-bulk" id="chat-ask-bulk" hidden>批量设置问卷</button>
           <div class="chat-ask-actions">
             <button class="cc-tool" id="chat-ask-save" hidden>存入</button>
