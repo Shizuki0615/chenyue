@@ -4620,6 +4620,10 @@ window.openTCPanel = openTCPanel;
     // v3.33.x #523：TA 的作答是否逐条发到聊天（批量问卷题多，用户可关闭只留卡片；默认开＝与单题一致）
     if (typeof d.settings.sendToChat !== 'boolean') d.settings.sendToChat = true;
     if (!Array.isArray(d.qs)) d.qs = [];
+    // #1665：旧版草稿只有 text（纯文本）——一次性迁移成结构化题目；新数据始终有 qs
+    if (!d.qs.length && typeof d.text === 'string' && d.text.trim()) {
+      try { d.qs = surveyParse(d.text); } catch (e) {}
+    }
     if (!Array.isArray(d.answers)) d.answers = [];
     if (d.status !== 'sent' && d.status !== 'done') { d.status = 'draft'; d.sentAt = 0; }
     // v3.33.x #523：doneMsgAt = 已发过交卷系统消息的那一轮 sentAt（同轮只提醒一次；0=未提醒）
@@ -4682,6 +4686,218 @@ window.openTCPanel = openTCPanel;
     });
     flush();
     return qs.filter(q => q.text);
+  }
+  // ===== #1665 结构化题目模型 =====
+  // 用户实报「模板载入后单选选项丢失」：旧模板只存纯文本，载入时再 surveyParse 一次，
+  // 只要选项不是「【题干】下一行一个选项」这一种写法（顿号连写/数字编号/括号后跟选项…）
+  // 就会被静默降级成文字题。这里改成结构化数据为唯一事实源，发送/模板/快选都不再回读文本。
+  function surveyQsClone(qs) { try { return JSON.parse(JSON.stringify(qs || [])); } catch (e) { return []; } }
+  function surveyQsBlank(type) {
+    return { type: type === 'multi' ? 'multi' : (type === 'text' ? 'text' : 'single'), text: '', options: type === 'text' ? [] : ['', ''], multiMax: 0 };
+  }
+  // 清洗（模板/发送用）：去空题干、去空选项、单选至少保留 2 项由校验负责
+  function surveyQsClean(qs) {
+    return (qs || []).map(function (q) {
+      if (!q || typeof q !== 'object') return null;
+      const type = q.type === 'multi' ? 'multi' : (q.type === 'text' ? 'text' : 'single');
+      const out = { type: type, text: String(q.text == null ? '' : q.text).trim(), options: [] };
+      if (type !== 'text') {
+        out.options = (q.options || []).map(function (o) { return String(o == null ? '' : o).trim(); }).filter(Boolean);
+      }
+      if (type === 'multi' && q.multiMax >= 2 && q.multiMax <= 6) out.multiMax = Math.floor(q.multiMax);
+      return out;
+    }).filter(function (q) { return q && q.text; });
+  }
+  // 结构化 → 文本（只用于兼容旧字段 d.text / 旧卡片；发送不再读它）
+  function surveyQsToText(qs) {
+    return (qs || []).map(function (q) {
+      const text = String(q && q.text || '').trim();
+      if (!text) return '';
+      const head = '【' + text + (q.type === 'multi' ? (q.multiMax >= 2 ? '（多选·最多' + q.multiMax + '）' : '（多选）') : '') + '】';
+      if (q.type === 'text') return head + '\n一';
+      return head + '\n' + (q.options || []).map(function (o) { return String(o == null ? '' : o).trim(); }).filter(Boolean).join('\n');
+    }).filter(Boolean).join('\n\n');
+  }
+  function surveyQsValidate(qs) {
+    if (!Array.isArray(qs) || !qs.length) return { ok: false, msg: '先添加至少一道题' };
+    for (let i = 0; i < qs.length; i++) {
+      const q = qs[i] || {};
+      const n = i + 1;
+      if (!String(q.text || '').trim()) return { ok: false, msg: '第 ' + n + ' 题还没填题干' };
+      if (q.type === 'text') continue;
+      const opts = (q.options || []).map(function (o) { return String(o == null ? '' : o).trim(); }).filter(Boolean);
+      if (opts.length < 2) return { ok: false, msg: '第 ' + n + ' 题（' + (q.type === 'multi' ? '多选' : '单选') + '）至少要 2 个选项' };
+    }
+    return { ok: true };
+  }
+  // ===== #1665 结构化编辑器 =====
+  function surveyQsCard(q, i, total) {
+    const card = document.createElement('div');
+    card.className = 'sq-card';
+    card.dataset.i = String(i);
+    const head = document.createElement('div');
+    head.className = 'sq-head';
+    const no = document.createElement('span');
+    no.className = 'sq-no';
+    no.textContent = '第 ' + (i + 1) + ' 题';
+    const sel = document.createElement('select');
+    sel.className = 'sq-type';
+    [['single', '单选'], ['multi', '多选'], ['text', '文字']].forEach(function (p) {
+      const o = document.createElement('option');
+      o.value = p[0];
+      o.textContent = p[1];
+      if ((q.type || 'single') === p[0]) o.selected = true;
+      sel.appendChild(o);
+    });
+    const up = document.createElement('button');
+    up.type = 'button'; up.className = 'cc-tool sq-up'; up.textContent = '↑'; up.title = '上移'; up.disabled = i === 0;
+    const down = document.createElement('button');
+    down.type = 'button'; down.className = 'cc-tool sq-down'; down.textContent = '↓'; down.title = '下移'; down.disabled = i === total - 1;
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'cc-tool sq-del'; del.textContent = '✕'; del.title = '删除这道题';
+    head.appendChild(no); head.appendChild(sel); head.appendChild(up); head.appendChild(down); head.appendChild(del);
+    card.appendChild(head);
+    const text = document.createElement('input');
+    text.type = 'text';
+    text.className = 'tc-input sq-text sq-text-inp';
+    text.placeholder = '题目内容，如：今晚想吃什么？';
+    text.value = q.text || '';
+    card.appendChild(text);
+    if (q.type !== 'text') {
+      const opts = document.createElement('div');
+      opts.className = 'sq-opts';
+      (q.options || []).forEach(function (o, j) {
+        const row = document.createElement('div');
+        row.className = 'sq-opt';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'tc-input sq-opt-inp';
+        inp.placeholder = '选项 ' + (j + 1);
+        inp.value = o || '';
+        inp.dataset.j = String(j);
+        const x = document.createElement('button');
+        x.type = 'button'; x.className = 'sq-opt-del'; x.textContent = '✕'; x.title = '删除这个选项'; x.dataset.j = String(j);
+        row.appendChild(inp); row.appendChild(x);
+        opts.appendChild(row);
+      });
+      const addOpt = document.createElement('button');
+      addOpt.type = 'button'; addOpt.className = 'sq-opt-add'; addOpt.textContent = '＋ 选项';
+      opts.appendChild(addOpt);
+      card.appendChild(opts);
+      if (q.type === 'multi') {
+        const mm = document.createElement('div');
+        mm.className = 'sq-mmax';
+        const lab = document.createElement('span');
+        lab.textContent = '本题最多选';
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.min = '2'; inp.max = '6';
+        inp.className = 'tc-input sq-mmax-inp';
+        inp.placeholder = '全局';
+        inp.value = (q.multiMax >= 2) ? String(q.multiMax) : '';
+        const tail = document.createElement('span');
+        tail.textContent = '个（留空用全局）';
+        mm.appendChild(lab); mm.appendChild(inp); mm.appendChild(tail);
+        card.appendChild(mm);
+      }
+    }
+    return card;
+  }
+  function surveyQsRender(force) {
+    const box = document.getElementById('ta-survey-qs');
+    if (!box) return;
+    // 正在题框里打字时不动 DOM（否则光标/焦点会被重画顶掉）
+    if (!force && (box.contains(document.activeElement) || document.activeElement === box)) return;
+    const d = surveyLoad();
+    box.innerHTML = '';
+    if (!d.qs.length) {
+      const e = document.createElement('div');
+      e.className = 'sq-empty';
+      e.textContent = '还没有题目，点下面的「＋ 添加题目」开始。';
+      box.appendChild(e);
+      return;
+    }
+    d.qs.forEach(function (q, i) { box.appendChild(surveyQsCard(q, i, d.qs.length)); });
+  }
+  let sqBound = false;
+  function surveyQsBind() {
+    if (sqBound) return;
+    const box = document.getElementById('ta-survey-qs');
+    if (!box) return;
+    sqBound = true;
+    // 输入：只改数据 + 刷新状态栏，不重画（保住焦点）
+    box.addEventListener('input', function (e) {
+      const card = e.target && e.target.closest ? e.target.closest('.sq-card') : null;
+      if (!card) return;
+      const i = Number(card.dataset.i);
+      const d = surveyLoad();
+      const q = d.qs[i];
+      if (!q) return;
+      if (e.target.classList.contains('sq-text-inp')) q.text = e.target.value;
+      else if (e.target.classList.contains('sq-opt-inp')) {
+        const j = Number(e.target.dataset.j);
+        if (Array.isArray(q.options) && j >= 0 && j < q.options.length) q.options[j] = e.target.value;
+      } else if (e.target.classList.contains('sq-mmax-inp')) {
+        const v = parseInt(e.target.value, 10);
+        q.multiMax = (v >= 2 && v <= 6) ? v : 0;
+      } else return;
+      d.text = surveyQsToText(d.qs);
+      surveySave(d);
+      surveyStatusRender(d);
+    });
+    // 换题型：单/多选补足两个空选项；文字题清空选项
+    box.addEventListener('change', function (e) {
+      if (!e.target || !e.target.classList.contains('sq-type')) return;
+      const card = e.target.closest('.sq-card');
+      if (!card) return;
+      const i = Number(card.dataset.i);
+      const d = surveyLoad();
+      const q = d.qs[i];
+      if (!q) return;
+      q.type = e.target.value === 'multi' ? 'multi' : (e.target.value === 'text' ? 'text' : 'single');
+      if (q.type === 'text') q.options = [];
+      else {
+        q.options = Array.isArray(q.options) ? q.options : [];
+        while (q.options.length < 2) q.options.push('');
+      }
+      if (q.type !== 'multi') q.multiMax = 0;
+      d.text = surveyQsToText(d.qs);
+      surveySave(d);
+      surveyQsRender(true);
+      surveyStatusRender(d);
+    });
+    box.addEventListener('click', function (e) {
+      const card = e.target && e.target.closest ? e.target.closest('.sq-card') : null;
+      if (!card) return;
+      const i = Number(card.dataset.i);
+      const d = surveyLoad();
+      if (!d.qs[i]) return;
+      let structural = false;
+      if (e.target.closest('.sq-del')) { d.qs.splice(i, 1); structural = true; }
+      else if (e.target.closest('.sq-up') && i > 0) { const t = d.qs[i - 1]; d.qs[i - 1] = d.qs[i]; d.qs[i] = t; structural = true; }
+      else if (e.target.closest('.sq-down') && i < d.qs.length - 1) { const t = d.qs[i + 1]; d.qs[i + 1] = d.qs[i]; d.qs[i] = t; structural = true; }
+      else if (e.target.closest('.sq-opt-add')) { if (!Array.isArray(d.qs[i].options)) d.qs[i].options = []; d.qs[i].options.push(''); structural = true; }
+      else if (e.target.closest('.sq-opt-del')) {
+        const j = Number(e.target.closest('.sq-opt-del').dataset.j);
+        if (Array.isArray(d.qs[i].options) && j >= 0) { d.qs[i].options.splice(j, 1); structural = true; }
+      }
+      if (!structural) return;
+      d.text = surveyQsToText(d.qs);
+      surveySave(d);
+      surveyQsRender(true);
+      surveyStatusRender(d);
+    });
+    const add = document.getElementById('ta-survey-addq');
+    if (add) add.addEventListener('click', function () {
+      const d = surveyLoad();
+      d.qs.push(surveyQsBlank('single'));
+      d.text = surveyQsToText(d.qs);
+      surveySave(d);
+      surveyQsRender(true);
+      surveyStatusRender(d);
+      const last = box.lastElementChild;
+      const inp = last && last.querySelector('.sq-text-inp');
+      if (inp) { try { inp.focus(); } catch (e) {} }
+    });
   }
   // 文字题答案：与正常聊天同源抽字卡（自定义字卡连发 → 默认聊天字卡覆盖 → 兜底）
   function surveyAnswerText() {
@@ -4791,15 +5007,17 @@ window.openTCPanel = openTCPanel;
     surveySeqAnswers([q], () => {}, 0);
   }
   setInterval(surveyTick, 30000);
-  function surveySend() {
+  function surveySend(qsOverride) {
     const d = surveyLoad();
     if (d.status === 'sent') { toast('问卷已发出，他正在作答'); return; }
-    // v3.33.x #523：已交卷（done）允许直接再发一轮（用户要「重复提交给联系人作答」）——
-    // 这里照常把 status 重置为 sent、answers 清空、插入新的问卷卡片，等于开启新一轮作答。
-    const tEl = document.getElementById('ta-survey-text');
-    if (tEl) { d.text = tEl.value; d.qs = surveyParse(tEl.value); surveySave(d); }
-    if (!d.qs.length) { toast('请先填写问卷题目（【问题】+ 选项行 / 「一」行）'); return; }
+    // #1665：直接使用结构化题目（编辑器 / 快选传入），不再把手写文本重新解析一遍——
+    // 旧实现文本格式稍偏就会把单选降级成文字题（用户实报「载入后选项丢失」的根因）。
+    const useQs = Array.isArray(qsOverride) ? surveyQsClone(qsOverride) : surveyQsClone(d.qs);
+    const vd = surveyQsValidate(useQs);
+    if (!vd.ok) { toast(vd.msg); return; }
     if (d.settings.deadline && d.settings.deadline <= Date.now()) { toast('交卷时间已过期，请重新设置'); return; }
+    d.qs = surveyQsClean(useQs);
+    d.text = surveyQsToText(d.qs);
     d.status = 'sent'; d.sentAt = Date.now(); d.answers = []; d.doneMsgAt = 0;
     surveySave(d);
     try { window.chatAddSystem('你向他发出了一份问卷（' + d.qs.length + ' 题）。', { special: 'ask-msg' }); } catch (e) {}
@@ -4819,10 +5037,27 @@ window.openTCPanel = openTCPanel;
     // v3.33.x #523：发出后自动关闭批量设置页、回聊天看问卷卡片（用户报「点了发出没返回聊天页」）
     surveyGoChat();
   }
+  function surveyStatusRender(d) {
+    d = d || surveyLoad();
+    const st = document.getElementById('ta-survey-status');
+    if (!st) return;
+    if (d.status === 'draft') {
+      const nS = d.qs.filter(q => q.type === 'single').length;
+      // #1415：多选题单独计一格，草稿态一眼看出这一卷里几种题型各有多少
+      const nM = d.qs.filter(q => q.type === 'multi').length;
+      const brk = d.qs.length ? '（单选 ' + nS + ' 题' + (nM ? ' / 多选 ' + nM + ' 题' : '') + ' / 文字 ' + (d.qs.length - nS - nM) + ' 题）' : '';
+      const cap = (typeof window.askMultiMaxLoad === 'function' ? window.askMultiMaxLoad() : 3);
+      // #1480：有题自带「最多N」时点名说明——杆上那格只是没单独限选的题的默认档
+      const nCap = d.qs.filter(q => q.type === 'multi' && q.multiMax >= 2).length;
+      st.innerHTML = '当前状态：草稿 —— 共 <b>' + d.qs.length + '</b> 题' + brk + (nM ? '；多选题' + (nCap ? nCap + ' 题单独限选、其余' : '') + '每次最多选 ' + cap + ' 个。' : '。') + '填好后点「发出问卷给他」。';
+    } else if (d.status === 'sent') {
+      st.innerHTML = '当前状态：他作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
+    } else {
+      st.innerHTML = '当前状态：已交卷 —— 共 ' + d.qs.length + ' 题。可直接再点「发出问卷给他」重新提交一轮（清空上一轮作答、在聊天里插入新的问卷卡片）。';
+    }
+  }
   function surveyRender() {
     const d = surveyLoad();
-    const txt = document.getElementById('ta-survey-text');
-    if (txt && document.activeElement !== txt && txt.value !== d.text) txt.value = d.text;
     const dl = document.getElementById('ta-survey-deadline');
     if (dl) dl.textContent = d.settings.deadline ? fmtDeadlineText(d.settings.deadline) : '未设置';
     const prob = document.getElementById('ta-survey-prob');
@@ -4834,44 +5069,34 @@ window.openTCPanel = openTCPanel;
     // #1415：多选题上限回显——这一格与「问问TA」半框里那行是同一个 per-cid 键，任一处改完另一处跟上
     const mmaxEl = document.getElementById('ta-survey-mmax-val');
     if (mmaxEl) mmaxEl.value = typeof window.askMultiMaxLoad === 'function' ? window.askMultiMaxLoad() : 3;
-    const st = document.getElementById('ta-survey-status');
-    if (st) {
-      if (d.status === 'draft') {
-        const nS = d.qs.filter(q => q.type === 'single').length;
-        // #1415：多选题单独计一格，草稿态一眼看出这一卷里几种题型各有多少
-        const nM = d.qs.filter(q => q.type === 'multi').length;
-        const brk = d.qs.length ? '（单选 ' + nS + ' 题' + (nM ? ' / 多选 ' + nM + ' 题' : '') + ' / 文字 ' + (d.qs.length - nS - nM) + ' 题）' : '';
-        const cap = (typeof window.askMultiMaxLoad === 'function' ? window.askMultiMaxLoad() : 3);
-        // #1480：有题自带「最多N」时点名说明——杆上那格只是没单独限选的题的默认档
-        const nCap = d.qs.filter(q => q.type === 'multi' && q.multiMax >= 2).length;
-        st.innerHTML = '当前状态：草稿 —— 已解析 <b>' + d.qs.length + '</b> 题' + brk + (nM ? '；多选题' + (nCap ? nCap + ' 题单独限选、其余' : '') + '每次最多选 ' + cap + ' 个。' : '。') + '填好后点「发出问卷给他」。';
-      } else if (d.status === 'sent') {
-        st.innerHTML = '当前状态：他作答中 —— 已答 <b>' + d.answers.length + '</b> / ' + d.qs.length + ' 题' + (d.settings.deadline ? '；交卷时间 ' + fmtDeadlineText(d.settings.deadline) : '；未设交卷时间') + '；每 30 秒按 ' + d.settings.prob + '% 概率提前交卷。';
-      } else {
-        st.innerHTML = '当前状态：已交卷 —— 共 ' + d.qs.length + ' 题。可直接再点「发出问卷给他」重新提交一轮（清空上一轮作答、在聊天里插入新的问卷卡片）。';
-      }
-    }
+    surveyQsRender();
+    surveyStatusRender(d);
   }
   const surveyPage = document.getElementById('page-ta-ask-survey');
   // v3.26.x：标记本次批量问卷「从聊天页半框进入」——返回时回聊天页而非 TA 的询问设置页
   let surveyOpenFromChat = false;
-  // ===== #1653 常用问卷模板 =====
-  // 用户需求（2026-11-11）：问卷题目每次都要重打，想存几套常用的、一键载入。
-  // 口径：只存题目文本（textarea 内容），不存交卷时间/提前交卷概率/是否逐条发聊天——
-  //   那些是「这一次怎么发」的设置，留在页面上按当前值走；
-  // 作用域：全局根键 xy-home-v2:ta-survey-templates（所有联系人桌面共用，
-  //   同一套问卷常要发给不同的人）；contacts.js EXCLUDE 已登记，防 migrateLegacy 迁进 default。
-  // 结构：[{ name, text, ts }]，最多 30 套；同名再存＝覆盖。
+  // ===== #1653 常用问卷模板（#1665 改存结构化题目）=====
+  // 用户实报（2026-11-14）：模板载入后单选选项丢失。根因是旧模板只存纯文本，载入时重新解析，
+  // 格式稍偏就把单选降级成文字题。现在模板存 { name, qs:[{type,text,options,multiMax}], text, ts }，
+  // 载入直接还原结构化题目，不再回读文本；旧文本模板仍可载入（一次性解析，之后可编辑修正）。
+  // 作用域：全局根键 xy-home-v2:ta-survey-templates（所有桌面共用），最多 30 套；同名再存＝覆盖。
   const TPL_KEY = 'ta-survey-templates';
   function tplStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
   function tplLoad() {
     let a = null;
     try { const s = tplStore(); a = JSON.parse((s && s.get(TPL_KEY)) || '[]'); } catch (e) { a = null; }
     if (!Array.isArray(a)) a = [];
-    return a.filter(x => x && typeof x.name === 'string' && x.name && typeof x.text === 'string' && x.text.trim()).slice(0, 30);
+    return a.filter(x => x && typeof x.name === 'string' && x.name &&
+      ((Array.isArray(x.qs) && x.qs.length) || (typeof x.text === 'string' && x.text.trim()))).slice(0, 30);
   }
   function tplSave(a) {
     try { const s = tplStore(); if (s) s.set(TPL_KEY, JSON.stringify((a || []).slice(0, 30))); } catch (e) {}
+  }
+  // 模板 → 结构化题目：新模板直接读 qs；旧模板把 text 解析一次（解析结果后续由用户编辑修正）
+  function tplQs(t) {
+    if (!t) return [];
+    if (Array.isArray(t.qs) && t.qs.length) return surveyQsClean(t.qs);
+    try { return surveyQsClean(surveyParse(t.text || '')); } catch (e) { return []; }
   }
   function tplRender() {
     const box = document.getElementById('tsv-list');
@@ -4881,7 +5106,7 @@ window.openTCPanel = openTCPanel;
     if (!a.length) {
       const e = document.createElement('div');
       e.className = 'tsv-empty';
-      e.textContent = '还没有常用问卷。把题目填进上面的输入框后，点「＋ 存为模板」就能存下来。';
+      e.textContent = '还没有常用问卷。在上面的编辑器里把题目加好后，点「＋ 存为模板」就能存下来。';
       box.appendChild(e);
     }
     a.forEach(function (t, i) {
@@ -4907,40 +5132,41 @@ window.openTCPanel = openTCPanel;
     add.addEventListener('click', tplAdd);
     box.appendChild(add);
   }
-  // 载入：只改题目（textarea + 草稿 text/qs），不动交卷时间等设置，也不影响正在作答的那一轮
+  // 载入：直接把模板里的结构化题目搬进编辑器（题型/选项原样还原），不动交卷时间等设置
   function tplUse(i) {
     const t = tplLoad()[i];
     if (!t) return;
-    const el = document.getElementById('ta-survey-text');
-    if (el) el.value = t.text;
+    const qs = surveyQsClone(tplQs(t));
     const d = surveyLoad();
-    d.text = t.text;
-    d.qs = surveyParse(t.text);
+    d.qs = qs;
+    d.text = surveyQsToText(qs);
     surveySave(d);
     surveyRender();
-    const n = d.qs.length;
+    const n = qs.length;
     const sent = d.status === 'sent';
-    toast('已载入模板「' + t.name + '」' + (n ? '（' + n + ' 题）' : '（题目还没填完整）') +
+    toast('已载入模板「' + t.name + '」' + (n ? '（' + n + ' 题）' : '（题目解析为空，请手动添加）') +
       (sent ? '；当前问卷仍在作答，这次载入用于下一轮' : ''));
   }
   function tplAdd() {
-    const el = document.getElementById('ta-survey-text');
-    const text = String(el ? el.value : '').trim();
-    if (!text) { toast('先把问卷题目填进上面的输入框，再存为模板'); return; }
+    const d0 = surveyLoad();
+    const qs = surveyQsClean(d0.qs);
+    if (!qs.length) { toast('先在上面的编辑器里添加题目，再存为模板'); return; }
+    const vd = surveyQsValidate(qs);
+    if (!vd.ok) { toast(vd.msg); return; }
     if (!window.openModal) { toast('弹窗组件不可用'); return; }
     window.openModal('存为常用问卷', '', function (v) {
       const name = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
       if (!name) { toast('名字不能为空'); return; }
       const a = tplLoad();
       const at = a.findIndex(function (x) { return x.name === name; });
-      const item = { name: name, text: text, ts: Date.now() };
+      const item = { name: name, qs: surveyQsClone(qs), text: surveyQsToText(qs), ts: Date.now() };
       if (at >= 0) a[at] = item; else a.unshift(item);
       tplSave(a);
       tplRender();
       toast(at >= 0 ? '已更新模板「' + name + '」' : '已存为模板「' + name + '」');
     }, {
       maxlength: 24,
-      staticText: '只保存题目文本（所有桌面共用）；交卷时间、提前交卷概率、是否逐条发聊天仍按本页当前设置。同名会覆盖。'
+      staticText: '保存整套题目（题型、题干、选项都会存；所有桌面共用）。交卷时间、提前交卷概率、是否逐条发聊天仍按本页当前设置。同名会覆盖。'
     });
   }
   function tplDel(i) {
@@ -4965,7 +5191,7 @@ window.openTCPanel = openTCPanel;
     const out = [];
     tplLoad().forEach(function (t, ti) {
       let qs = [];
-      try { qs = surveyParse(t.text) || []; } catch (e) { qs = []; }
+      try { qs = tplQs(t) || []; } catch (e) { qs = []; }
       qs.forEach(function (q, qi) { if (q && q.text) out.push({ key: ti + ':' + qi, tpl: t.name, q: q }); });
     });
     return out;
@@ -5007,31 +5233,21 @@ window.openTCPanel = openTCPanel;
     clear.addEventListener('click', function () { qselPicked = []; qselPaint(); });
     send.addEventListener('click', qselSend);
   }
-  function qselSerialize() {
-    return qselPicked.map(function (it) {
-      const q = it.q;
-      const head = '【' + q.text + (q.type === 'multi' ? (q.multiMax ? '（多选·最多' + q.multiMax + '）' : '（多选）') : '') + '】';
-      if (q.type === 'text') return head + '\n一';
-      return head + '\n' + (q.options || []).join('\n');
-    }).join('\n\n');
-  }
   function qselSend() {
     if (!qselPicked.length) return;
-    const text = qselSerialize();
-    const qs = surveyParse(text);
-    if (!qs.length) { toast('选中的题目格式不完整，换几道试试'); return; }
+    // #1665：直接把选中的结构化题目交给发送链路，不再拼文本再解析（单选的选项不会丢）
+    const qs = surveyQsClean(qselPicked.map(function (x) { return x.q; }));
+    const vd = surveyQsValidate(qs);
+    if (!vd.ok) { toast(vd.msg); return; }
     const d0 = surveyLoad();
     if (d0.status === 'sent') { toast('问卷已发出，他正在作答；要发新的请先撤回'); return; }
     if (d0.settings.deadline && d0.settings.deadline <= Date.now()) { toast('交卷时间已过期，请到「批量提问问卷」页重设'); return; }
-    const tEl = document.getElementById('ta-survey-text');
-    if (tEl) tEl.value = text;
-    d0.text = text; d0.qs = qs; surveySave(d0);
-    // 先收起半框，再由 surveySend 发卡、跳回聊天（它会重新读一次 textarea，内容与上面一致）
+    // 先收起半框，再由 surveySend 发卡、跳回聊天
     const closeBtn = document.getElementById('chat-ask-close');
     if (closeBtn) { try { closeBtn.click(); } catch (e) {} }
     qselPicked = [];
     qselPaint();
-    surveySend();
+    surveySend(qs);
   }
   window.chatQselRender = function () {
     const box = document.getElementById('chat-ask-qsel-chips');
@@ -5227,17 +5443,8 @@ window.openTCPanel = openTCPanel;
       // v3.26.x：#472 修复统一收进 surveyGoChat（恢复聊天页本体，防「全 .page 隐藏→底栏飞到最顶」）
       surveyGoChat();
     });
-    const stxt = document.getElementById('ta-survey-text');
-    if (stxt) {
-      stxt.addEventListener('change', () => {
-        const d = surveyLoad();
-        d.text = stxt.value;
-        d.qs = surveyParse(stxt.value);
-        surveySave(d);
-        surveyRender();
-      });
-      bindTaInpClears(stxt.parentElement);
-    }
+    // #1665：结构化编辑器（题型/题干/选项增删排序）在页面初始化时绑定一次
+    surveyQsBind();
     const sdl = document.getElementById('ta-survey-deadline');
     // v3.33.x #523：整行可点（用户可能点「交卷时间（到点TA自动交卷）」文字而不是右侧小按钮）
     const sdlRow = sdl ? sdl.closest('.gs-row') : null;

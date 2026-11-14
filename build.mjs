@@ -6094,8 +6094,8 @@ const FIX_SENTINELS = [
   { name: '#1480k 手动作答上限的取数（删＝capN 恒 0＝闸永远不关）', file: 'js/chat.js', needle: "const capN = (rec.askMultiMax >= 2 && rec.askMultiMax <= 6) ? rec.askMultiMax : 0;" },
   { name: '#1480l 限选卡提示语直接说「最多选 N 个」（删＝卡上不说、勾到第 N+1 个才被拦，人不知道是规则不是故障；v8.57.6 重锚：提交条改小飞机后，初始提示文案在 askMultiOptsHtml 的 submitHint）', file: 'js/chat.js', needle: "const submitHint = capN ? '先勾选答案（最多 ' + capN + ' 个）' : '先勾选答案';" },
   { name: '#1480m 尾日志压缩字段表带上 askMultiMax（删＝尾巴日志回放出的限选卡丢了按题上限，跨桌面/回收恢复后闸失效）', file: 'js/chat.js', needle: "'askType', 'askMultiMax', 'deskCk'" },
-  { name: '#1480n 问卷格式说明写出按题限选写法（删＝页面上没有任何一处教「（多选·最多2）」，功能等于不存在）', file: 'template.html', needle: "个别题想另限就写成「（多选·最多2）」" },
-  { name: '#1480o 「按题限选」文案随 #1502 章下线、落点回到问卷设置页说明（删＝功能说明也没了，用户无处得知「（多选·最多2）」写法）', file: 'template.html', needle: '也可写「（多选·最多2）」给这一题单独限个数' },
+  { name: '#1480n 问卷页面写出按题限选入口（删＝页面上没有任何一处能设「这题最多选几个」）', file: 'template.html', needle: '多选题可在这道题上单独限「最多选几个」' },
+  { name: '#1480o 按题限选改结构化输入（删＝多选题单题「最多选几个」又没了）', file: 'js/ta-ask.js', needle: "lab.textContent = '本题最多选';" },
   { name: '#1419a 输入栏三枚开关型按钮的补算挂在存储自愈广播上（删＝库里新值追平了、屏上仍按被回滚的旧值画，一加 12/多机型「改完重开回原样」复发）', file: 'js/chat.js', needle: "document.addEventListener('mochi-wrj-heal', syncInputBarSwitches);" },
   { name: '#1419b 输入栏按钮位置重排挂在存储自愈广播上（删＝自定义排列刷新重开恢复原样，而存档里明明已是自定义那一份）', file: 'js/chat.js', needle: "document.addEventListener('mochi-wrj-heal', applyInputBtnOrder);" },
   { name: '#1419c 聊天设置「输入栏按钮位置」行内回显跟随存储自愈（删＝输入栏已按自定义序排好、那一行还写着默认排列）', file: 'js/chat-settings.js', needle: "document.addEventListener('mochi-wrj-heal', () => { inputOrderSync(); if (inputOrderPanelOpen()) renderInputOrderPanel(); });" },
@@ -7348,7 +7348,7 @@ const FIX_SENTINELS = [
   { name: '#1653c 点模板载入题目（删＝模板只是摆设）', file: 'js/ta-ask.js', needle: 'function tplUse(i) {' },
   { name: '#1653d 保存当前为模板（删＝存不了常用问卷）', file: 'js/ta-ask.js', needle: 'function tplAdd() {' },
   { name: '#1653e 删除模板（删＝存错只能覆盖不能删）', file: 'js/ta-ask.js', needle: 'function tplDel(i) {' },
-  { name: '#1653f 载入模板后写回草稿并解析题数（删＝载入只改文本框、草稿与题数不更新）', file: 'js/ta-ask.js', needle: 'd.qs = surveyParse(t.text);' },
+  { name: '#1653f 载入模板后写回结构化草稿（删＝载入只改文本、题数/选项不更新）', file: 'js/ta-ask.js', needle: 'const qs = surveyQsClone(tplQs(t));' },
   { name: '#1653g 模板不被迁进 default 桌面（删＝切联系人后模板消失）', file: 'js/contacts.js', needle: "'ta-survey-templates'" },
   { name: '#1653h 模板胶囊样式（删＝模板挤成一团看不清）', file: 'css/chat-pages.css', needle: '.tsv-chip {' },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
@@ -7400,9 +7400,15 @@ const FIX_SENTINELS = [
   { name: '#1663a 聊天半框问卷快选容器（删＝填写界面又看不到快选）', file: 'template.html', needle: 'id="chat-ask-qsel-chips"' },
   { name: '#1663b 常用模板拆单题渲染（删＝只能整套挑）', file: 'js/ta-ask.js', needle: 'window.chatQselRender = function () {' },
   { name: '#1663c 快选随问问TA模式显示（删＝邀请模式也露/打开不渲染）', file: 'js/chat.js', needle: "typeof window.chatQselRender === 'function'" },
-  { name: '#1663d 单题序列化回问卷格式（删＝发出的多选/文字题格式坏）', file: 'js/ta-ask.js', needle: "const head = '【' + q.text + (q.type === 'multi'" },
+  { name: '#1663d 快选直接发结构化题目（删＝又拼文本再解析，单选选项会丢）', file: 'js/ta-ask.js', needle: 'surveySend(qs);' },
   // ==== 2026-11-14 #1664 诊断结果弹窗不再上下跳 ====
   { name: '#1664 诊断报告用只读多行框且不自动聚焦（删＝安卓键盘反复弹/收，弹窗跳来跳去）', file: 'js/music-player.js', needle: 'textareaRows: 14, big: true' },
+  // ==== 2026-11-14 #1665 问卷结构化编辑器（修模板载入后单选选项丢失）====
+  { name: '#1665a 问卷结构化编辑器容器（删＝又退回手写文本，单选格式一偏就丢选项）', file: 'template.html', needle: 'id="ta-survey-qs"' },
+  { name: '#1665b 结构化题目校验（删＝单选/多选选项不足也能发出去）', file: 'js/ta-ask.js', needle: 'function surveyQsValidate(qs) {' },
+  { name: '#1665c 发送直接用结构化题目（删＝又回读文本、单选被降级成文字题）', file: 'js/ta-ask.js', needle: 'd.qs = surveyQsClean(useQs);' },
+  { name: '#1665d 模板保存结构化题目（删＝载入后只剩题干、选项丢失）', file: 'js/ta-ask.js', needle: 'qs: surveyQsClone(qs), text: surveyQsToText(qs)' },
+  { name: '#1665e 快选读结构化模板（删＝快选里单选又会丢选项）', file: 'js/ta-ask.js', needle: 'try { qs = tplQs(t) || []; }' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
