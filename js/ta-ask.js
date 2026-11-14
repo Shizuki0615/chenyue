@@ -4103,9 +4103,11 @@ const up = document.createElement('button');
 up.type = 'button'; up.className = 'cc-tool sq-up'; up.textContent = '↑'; up.title = '上移'; up.disabled = i === 0;
 const down = document.createElement('button');
 down.type = 'button'; down.className = 'cc-tool sq-down'; down.textContent = '↓'; down.title = '下移'; down.disabled = i === total - 1;
+const save = document.createElement('button');
+save.type = 'button'; save.className = 'cc-tool sq-save'; save.textContent = '☆'; save.title = '把这一道题单独存为常用问题';
 const del = document.createElement('button');
 del.type = 'button'; del.className = 'cc-tool sq-del'; del.textContent = '✕'; del.title = '删除这道题';
-head.appendChild(no); head.appendChild(sel); head.appendChild(up); head.appendChild(down); head.appendChild(del);
+head.appendChild(no); head.appendChild(sel); head.appendChild(up); head.appendChild(down); head.appendChild(save); head.appendChild(del);
 card.appendChild(head);
 const text = document.createElement('input');
 text.type = 'text';
@@ -4219,6 +4221,7 @@ const i = Number(card.dataset.i);
 const d = surveyLoad();
 if (!d.qs[i]) return;
 let structural = false;
+if (e.target.closest('.sq-save')) { qbAdd(d.qs[i]); return; }
 if (e.target.closest('.sq-del')) { d.qs.splice(i, 1); structural = true; }
 else if (e.target.closest('.sq-up') && i > 0) { const t = d.qs[i - 1]; d.qs[i - 1] = d.qs[i]; d.qs[i] = t; structural = true; }
 else if (e.target.closest('.sq-down') && i < d.qs.length - 1) { const t = d.qs[i + 1]; d.qs[i + 1] = d.qs[i]; d.qs[i] = t; structural = true; }
@@ -4397,114 +4400,116 @@ surveyStatusRender(d);
 }
 const surveyPage = document.getElementById('page-ta-ask-survey');
 let surveyOpenFromChat = false;
-const TPL_KEY = 'ta-survey-templates';
-function tplStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
-function tplLoad() {
+const BANK_KEY = 'ta-survey-qbank';
+function qbStore() { try { return window.xyStore('xy-home-v2'); } catch (e) { return null; } }
+function qbLoad() {
 let a = null;
-try { const s = tplStore(); a = JSON.parse((s && s.get(TPL_KEY)) || '[]'); } catch (e) { a = null; }
+try { const s = qbStore(); a = JSON.parse((s && s.get(BANK_KEY)) || '[]'); } catch (e) { a = null; }
 if (!Array.isArray(a)) a = [];
-return a.filter(x => x && typeof x.name === 'string' && x.name &&
-((Array.isArray(x.qs) && x.qs.length) || (typeof x.text === 'string' && x.text.trim()))).slice(0, 30);
+return a.filter(function (q) { return q && typeof q.text === 'string' && q.text.trim(); }).slice(0, 200);
 }
-function tplSave(a) {
-try { const s = tplStore(); if (s) s.set(TPL_KEY, JSON.stringify((a || []).slice(0, 30))); } catch (e) {}
+function qbSave(a) {
+try { const s = qbStore(); if (s) s.set(BANK_KEY, JSON.stringify((a || []).slice(0, 200))); } catch (e) {}
 }
-function tplQs(t) {
-if (!t) return [];
-if (Array.isArray(t.qs) && t.qs.length) return surveyQsClean(t.qs);
-try { return surveyQsClean(surveyParse(t.text || '')); } catch (e) { return []; }
+function qbSig(q) {
+return String(q && q.type || 'single') + '|' + String(q && q.text || '').trim() + '|' +
+((q && q.options) || []).map(function (o) { return String(o == null ? '' : o).trim(); }).filter(Boolean).join('\u0001');
 }
-function tplRender() {
-const box = document.getElementById('tsv-list');
+function qbAdd(q) {
+const clean = surveyQsClean([q])[0];
+if (!clean) { toast('这道题还没填完整，先补题干'); return false; }
+const a = qbLoad();
+if (a.some(function (x) { return qbSig(x) === qbSig(clean); })) { toast('这道题已经在常用里了'); return false; }
+clean.ts = Date.now();
+a.unshift(clean);
+qbSave(a);
+qbRender();
+toast('已存为常用问题');
+return true;
+}
+function qbUse(i) {
+const q = qbLoad()[i];
+if (!q) return;
+const d = surveyLoad();
+d.qs.push(surveyQsClone(q));
+d.text = surveyQsToText(d.qs);
+surveySave(d);
+surveyQsRender(true);
+surveyStatusRender(d);
+toast('已把这道题加进问卷');
+}
+function qbDel(i) {
+const q = qbLoad()[i];
+if (!q) return;
+const run = function () {
+const a = qbLoad();
+if (a[i]) a.splice(i, 1);
+qbSave(a); qbRender(); toast('已删除这道常用问题');
+};
+if (!window.openModal) { run(); return; }
+window.openModal('删除这道常用问题？', '', run, {
+noInput: true,
+staticText: '只删常用列表里的这一道题；已经加进问卷的题目不受影响。',
+pills: [{ label: '删除', value: 'ok' }]
+});
+}
+function qbRender() {
+const box = document.getElementById('qbank-list');
 if (!box) return;
-const a = tplLoad();
+const a = qbLoad();
 box.innerHTML = '';
 if (!a.length) {
 const e = document.createElement('div');
 e.className = 'tsv-empty';
-e.textContent = '还没有常用问卷。在上面的编辑器里把题目加好后，点「＋ 存为模板」就能存下来。';
+e.textContent = '还没有常用问题。把一道题写好后，点它卡片右上角的「☆」就能单独存进来。';
 box.appendChild(e);
+return;
 }
-a.forEach(function (t, i) {
+a.forEach(function (q, i) {
 const chip = document.createElement('span');
 chip.className = 'tsv-chip';
-chip.title = '载入模板：' + t.name;
+chip.title = '加进问卷：' + q.text + (q.options && q.options.length ? '（' + q.options.join(' / ') + '）' : '');
+const badge = document.createElement('span');
+badge.className = 'qb-type';
+badge.textContent = q.type === 'multi' ? '多选' : (q.type === 'text' ? '文字' : '单选');
 const n = document.createElement('span');
 n.className = 'n';
-n.textContent = t.name;
-chip.appendChild(n);
+n.textContent = q.text;
 const x = document.createElement('span');
 x.className = 'x';
 x.textContent = '✕';
-x.title = '删除模板';
-x.addEventListener('click', function (ev) { ev.stopPropagation(); tplDel(i); });
-chip.appendChild(x);
-chip.addEventListener('click', function () { tplUse(i); });
+x.title = '删除这道常用问题';
+x.addEventListener('click', function (ev) { ev.stopPropagation(); qbDel(i); });
+chip.appendChild(badge); chip.appendChild(n); chip.appendChild(x);
+chip.addEventListener('click', function () { qbUse(i); });
 box.appendChild(chip);
 });
-const add = document.createElement('span');
-add.className = 'tsv-chip tsv-add';
-add.textContent = '＋ 存为模板';
-add.addEventListener('click', tplAdd);
-box.appendChild(add);
 }
-function tplUse(i) {
-const t = tplLoad()[i];
-if (!t) return;
-const qs = surveyQsClone(tplQs(t));
-const d = surveyLoad();
-d.qs = qs;
-d.text = surveyQsToText(qs);
-surveySave(d);
-surveyRender();
-const n = qs.length;
-const sent = d.status === 'sent';
-toast('已载入模板「' + t.name + '」' + (n ? '（' + n + ' 题）' : '（题目解析为空，请手动添加）') +
-(sent ? '；当前问卷仍在作答，这次载入用于下一轮' : ''));
-}
-function tplAdd() {
-const d0 = surveyLoad();
-const qs = surveyQsClean(d0.qs);
-if (!qs.length) { toast('先在上面的编辑器里添加题目，再存为模板'); return; }
-const vd = surveyQsValidate(qs);
-if (!vd.ok) { toast(vd.msg); return; }
-if (!window.openModal) { toast('弹窗组件不可用'); return; }
-window.openModal('存为常用问卷', '', function (v) {
-const name = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
-if (!name) { toast('名字不能为空'); return; }
-const a = tplLoad();
-const at = a.findIndex(function (x) { return x.name === name; });
-const item = { name: name, qs: surveyQsClone(qs), text: surveyQsToText(qs), ts: Date.now() };
-if (at >= 0) a[at] = item; else a.unshift(item);
-tplSave(a);
-tplRender();
-toast(at >= 0 ? '已更新模板「' + name + '」' : '已存为模板「' + name + '」');
-}, {
-maxlength: 24,
-staticText: '保存整套题目（题型、题干、选项都会存；所有桌面共用）。交卷时间、提前交卷概率、是否逐条发聊天仍按本页当前设置。同名会覆盖。'
+function qbMigrateTemplates() {
+let old = null;
+try { const s = qbStore(); old = JSON.parse((s && s.get('ta-survey-templates')) || 'null'); } catch (e) { old = null; }
+if (!Array.isArray(old) || !old.length) return;
+const a = qbLoad();
+const seen = {};
+a.forEach(function (q) { seen[qbSig(q)] = 1; });
+old.forEach(function (t) {
+let qs = [];
+if (t && Array.isArray(t.qs) && t.qs.length) qs = surveyQsClean(t.qs);
+else if (t && typeof t.text === 'string') { try { qs = surveyQsClean(surveyParse(t.text)); } catch (e) { qs = []; } }
+qs.forEach(function (q) {
+const k = qbSig(q);
+if (seen[k]) return;
+seen[k] = 1;
+q.ts = Date.now();
+a.push(q);
 });
-}
-function tplDel(i) {
-const t = tplLoad()[i];
-if (!t) return;
-if (!window.openModal) { toast('弹窗组件不可用'); return; }
-window.openModal('删除模板「' + t.name + '」？', '', function () {
-const a = tplLoad();
-const at = a.findIndex(function (x) { return x.name === t.name; });
-if (at >= 0) { a.splice(at, 1); tplSave(a); }
-tplRender();
-toast('已删除模板「' + t.name + '」');
-}, { noInput: true, staticText: '只删这个模板；已经发到聊天里的问卷不受影响。', pills: [{ label: '删除', value: 'ok' }] });
+});
+qbSave(a);
+try { const s = qbStore(); if (s) s.remove('ta-survey-templates'); } catch (e) {}
 }
 let qselPicked = [];
 function qselItems() {
-const out = [];
-tplLoad().forEach(function (t, ti) {
-let qs = [];
-try { qs = tplQs(t) || []; } catch (e) { qs = []; }
-qs.forEach(function (q, qi) { if (q && q.text) out.push({ key: ti + ':' + qi, tpl: t.name, q: q }); });
-});
-return out;
+return qbLoad().map(function (q, i) { return { key: 'qb:' + i, q: q }; });
 }
 function qselPaint() {
 const box = document.getElementById('chat-ask-qsel-chips');
@@ -4569,41 +4574,30 @@ box.innerHTML = '';
 if (!items.length) {
 const e = document.createElement('div');
 e.className = 'chat-ask-qsel-empty';
-e.textContent = '还没有可快选的题目：先到「批量提问问卷」页把题目存成常用问卷，这里会自动拆成单题。';
+e.textContent = '还没有常用问题：先到「批量提问问卷」页把某一道题点「☆」存进常用，这里就会列出来。';
 box.appendChild(e);
 qselPaint();
 return;
 }
-const groups = [];
-items.forEach(function (it) {
-let g = groups.find(function (x) { return x.name === it.tpl; });
-if (!g) { g = { name: it.tpl, items: [] }; groups.push(g); }
-g.items.push(it);
-});
-groups.forEach(function (g) {
-const wrap = document.createElement('div');
-wrap.className = 'chat-ask-qsel-group';
-const h = document.createElement('div');
-h.className = 'chat-ask-qsel-tpl';
-h.textContent = g.name;
-wrap.appendChild(h);
 const row = document.createElement('div');
 row.className = 'chat-ask-qsel-row';
-g.items.forEach(function (it) {
+items.forEach(function (it) {
 const chip = document.createElement('button');
 chip.type = 'button';
 chip.className = 'tsv-chip chat-ask-qsel-chip';
 chip.setAttribute('data-qsel', it.key);
 chip.title = it.q.text + (it.q.options && it.q.options.length ? '（' + it.q.options.join(' / ') + '）' : '');
+const badge = document.createElement('span');
+badge.className = 'qb-type';
+badge.textContent = it.q.type === 'multi' ? '多选' : (it.q.type === 'text' ? '文字' : '单选');
 const n = document.createElement('span');
 n.className = 'n';
 n.textContent = it.q.text;
+chip.appendChild(badge);
 chip.appendChild(n);
 row.appendChild(chip);
 });
-wrap.appendChild(row);
-box.appendChild(wrap);
-});
+box.appendChild(row);
 qselPaint();
 };
 window.openAskSurvey = function () {
@@ -4612,7 +4606,7 @@ surveyOpenFromChat = true;
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 surveyPage.hidden = false;
 surveyRender();
-tplRender();
+qbRender();
 };
 window.openSurveyDetail = function (rec) {
 try {
@@ -4728,7 +4722,7 @@ if (surveyOpen) surveyOpen.addEventListener('click', () => {
 document.querySelectorAll('.page').forEach(p => p.hidden = true);
 surveyPage.hidden = false;
 surveyRender();
-tplRender();
+qbRender();
 });
 const backS = document.getElementById('ta-survey-back');
 if (backS) backS.addEventListener('click', () => {
@@ -4796,7 +4790,8 @@ surveyRender();
 toast('问卷已撤回（重置为草稿）');
 });
 surveyRender();
-tplRender();
+qbMigrateTemplates();
+qbRender();
 }
 var _askCeReflowT = null;
 function _reflowAskCeBoxes() {

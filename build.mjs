@@ -7342,15 +7342,15 @@ const FIX_SENTINELS = [
   { name: '#1652d 反问受各类型总开关与答题截止时间约束（删＝关了「他的询问」照样冒卡）', file: 'js/ta-ask.js', needle: "&& !askDeadlinePassed(d)) cands.push('ask');" },
   { name: '#1652e 两次反问至少隔 20 分钟（删＝连发卡片时连续触发）', file: 'js/ta-ask.js', needle: 'if (Date.now() - followupAt < icCool(20) * 60000) return false;' },
   { name: '#1652f chat.js 反问走统一出口（删＝旧的 35% 硬编码回潮）', file: 'js/chat.js', needle: 'window.taFollowupAsk' },
-  // ==== 2026-11-11 #1653 常用问卷模板（批量问卷页保存/载入常用题目）====
-  { name: '#1653a 模板区入口（删＝问卷页没有常用模板入口）', file: 'template.html', needle: 'id="tsv-list"' },
-  { name: '#1653b 模板读写与渲染（删＝存了模板看不到、点了载不进去）', file: 'js/ta-ask.js', needle: "const TPL_KEY = 'ta-survey-templates';" },
-  { name: '#1653c 点模板载入题目（删＝模板只是摆设）', file: 'js/ta-ask.js', needle: 'function tplUse(i) {' },
-  { name: '#1653d 保存当前为模板（删＝存不了常用问卷）', file: 'js/ta-ask.js', needle: 'function tplAdd() {' },
-  { name: '#1653e 删除模板（删＝存错只能覆盖不能删）', file: 'js/ta-ask.js', needle: 'function tplDel(i) {' },
-  { name: '#1653f 载入模板后写回结构化草稿（删＝载入只改文本、题数/选项不更新）', file: 'js/ta-ask.js', needle: 'const qs = surveyQsClone(tplQs(t));' },
-  { name: '#1653g 模板不被迁进 default 桌面（删＝切联系人后模板消失）', file: 'js/contacts.js', needle: "'ta-survey-templates'" },
-  { name: '#1653h 模板胶囊样式（删＝模板挤成一团看不清）', file: 'css/chat-pages.css', needle: '.tsv-chip {' },
+  // ==== 2026-11-14 #1666 常用问题（单题，不要整套模板）====
+  { name: '#1666a 单题常用区入口（删＝问卷页没有单题常用列表）', file: 'template.html', needle: 'id="qbank-list"' },
+  { name: '#1666b 单题库读写（删＝存了单题看不到）', file: 'js/ta-ask.js', needle: "const BANK_KEY = 'ta-survey-qbank';" },
+  { name: '#1666c 点单题追加进问卷（删＝单题只是摆设）', file: 'js/ta-ask.js', needle: 'function qbUse(i) {' },
+  { name: '#1666d 题卡「☆」单独存为常用（删＝只能整套存，用户明确不要）', file: 'js/ta-ask.js', needle: 'function qbAdd(q) {' },
+  { name: '#1666e 删除单题（删＝存错删不掉）', file: 'js/ta-ask.js', needle: 'function qbDel(i) {' },
+  { name: '#1666f 旧模板拆成单题迁移后删除旧键（删＝用户删掉的模板概念又回来）', file: 'js/ta-ask.js', needle: 'function qbMigrateTemplates() {' },
+  { name: '#1666g 单题库不被迁进 default 桌面（删＝切联系人后单题消失）', file: 'js/contacts.js', needle: "'ta-survey-qbank'" },
+  { name: '#1666h 单题胶囊样式（删＝单题挤成一团看不清）', file: 'css/chat-pages.css', needle: '.qb-type {' },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
   { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },
   { name: '#1654b 游戏卡类型清单（删＝删除按钮无法判断这张是不是游戏卡）', file: 'js/chat.js', needle: 'const GAME_CARD_SPECIALS = {' },
@@ -7407,8 +7407,7 @@ const FIX_SENTINELS = [
   { name: '#1665a 问卷结构化编辑器容器（删＝又退回手写文本，单选格式一偏就丢选项）', file: 'template.html', needle: 'id="ta-survey-qs"' },
   { name: '#1665b 结构化题目校验（删＝单选/多选选项不足也能发出去）', file: 'js/ta-ask.js', needle: 'function surveyQsValidate(qs) {' },
   { name: '#1665c 发送直接用结构化题目（删＝又回读文本、单选被降级成文字题）', file: 'js/ta-ask.js', needle: 'd.qs = surveyQsClean(useQs);' },
-  { name: '#1665d 模板保存结构化题目（删＝载入后只剩题干、选项丢失）', file: 'js/ta-ask.js', needle: 'qs: surveyQsClone(qs), text: surveyQsToText(qs)' },
-  { name: '#1665e 快选读结构化模板（删＝快选里单选又会丢选项）', file: 'js/ta-ask.js', needle: 'try { qs = tplQs(t) || []; }' },
+  { name: '#1665e 快选读单题库（删＝快选里没有单题可选）', file: 'js/ta-ask.js', needle: 'return qbLoad().map(function (q, i) { return { key: \'qb:\' + i, q: q }; });' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

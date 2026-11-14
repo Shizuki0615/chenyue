@@ -8671,6 +8671,7 @@ font-size:10px; color:var(--muted, #888); background:rgba(0,0,0,.07);
 .sq-mmax input { width:54px; text-align:center; }
 .sq-add { width:100%; margin-top:10px; }
 .sq-hint { font-size:12px; color:var(--muted,#999); padding-top:8px; line-height:1.8; }
+.qb-type { font-size:10px; line-height:1.4; padding:1px 5px; border-radius:6px; background:rgba(0,0,0,.07); color:var(--muted,#666); }
 [data-theme="dark"] .sq-card { background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); }
 [data-theme="dark"] .sq-type { background:rgba(255,255,255,.08); color:#fff; border-color:rgba(255,255,255,.16); }
 [data-theme="dark"] .tsv-chip { border-color:rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#fff; }
@@ -12825,7 +12826,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1794623066607" data-version="v8.81.9">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1794646438376" data-version="v8.82.1">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -13389,11 +13390,11 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
       <button type="button" class="cc-tool sq-add" id="ta-survey-addq">＋ 添加题目</button>
       <div class="sq-hint">· 每题先选题型：<b>单选 / 多选 / 文字</b><br>· 单选、多选至少 2 个选项；多选题可在这道题上单独限「最多选几个」，留空用下面的全局设置<br>· 文字题不用选项，他会用字卡作答（和正常聊天同源）<br>· 发出后他开始作答：到交卷时间自动交卷，之前每 30 秒按「提前交卷概率」可能提前交卷<br>· 关闭「他的每条作答都发送到聊天消息」后，他只把答案写进聊天里的问卷卡片</div>
     </div>
-    <!-- #1653 / #1665 常用问卷模板：存整套结构化题目（题型+题干+选项），一键载入上面的编辑器（所有桌面共用） -->
-    <div class="gs-title">常用问卷模板</div>
+    <!-- #1666 常用问题（单题）：不要整套模板，只存单题；点一条把这一道题加进上面的问卷 -->
+    <div class="gs-title">常用问题（单题）</div>
     <div class="set-group glass" style="padding:12px 14px">
-      <div class="tsv-list" id="tsv-list"></div>
-      <div class="tsv-hint">点模板名把整套题目载入上面的编辑器（题型和选项原样还原）；✕ 删除。模板所有桌面共用，交卷时间等仍按本页当前设置。</div>
+      <div class="tsv-list" id="qbank-list"></div>
+      <div class="tsv-hint">点一条＝把这一道题加进上面的问卷；✕ 删除。把某道题写好后，点它卡片右上角的「☆」就能单独存进这里。</div>
     </div>
     <div class="set-group glass">
       <div class="gs-row" style="cursor:pointer"><span>交卷时间（到点他自动交卷）</span><button type="button" id="ta-survey-deadline" class="tc-input deadline-btn" style="flex:1;min-width:0;max-width:170px;padding:5px 8px;font-size:12px">未设置</button><button type="button" id="ta-survey-deadline-clear" style="flex:none;margin-left:6px;padding:4px 10px;font-size:12px;border:1px solid var(--line,#e5e5e5);border-radius:8px;background:transparent;color:var(--muted,#999)">清除</button></div>
@@ -14439,7 +14440,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.81.9</div>
+          <div class="val" id="about-ver-val">v8.82.1</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14558,7 +14559,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.81.9</div>
+      <div class="ver">辰光玥影 v8.82.1</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14989,7 +14990,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.81.9</span>
+              <span class="lic-ver">v8.82.1</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -24907,4 +24908,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mwfs8kj3 -->
+<!-- __MOCHI_EOF__ mwg65iaw -->
