@@ -10006,6 +10006,11 @@ if (invList) invList.hidden = !isInvite;
 if (invSave) invSave.hidden = !isInvite;
 const bulkBtn = document.getElementById('chat-ask-bulk');
 if (bulkBtn) bulkBtn.hidden = isInvite;
+const qselBox = document.getElementById('chat-ask-qsel');
+if (qselBox) {
+qselBox.hidden = isInvite;
+if (!isInvite && typeof window.chatQselRender === 'function') window.chatQselRender();
+}
 const quickInv = document.getElementById('chat-ask-quick');
 if (quickInv) quickInv.hidden = !isInvite;
 const modHint = document.getElementById('chat-ask-mod-hint');

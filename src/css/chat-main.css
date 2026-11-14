@@ -416,6 +416,23 @@ body.cs-typing-capsule #chat-typing {
 .chat-ask-bulk { padding:9px 0; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.94); color:var(--ink); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; }
 .chat-ask-bulk[hidden] { display:none; }
 .chat-ask-bulk:active { opacity:.75; }
+/* #1663 聊天半框·问卷快选：常用问卷模板拆成单题列在填写界面，可自由组合 */
+.chat-ask-qsel { border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:10px 12px 12px; background:rgba(255,255,255,.72); }
+.chat-ask-qsel[hidden] { display:none; }
+.chat-ask-qsel-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.chat-ask-qsel-count { font-size:11px; font-weight:400; opacity:.6; }
+.chat-ask-qsel-clear { margin-left:auto; border:0; background:transparent; color:var(--muted,#999); font-size:12px; padding:2px 4px; cursor:pointer; font-family:inherit; }
+.chat-ask-qsel-chips { max-height:150px; overflow:auto; margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.chat-ask-qsel-group { display:flex; flex-direction:column; gap:5px; }
+.chat-ask-qsel-tpl { font-size:11px; opacity:.55; }
+.chat-ask-qsel-row { display:flex; flex-wrap:wrap; gap:6px; }
+.chat-ask-qsel-chip { font-family:inherit; cursor:pointer; }
+.chat-ask-qsel-chip .n { max-width:150px; }
+.chat-ask-qsel-chip.sel { border-color:var(--brand,#3b82f6); background:rgba(59,130,246,.12); color:var(--brand,#3b82f6); }
+.chat-ask-qsel-empty { font-size:12px; line-height:1.7; color:var(--muted,#999); }
+.chat-ask-qsel-send { width:100%; margin-top:8px; padding:9px 0; border:0; border-radius:10px; background:var(--brand,#3b82f6); color:#fff; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
+.chat-ask-qsel-send:disabled { opacity:.45; }
+[data-theme="dark"] .chat-ask-qsel { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); }
 .chat-ask-input {
   border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:11px 14px;
   font-size:14px; font-family:inherit; outline:none; background:#fff; color:var(--ink);

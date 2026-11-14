@@ -7396,6 +7396,11 @@ const FIX_SENTINELS = [
   { name: '#1662a 从后端取本机公网 IP 作为 realIP（删＝继续用机房默认 IP，-460 概率高）', file: 'js/music-player.js', needle: "const url = neaBase() + '/client-ip?t='" },
   { name: '#1662b 所有后端请求自动带 realIP（删＝/client-ip 拿到了也没用上）', file: 'js/music-player.js', needle: "'&realIP=' + encodeURIComponent(rip)" },
   { name: '#1662c 诊断单显示上报 realIP（删＝看不出 realIP 有没有生效）', file: 'js/music-player.js', needle: "'上报 realIP: '" },
+  // ==== 2026-11-14 #1663 聊天半框·问卷快选（常用模板拆单题，自由组合）====
+  { name: '#1663a 聊天半框问卷快选容器（删＝填写界面又看不到快选）', file: 'template.html', needle: 'id="chat-ask-qsel-chips"' },
+  { name: '#1663b 常用模板拆单题渲染（删＝只能整套挑）', file: 'js/ta-ask.js', needle: 'window.chatQselRender = function () {' },
+  { name: '#1663c 快选随问问TA模式显示（删＝邀请模式也露/打开不渲染）', file: 'js/chat.js', needle: "typeof window.chatQselRender === 'function'" },
+  { name: '#1663d 单题序列化回问卷格式（删＝发出的多选/文字题格式坏）', file: 'js/ta-ask.js', needle: "const head = '【' + q.text + (q.type === 'multi'" },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');

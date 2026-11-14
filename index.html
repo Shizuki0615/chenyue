@@ -2227,6 +2227,22 @@ scrollbar-width:none; -ms-overflow-style:none;
 .chat-ask-bulk { padding:9px 0; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.94); color:var(--ink); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; }
 .chat-ask-bulk[hidden] { display:none; }
 .chat-ask-bulk:active { opacity:.75; }
+.chat-ask-qsel { border:1px solid rgba(0,0,0,.08); border-radius:12px; padding:10px 12px 12px; background:rgba(255,255,255,.72); }
+.chat-ask-qsel[hidden] { display:none; }
+.chat-ask-qsel-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.chat-ask-qsel-count { font-size:11px; font-weight:400; opacity:.6; }
+.chat-ask-qsel-clear { margin-left:auto; border:0; background:transparent; color:var(--muted,#999); font-size:12px; padding:2px 4px; cursor:pointer; font-family:inherit; }
+.chat-ask-qsel-chips { max-height:150px; overflow:auto; margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.chat-ask-qsel-group { display:flex; flex-direction:column; gap:5px; }
+.chat-ask-qsel-tpl { font-size:11px; opacity:.55; }
+.chat-ask-qsel-row { display:flex; flex-wrap:wrap; gap:6px; }
+.chat-ask-qsel-chip { font-family:inherit; cursor:pointer; }
+.chat-ask-qsel-chip .n { max-width:150px; }
+.chat-ask-qsel-chip.sel { border-color:var(--brand,#3b82f6); background:rgba(59,130,246,.12); color:var(--brand,#3b82f6); }
+.chat-ask-qsel-empty { font-size:12px; line-height:1.7; color:var(--muted,#999); }
+.chat-ask-qsel-send { width:100%; margin-top:8px; padding:9px 0; border:0; border-radius:10px; background:var(--brand,#3b82f6); color:#fff; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
+.chat-ask-qsel-send:disabled { opacity:.45; }
+[data-theme="dark"] .chat-ask-qsel { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); }
 .chat-ask-input {
 border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:11px 14px;
 font-size:14px; font-family:inherit; outline:none; background:#fff; color:var(--ink);
@@ -12789,7 +12805,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
            （名称+版号 / 部署时间+实时秒 / 版本检测行）收成一行；检测行随 ver-check.js 退役删除。
            data-build-ts / data-version 两属性保留：device.js 诊断、bg-keep 自检、pwa.js 旧包检测
            仍只读属性（诊断版本号走 data-version 兜底，device.js 两处缓存原生支持）。 -->
-      <div class="splash-ver" id="splash-ver" data-build-ts="1794560534205" data-version="v8.81.5">
+      <div class="splash-ver" id="splash-ver" data-build-ts="1794617895940" data-version="v8.81.6">
         <span class="sv-app">Mochi 字卡传讯 已完结停更</span>
       </div>
       <!-- v3.5.120：数据（IndexedDB 回填）加载完成前不显示「点击进入」按钮，
@@ -14402,7 +14418,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         <div class="set-row" id="row-changelog">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 12c0-5.5 3.5-10 10-10 3.7 0 7 2 8.8 5M22 12c0 5.5-3.5 10-10 10-3.7 0-7-2-8.8-5"/></svg></div>
           <div class="txt">版本与更新<span class="sub">当前版本 · 一键更新到最新（更新摘要见开屏公告）</span></div>
-          <div class="val" id="about-ver-val">v8.81.5</div>
+          <div class="val" id="about-ver-val">v8.81.6</div>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <!-- #606 开源与致谢：开源/私有部署说明 + 灵感来源与致谢（内容与功能介绍页同源，做成独立入口） -->
@@ -14521,7 +14537,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
         </div>
       </div>
       </div><!-- /them-sec about -->
-      <div class="ver">辰光玥影 v8.81.5</div>
+      <div class="ver">辰光玥影 v8.81.6</div>
     </div>
 
     <!-- 查看存储（独立页面，v3.26.x） -->
@@ -14952,7 +14968,7 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
             <div class="lic-hero-top">
               <div class="lic-title">Mochi 字卡传讯</div>
               <span class="lic-badge">原版</span>
-              <span class="lic-ver">v8.81.5</span>
+              <span class="lic-ver">v8.81.6</span>
             </div>
             <div class="lic-p">原创极简风情侣字卡传讯，不是小手机：黑白灰简约设计，数据全部保存在本地、无需联网；所有内容均为代码触发、按概率运行，联系方可主动发送聊天消息。代码从零编写并完全开源——本作即原版。</div>
             <!-- v3.26.x #648：原版口径澄清——唯一原版使用网站＋其他版本均为开放二传二改产生的二传/二改版 -->
@@ -18627,6 +18643,16 @@ html.desk-grid-v2 .page-slide.dgr-page > .desk-countdown-widget[data-dgr-w="2"] 
           <div class="chat-ask-mod-hint" id="chat-ask-mod-hint" hidden>「一起听歌 / 一起读书」邀请，他同意后会直接打开对应页面；自定义邀请里提到「听歌 / 读书」也算</div>
           <div class="invite-list" id="invite-list" hidden></div>
           <div class="dec-inp-wrap chat-ask-inp-wrap"><input type="text" class="chat-ask-input" id="chat-ask-input" placeholder="想邀请他做什么？" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><button type="button" class="dec-inp-clear" data-clear="chat-ask-input" aria-label="清空" title="清空">✕</button></div>
+          <!-- #1663 问卷快选：把「常用问卷模板」拆成单题列在填写界面，点一条加一条、自由组合 -->
+          <div class="chat-ask-qsel" id="chat-ask-qsel" hidden>
+            <div class="chat-ask-qsel-head">
+              <span>问卷快选</span>
+              <span class="chat-ask-qsel-count" id="chat-ask-qsel-count">已选 0 题</span>
+              <button type="button" class="chat-ask-qsel-clear" id="chat-ask-qsel-clear">清空</button>
+            </div>
+            <div class="chat-ask-qsel-chips" id="chat-ask-qsel-chips"></div>
+            <button type="button" class="chat-ask-qsel-send" id="chat-ask-qsel-send" disabled>发出问卷</button>
+          </div>
           <button type="button" class="chat-ask-bulk" id="chat-ask-bulk" hidden>批量设置问卷</button>
           <div class="chat-ask-actions">
             <button class="cc-tool" id="chat-ask-save" hidden>存入</button>
@@ -24860,4 +24886,4 @@ window.__mochiBootRetry = function () { try { location.reload(); } catch (e) {} 
 </body>
 </html>
 
-<!-- __MOCHI_EOF__ mwer0a7x -->
+<!-- __MOCHI_EOF__ mwfp5qtg -->
