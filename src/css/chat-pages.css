@@ -5061,5 +5061,26 @@ select.mochi-custom-select-native { display:none; }
 .tsv-chip.tsv-add { border-style:dashed; color:var(--muted, #888); padding:7px 12px; }
 .tsv-empty { font-size:12px; line-height:1.7; color:var(--muted, #999); padding:0 0 6px; }
 .tsv-hint { font-size:11px; line-height:1.7; color:var(--muted, #999); padding-top:8px; }
+/* #1665 问卷结构化编辑器：每题一张卡，题型/题干/选项都在眼前，不再手写文本格式 */
+.sq-list { display:flex; flex-direction:column; gap:10px; }
+.sq-empty { font-size:12px; line-height:1.7; color:var(--muted,#999); padding:2px 0 4px; }
+.sq-card { border:1px solid var(--line,#e5e5e5); border-radius:12px; padding:10px 12px; background:rgba(255,255,255,.6); display:flex; flex-direction:column; gap:8px; }
+.sq-head { display:flex; align-items:center; gap:6px; }
+.sq-no { font-size:11px; opacity:.55; }
+.sq-type { flex:none; padding:4px 6px; font-size:12px; border-radius:8px; border:1px solid var(--line,#e5e5e5); background:#fff; color:var(--ink); font-family:inherit; }
+.sq-head .cc-tool { padding:3px 8px; font-size:11px; }
+.sq-del { margin-left:auto; }
+.sq-text { width:100%; box-sizing:border-box; }
+.sq-opts { display:flex; flex-direction:column; gap:6px; }
+.sq-opt { display:flex; align-items:center; gap:6px; }
+.sq-opt-inp { flex:1; min-width:0; }
+.sq-opt-del { flex:none; border:0; background:transparent; color:var(--muted,#999); font-size:12px; padding:2px 4px; cursor:pointer; }
+.sq-opt-add { align-self:flex-start; border:1px dashed var(--line,#e5e5e5); background:transparent; color:var(--muted,#888); border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; font-family:inherit; }
+.sq-mmax { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted,#888); }
+.sq-mmax input { width:54px; text-align:center; }
+.sq-add { width:100%; margin-top:10px; }
+.sq-hint { font-size:12px; color:var(--muted,#999); padding-top:8px; line-height:1.8; }
+[data-theme="dark"] .sq-card { background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); }
+[data-theme="dark"] .sq-type { background:rgba(255,255,255,.08); color:#fff; border-color:rgba(255,255,255,.16); }
 [data-theme="dark"] .tsv-chip { border-color:rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#fff; }
 [data-theme="dark"] .tsv-chip .x { background:rgba(255,255,255,.12); color:rgba(255,255,255,.7); }
