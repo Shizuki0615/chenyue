@@ -1854,7 +1854,7 @@ out.push('播放时条件 if(neaReady()) = ' + (neaReady() ? '✅ 是 (会先打
 const report = out.join('\n');
 if (st) st.textContent = '';
 try {
-window.openModal('🔍 VIP 播放诊断结果', report);
+window.openModal('🔍 VIP 播放诊断结果', report, null, { noInput: true, textarea: true, textareaRows: 14, big: true });
 } catch(e) {
 alert(report);
 }
