@@ -2201,8 +2201,12 @@
           // 弹结果框
           const report = out.join('\n');
           if (st) st.textContent = '';
+          // #1664（用户实报「诊断框一直跳来跳去」）：长报告塞进单行 input 后，安卓会把 input
+          // 转成 contenteditable 并自动聚焦 → 键盘一弹 visualViewport 收缩，浏览器反复把聚焦框
+          // 挪进可视区，整个弹窗就上下跳。改成和「卡顿自检报告」同款：只读多行 textarea + noInput
+          //（noInput 同时跳过自动聚焦），键盘根本不弹，框就钉住不动。
           try {
-            window.openModal('🔍 VIP 播放诊断结果', report);
+            window.openModal('🔍 VIP 播放诊断结果', report, null, { noInput: true, textarea: true, textareaRows: 14, big: true });
           } catch(e) {
             alert(report);
           }

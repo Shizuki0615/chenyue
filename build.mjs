@@ -7401,6 +7401,8 @@ const FIX_SENTINELS = [
   { name: '#1663b 常用模板拆单题渲染（删＝只能整套挑）', file: 'js/ta-ask.js', needle: 'window.chatQselRender = function () {' },
   { name: '#1663c 快选随问问TA模式显示（删＝邀请模式也露/打开不渲染）', file: 'js/chat.js', needle: "typeof window.chatQselRender === 'function'" },
   { name: '#1663d 单题序列化回问卷格式（删＝发出的多选/文字题格式坏）', file: 'js/ta-ask.js', needle: "const head = '【' + q.text + (q.type === 'multi'" },
+  // ==== 2026-11-14 #1664 诊断结果弹窗不再上下跳 ====
+  { name: '#1664 诊断报告用只读多行框且不自动聚焦（删＝安卓键盘反复弹/收，弹窗跳来跳去）', file: 'js/music-player.js', needle: 'textareaRows: 14, big: true' },
 ];
 try {
   const built = CHECK_SENTINELS ? '' : readFileSync(join(root, 'index.html'), 'utf8');
