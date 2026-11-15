@@ -2180,8 +2180,8 @@
 
   // v3.2x：桌面固定两页，市集/心意柜图标不再新建页——无条件 append 进 .app-grid.p3-grid
   // 当前所在位置（该网格现常驻隐藏池，图标随之留池，可从装修模式组件库找回）；已装修
-  // 用户的 desk-layout 由随后 applyDeskLayout 归位。原「新建页」分支随桌面固定两页移除
-  //（app-market 不在 WIDGET_IDS 白名单，新建页被回收进池后会永久消失，故本就走兜底）。
+  // 用户的 desk-layout 由随后 applyDeskLayout 归位。#1667 起 app-market/app-giftbox 已进
+  // WIDGET_IDS 白名单（组件库可见、可拖回），本兜底仍负责首屏注入与老布局归位。
   function injectDeskApps(pairs) {
     pairs.forEach(function (p) {
       const p3 = document.querySelector('.app-grid.p3-grid');
