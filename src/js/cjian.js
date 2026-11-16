@@ -1038,12 +1038,8 @@
     let last = (t && typeof t.last === 'number') ? t.last : 0;
     let next = (t && typeof t.next === 'number') ? t.next : 0;
     if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-    // #1668：顶栏时钟暴露了旧实现的偏移被「半小时内随机分钟」抵消的问题——
-    // 旧版在梦角世界时间所在的半小时段里再随机抽一个具体分钟（±30min），
-    // 顶栏又以它 + 现实流逝分钟往前走：随机分钟恰好把「比现实慢1小时」
-    // 抵消成只慢 30min，重抽几次就看起来「他跟着我的时间」。
-    // 现在直接取世界时间本身（世界分钟含偏移/时辰随机），不再叠第二层随机；
-    // 顶栏据此每分钟前进＝稳定的「现实 + 偏移」时钟。v!==2 的旧快照立即重算。
+    // #1668：这里保留「随机抽一个当地时刻」的原语义——在世界时间所在的半小时段里
+    // 随机取一个具体分钟（±30min）。顶栏不再推进这个快照，所以随机性不会被推成现实时间。
     if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {
       // 复用列表首位梦角的世界时间（与列表卡片时段完全一致）；桌面无梦角时退回全天先抽时辰再抽时刻。
       const list0 = loadRoster(cid);
@@ -1052,7 +1048,8 @@
       if (c0) {
         const wm = worldMinuteOf(c0);
         const info = halfRangeOf(wm);
-        hh = Math.floor(wm / 60) % 24; mm = wm % 60;
+        const total = info.lo + rand(0, info.hi - info.lo);
+        hh = Math.floor(total / 60) % 24; mm = total % 60;
         halfLabel = info.half; rangeLabel = info.range;
       } else {
         const stH = shichenStartHour(rand(0, 11));

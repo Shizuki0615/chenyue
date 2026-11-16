@@ -98,17 +98,15 @@
     if (st) st.set(offKey(kind, g, c), off ? '1' : '0');
   }
 
-  // ---- 他那边的时间：以此间抽取的快照为基准，每分钟往前走 ----
+  // ---- 他那边的时间：显示此间抽出的随机当地时刻，不推进 ----
+  // #1668：顶栏若把它当钟每分钟往前推，随机时刻就被推成「现实时间」，
+  // 看起来他总跟着你走。此间的语义是「每隔 1~8 小时重新抽一个当地时刻」，
+  // 顶栏照抄快照即可（与「对方当前时间」卡片完全一致），到点由 cjian 重抽。
   function hisClock(cid) {
     let t = null;
     try { t = window.cjianTaTimeOf ? window.cjianTaTimeOf(cid) : null; } catch (e) { t = null; }
     if (!t || typeof t.hh !== 'number' || typeof t.mm !== 'number') return null;
-    const now = Date.now();
-    const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
-    const mins = Math.floor((now - base) / 60000);
-    let total = (t.hh * 60 + t.mm + mins) % 1440;
-    if (total < 0) total += 1440;
-    return { hh: Math.floor(total / 60), mm: total % 60 };
+    return { hh: t.hh, mm: t.mm };
   }
   function clockText(cid) {
     const c = hisClock(cid);

@@ -872,7 +872,8 @@ let hh, mm, halfLabel = '', rangeLabel = '';
 if (c0) {
 const wm = worldMinuteOf(c0);
 const info = halfRangeOf(wm);
-hh = Math.floor(wm / 60) % 24; mm = wm % 60;
+const total = info.lo + rand(0, info.hi - info.lo);
+hh = Math.floor(total / 60) % 24; mm = total % 60;
 halfLabel = info.half; rangeLabel = info.range;
 } else {
 const stH = shichenStartHour(rand(0, 11));

@@ -7296,7 +7296,6 @@ const FIX_SENTINELS = [
   // ==== 2026-11-07 #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ====
   { name: '#1650a 状态/情绪词库（删＝顶栏 B/C 无词可抽）', file: 'js/ta-status-data.js', needle: 'window.TA_STATUS_DATA = {' },
   { name: '#1650b 顶栏状态行标记（删＝昵称后没有 A · B · C）', file: 'template.html', needle: 'id="chat-meta"' },
-  { name: '#1650c 时间每分钟走动（删＝A 停在抽取时刻不走）', file: 'js/ta-status.js', needle: 'Math.floor((now - base) / 60000)' },
   { name: '#1650d 状态/情绪自动换的 1~8 小时周期（删＝到点不自动更换）', file: 'js/ta-status.js', needle: 'next: 1 + Math.random() * 7' },
   { name: '#1650e 状态按作息加权（删＝词库里的加权开关点了没效果）', file: 'js/ta-status.js', needle: 'hs.indexOf(hour) >= 0 ? w * 3 : w * 0.4' },
   { name: '#1650f 顶栏两套布局切换（删＝聊天设置里选经典/仿微信不生效）', file: 'js/ta-status.js', needle: "page.classList.toggle('ch-head-wx'" },
@@ -7353,8 +7352,9 @@ const FIX_SENTINELS = [
   { name: '#1666h 单题胶囊样式（删＝单题挤成一团看不清）', file: 'css/chat-pages.css', needle: '.qb-type {' },
   // ==== 2026-11-15 #1667 组件库补齐心意市集/心意柜图标 ====
   { name: '#1667 组件库图标清单包含心意市集/心意柜（删＝装修组件库里根本找不到这两个图标）', file: 'js/personalize.js', needle: "'app-memo', 'app-market', 'app-giftbox'];" },
-  // ==== 2026-11-16 #1668 顶栏时间不再抵消梦角世界时间的偏移 ====
-  { name: '#1668 顶栏时间直接取世界时间（删＝半小时内随机分钟把「慢1小时」抵消成慢30分，看起来他跟着你）', file: 'js/cjian.js', needle: 'if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {' },
+  // ==== 2026-11-16 #1668 顶栏时间显示此间随机快照，不再推进成现实时间 ====
+  { name: '#1668a 顶栏照抄随机快照不推进（删＝随机时刻被推成现实时间，看起来他跟着你）', file: 'js/ta-status.js', needle: 'return { hh: t.hh, mm: t.mm };' },
+  { name: '#1668b 此间保留半小时段内随机抽分钟（删＝时间变成固定的现实同步，失去随机）', file: 'js/cjian.js', needle: 'const total = info.lo + rand(0, info.hi - info.lo);' },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
   { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },
   { name: '#1654b 游戏卡类型清单（删＝删除按钮无法判断这张是不是游戏卡）', file: 'js/chat.js', needle: 'const GAME_CARD_SPECIALS = {' },

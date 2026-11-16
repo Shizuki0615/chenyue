@@ -81,12 +81,7 @@ function hisClock(cid) {
 let t = null;
 try { t = window.cjianTaTimeOf ? window.cjianTaTimeOf(cid) : null; } catch (e) { t = null; }
 if (!t || typeof t.hh !== 'number' || typeof t.mm !== 'number') return null;
-const now = Date.now();
-const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
-const mins = Math.floor((now - base) / 60000);
-let total = (t.hh * 60 + t.mm + mins) % 1440;
-if (total < 0) total += 1440;
-return { hh: Math.floor(total / 60), mm: total % 60 };
+return { hh: t.hh, mm: t.mm };
 }
 function clockText(cid) {
 const c = hisClock(cid);
