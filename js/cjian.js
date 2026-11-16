@@ -865,14 +865,14 @@ let t = loadTaTime(cid);
 let last = (t && typeof t.last === 'number') ? t.last : 0;
 let next = (t && typeof t.next === 'number') ? t.next : 0;
 if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-if (!t || (now - last) / 36e5 >= next) {
+if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {
 const list0 = loadRoster(cid);
 const c0 = list0 && list0[0];
 let hh, mm, halfLabel = '', rangeLabel = '';
 if (c0) {
-const info = halfRangeOf(worldMinuteOf(c0));
-const total = info.lo + rand(0, info.hi - info.lo);
-hh = Math.floor(total / 60) % 24; mm = total % 60;
+const wm = worldMinuteOf(c0);
+const info = halfRangeOf(wm);
+hh = Math.floor(wm / 60) % 24; mm = wm % 60;
 halfLabel = info.half; rangeLabel = info.range;
 } else {
 const stH = shichenStartHour(rand(0, 11));
@@ -881,7 +881,7 @@ hh = Math.floor(total / 60) % 24; mm = total % 60;
 const info = halfRangeOf(total);
 halfLabel = info.half; rangeLabel = info.range;
 }
-t = { hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
+t = { v: 2, hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
 saveTaTime(cid, t);
 }
 return t;
