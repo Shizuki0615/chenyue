@@ -7356,6 +7356,9 @@ const FIX_SENTINELS = [
   { name: '#1668a 顶栏每分钟推进（删＝时间停在快照不走）', file: 'js/ta-status.js', needle: 'return { hh: c.hh, mm: c.mm };' },
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
   { name: '#1668c 顶栏与此间共用的活动时钟（删＝两处时间对不上）', file: 'js/cjian.js', needle: 'window.cjianTaClockOf = taClockOf' },
+  // ==== 2026-11-16 #1669 v1 被风控时旧接口兜底 ====
+  { name: '#1669 v1 全档 -460 时改走旧接口 /song/url（删＝风控时整首歌播不了）', file: 'js/music-player.js', needle: "neaFetch('/song/url?id='" },
+  { name: '#1669b 诊断单显示旧接口复核（删＝看不出兜底能不能用）', file: 'js/music-player.js', needle: "'旧接口兜底（/song/url br=320000）: '" },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
   { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },
   { name: '#1654b 游戏卡类型清单（删＝删除按钮无法判断这张是不是游戏卡）', file: 'js/chat.js', needle: 'const GAME_CARD_SPECIALS = {' },

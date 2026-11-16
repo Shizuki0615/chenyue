@@ -1574,6 +1574,42 @@
     let lvTry = 0;
     let totalTries = 0; // 本轮总请求数上限（含重试），防极端情况无限重试卡住播放
     let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
+    let legacyTried = false; // #1669：v1 全档被 -460 拦死时改走旧接口 /song/url 兜底
+    // #1669（用户 2026-11-16 实报：免费歌和 VIP 歌的 /song/url/v1 全部 -460，但旧接口正常）：
+    // 后端出口 IP 被网易风控时，v1 可能整档返回 -460；实测同一个后端 /song/url?br=320000
+    // 仍能返回完整直链（含 320k）。放在 v1 全部档位失败之后兜底，不影响现有音质降级顺序。
+    const attemptLegacy = function () {
+      totalTries++;
+      neaFetch('/song/url?id=' + encodeURIComponent(String(id)) + '&br=320000', function (j, err) {
+        let url = '', code = 0, reason = '', trial = false, br = 0, size = 0;
+        try {
+          if (err) reason = err;
+          else {
+            const d = j && j.data && j.data[0];
+            code = d ? d.code : (j && j.code) || 0;
+            if (d && typeof d.url === 'string') url = d.url;
+            if (d) {
+              trial = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
+              br = d.br || 0;
+              size = d.size || 0;
+            }
+            if (!url) {
+              const msg = (j && (j.message || j.msg)) ? String(j.message || j.msg) : '';
+              reason = '旧接口 code=' + code + (msg ? '：' + msg : '');
+            }
+          }
+        } catch (e) { reason = '旧接口解析失败: ' + e.message; }
+        if (url && !trial) {
+          console.log('[VIP-Diag] 旧接口兜底成功 br=' + br + ' size=' + size);
+          cb && cb({
+            url: String(url).replace(/^http:/i, 'https:'),
+            code: code, reason: '', level: 'legacy', trial: false, fee: null, br: br, size: size
+          });
+          return;
+        }
+        cb && cb({ url: null, code: code, reason: reason || 'v1 与旧接口均未取到完整直链', level: 'legacy', trial: sawTrial, fee: null, br: br, size: size, netErr: !!err, restricted: !err });
+      });
+    };
     const attempt = function () {
       totalTries++;
       const lv = LEVELS[lvIndex];
@@ -1631,6 +1667,13 @@
         if (!err && lvIndex + 1 < LEVELS.length && totalTries < 9) {
           lvIndex++;
           setTimeout(attempt, 200);
+          return;
+        }
+        // #1669：v1 全部档位都没拿到完整直链 → 旧接口 /song/url?br=320000 兜底
+        if (!err && !legacyTried && totalTries < 10) {
+          legacyTried = true;
+          console.log('[VIP-Diag] v1 全档失败，改走旧接口 /song/url 兜底');
+          attemptLegacy();
           return;
         }
         cb && cb({ url: null, code: code, reason: reason || '未取到完整直链', level: lv, trial: sawTrial, fee: fee, br: br, size: size, netErr: !!err, restricted: !err });
@@ -2139,7 +2182,8 @@
           .then((ls) => runUrlTest('/song/url/v1?id=' + TEST_FREE_ID + '&level=exhigh&cookie=' + cookieEnc).then((free) => ({ ls, free })))
           .then(({ ls, free }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=exhigh&cookie=' + cookieEnc).then((vip) => ({ ls, free, vip })))
           .then(({ ls, free, vip }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc).then((vipStd) => ({ ls, free, vip, vipStd })))
-          .then(({ ls, free, vip, vipStd }) => {
+          .then(({ ls, free, vip, vipStd }) => runUrlTest('/song/url?id=' + TEST_VIP_ID + '&br=320000&cookie=' + cookieEnc).then((legacy) => ({ ls, free, vip, vipStd, legacy })))
+          .then(({ ls, free, vip, vipStd, legacy }) => {
           // login/status
           out.push('=== /login/status ===');
           if (ls.err) out.push('❌ 请求失败: ' + ls.err);
@@ -2164,7 +2208,7 @@
             const _tr = !!(d.freeTrialInfo && typeof d.freeTrialInfo === 'object');
             out.push('code=' + (d.code ?? free.j?.code ?? '?') + ' url=' + (d.url ? (_tr ? '⚠️ 只是试听片段' : '✅ 有完整直链 (' + (d.size || 0) + ' 字节)') : '❌ 无'));
             if (free.j?.message || free.j?.msg) out.push('后端消息: ' + (free.j.message || free.j.msg));
-            if (free.j?.code === -460) out.push('→ 网易风控 -460：云函数出口 IP 被限制。换用新版后端包（已内置 realIP）即可');
+            if (free.j?.code === -460) out.push('→ 网易风控 -460：v1 接口整档被拦，播放会自动改走旧接口 /song/url 兜底');
           }
           out.push('');
           // VIP 歌
@@ -2183,7 +2227,7 @@
               const _code = d.code ?? vip.j?.code ?? '?';
               out.push('❌ 后端没给直链 code=' + _code);
               if (vip.j?.message || vip.j?.msg) out.push('后端消息: ' + (vip.j.message || vip.j.msg));
-              if (_code === -460) out.push('→ 网易风控 -460：云函数出口 IP 被限制（不是会员问题）。换用新版后端包（已内置 realIP）即可');
+              if (_code === -460) out.push('→ 网易风控 -460：v1 接口整档被拦，播放会自动改走旧接口 /song/url 兜底');
               else if (_code === 404) out.push('→ VIP 受限！可能 cookie 过期 / 你账号对这首歌没权限 / 后端 NeteaseCloudMusicApi 版本太旧');
               else if (_code === 200) out.push('→ code=200 但 url 空，这首歌可能是地区限制或下架');
               else out.push('→ 后端返回异常 code=' + _code);
@@ -2194,6 +2238,14 @@
             const d2 = vipStd.j?.data?.[0] || {};
             const _tr2 = !!(d2.freeTrialInfo && typeof d2.freeTrialInfo === 'object');
             out.push('降级复核（standard）: ' + (d2.url && !_tr2 ? '✅ 完整直链 br=' + (d2.br || 0) : (d2.url ? '⚠️ 仍是试听片段' : '❌ 无直链 code=' + (d2.code ?? '?'))));
+          }
+          // #1669：v1 被风控时播放会自动改走旧接口，这里同步复核旧接口能否给直链
+          if (legacy && !legacy.err) {
+            const d3 = legacy.j?.data?.[0] || {};
+            const _tr3 = !!(d3.freeTrialInfo && typeof d3.freeTrialInfo === 'object');
+            out.push('旧接口兜底（/song/url br=320000）: ' + (d3.url && !_tr3 ? '✅ 完整直链 br=' + (d3.br || 0) + '（播放会自动走这条）' : (d3.url ? '⚠️ 仍是试听片段' : '❌ 无直链 code=' + (d3.code ?? '?'))));
+          } else if (legacy && legacy.err) {
+            out.push('旧接口兜底（/song/url）: ❌ 请求失败 ' + legacy.err);
           }
           out.push('');
           out.push('=== 播放路径判定 ===');
