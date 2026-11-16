@@ -7356,6 +7356,10 @@ const FIX_SENTINELS = [
   { name: '#1668a 顶栏每分钟推进（删＝时间停在快照不走）', file: 'js/ta-status.js', needle: 'return { hh: c.hh, mm: c.mm };' },
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
   { name: '#1668c 顶栏与此间共用的活动时钟（删＝两处时间对不上）', file: 'js/cjian.js', needle: 'window.cjianTaClockOf = taClockOf' },
+  // ==== 2026-11-16 #1670 v1 全档 -460 时直接走旧接口 ====
+  { name: '#1670a v1 -460 直接切旧接口（删＝同档重试/降档白等几秒）', file: 'js/music-player.js', needle: 'if (!err && code === -460 && totalTries < 10) {' },
+  { name: '#1670b 5 分钟 v1 风控记忆（删＝每首歌都先撞一遍 -460）', file: 'js/music-player.js', needle: 'neaV1BlockedUntil = Date.now() + 5 * 60 * 1000;' },
+  { name: '#1670c 风控期内直接走旧接口（删＝记忆不生效）', file: 'js/music-player.js', needle: 'if (Date.now() < neaV1BlockedUntil) attemptLegacy(); else attempt();' },
   // ==== 2026-11-16 #1669 v1 被风控时旧接口兜底 ====
   { name: '#1669 v1 全档 -460 时改走旧接口 /song/url（删＝风控时整首歌播不了）', file: 'js/music-player.js', needle: "neaFetch('/song/url?id='" },
   { name: '#1669b 诊断单显示旧接口复核（删＝看不出兜底能不能用）', file: 'js/music-player.js', needle: "'旧接口兜底（/song/url br=320000）: '" },
@@ -7393,10 +7397,8 @@ const FIX_SENTINELS = [
   { name: '#1658a 制作信息行识别（中英混排/无冒号折行；删＝编曲 MUSIC / ARRANGEMENT: 又被当成歌词）', file: 'js/music-player.js', needle: 'function taLyricIsCredit(t) {' },
   { name: '#1658b 英文角色标签识别（删＝GUITAR/STRINGS/BACKGROUND VOCAL 整块漏过）', file: 'js/music-player.js', needle: 'const TA_LYRIC_EN_ROLE_RE' },
   { name: '#1658c 顶部制作信息块整块跳过（删＝折行的纯人名续行「Koh / 林俊杰 JJ LIN」仍会被发出去）', file: 'js/music-player.js', needle: 'const cont = inTop && /[/／]/.test(t) && !/[，。！？；]/.test(t);' },
-  // ==== 2026-11-13 #1659 网易 -460 是随机风控，同档重试 ====
-  { name: '#1659a -460 同档重试（删＝一次随机风控就把会员歌判成没版权/跳过）', file: 'js/music-player.js', needle: 'const transient = !err && (code === -460 || (!url && !trial && !code));' },
-  { name: '#1659b 诊断单串行+遇 -460 重试（删＝4 个并发请求一起撞风控，结果误报）', file: 'js/music-player.js', needle: 'const runUrlTest = (path) => new Promise(res => {' },
-  // ==== 2026-11-13 #1660 漫游时单曲循环生效 ====
+  // ==== 2026-11-13 #1659 网易 -460：诊断单串行（-460 直接走旧接口见 #1670）====
+  { name: '#1659b 诊断单串行（删＝4 个并发请求一起撞风控，结果误报）', file: 'js/music-player.js', needle: 'const runUrlTest = (path) => runTest(path);' },  // ==== 2026-11-13 #1660 漫游时单曲循环生效 ====
   { name: '#1660 自然播完先判单曲循环（删＝漫游的 FM 队列抢先切下一首，单曲循环永远轮不上）', file: 'js/music-player.js', needle: "if (mode === 'single' && currentId) { playTrack(currentId); return; }" },
   // ==== 2026-11-13 #1661 每首歌尽量都能播：-460 同档重试 2 次 ====
   { name: '#1661 -460 同档最多重试 2 次且总请求封顶（删＝一次随机风控仍可能把可播的歌跳过）', file: 'js/music-player.js', needle: 'if (transient && lvTry < 2 && totalTries < 9) {' },
