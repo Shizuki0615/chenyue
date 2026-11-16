@@ -7353,6 +7353,8 @@ const FIX_SENTINELS = [
   { name: '#1666h 单题胶囊样式（删＝单题挤成一团看不清）', file: 'css/chat-pages.css', needle: '.qb-type {' },
   // ==== 2026-11-15 #1667 组件库补齐心意市集/心意柜图标 ====
   { name: '#1667 组件库图标清单包含心意市集/心意柜（删＝装修组件库里根本找不到这两个图标）', file: 'js/personalize.js', needle: "'app-memo', 'app-market', 'app-giftbox'];" },
+  // ==== 2026-11-16 #1668 顶栏时间不再抵消梦角世界时间的偏移 ====
+  { name: '#1668 顶栏时间直接取世界时间（删＝半小时内随机分钟把「慢1小时」抵消成慢30分，看起来他跟着你）', file: 'js/cjian.js', needle: 'if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {' },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
   { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },
   { name: '#1654b 游戏卡类型清单（删＝删除按钮无法判断这张是不是游戏卡）', file: 'js/chat.js', needle: 'const GAME_CARD_SPECIALS = {' },
