@@ -1038,34 +1038,49 @@
     let last = (t && typeof t.last === 'number') ? t.last : 0;
     let next = (t && typeof t.next === 'number') ? t.next : 0;
     if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-    // #1668：这里保留「随机抽一个当地时刻」的原语义——在世界时间所在的半小时段里
-    // 随机取一个具体分钟（±30min）。顶栏不再推进这个快照，所以随机性不会被推成现实时间。
-    if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {
-      // 复用列表首位梦角的世界时间（与列表卡片时段完全一致）；桌面无梦角时退回全天先抽时辰再抽时刻。
+    // #1668：他说「我要他一分钟一分钟推进，但不要和我的现实时间相差不大」——
+    // 顶栏恢复每分钟推进，同时「对方当前时间」改为真正独立抽取：默认全天随机、
+    // 且至少与现实相差 2 小时（避免offset=0/时辰贴近现实时看着像跟着你）；
+    // 设了「常在时辰」的梦角仍只在他常在的时辰里随机。v3 起旧快照立即重算。
+    if (!t || t.v !== 3 || (now - last) / 36e5 >= next) {
       const list0 = loadRoster(cid);
       const c0 = list0 && list0[0];
-      let hh, mm, halfLabel = '', rangeLabel = '';
-      if (c0) {
-        const wm = worldMinuteOf(c0);
-        const info = halfRangeOf(wm);
-        const total = info.lo + rand(0, info.hi - info.lo);
-        hh = Math.floor(total / 60) % 24; mm = total % 60;
-        halfLabel = info.half; rangeLabel = info.range;
+      let total = 0;
+      if (c0 && Array.isArray(c0.slots) && c0.slots.length) {
+        const s = c0.slots[Math.floor(Math.random() * c0.slots.length)];
+        total = slotMinuteRange(s);
+      } else if (c0 && c0.offsetMin) {
+        // 用户显式设过「快/慢 N 小时 / 独立时间流」→ 尊重这个偏移，只在半小时段内抽分钟
+        const info = halfRangeOf(worldMinuteOf(c0));
+        total = info.lo + rand(0, info.hi - info.lo);
       } else {
-        const stH = shichenStartHour(rand(0, 11));
-        const total = slotMinuteRange(stH);
-        hh = Math.floor(total / 60) % 24; mm = total % 60;
-        const info = halfRangeOf(total);
-        halfLabel = info.half; rangeLabel = info.range;
+        const nowD = new Date(now);
+        const realMin = nowD.getHours() * 60 + nowD.getMinutes();
+        for (let i = 0; i < 30; i++) {
+          total = rand(0, 1439);
+          let d = Math.abs(total - realMin);
+          if (d > 720) d = 1440 - d;
+          if (d >= 120) break;
+        }
       }
-      t = { v: 2, hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
+      t = { v: 3, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
       saveTaTime(cid, t);
     }
     return t;
   }
+  // 活动时钟：快照时刻 + 现实流逝分钟（顶栏与「对方当前时间」共用同一口径，一分钟一分钟推进）
+  function taClockOf(cid) {
+    const t = taTimeOf(cid);
+    const now = Date.now();
+    const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
+    const mins = Math.floor((now - base) / 60000);
+    let total = ((t.hh * 60 + t.mm + mins) % 1440 + 1440) % 1440;
+    return { hh: Math.floor(total / 60), mm: total % 60, total: total };
+  }
   // #1650：聊天顶栏「他那边的时间」只读出口——顶栏以此快照为基准每分钟往前走，
   // 到 next 到期时本函数自己会重抽（与「此间」页完全同源，不另存一份时间）。
   try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
+  try { window.cjianTaClockOf = taClockOf; } catch (e) {}
   function renderTaTime() {
     const listEl = document.getElementById('cj-list');
     if (!listEl) return;
@@ -1080,7 +1095,7 @@
     card.appendChild(el('div', 'cj-ta-time-hint', '他自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
     const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
     cidList.forEach(function (cid) {
-      const t = taTimeOf(cid);
+      const t = taClockOf(cid);
       const row = el('div', 'cj-ta-time-item');
       const left = el('div', 'cj-ta-time-left');
       left.appendChild(el('span', 'cj-ta-time-sh', '他'));
@@ -1096,16 +1111,11 @@
       card.appendChild(row);
     });
   }
-  // 「对方当前时间」的时间段标签：与列表首位梦角的半小时段完全一致（如「未正 14:30–14:59」）。
-  // 优先用重抽时存住的 half/range；旧数据无该字段则实时取首位梦角当前半小时段兜底。
+  // 「对方当前时间」的时间段标签：随时钟推进实时换算（不再用重抽时存死的半小时段）。
   function taSlotLabel(cid, t) {
-    if (t && t.half && t.range) return t.half + ' ' + t.range;
-    const c0 = loadRoster(cid)[0];
-    if (c0) {
-      const info = halfRangeOf(worldMinuteOf(c0));
-      return info.half + ' ' + info.range;
-    }
-    return '全天随机';
+    const total = (t && typeof t.total === 'number') ? t.total : ((t && typeof t.hh === 'number') ? t.hh * 60 + t.mm : 0);
+    const info = halfRangeOf(total);
+    return info.half + ' ' + info.range;
   }
   // 刷新检查：启动立即一次 + 每 60 秒；仅当「此间」页开着才重抽/刷新显示（后台不空转）
   function taTimePoll() {

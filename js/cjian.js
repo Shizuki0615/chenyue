@@ -865,29 +865,41 @@ let t = loadTaTime(cid);
 let last = (t && typeof t.last === 'number') ? t.last : 0;
 let next = (t && typeof t.next === 'number') ? t.next : 0;
 if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-if (!t || t.v !== 2 || (now - last) / 36e5 >= next) {
+if (!t || t.v !== 3 || (now - last) / 36e5 >= next) {
 const list0 = loadRoster(cid);
 const c0 = list0 && list0[0];
-let hh, mm, halfLabel = '', rangeLabel = '';
-if (c0) {
-const wm = worldMinuteOf(c0);
-const info = halfRangeOf(wm);
-const total = info.lo + rand(0, info.hi - info.lo);
-hh = Math.floor(total / 60) % 24; mm = total % 60;
-halfLabel = info.half; rangeLabel = info.range;
+let total = 0;
+if (c0 && Array.isArray(c0.slots) && c0.slots.length) {
+const s = c0.slots[Math.floor(Math.random() * c0.slots.length)];
+total = slotMinuteRange(s);
+} else if (c0 && c0.offsetMin) {
+const info = halfRangeOf(worldMinuteOf(c0));
+total = info.lo + rand(0, info.hi - info.lo);
 } else {
-const stH = shichenStartHour(rand(0, 11));
-const total = slotMinuteRange(stH);
-hh = Math.floor(total / 60) % 24; mm = total % 60;
-const info = halfRangeOf(total);
-halfLabel = info.half; rangeLabel = info.range;
+const nowD = new Date(now);
+const realMin = nowD.getHours() * 60 + nowD.getMinutes();
+for (let i = 0; i < 30; i++) {
+total = rand(0, 1439);
+let d = Math.abs(total - realMin);
+if (d > 720) d = 1440 - d;
+if (d >= 120) break;
 }
-t = { v: 2, hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
+}
+t = { v: 3, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
 saveTaTime(cid, t);
 }
 return t;
 }
+function taClockOf(cid) {
+const t = taTimeOf(cid);
+const now = Date.now();
+const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
+const mins = Math.floor((now - base) / 60000);
+let total = ((t.hh * 60 + t.mm + mins) % 1440 + 1440) % 1440;
+return { hh: Math.floor(total / 60), mm: total % 60, total: total };
+}
 try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
+try { window.cjianTaClockOf = taClockOf; } catch (e) {}
 function renderTaTime() {
 const listEl = document.getElementById('cj-list');
 if (!listEl) return;
@@ -902,7 +914,7 @@ card.appendChild(el('div', 'cj-ta-time-title', '对方当前时间'));
 card.appendChild(el('div', 'cj-ta-time-hint', '他自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
 const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
 cidList.forEach(function (cid) {
-const t = taTimeOf(cid);
+const t = taClockOf(cid);
 const row = el('div', 'cj-ta-time-item');
 const left = el('div', 'cj-ta-time-left');
 left.appendChild(el('span', 'cj-ta-time-sh', '他'));
@@ -919,13 +931,9 @@ card.appendChild(row);
 });
 }
 function taSlotLabel(cid, t) {
-if (t && t.half && t.range) return t.half + ' ' + t.range;
-const c0 = loadRoster(cid)[0];
-if (c0) {
-const info = halfRangeOf(worldMinuteOf(c0));
+const total = (t && typeof t.total === 'number') ? t.total : ((t && typeof t.hh === 'number') ? t.hh * 60 + t.mm : 0);
+const info = halfRangeOf(total);
 return info.half + ' ' + info.range;
-}
-return '全天随机';
 }
 function taTimePoll() {
 try {
