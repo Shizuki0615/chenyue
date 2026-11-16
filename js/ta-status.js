@@ -78,10 +78,10 @@ const st = aStore();
 if (st) st.set(offKey(kind, g, c), off ? '1' : '0');
 }
 function hisClock(cid) {
-let t = null;
-try { t = window.cjianTaTimeOf ? window.cjianTaTimeOf(cid) : null; } catch (e) { t = null; }
-if (!t || typeof t.hh !== 'number' || typeof t.mm !== 'number') return null;
-return { hh: t.hh, mm: t.mm };
+let c = null;
+try { c = window.cjianTaClockOf ? window.cjianTaClockOf(cid) : null; } catch (e) { c = null; }
+if (!c || typeof c.hh !== 'number' || typeof c.mm !== 'number') return null;
+return { hh: c.hh, mm: c.mm };
 }
 function clockText(cid) {
 const c = hisClock(cid);
