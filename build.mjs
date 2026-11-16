@@ -7354,7 +7354,7 @@ const FIX_SENTINELS = [
   { name: '#1667 组件库图标清单包含心意市集/心意柜（删＝装修组件库里根本找不到这两个图标）', file: 'js/personalize.js', needle: "'app-memo', 'app-market', 'app-giftbox'];" },
   // ==== 2026-11-16 #1668 顶栏时间：随机独立 + 每分钟推进 ====
   { name: '#1668a 顶栏每分钟推进（删＝时间停在快照不走）', file: 'js/ta-status.js', needle: 'return { hh: c.hh, mm: c.mm };' },
-  { name: '#1668b 无偏移时随机时刻至少与现实差2小时（删＝又贴着你的时间走）', file: 'js/cjian.js', needle: 'if (d >= 120) break;' },
+  { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
   { name: '#1668c 顶栏与此间共用的活动时钟（删＝两处时间对不上）', file: 'js/cjian.js', needle: 'window.cjianTaClockOf = taClockOf' },
   // ==== 2026-11-11 #1654 游戏结算卡可删除 ====
   { name: '#1654a 游戏卡可弹操作条（删＝猜拳/Pong 等结算卡长按没反应、删不掉）', file: 'js/chat.js', needle: "t.closest('.msg-rps, .msg-pong')" },

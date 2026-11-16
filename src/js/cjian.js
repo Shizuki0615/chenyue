@@ -1038,32 +1038,21 @@
     let last = (t && typeof t.last === 'number') ? t.last : 0;
     let next = (t && typeof t.next === 'number') ? t.next : 0;
     if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-    // #1668：他说「我要他一分钟一分钟推进，但不要和我的现实时间相差不大」——
-    // 顶栏恢复每分钟推进，同时「对方当前时间」改为真正独立抽取：默认全天随机、
-    // 且至少与现实相差 2 小时（避免offset=0/时辰贴近现实时看着像跟着你）；
-    // 设了「常在时辰」的梦角仍只在他常在的时辰里随机。v3 起旧快照立即重算。
-    if (!t || t.v !== 3 || (now - last) / 36e5 >= next) {
+    // #1668：按此间自己的世界时间来——梦角世界时间所在的半小时段里随机抽一个分钟；
+    // 有「常在时辰」由 worldMinuteOf 负责；不额外加强制偏移（用户明确：就让它随机）。
+    // 顶栏由 taClockOf 每分钟推进；v4 起旧的 v3（强制差 2 小时）快照立即重算。
+    if (!t || t.v !== 4 || (now - last) / 36e5 >= next) {
       const list0 = loadRoster(cid);
       const c0 = list0 && list0[0];
       let total = 0;
-      if (c0 && Array.isArray(c0.slots) && c0.slots.length) {
-        const s = c0.slots[Math.floor(Math.random() * c0.slots.length)];
-        total = slotMinuteRange(s);
-      } else if (c0 && c0.offsetMin) {
-        // 用户显式设过「快/慢 N 小时 / 独立时间流」→ 尊重这个偏移，只在半小时段内抽分钟
+      if (c0) {
         const info = halfRangeOf(worldMinuteOf(c0));
         total = info.lo + rand(0, info.hi - info.lo);
       } else {
-        const nowD = new Date(now);
-        const realMin = nowD.getHours() * 60 + nowD.getMinutes();
-        for (let i = 0; i < 30; i++) {
-          total = rand(0, 1439);
-          let d = Math.abs(total - realMin);
-          if (d > 720) d = 1440 - d;
-          if (d >= 120) break;
-        }
+        const stH = shichenStartHour(rand(0, 11));
+        total = slotMinuteRange(stH);
       }
-      t = { v: 3, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
+      t = { v: 4, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
       saveTaTime(cid, t);
     }
     return t;

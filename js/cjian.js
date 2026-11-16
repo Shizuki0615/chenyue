@@ -865,27 +865,18 @@ let t = loadTaTime(cid);
 let last = (t && typeof t.last === 'number') ? t.last : 0;
 let next = (t && typeof t.next === 'number') ? t.next : 0;
 if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-if (!t || t.v !== 3 || (now - last) / 36e5 >= next) {
+if (!t || t.v !== 4 || (now - last) / 36e5 >= next) {
 const list0 = loadRoster(cid);
 const c0 = list0 && list0[0];
 let total = 0;
-if (c0 && Array.isArray(c0.slots) && c0.slots.length) {
-const s = c0.slots[Math.floor(Math.random() * c0.slots.length)];
-total = slotMinuteRange(s);
-} else if (c0 && c0.offsetMin) {
+if (c0) {
 const info = halfRangeOf(worldMinuteOf(c0));
 total = info.lo + rand(0, info.hi - info.lo);
 } else {
-const nowD = new Date(now);
-const realMin = nowD.getHours() * 60 + nowD.getMinutes();
-for (let i = 0; i < 30; i++) {
-total = rand(0, 1439);
-let d = Math.abs(total - realMin);
-if (d > 720) d = 1440 - d;
-if (d >= 120) break;
+const stH = shichenStartHour(rand(0, 11));
+total = slotMinuteRange(stH);
 }
-}
-t = { v: 3, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
+t = { v: 4, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
 saveTaTime(cid, t);
 }
 return t;
