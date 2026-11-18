@@ -784,7 +784,7 @@ html.force-mobile .phone .page.full .chat-input-row {
   padding-left: 12px; padding-right: 12px; padding-top: var(--cs-input-pad-y, 10px);
   padding-bottom: calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
 }
-html.force-mobile .phone .page.full .chat-head { padding-top: calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
+html.force-mobile .phone .page.full .chat-head { padding-top: calc(10px + min(var(--mochi-safe-top, env(safe-area-inset-top, 0px)), 12px)); }
 html.force-mobile .phone .page.full { padding-bottom: 0; }
 html.force-mobile #page-chat { background: var(--page-bg-grad); }
 html.force-mobile button, html.force-mobile .app, html.force-mobile .set-row,
@@ -989,7 +989,10 @@ html.ios-pwa-standalone.ios-cover-top body { height:var(--mochi-ios-h, 100vh); m
     padding-top: var(--cs-input-pad-y, 10px);
     padding-bottom: calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
   }
-  .phone .page.full .chat-head { padding-top: calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
+  /* #1671：系统更新后 env/--mochi-safe-top 可能把浏览器工具栏高度也算进顶部安全区，
+     聊天顶栏被顶出一大条白带。这里给顶栏的安全区贡献封顶 12px（真全屏的
+     display-mode:fullscreen / fs-active 规则在后面另行覆盖，不受影响）。 */
+  .phone .page.full .chat-head { padding-top: calc(10px + min(var(--mochi-safe-top, env(safe-area-inset-top, 0px)), 12px)); }
   .phone .page.full { padding-bottom: 0; }
   /* v3.6.x：聊天页背景统一为页面渐变底色（浅色 #f6f6f6 / 深色 #1a1a1a）——
      原 #page-chat 背景透明，透出 .phone 渐变灰底（#f2f2f2 叠加 body #e9e9e9），
@@ -1142,7 +1145,7 @@ html.tablet .phone .page.full .chat-input-row {
   padding-top:var(--cs-input-pad-y, 10px);
   padding-bottom:calc(var(--cs-input-pad-y, 10px) + var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)));
 }
-html.tablet .phone .page.full .chat-head { padding-top:calc(10px + var(--mochi-safe-top, env(safe-area-inset-top, 0px))); }
+html.tablet .phone .page.full .chat-head { padding-top:calc(10px + min(var(--mochi-safe-top, env(safe-area-inset-top, 0px)), 12px)); }
 html.tablet .phone .page.full { padding-bottom:0; }
 html.tablet #page-chat { background:var(--page-bg-grad); }
 html.tablet .tabbar { margin-bottom:var(--mochi-safe-bottom,env(safe-area-inset-bottom,0px)); }
