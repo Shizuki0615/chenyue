@@ -206,16 +206,14 @@ rest:    { label: '休息', desc: '他正在休息' },
 sleep:   { label: '睡着', desc: '他那边已经入睡' },
 unknown: { label: '未知', desc: '暂时不知道他在做什么' }
 };
-function ensureOwnFlowList(list, cid) {
+function rollbackOwnFlow(list, cid) {
 let changed = false;
 (list || []).forEach(function (c) {
-if (!c || !c.own || c.manual) return;
-if (typeof c.offsetMin === 'number' && c.offsetMin !== 0) return;
-if (Array.isArray(c.slots) && c.slots.length) return;
-if (c.offRand) return;
-c.offsetMin = randomOffset();
-c.offRand = 1;
+if (c && c.offRand === 1) {
+c.offsetMin = 0;
+delete c.offRand;
 changed = true;
+}
 });
 if (changed) {
 saveRoster(list, cid);
@@ -225,7 +223,7 @@ const r = rootStore();
 if (r) {
 const o = JSON.parse(r.get('cjian-ott') || '{}');
 if (o && typeof o === 'object') {
-list.forEach(function (c) { if (c.offRand) delete o[c.id]; });
+list.forEach(function (c) { delete o[c.id]; });
 r.set('cjian-ott', JSON.stringify(o));
 }
 }
@@ -241,7 +239,7 @@ if (!s) return [];
 const v = s.get(ROSTER_KEY);
 if (v) {
 const a = JSON.parse(v);
-if (Array.isArray(a)) return ensureOwnFlowList(a.filter(x => x && x.name && x.id), cid);
+if (Array.isArray(a)) return rollbackOwnFlow(a.filter(x => x && x.name && x.id), cid);
 }
 } catch (e) {}
 return [];
@@ -893,32 +891,28 @@ let t = loadTaTime(cid);
 let last = (t && typeof t.last === 'number') ? t.last : 0;
 let next = (t && typeof t.next === 'number') ? t.next : 0;
 if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-if (!t || t.v !== 4 || (now - last) / 36e5 >= next) {
+if (!t || (now - last) / 36e5 >= next) {
 const list0 = loadRoster(cid);
 const c0 = list0 && list0[0];
-let total = 0;
+let hh, mm, halfLabel = '', rangeLabel = '';
 if (c0) {
 const info = halfRangeOf(worldMinuteOf(c0));
-total = info.lo + rand(0, info.hi - info.lo);
+const total = info.lo + rand(0, info.hi - info.lo);
+hh = Math.floor(total / 60) % 24; mm = total % 60;
+halfLabel = info.half; rangeLabel = info.range;
 } else {
 const stH = shichenStartHour(rand(0, 11));
-total = slotMinuteRange(stH);
+const total = slotMinuteRange(stH);
+hh = Math.floor(total / 60) % 24; mm = total % 60;
+const info = halfRangeOf(total);
+halfLabel = info.half; rangeLabel = info.range;
 }
-t = { v: 4, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
+t = { hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
 saveTaTime(cid, t);
 }
 return t;
 }
-function taClockOf(cid) {
-const t = taTimeOf(cid);
-const now = Date.now();
-const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
-const mins = Math.floor((now - base) / 60000);
-let total = ((t.hh * 60 + t.mm + mins) % 1440 + 1440) % 1440;
-return { hh: Math.floor(total / 60), mm: total % 60, total: total };
-}
 try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
-try { window.cjianTaClockOf = taClockOf; } catch (e) {}
 function renderTaTime() {
 const listEl = document.getElementById('cj-list');
 if (!listEl) return;
@@ -933,7 +927,7 @@ card.appendChild(el('div', 'cj-ta-time-title', '对方当前时间'));
 card.appendChild(el('div', 'cj-ta-time-hint', '他自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
 const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
 cidList.forEach(function (cid) {
-const t = taClockOf(cid);
+const t = taTimeOf(cid);
 const row = el('div', 'cj-ta-time-item');
 const left = el('div', 'cj-ta-time-left');
 left.appendChild(el('span', 'cj-ta-time-sh', '他'));
@@ -950,9 +944,13 @@ card.appendChild(row);
 });
 }
 function taSlotLabel(cid, t) {
-const total = (t && typeof t.total === 'number') ? t.total : ((t && typeof t.hh === 'number') ? t.hh * 60 + t.mm : 0);
-const info = halfRangeOf(total);
+if (t && t.half && t.range) return t.half + ' ' + t.range;
+const c0 = loadRoster(cid)[0];
+if (c0) {
+const info = halfRangeOf(worldMinuteOf(c0));
 return info.half + ' ' + info.range;
+}
+return '全天随机';
 }
 function taTimePoll() {
 try {

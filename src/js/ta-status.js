@@ -98,14 +98,17 @@
     if (st) st.set(offKey(kind, g, c), off ? '1' : '0');
   }
 
-  // ---- 他那边的时间：此间随机时刻 + 每分钟推进（与「对方当前时间」同一口径）----
-  // #1668：随机时刻必须真的独立（此间抽的时刻至少与现实差 2 小时），顶栏再按分钟推进，
-  // 这样既有「一分钟一分钟走」的观感，又不会和现实时间贴着走。
+  // ---- 他那边的时间：以此间抽取的快照为基准，每分钟往前走 ----
   function hisClock(cid) {
-    let c = null;
-    try { c = window.cjianTaClockOf ? window.cjianTaClockOf(cid) : null; } catch (e) { c = null; }
-    if (!c || typeof c.hh !== 'number' || typeof c.mm !== 'number') return null;
-    return { hh: c.hh, mm: c.mm };
+    let t = null;
+    try { t = window.cjianTaTimeOf ? window.cjianTaTimeOf(cid) : null; } catch (e) { t = null; }
+    if (!t || typeof t.hh !== 'number' || typeof t.mm !== 'number') return null;
+    const now = Date.now();
+    const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
+    const mins = Math.floor((now - base) / 60000);
+    let total = (t.hh * 60 + t.mm + mins) % 1440;
+    if (total < 0) total += 1440;
+    return { hh: Math.floor(total / 60), mm: total % 60 };
   }
   function clockText(cid) {
     const c = hisClock(cid);

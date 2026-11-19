@@ -257,21 +257,17 @@
   };
 
   // ---- 存储（按桌面命名空间分离） ----
-  // #1673（用户直派「我问的是时间逻辑」）：自动播种的本尊默认 offsetMin=0（与现实同步），
-  // 顶栏加了「他那边的时间」后就一直贴着自己的时间走。旧语义是每位梦角有自己的时间流——
-  // 这里给「未手动设置过、没常在时辰、offset 仍为 0」的本尊一次性分配稳定随机偏移
-  //（落在 10~540 分钟，非整点→此间显示「独立时间流」），并让缓存的时刻按新偏移重抽。
-  // 用户之后在「此间 → 设定世界时间」里改成「与现实同步」会保留 0（offRand 标记只防重复分配）。
-  function ensureOwnFlowList(list, cid) {
+  // #1673 已回退：之前给自动播种本尊随机分配 offset 的逻辑全部撤销。
+  // 这里只做一次数据修复：凡是被那次迁移打上 offRand 标记的本尊，把 offset 还原为 0
+  //（它们原本就是「与现实同步」），并清掉缓存时刻，恢复此间原本的时间逻辑。
+  function rollbackOwnFlow(list, cid) {
     let changed = false;
     (list || []).forEach(function (c) {
-      if (!c || !c.own || c.manual) return;
-      if (typeof c.offsetMin === 'number' && c.offsetMin !== 0) return;
-      if (Array.isArray(c.slots) && c.slots.length) return;
-      if (c.offRand) return;
-      c.offsetMin = randomOffset();
-      c.offRand = 1;
-      changed = true;
+      if (c && c.offRand === 1) {
+        c.offsetMin = 0;
+        delete c.offRand;
+        changed = true;
+      }
     });
     if (changed) {
       saveRoster(list, cid);
@@ -281,7 +277,7 @@
         if (r) {
           const o = JSON.parse(r.get('cjian-ott') || '{}');
           if (o && typeof o === 'object') {
-            list.forEach(function (c) { if (c.offRand) delete o[c.id]; });
+            list.forEach(function (c) { delete o[c.id]; });
             r.set('cjian-ott', JSON.stringify(o));
           }
         }
@@ -297,7 +293,7 @@
       const v = s.get(ROSTER_KEY);
       if (v) {
         const a = JSON.parse(v);
-        if (Array.isArray(a)) return ensureOwnFlowList(a.filter(x => x && x.name && x.id), cid);
+        if (Array.isArray(a)) return rollbackOwnFlow(a.filter(x => x && x.name && x.id), cid);
       }
     } catch (e) {}
     return [];
@@ -1071,38 +1067,32 @@
     let last = (t && typeof t.last === 'number') ? t.last : 0;
     let next = (t && typeof t.next === 'number') ? t.next : 0;
     if (last > now || last < 0 || isNaN(last)) { last = 0; next = 0; }
-    // #1668：按此间自己的世界时间来——梦角世界时间所在的半小时段里随机抽一个分钟；
-    // 有「常在时辰」由 worldMinuteOf 负责；不额外加强制偏移（用户明确：就让它随机）。
-    // 顶栏由 taClockOf 每分钟推进；v4 起旧的 v3（强制差 2 小时）快照立即重算。
-    if (!t || t.v !== 4 || (now - last) / 36e5 >= next) {
+    if (!t || (now - last) / 36e5 >= next) {
+      // 复用列表首位梦角的世界时间半小时段（与列表卡片时段完全一致），再在该半小时段里
+      // 抽具体时刻；桌面无梦角时退回全天先抽时辰再抽时刻。标签存 half/range 供展示。
       const list0 = loadRoster(cid);
       const c0 = list0 && list0[0];
-      let total = 0;
+      let hh, mm, halfLabel = '', rangeLabel = '';
       if (c0) {
         const info = halfRangeOf(worldMinuteOf(c0));
-        total = info.lo + rand(0, info.hi - info.lo);
+        const total = info.lo + rand(0, info.hi - info.lo);
+        hh = Math.floor(total / 60) % 24; mm = total % 60;
+        halfLabel = info.half; rangeLabel = info.range;
       } else {
         const stH = shichenStartHour(rand(0, 11));
-        total = slotMinuteRange(stH);
+        const total = slotMinuteRange(stH);
+        hh = Math.floor(total / 60) % 24; mm = total % 60;
+        const info = halfRangeOf(total);
+        halfLabel = info.half; rangeLabel = info.range;
       }
-      t = { v: 4, hh: Math.floor(total / 60) % 24, mm: total % 60, last: now, next: 1 + Math.random() * 7 };
+      t = { hh: hh, mm: mm, last: now, next: 1 + Math.random() * 7, half: halfLabel, range: rangeLabel };
       saveTaTime(cid, t);
     }
     return t;
   }
-  // 活动时钟：快照时刻 + 现实流逝分钟（顶栏与「对方当前时间」共用同一口径，一分钟一分钟推进）
-  function taClockOf(cid) {
-    const t = taTimeOf(cid);
-    const now = Date.now();
-    const base = (typeof t.last === 'number' && t.last > 0 && t.last <= now) ? t.last : now;
-    const mins = Math.floor((now - base) / 60000);
-    let total = ((t.hh * 60 + t.mm + mins) % 1440 + 1440) % 1440;
-    return { hh: Math.floor(total / 60), mm: total % 60, total: total };
-  }
   // #1650：聊天顶栏「他那边的时间」只读出口——顶栏以此快照为基准每分钟往前走，
   // 到 next 到期时本函数自己会重抽（与「此间」页完全同源，不另存一份时间）。
   try { window.cjianTaTimeOf = taTimeOf; } catch (e) {}
-  try { window.cjianTaClockOf = taClockOf; } catch (e) {}
   function renderTaTime() {
     const listEl = document.getElementById('cj-list');
     if (!listEl) return;
@@ -1117,7 +1107,7 @@
     card.appendChild(el('div', 'cj-ta-time-hint', '他自己随机抽的当地时刻 · 每隔 1-8 小时重新抽'));
     const cidList = viewCid === ALL ? contacts().map(function (ct) { return ct.id; }) : [(viewCid || curCid())];
     cidList.forEach(function (cid) {
-      const t = taClockOf(cid);
+      const t = taTimeOf(cid);
       const row = el('div', 'cj-ta-time-item');
       const left = el('div', 'cj-ta-time-left');
       left.appendChild(el('span', 'cj-ta-time-sh', '他'));
@@ -1133,11 +1123,15 @@
       card.appendChild(row);
     });
   }
-  // 「对方当前时间」的时间段标签：随时钟推进实时换算（不再用重抽时存死的半小时段）。
+  // 「对方当前时间」的时间段标签：优先用重抽时存住的 half/range；旧数据无该字段则实时取首位梦角当前半小时段兜底。
   function taSlotLabel(cid, t) {
-    const total = (t && typeof t.total === 'number') ? t.total : ((t && typeof t.hh === 'number') ? t.hh * 60 + t.mm : 0);
-    const info = halfRangeOf(total);
-    return info.half + ' ' + info.range;
+    if (t && t.half && t.range) return t.half + ' ' + t.range;
+    const c0 = loadRoster(cid)[0];
+    if (c0) {
+      const info = halfRangeOf(worldMinuteOf(c0));
+      return info.half + ' ' + info.range;
+    }
+    return '全天随机';
   }
   // 刷新检查：启动立即一次 + 每 60 秒；仅当「此间」页开着才重抽/刷新显示（后台不空转）
   function taTimePoll() {
