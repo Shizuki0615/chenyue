@@ -635,7 +635,7 @@ body.cs-typing-capsule #chat-typing {
 }
 .page.full .chat-head {
   /* #1671：与 base.css 同口径封顶——避免系统更新后 env 把浏览器工具栏算进安全区 */
-  padding: calc(14px + min(env(safe-area-inset-top, 0px), 12px)) 18px 12px;
+  padding: calc(14px + min(env(safe-area-inset-top, 0px), 0px)) 18px 12px;
   margin: 0;
   background:rgba(255,255,255,.92); /* v3.5.89 缁熶竴妗岄潰鐧借壊绠€绾﹂鏍?*/
   border-bottom:1px solid rgba(0,0,0,.1);
