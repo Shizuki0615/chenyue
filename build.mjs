@@ -7360,7 +7360,7 @@ const FIX_SENTINELS = [
   { name: '#1674 把误改的 offset 还原为 0（删＝用户此间设置回不到原样）', file: 'js/cjian.js', needle: 'function rollbackOwnFlow(list, cid) {' },
   // ==== 2026-11-16 #1668 顶栏时间：随机独立 + 每分钟推进 ====
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
-  { name: '#1650c 顶栏时间每分钟推进（删＝A 停在抽取时刻不走）', file: 'js/ta-status.js', needle: 'Math.floor((now - base) / 60000)' },
+  { name: '#1675 顶栏严格跟随此间快照（删＝又按经过分钟推进，顶栏 11:35 / 此间 09:39）', file: 'js/ta-status.js', needle: 'return { hh: t.hh, mm: t.mm };' },
   // ==== 2026-11-16 #1670 v1 全档 -460 时直接走旧接口 ====
   { name: '#1670a v1 -460 直接切旧接口（删＝同档重试/降档白等几秒）', file: 'js/music-player.js', needle: 'if (!err && code === -460 && totalTries < 10) {' },
   { name: '#1670b 5 分钟 v1 风控记忆（删＝每首歌都先撞一遍 -460）', file: 'js/music-player.js', needle: 'neaV1BlockedUntil = Date.now() + 5 * 60 * 1000;' },
