@@ -1,4 +1,12 @@
-/* ===== 鑱婂ぉ鏍稿績鏍峰紡锛堟秷鎭?/ 杈撳叆鏍?/ 鍗婃 / 鑱婂ぉ鍗＄墖锛?===== */
+/* #1677：内置「五瓣圆花」❀ 字形（DejaVu Sans 子集，仅 U+2740，约 1.6KB）。
+   系统更新可能更换符号回退字体（同一个 ❀ 被画成八瓣细线花）；把气泡装饰钉到这个字体，
+   就不会再随系统字体变化。 */
+@font-face {
+  font-family: "MochiFlower";
+  src: url("fonts/bubble-flower.woff") format("woff");
+  font-display: swap;
+}
+/* ===== 聊天核心样式（消息 / 输入栏 / 半框 / 聊天卡片）===== */
 /* ===== 鑱婂ぉ椤?===== */
 .chat-head {
   display:flex; align-items:center; gap:10px;
