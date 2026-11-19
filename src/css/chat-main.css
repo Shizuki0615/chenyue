@@ -2868,7 +2868,9 @@ body.cs-time-center #page-chat .msg-ask.msg-ask-out { justify-content:flex-end; 
 /* ===== #1650 聊天顶栏「他那边的时间 · 状态 · 情绪」 ===== */
 .ch-name-wrap {
   flex:1; min-width:0;
-  display:flex; align-items:flex-end; gap:7px;
+  /* #1672：昵称旁的时间/状态要与昵称同一基线——旧 flex-end 把小字贴到昵称底部，
+     系统字体度量一变就显得「时间掉到昵称下面」。baseline 才是同一行文字的正确对齐。 */
+  display:flex; align-items:baseline; gap:7px;
 }
 .ch-name-wrap .ch-name { flex:0 1 auto; }
 .ch-meta {
