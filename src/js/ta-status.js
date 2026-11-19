@@ -98,14 +98,13 @@
     if (st) st.set(offKey(kind, g, c), off ? '1' : '0');
   }
 
-  // ---- 他那边的时间：严格跟随此间快照，不自己往前推 ----
-  // #1675（用户对比截图直派）：此间显示 09:39，顶栏却被「经过分钟」推成 11:35。
-  // 顶栏只读此间 `taTimeOf` 的快照原值；要换时刻由此间每 1~8 小时重抽，绝不二次推进。
+  // ---- 他那边的时间：与此间「对方当前时间」共用同一活动时钟，每分钟推进 ----
+  // #1676：两边必须同时走——只推顶栏、此间卡死不动会出现 09:39 vs 11:35 的「不跟随」。
   function hisClock(cid) {
-    let t = null;
-    try { t = window.cjianTaTimeOf ? window.cjianTaTimeOf(cid) : null; } catch (e) { t = null; }
-    if (!t || typeof t.hh !== 'number' || typeof t.mm !== 'number') return null;
-    return { hh: t.hh, mm: t.mm };
+    let c = null;
+    try { c = window.cjianTaClockOf ? window.cjianTaClockOf(cid) : null; } catch (e) { c = null; }
+    if (!c || typeof c.hh !== 'number' || typeof c.mm !== 'number') return null;
+    return { hh: c.hh, mm: c.mm };
   }
   function clockText(cid) {
     const c = hisClock(cid);
