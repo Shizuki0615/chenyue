@@ -7356,6 +7356,9 @@ const FIX_SENTINELS = [
   { name: '#1671 聊天顶栏安全区封顶12px（删＝系统更新把工具栏高度算进安全区，顶栏下方一大条白带）', file: 'css/base.css', needle: 'html.force-mobile .phone .page.full .chat-head { padding-top: calc(10px + min(' },
   // ==== 2026-11-19 #1672 昵称旁时间与昵称同基线 ====
   { name: '#1672 昵称旁时间同基线（删＝小字贴昵称底部，系统字体一变就显得掉到下面）', file: 'css/chat-main.css', needle: 'display:flex; align-items:baseline; gap:7px;' },
+  // ==== 2026-11-19 #1673 本尊默认独立随机时间流 ====
+  { name: '#1673 自动播种的本尊分配随机时间偏移（删＝默认 offset=0，顶栏时间永远贴着现实走）', file: 'js/cjian.js', needle: 'function ensureOwnFlowList(list, cid) {' },
+  { name: '#1673b 随机偏移落库标记（删＝每次读取都重抽，时间乱跳）', file: 'js/cjian.js', needle: 'c.offRand = 1;' },
   // ==== 2026-11-16 #1668 顶栏时间：随机独立 + 每分钟推进 ====
   { name: '#1668a 顶栏每分钟推进（删＝时间停在快照不走）', file: 'js/ta-status.js', needle: 'return { hh: c.hh, mm: c.mm };' },
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },

@@ -257,6 +257,39 @@
   };
 
   // ---- 存储（按桌面命名空间分离） ----
+  // #1673（用户直派「我问的是时间逻辑」）：自动播种的本尊默认 offsetMin=0（与现实同步），
+  // 顶栏加了「他那边的时间」后就一直贴着自己的时间走。旧语义是每位梦角有自己的时间流——
+  // 这里给「未手动设置过、没常在时辰、offset 仍为 0」的本尊一次性分配稳定随机偏移
+  //（落在 10~540 分钟，非整点→此间显示「独立时间流」），并让缓存的时刻按新偏移重抽。
+  // 用户之后在「此间 → 设定世界时间」里改成「与现实同步」会保留 0（offRand 标记只防重复分配）。
+  function ensureOwnFlowList(list, cid) {
+    let changed = false;
+    (list || []).forEach(function (c) {
+      if (!c || !c.own || c.manual) return;
+      if (typeof c.offsetMin === 'number' && c.offsetMin !== 0) return;
+      if (Array.isArray(c.slots) && c.slots.length) return;
+      if (c.offRand) return;
+      c.offsetMin = randomOffset();
+      c.offRand = 1;
+      changed = true;
+    });
+    if (changed) {
+      saveRoster(list, cid);
+      try { const s = storeOf(cid); if (s) s.remove('cjian-ta-time'); } catch (e) {}
+      try {
+        const r = rootStore();
+        if (r) {
+          const o = JSON.parse(r.get('cjian-ott') || '{}');
+          if (o && typeof o === 'object') {
+            list.forEach(function (c) { if (c.offRand) delete o[c.id]; });
+            r.set('cjian-ott', JSON.stringify(o));
+          }
+        }
+      } catch (e) {}
+      ottCache = null;
+    }
+    return list;
+  }
   function loadRoster(cid) {
     try {
       const s = storeOf(cid);
@@ -264,7 +297,7 @@
       const v = s.get(ROSTER_KEY);
       if (v) {
         const a = JSON.parse(v);
-        if (Array.isArray(a)) return a.filter(x => x && x.name && x.id);
+        if (Array.isArray(a)) return ensureOwnFlowList(a.filter(x => x && x.name && x.id), cid);
       }
     } catch (e) {}
     return [];

@@ -206,6 +206,34 @@ rest:    { label: '休息', desc: '他正在休息' },
 sleep:   { label: '睡着', desc: '他那边已经入睡' },
 unknown: { label: '未知', desc: '暂时不知道他在做什么' }
 };
+function ensureOwnFlowList(list, cid) {
+let changed = false;
+(list || []).forEach(function (c) {
+if (!c || !c.own || c.manual) return;
+if (typeof c.offsetMin === 'number' && c.offsetMin !== 0) return;
+if (Array.isArray(c.slots) && c.slots.length) return;
+if (c.offRand) return;
+c.offsetMin = randomOffset();
+c.offRand = 1;
+changed = true;
+});
+if (changed) {
+saveRoster(list, cid);
+try { const s = storeOf(cid); if (s) s.remove('cjian-ta-time'); } catch (e) {}
+try {
+const r = rootStore();
+if (r) {
+const o = JSON.parse(r.get('cjian-ott') || '{}');
+if (o && typeof o === 'object') {
+list.forEach(function (c) { if (c.offRand) delete o[c.id]; });
+r.set('cjian-ott', JSON.stringify(o));
+}
+}
+} catch (e) {}
+ottCache = null;
+}
+return list;
+}
 function loadRoster(cid) {
 try {
 const s = storeOf(cid);
@@ -213,7 +241,7 @@ if (!s) return [];
 const v = s.get(ROSTER_KEY);
 if (v) {
 const a = JSON.parse(v);
-if (Array.isArray(a)) return a.filter(x => x && x.name && x.id);
+if (Array.isArray(a)) return ensureOwnFlowList(a.filter(x => x && x.name && x.id), cid);
 }
 } catch (e) {}
 return [];
