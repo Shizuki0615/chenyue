@@ -7362,6 +7362,9 @@ const FIX_SENTINELS = [
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
   { name: '#1676a 顶栏与此间共用活动时钟（删＝只推一边，09:39 vs 11:35）', file: 'js/cjian.js', needle: 'window.cjianTaClockOf = taClockOf' },
   { name: '#1676b 此间「对方当前时间」也用活动时钟（删＝此间卡死、顶栏往前走）', file: 'js/cjian.js', needle: 'const t = taClockOf(cid);' },
+  // ==== 2026-11-23 #1678 后台音乐换歌空档防冻结 ====
+  { name: '#1678a 后台切走时音乐在播也不跳过保活（删＝换歌空档页面被冻结，必须回前台才切歌）', file: 'js/bg-keep.js', needle: 'if (!keepEnabled || !keepAudio || !keepAudio.el) return;' },
+  { name: '#1678b 后台起播保活不再因音乐让位（删＝后台仍起不来保活）', file: 'js/bg-keep.js', needle: "if (musicNowPlaying() && document.visibilityState !== 'hidden') return;" },
   // ==== 2026-11-16 #1670 v1 全档 -460 时直接走旧接口 ====
   { name: '#1670a v1 -460 直接切旧接口（删＝同档重试/降档白等几秒）', file: 'js/music-player.js', needle: 'if (!err && code === -460 && totalTries < 10) {' },
   { name: '#1670b 5 分钟 v1 风控记忆（删＝每首歌都先撞一遍 -460）', file: 'js/music-player.js', needle: 'neaV1BlockedUntil = Date.now() + 5 * 60 * 1000;' },

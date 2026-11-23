@@ -312,7 +312,16 @@ function syncKeepForMusic() {
 if (!keepAudio || !keepAudio.el) return;
 try {
 if (musicNowPlaying()) {
-if (!keepAudio.el.paused) keepAudio.el.pause(); // 让位：音乐在播，保活音频暂停
+if (keepEnabled && document.visibilityState === 'hidden') {
+if (keepAudio.el.paused) {
+kaResetBackoff();
+const p = keepAudio.el.play();
+if (p && p.catch) p.catch(function () {});
+kaSchedule();
+}
+return;
+}
+if (!keepAudio.el.paused) keepAudio.el.pause(); // 前台让位：音乐在播，保活音频暂停
 } else if (keepEnabled && keepAudio.el.paused) {
 if (kaTimer || kaDelay) return;
 try {
@@ -758,7 +767,7 @@ if (keepAudio) return;
 try {
 if (!kaBuildTransducer(KA_VOL_BASE)) { if (showToast) toast('后台保活启动失败（无法生成保活音频）'); return; }
 const playIt = function () {
-if (musicNowPlaying()) return; // v3.10.x：音乐在播，让位不抢音频（由 syncKeepForMusic 收回）
+if (musicNowPlaying() && document.visibilityState !== 'hidden') return;
 const p = keepAudio.el.play();
 if (p && p.catch) p.catch(function () {});
 };
@@ -780,7 +789,14 @@ try { if (window.__mochiPhase) window.__mochiPhase('ka-tick'); } catch (e0) {}
 if (keepAudio && keepAudio.el) {
 try {
 if (musicNowPlaying()) {
-if (!keepAudio.el.paused) keepAudio.el.pause();
+if (keepEnabled && document.visibilityState === 'hidden') {
+if (keepAudio.el.paused) {
+const p = keepAudio.el.play();
+if (p && p.catch) p.catch(function () {});
+}
+} else if (!keepAudio.el.paused) {
+keepAudio.el.pause();
+}
 return;
 }
 if (!keepAudio.el.paused) {
@@ -901,7 +917,16 @@ if (e.persisted || document.visibilityState === 'visible') _onFgVisible();
 });
 document.addEventListener('visibilitychange', function () {
 if (document.visibilityState !== 'hidden') return;
-if (!keepEnabled || !keepAudio || !keepAudio.el || musicNowPlaying()) return;
+if (!keepEnabled || !keepAudio || !keepAudio.el) return;
+if (musicNowPlaying()) {
+if (keepAudio.el.paused) {
+kaResetBackoff();
+const p = keepAudio.el.play();
+if (p && p.catch) p.catch(function () {});
+kaSchedule();
+}
+return;
+}
 if (!keepAudio.el.paused) return;
 if (kaYieldStealFocus()) return;
 kaResetBackoff();

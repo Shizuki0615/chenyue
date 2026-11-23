@@ -427,7 +427,19 @@
     if (!keepAudio || !keepAudio.el) return;
     try {
       if (musicNowPlaying()) {
-        if (!keepAudio.el.paused) keepAudio.el.pause(); // 让位：音乐在播，保活音频暂停
+        // #1678：音乐在播时不再一律暂停保活——系统更新后浏览器会在「上一首结束、下一首
+        // 还没起的空档」把页面冻结，导致必须回前台才切歌。后台保留这条近静音音频，
+        // 让页面始终有活跃媒体；前台仍让位，避免任何可听混音。
+        if (keepEnabled && document.visibilityState === 'hidden') {
+          if (keepAudio.el.paused) {
+            kaResetBackoff();
+            const p = keepAudio.el.play();
+            if (p && p.catch) p.catch(function () {});
+            kaSchedule();
+          }
+          return;
+        }
+        if (!keepAudio.el.paused) keepAudio.el.pause(); // 前台让位：音乐在播，保活音频暂停
       } else if (keepEnabled && keepAudio.el.paused) {
         // 音乐停止，收回保活音频：已在退避轨道就让排程接管；否则立即试播
         if (kaTimer || kaDelay) return;
@@ -1106,7 +1118,8 @@
       //   toast 语义留在原位。
       if (!kaBuildTransducer(KA_VOL_BASE)) { if (showToast) toast('后台保活启动失败（无法生成保活音频）'); return; }
       const playIt = function () {
-        if (musicNowPlaying()) return; // v3.10.x：音乐在播，让位不抢音频（由 syncKeepForMusic 收回）
+        // #1678：前台音乐在播才让位；后台仍要起保活（换歌空档防冻结）
+        if (musicNowPlaying() && document.visibilityState !== 'hidden') return;
         const p = keepAudio.el.play();
         if (p && p.catch) p.catch(function () {});
       };
@@ -1148,9 +1161,16 @@
         if (keepAudio && keepAudio.el) {
           try {
             if (musicNowPlaying()) {
-              // v3.10.x：音乐在播——保活音频保持让位暂停，不重试补播；媒体条由
-              // music-player 管理，不再强设 playbackState（音乐暂停时会被误标）
-              if (!keepAudio.el.paused) keepAudio.el.pause();
+              // #1678：音乐在播且已切后台——保活音频保持播放（近静音），别让换歌空档被冻结；
+              // 前台仍然让位暂停。媒体条由 music-player 管理，不在这里强设。
+              if (keepEnabled && document.visibilityState === 'hidden') {
+                if (keepAudio.el.paused) {
+                  const p = keepAudio.el.play();
+                  if (p && p.catch) p.catch(function () {});
+                }
+              } else if (!keepAudio.el.paused) {
+                keepAudio.el.pause();
+              }
               return;
             }
             if (!keepAudio.el.paused) {
@@ -1341,7 +1361,18 @@
   // 压到 20s 封顶（见 kaSchedule 内隐藏期钳制）；音乐在播时跳过（媒体会话由音乐维持）。
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'hidden') return;
-    if (!keepEnabled || !keepAudio || !keepAudio.el || musicNowPlaying()) return;
+    if (!keepEnabled || !keepAudio || !keepAudio.el) return;
+    if (musicNowPlaying()) {
+      // #1678：音乐在播也保留保活音频（近静音）——系统更新后换歌空档会被冻结，
+      // 只靠音乐的媒体会话不再够用；这里把静默窗口补上。
+      if (keepAudio.el.paused) {
+        kaResetBackoff();
+        const p = keepAudio.el.play();
+        if (p && p.catch) p.catch(function () {});
+        kaSchedule();
+      }
+      return;
+    }
     if (!keepAudio.el.paused) return;
     // #924：切后台瞬间正是用户切去刷视频/听歌的时刻，此时立即补播＝当场把对方截停；
     // iOS 无 Chromium 冻结线，让位（回前台 healKeepAlive 照常拉回）。安卓保持原行为。
