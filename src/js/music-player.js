@@ -1707,6 +1707,41 @@
     } catch (e) {}
     return '';
   }
+  // #1679：后台切歌加固——曲尾前 25 秒预取「下一首」的完整直链并缓存。
+  // 系统更新后后台网络请求可能被延迟到回前台才完成，若等 ended 再去请求，
+  // 就会表现为「放完了不切、进一下才切」。预取后 playTrack 直接用缓存，零网络。
+  let prefetchForTrackId = '';
+  function pickNextId() {
+    if (playQueue.length) {
+      for (let i = 0; i < playQueue.length; i++) { if (findTrack(playQueue[i])) return playQueue[i]; }
+    }
+    const list = playableList();
+    if (!list.length) return null;
+    if (mode === 'single') return currentId;
+    if (mode === 'shuffle') return list[Math.floor(Math.random() * list.length)].id;
+    let idx = list.findIndex(x => x.id === currentId);
+    if (idx < 0) idx = -1;
+    return list[(idx + 1) % list.length].id;
+  }
+  function maybePrefetchNext() {
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0) return;
+    const remain = audio.duration - audio.currentTime;
+    if (remain > 25 || remain < 0) return;
+    if (!neaReady()) return;
+    const nid = pickNextId();
+    if (!nid) return;
+    const m = findTrack(nid);
+    if (!m || !m.neteaseId) return;
+    if (neaUrlCacheGet(m)) return;
+    if (prefetchForTrackId === nid) return;
+    prefetchForTrackId = nid;
+    neaFetchSongUrl(m.neteaseId, function (res) {
+      if (res && res.url && !res.trial) {
+        neaUrlCacheSet(m, res.url);
+        console.log('[VIP-Diag] 已预取下一首直链 id=' + nid);
+      }
+    });
+  }
   // 归一化后端地址：去尾斜杠。显式写了协议就按用户写的走（自建后端常只有 http://IP:端口，
   // 强改成 https 会打到不存在的端口），没写协议才默认补 https://。
   function neaNormBase(s) {
@@ -4736,6 +4771,7 @@
     // 每次新播放重置，允许重新尝试 meting URL
     if (m) m._httpsRetried = false;
     currentId = id;
+    prefetchForTrackId = ''; // #1679：新歌起播，允许预取它的下一首
     taLyricBegin(id); // 显式点播/重播同一首也重新起一轮「他挑句」判定
     // v3.9.x：播放时顺带补封面（列表/小组件缺封面的网易云歌曲）
     // v3.26.x #216：已有代理封面的顺路迁移成网易 CDN 直链
@@ -4878,6 +4914,14 @@
     // 修复：把后端路径提到正常播放链路，后端取不到才回落公开 meting URL。
     try { audio.referrerPolicy = 'no-referrer'; } catch (e) {}
     if (neaReady() && m.neteaseId) {
+      // #1679：曲尾预取的直链优先——后台切换时不再等网络（后台请求可能被系统延迟）
+      const prefetched = neaUrlCacheGet(m);
+      if (prefetched) {
+        console.log('[VIP-Diag] 用预取直链直接播 id=' + m.id);
+        audio.src = prefetched;
+        startPlayback(m);
+        return;
+      }
       console.log('[VIP-Diag] playTrack 正常路径走后端 neaReady=true neteaseId=' + m.neteaseId);
       neaFetchSongUrl(m.neteaseId, function (res) {
         const url = res && res.url;
@@ -4912,6 +4956,7 @@
       // 下一首走 IDB 异步读，回到这里仍是 null）——必须重判，否则每轮曲尾抛 reading 'duration'
       if (!audio || !audio.duration) return;
       if (audio.currentTime > 0) clearStallGuard();
+      try { maybePrefetchNext(); } catch (e) {}
       const cur = document.getElementById('sm-pb-cur');
       if (cur) cur.textContent = fmtDur(audio.currentTime);
       const fill = document.getElementById('sm-f-fill');
@@ -5475,6 +5520,8 @@
   // 每桌面独立）。chat-settings.js 加载早于本文件，运行时调用；与音乐页 #music-float-en、
   // 音乐设置 #sm-set-float 完全同源（复用 saveSettings/syncFloatToggle/renderFloat 流程）。
   window.musicFloatGet = function () { return !!settings.floatEn; };
+  // 回归脚本入口（同 window.__neaSongUrl 口径）
+  try { window.__musicTest = { play: playTrack, lib: function () { return library; }, audioSrc: function () { return audio ? String(audio.src || '') : ''; } }; } catch (e) {}
   window.musicFloatSet = function (en) {
     settings.floatEn = !!en;
     floatClosed = false;
