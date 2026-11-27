@@ -7362,6 +7362,9 @@ const FIX_SENTINELS = [
   { name: '#1668b 按此间世界时间抽分钟（删＝又擅自加强制偏移/不随机）', file: 'js/cjian.js', needle: 'const info = halfRangeOf(worldMinuteOf(c0));' },
   { name: '#1676a 顶栏与此间共用活动时钟（删＝只推一边，09:39 vs 11:35）', file: 'js/cjian.js', needle: 'window.cjianTaClockOf = taClockOf' },
   { name: '#1676b 此间「对方当前时间」也用活动时钟（删＝此间卡死、顶栏往前走）', file: 'js/cjian.js', needle: 'const t = taClockOf(cid);' },
+  // ==== 2026-11-27 #1680 直链兜底到公开外链 + 诊断当前歌曲 ====
+  { name: '#1680a v1/旧接口都没给时试网易公开外链（删＝风控时直接判死）', file: 'js/music-player.js', needle: "outerTried = true;" },
+  { name: '#1680b 诊断单测正在听的那首（删＝只测固定测试曲，误导）', file: 'js/music-player.js', needle: '=== 你正在听/最后播放的歌 ===' },
   // ==== 2026-11-26 #1679 曲尾预取下一首直链 ====
   { name: '#1679a 曲尾 25 秒预取下一首直链（删＝后台换歌要等网络，回前台才切）', file: 'js/music-player.js', needle: 'function maybePrefetchNext() {' },
   { name: '#1679b 预取直链直接起播（删＝预取了也还是先打后端）', file: 'js/music-player.js', needle: 'const prefetched = neaUrlCacheGet(m);' },

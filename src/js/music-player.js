@@ -39,6 +39,7 @@
   // 概率取值兜底：非数字/越界时回退默认值并夹在 0~100
   function probOf(v, def) { const n = (typeof v === 'number' && !isNaN(v)) ? v : def; return Math.max(0, Math.min(100, n)); }
   let currentId = null;
+  let lastPlayAttempt = null; // #1680：诊断单用它测「你正在听的那首」，而不是固定测试曲
   let mode = 'list';         // list / shuffle / single
   let audio = null;
   let progressTimer = null;
@@ -1578,6 +1579,7 @@
     let totalTries = 0; // 本轮总请求数上限（含重试），防极端情况无限重试卡住播放
     let sawTrial = false; // 任意一档给过试听片段（最后一档可能是 404，别把「见过试听」丢了）
     let legacyTried = false; // #1669：v1 全档被 -460 拦死时改走旧接口 /song/url 兜底
+    let outerTried = false; // #1680：v1 与旧接口都没给时，最后试网易公开外链（能播就播）
     // #1669（用户 2026-11-16 实报：免费歌和 VIP 歌的 /song/url/v1 全部 -460，但旧接口正常）：
     // 后端出口 IP 被网易风控时，v1 可能整档返回 -460；实测同一个后端 /song/url?br=320000
     // 仍能返回完整直链（含 320k）。放在 v1 全部档位失败之后兜底，不影响现有音质降级顺序。
@@ -1608,6 +1610,16 @@
             url: String(url).replace(/^http:/i, 'https:'),
             code: code, reason: '', level: 'legacy', trial: false, fee: null, br: br, size: size
           });
+          return;
+        }
+        // #1680：v1 和旧接口都没给（通常是被风控/版权限制）——最后试网易公开外链。
+        // 它不需要 cookie、由 <audio> 直接跟随 302 到 CDN；免费歌/部分会员歌能出完整流，
+        // 实在没有版权时退回 meting。至少不再「什么都不试就判死」。
+        if (!url && !outerTried) {
+          outerTried = true;
+          const outer = 'https://music.163.com/song/media/outer/url?id=' + encodeURIComponent(String(id)) + '.mp3';
+          console.log('[VIP-Diag] 旧接口也没给，最后试公开外链');
+          cb && cb({ url: outer, code: 200, reason: '', level: 'outer', trial: false, fee: null, br: 0, size: 0 });
           return;
         }
         cb && cb({ url: null, code: code, reason: reason || 'v1 与旧接口均未取到完整直链', level: 'legacy', trial: sawTrial, fee: null, br: br, size: size, netErr: !!err, restricted: !err });
@@ -2227,6 +2239,14 @@
           .then(({ ls, free, vip }) => runUrlTest('/song/url/v1?id=' + TEST_VIP_ID + '&level=standard&cookie=' + cookieEnc + ripEnc).then((vipStd) => ({ ls, free, vip, vipStd })))
           .then(({ ls, free, vip, vipStd }) => runUrlTest('/song/url?id=' + TEST_VIP_ID + '&br=320000&cookie=' + cookieEnc + ripEnc).then((legacy) => ({ ls, free, vip, vipStd, legacy })))
           .then(({ ls, free, vip, vipStd, legacy }) => {
+            // #1680：顺带测「你正在听/最后播放的那首」——固定测试曲没问题不代表用户那首没问题
+            const curId = lastPlayAttempt && lastPlayAttempt.id;
+            if (!curId) return { ls, free, vip, vipStd, legacy, cur: null };
+            return runUrlTest('/song/url/v1?id=' + encodeURIComponent(curId) + '&level=exhigh&cookie=' + cookieEnc + ripEnc)
+              .then((cv1) => runUrlTest('/song/url?id=' + encodeURIComponent(curId) + '&br=320000&cookie=' + cookieEnc + ripEnc)
+                .then((cleg) => ({ ls, free, vip, vipStd, legacy, cur: { id: curId, name: (lastPlayAttempt && lastPlayAttempt.name) || '', v1: cv1, legacy: cleg } })));
+          })
+          .then(({ ls, free, vip, vipStd, legacy, cur }) => {
           // login/status
           out.push('=== /login/status ===');
           if (ls.err) out.push('❌ 请求失败: ' + ls.err);
@@ -2291,6 +2311,18 @@
             out.push('旧接口兜底（/song/url）: ❌ 请求失败 ' + legacy.err);
           } else {
             out.push('旧接口兜底（/song/url）: ❌ 未返回测试结果');
+          }
+          out.push('');
+          // #1680：正在听的那首单独复核（固定测试曲通过≠用户这首歌通过）
+          if (cur) {
+            out.push('=== 你正在听/最后播放的歌 ===');
+            out.push('歌名: ' + (cur.name || '?') + '  (ID=' + cur.id + ')');
+            const cv = (cur.v1 && cur.v1.j && cur.v1.j.data && cur.v1.j.data[0]) || {};
+            const cvt = !!(cv.freeTrialInfo && typeof cv.freeTrialInfo === 'object');
+            out.push('/song/url/v1: ' + (cur.v1 && cur.v1.err ? '❌ 请求失败 ' + cur.v1.err : (cv.url && !cvt ? '✅ 完整直链 br=' + (cv.br || 0) : (cv.url ? '⚠️ 只是试听片段' : '❌ 无直链 code=' + (cv.code ?? '?')))));
+            const cl = (cur.legacy && cur.legacy.j && cur.legacy.j.data && cur.legacy.j.data[0]) || {};
+            const clt = !!(cl.freeTrialInfo && typeof cl.freeTrialInfo === 'object');
+            out.push('/song/url: ' + (cur.legacy && cur.legacy.err ? '❌ 请求失败 ' + cur.legacy.err : (cl.url && !clt ? '✅ 完整直链 br=' + (cl.br || 0) + '（播放会用它）' : (cl.url ? '⚠️ 只是试听片段' : '❌ 无直链 code=' + (cl.code ?? '?')))));
           }
           out.push('');
           out.push('=== 播放路径判定 ===');
@@ -4760,6 +4792,7 @@
   function playTrack(id, fromWidget) {
     const m = findTrack(id);
     if (!m) return;
+    lastPlayAttempt = { id: m.neteaseId || '', name: m.name || '' };
     markFloatSource(fromWidget);
     // 漫游模式：用户手动点了非 FM 歌曲 → 退出漫游，清空 FM 队列
     if (roamActive && m.playlistId !== 'fm') stopRoamMode();
