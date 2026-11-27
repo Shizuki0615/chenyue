@@ -3768,7 +3768,8 @@
             <div class="gs-row"><span>每天最多写信（封）</span><div class="stepper" data-k="ml-write-daily-max" data-min="1" data-max="50" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="ml-write-daily-max-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>主动写信概率</span><div class="stepper" data-k="ml-write-prob" data-min="1" data-max="100" data-step="5"><button class="stp-min">−</button><input class="stp-val" id="ml-write-prob-val" readonly><button class="stp-max">+</button></div></div>
             <div class="gs-row"><span>最短写信时间（分钟）</span><div class="stepper" data-k="ml-write-min" data-min="1" data-max="1440" data-step="1"><button class="stp-min">−</button><input class="stp-val" id="ml-write-min-val" readonly><button class="stp-max">+</button></div></div>
-            <div class="gs-row"><span>最长写信时间（分钟）</span><div class="stepper" data-k="ml-write-max" data-min="1" data-max="1440" data-step="60"><button class="stp-min">−</button><input class="stp-val" id="ml-write-max-val" readonly><button class="stp-max">+</button></div></div>
+            <!-- 最长写信时间不设上限：故意不写 data-max（stepper 交互与保存校验均按「缺 data-max＝不设上限」处理） -->
+            <div class="gs-row"><span>最长写信时间（分钟）</span><div class="stepper" data-k="ml-write-max" data-min="1" data-step="60"><button class="stp-min">−</button><input class="stp-val" id="ml-write-max-val" readonly><button class="stp-max">+</button></div></div>
           </div>
           <div class="gs-title">联系人回信</div>
           <div class="set-group glass">
